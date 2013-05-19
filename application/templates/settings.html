@@ -1,0 +1,125 @@
+<html style="overflow: hidden;">
+<head>
+	<script>var _wpc = window.parent.WPCLib;</script>
+    <link rel="stylesheet" type="text/css" href="/static/css/wonderpad.css">
+	<script type="text/javascript" src="//use.typekit.net/bgy6gxf.js"></script>
+	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
+</head>
+<body id="settingsPage">
+	<a href="#" onclick="_wpc.ui.hideDialog(); return false;" class="close">Close</a>
+	<div>
+
+		<div id="s_login">
+			<div id="s_signup">
+				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Sign-In With <b>Facebook</b></a>
+				<div class="divider"><span class="or">or</span></div>
+				<form>
+					<input type="text" placeholder="E-Mail">
+					<input type="password" placeholder="Choose a password">
+				</form>		
+				<a href="#" class="wpcbutton green" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Create Account</b></a>	
+				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin'));">Already have an account?</a>			
+			</div>	
+			<div id="s_signin" style="display:none;">
+				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Log-In With <b>Facebook</b></a>
+				<div class="divider"><span class="or">or</span></div>
+				<form>
+					<input type="text" placeholder="E-Mail">
+					<input type="password" placeholder="Password">
+				</form>		
+				<a href="#" class="wpcbutton green" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Log-In</b></a>	
+				<a href="#" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup'));">Create an account</a>					
+			</div>	
+		</div>
+
+		<div id="s_settings" style="display:none;">
+
+			<div id="s_account" style="display:none;">
+				<div class="header">
+					<div class="active">Your Account</div>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));">Plans &amp; Payment</a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));">About</a>	
+				</div>
+			</div>
+				
+			<div id="s_plan">
+				<div class="header">
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));">Your Account</a>
+					<div class="active">Plans &amp; Payment</div>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));">About</a>							
+					<!--<em>Welcome!</em> Do you want to unlock more features right away?-->
+				</div>
+
+				<!-- TODO Django: Render plan up/downgrad buttons accordingly -->
+				<div class="box 1">
+					<div class="head">Basic</div>
+					<div class="price">Free!</div>
+					<div class="curr">&nbsp;</div>	
+					<ul>
+						<li>Up to 10 documents
+						<li>100 context searches	
+						<li>
+						<li>
+					</ul>	
+					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
+				</div>
+				<div class="box 2">
+					<div class="head">Starter</div>
+					<div class="price">9<sup>.90</sup></div>	
+					<div class="curr">USD / MONTH</div>	
+					<ul>
+						<li>Unlimited documents
+						<li>Unlimited searches
+						<li>Archive	
+						<li>	
+					</ul>
+					<a href="#" class="wpcbutton green" onclick="_wpc.ui.hideDialog();return false;">Upgrade !</a>						
+				</div>
+				<div class="box 3">
+					<div class="head">Pro</div>
+					<div class="price">29</div>		
+					<div class="curr">USD / MONTH</div>	
+					<ul>
+						<li>All Starter features
+						<li>Speciality data sources
+						<li>Chrome research plugin							
+						<li>Team editing
+						<li>One-click publishing	
+					</ul>
+					<a href="#" class="wpcbutton green" onclick="_wpc.ui.hideDialog();return false;">Upgrade !</a>
+				</div>
+				<div id="s_planfooter" class="footer">
+					<a href="#" onclick="_wpc.ui.hideDialog();return false;">Not now, thanks.</a>	
+				</div>	
+			</div>
+
+			<div id="s_checkout" style="display:none;">
+				<div class="header">
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));">Your Account</a>
+					<div class="active">Plans &amp; Payment</div>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));">About</a>						
+				</div>
+				<a href="#" class="skip" onclick="_wpc.ui.hideDialog();return false;">Not now, thanks.</a>
+			</div>
+
+			<div id="s_about" style="display:none;">
+				<div class="header">
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));">Your Account</a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));">Plans &amp; Payment</a>
+					<div class="active">About</div>	
+				</div>
+				Writing, may it be emails, documents or posts takes up a large amount of our time in front of screens.<br /><br />
+
+				But surprisingly, it is the one area where we still use the most arcane tools from the 20th century.<br /><br />
+
+				Wonderpad lets you create better texts, faster. And get inspired along the way.<br /><br />
+
+				Because writing like Word for Dos was OK in 1988. But it isn't in 2012.
+			</div>
+
+		</div>	
+
+
+	</div>
+</body>
+</html>	

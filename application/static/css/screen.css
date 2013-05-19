@@ -1,0 +1,140 @@
+body,html {
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background-color: #f1eee9;
+}
+
+.folio {
+	position: fixed;
+	top: 0;
+	left: -300px;
+	bottom: 0;
+	width: 350px;
+	background: #333;
+    -webkit-transition: left 500ms ease-out;
+    -moz-transition:    left 500ms ease-out;
+    -o-transition:      left 500ms ease-out;	
+}
+
+.folio:hover {
+	left: 0px;
+    -webkit-transition: left 200ms ease-out;
+    -moz-transition:    left 200ms ease-out;
+    -o-transition:      left 200ms ease-out;		
+}
+
+.canvas {
+	margin: 50px 300px 100px 100px;
+	max-width: 900px;
+	min-width: 600px;
+}
+
+.canvas .page {
+	background-color: #fff;
+	border: 1px solid;
+	border-top-color: #ddd;
+	border-left-color: #ddd;	
+	border-right-color: #ccc;
+	border-bottom-color: #ccc;		
+	display: block;
+	width: 100%;
+	min-height: 100%;
+    box-shadow: 1px 1px 6px rgba(0,0,0,0.3);
+    -moz-box-shadow: 1px 1px 6px rgba(0,0,0,0.3);
+    -webkit-box-shadow: 1px 1px 6px rgba(0,0,0,0.3);
+    -o-box-shadow: 1px 1px 6px rgba(0,0,0,0.3);	
+    -webkit-transition: box-shadow 500ms ease-out;
+    -moz-transition:    box-shadow 500ms ease-out;
+    -o-transition:      box-shadow 500ms ease-out;
+	border-radius: 5px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	-o-border-radius: 5px;
+	-khtml-border-radius: 5px;    
+}
+
+.canvas .page:hover {
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    -moz-box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    -webkit-box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    -o-box-shadow: 1px 1px 2px rgba(0,0,0,0.2);	
+}
+
+.canvas .page .content {
+	display: block;
+	padding: 20px 70px 70px 80px;
+}
+
+.canvas .page .content textarea {
+	display: inline-block;
+	width: 90%;
+	font-family: Georgia, 'Times New Roman';
+	font-size: 16px;
+	line-height: 30px;
+	word-spacing: 0.2em;	
+	margin-left: -5000px;
+	float:left;
+}
+
+.canvas .page .content .text {
+	width: 90%;
+	border: 0px;
+	min-height: 600px;
+	font-family: Georgia, 'Times New Roman';
+	font-size: 16px;
+	color: #5d5d5d;
+	line-height: 30px;
+	word-spacing: 0.2em;
+	white-space: pre-wrap;
+}
+
+.canvas .page .content .text::selection {
+	background: #FFE;
+}
+
+.canvas .page .content .text .selstart {
+	background: #FFE;
+	border-bottom: 1px solid #EAD3AF;	
+}
+
+.canvas .page .content .text::-moz-selection {
+	background: #FFE;	
+}
+
+.canvas .page .content .text .cursor {
+	width: 0;
+	position: relative;
+	display: inline-block;
+	min-height: 20px;
+}
+
+.canvas .page .content .text .cursor em {
+	width: 10px;
+	border-bottom: 1px solid #666;
+	position: absolute;	
+	bottom: -3px;
+}
+
+.canvas .page .content .text:first-line, .canvas .page .content textarea:first-line {
+	font-family: 'Open Sans', Helvetica;	
+	word-spacing: 0;	
+	font-size: 2.15em;
+	line-height: 150px;
+	color: #444;
+	letter-spacing: -0.05em;
+	text-rendering: optimizeLegibility;	
+	text-transform: uppercase;
+}
+
+
+.context {
+	position: absolute;
+	top: 50px;
+	right: 50px;
+	width: 150px;
+	overflow: hidden;
+}
