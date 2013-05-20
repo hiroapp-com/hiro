@@ -9,6 +9,7 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
 
 """
 import json
+import time
 import string
 import random
 import logging as log
@@ -43,11 +44,12 @@ def list_documents():
         "active": [],
         "archived": []
     }
+
     for doc in  Document.query():
         docs['active'].append({ 
             "id": doc.key.id(),
             "title": doc.title,
-            "created": doc.created_at.strftime("%s")
+            "created": time.mktime(doc.created_at.timetuple())
             })
     resp = make_response(json.dumps(docs, indent=2))
     resp.mimetype = 'application/json'
