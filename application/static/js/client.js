@@ -220,7 +220,7 @@ var WPCLib = {
 		newWordThreshhold: 5,			
 		selBeginning: null,
 		caretPosition: 0,	
-		saved: false,
+		saved: true,
 		docid: '',
 		created: 0,
 		lastUpdated: 0,
@@ -254,7 +254,7 @@ var WPCLib = {
 			file.created = this.created;
 			file.last_updated = this.lastUpdated;
 			file.cursor = this.caretPosition;
-			file.hidecontext = WPCLib.context.show;
+			file.hidecontext = !WPCLib.context.show;
 			file.links = {};
 			file.links.sticky = WPCLib.context.sticky;
 			file.links.normal = WPCLib.context.links;
@@ -270,14 +270,14 @@ var WPCLib = {
 	                data: JSON.stringify(file),
 					success: function(data) {
 	                    window.console.log("Saved!");
+						WPCLib.canvas.saved = true;	                    
 					}
 				});
 			} else {
 				console.log('saving locally: ', file);					
 				localStorage.setItem("WPCdoc", JSON.stringify(file));
+				WPCLib.canvas.saved = true;					
 			}						
-
-			this.saved = true;
 		},		
 
 		loaddoc: function(docid, title) {
@@ -509,7 +509,7 @@ var WPCLib = {
 				WPCLib.canvas.savedoc();
 				WPCLib.context.analyze(WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
-			},2000);
+			},1000);
 		},	
 
 		_cleartypingtimer: function() {
