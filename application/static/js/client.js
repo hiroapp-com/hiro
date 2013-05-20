@@ -9,8 +9,19 @@ var WPCLib = {
 		init: function() {
 			// Basic Folio Setup
 
-			// Load list of documents from server
-			this.docs.loaddocs();
+			// Load list of documents from server or create localdoc if user is unknown			
+			if (WPCLib.sys.user.level==0) {
+				// See if we can find a local doc
+				var ld = localStorage.getItem('WPCdoc');
+				if (ld) {
+					this.docs.loadlocal(ld);
+				} else {
+					document.getElementById(this.docs.doclistId).innerHTML='';
+					this.docs.newdoc();
+				}
+			} else {
+				this.docs.loaddocs();
+			}
 
 			// Register "close folio" events to rest of the page
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
@@ -26,10 +37,26 @@ var WPCLib = {
 				// Get the list of documents from the server
 				$.getJSON('/docs/', function(data) {
 					var f = WPCLib.folio.docs;
+					// TODO: This if catches a case when data is being returned empty, make sure we need this
 					if (data.active) { f.active = data.active } else { f.newdoc(); };
 					f.archived = data.archived;						
-					f.update();			
+					f.update();
+					WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);			
 				});
+			},
+
+			loadlocal: function(localdoc) {	
+				// Load locally saved document
+				var ld = JSON.parse(localdoc);					
+				console.log('Localstorage doc found, loading ', ld);						
+				document.getElementById('landing').style.display = 'none';
+
+				// Render doc in folio
+				this.active.push(ld);
+				this.update();
+
+				// Render doc on canvas
+				WPCLib.canvas.loadlocal(ld);
 			},
 
 			update: function() {
@@ -44,7 +71,7 @@ var WPCLib = {
 						var docid = act[i].id;
 						var title = act[i].title;
 						d.className = 'document';
-						d.setAttribute('href','/apiblabla/'+docid);	
+						d.setAttribute('href','/docs/'+docid);	
 						d.setAttribute('id','doc_'+docid);
 						d.setAttribute('onclick','return false;');
 
@@ -71,20 +98,22 @@ var WPCLib = {
 				});
 			},
 
-
-			savedocs: function() {
-				// Save all docs to the server (do we need this or can we build all safety into newdocs etc?)
-
-			},
-
 			creatingDoc: false,
 			newdoc: function() {
 				// Initiate the creation of a new document
 
-				// Avoid creating multiple docs at once
+				// Avoid creating multiple docs at once and check for user level
 				if (this.creatingDoc == true) return;
 				this.creatingDoc = true;
 
+				if (WPCLib.sys.user.level == 0) {
+					WPCLib.sys.user.upgrade(1);
+					return;
+				}
+				if (WPCLib.sys.user.level == 1 && this.active.length >= 10) {
+					WPCLib.sys.user.upgrade(2);
+					return;					
+				}
 				// Render a placeholder until we get the OK from the server
 				var ph = document.createElement('a');
 				ph.className = 'document';
@@ -103,6 +132,59 @@ var WPCLib = {
 				// Create the doc on the canvas
 				WPCLib.canvas.newdoc();
 				WPCLib.ui.menuHide();
+
+				// Get/Set ID of new document
+				if (WPCLib.sys.user.level==0||!WPCLib.sys.user.level) {
+					var doc = document.getElementById('doc_creating');
+					console.log('unknown user, setting up localstore ');
+
+					// Set params for local doc
+					WPCLib.canvas.docid = 'localdoc';
+
+					// Save document & cleanup
+					doc.firstChild.innerHTML = 'New Document';
+					doc.id = 'doc_localdoc';
+				} else {
+					// Request new document id
+					var doc = document.getElementById('doc_creating');
+					console.log('known user, setting up remote store ');
+
+					// /docs/ expects a payload, so we build one here
+					// TODO Flo pls remove this and allow requests for doc id without existing title/text
+					var file = {};
+					file.title = '';
+					file.text = '';
+					file.hidecontext = WPCLib.context.show;
+					file.cursor = 0;
+
+					// Only submit this timestamp
+					file.created = WPCLib.util.now();				
+
+					// Get doc id from server
+					$.ajax({
+						url: "/docs/",
+		                type: "POST",
+		                contentType: "application/json; charset=UTF-8",
+		                data: JSON.stringify(file),
+						success: function(data) {
+		                    console.log("backend issued doc id ", data);
+
+							// Set params for local doc
+							WPCLib.canvas.docid = data;
+
+							// Save document & cleanup
+							doc.firstChild.innerHTML = 'New Document';
+							doc.id = 'doc_'+data;		                    
+						}
+					});
+
+
+					WPCLib.canvas.docid = 'localdoc';
+
+					// Save document & cleanup
+					doc.firstChild.innerHTML = 'New Document';
+					doc.id = 'doc_localdoc';				
+				}
 
 				// Get ready for the creation of new documents
 				this.creatingDoc = false;
@@ -155,10 +237,7 @@ var WPCLib = {
 			WPCLib.util.registerEvent(el,'change',this._resize);	
 			WPCLib.util.registerEvent(el,'cut',this._delayedresize);	
 			WPCLib.util.registerEvent(el,'paste',this._delayedresize);
-			WPCLib.util.registerEvent(el,'drop',this._delayedresize);			
-
-			// Create first doc as long we don't have a backend yet
-			this.newdoc();
+			WPCLib.util.registerEvent(el,'drop',this._delayedresize);		
 		},	
 
 
@@ -172,30 +251,31 @@ var WPCLib = {
 			file.id = this.docid;
 			file.title = document.getElementById(this.pageTitle).value;
 			file.text = this.text;
-			//file.created = this.created;
-			//file.last_updated = this.lastUpdated;
+			file.created = this.created;
+			file.last_updated = this.lastUpdated;
 			file.cursor = this.caretPosition;
 			file.hidecontext = WPCLib.context.show;
 			file.links = {};
-			file.links.sticky = [];
-			file.links.normal = [];
-			file.links.blacklist = [];
-			//file.links.sticky = WPCLib.context.sticky;
-			//file.links.normal = WPCLib.context.links;
-			//file.links.blacklist = WPCLib.context.blacklist;			
+			file.links.sticky = WPCLib.context.sticky;
+			file.links.normal = WPCLib.context.links;
+			file.links.blacklist = WPCLib.context.blacklist;			
 
 			// TODO: Wire up backend saving
-			console.log('saving ', JSON.stringify(file));
-
-			$.ajax({
-				url: "/docs/",
-                type: "POST",
-                contentType: "application/json; charset=UTF-8",
-                data: JSON.stringify(file),
-				success: function(data) {
-                    window.console.log("Saved!");
-				}
-			});						
+			if (this.docid!='doc_localdoc' && WPCLib.sys.user.level > 0) {
+				console.log('saving remotely: ', JSON.stringify(file));				
+				$.ajax({
+					url: "/docs/"+this.docid,
+	                type: "POST",
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(file),
+					success: function(data) {
+	                    window.console.log("Saved!");
+					}
+				});
+			} else {
+				console.log('saving locally: ', file);					
+				localStorage.setItem("WPCdoc", JSON.stringify(file));
+			}						
 
 			this.saved = true;
 		},		
@@ -207,7 +287,7 @@ var WPCLib = {
 
 			// If we already know the title, we shorten the waiting time
 			if (title) document.getElementById(this.pageTitle).value = title;	
-			document.getElementById(this.contentId).value = 'Loading...'	
+			document.getElementById(this.contentId).value = 'Loading...'
 
 			// Load data onto canvas
 			var file = 'docs/'+docid;
@@ -225,6 +305,7 @@ var WPCLib = {
 					WPCLib.ui.menuHide();						
 					if (!title) document.getElementById(that.pageTitle).value = data.title;
 					document.getElementById(that.contentId).value = data.text;
+					that.text = data.text;
 					that._setposition(data.cursor);
 					WPCLib.canvas._removeblank();	
 
@@ -232,10 +313,33 @@ var WPCLib = {
 					WPCLib.context.sticky = data.links.sticky || [];
 					WPCLib.context.links = data.links.normal || [];
 					WPCLib.context.blacklist = data.links.blacklist || [];	
-					if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();	
+					if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();
+					document.getElementById(WPCLib.context.statusId).innerHTML = 'All loaded, keep going.';						
 				}
 			});						
 		},	
+
+		loadlocal: function(data) {
+			// Loading a local document on the canvas
+			document.getElementById(this.pageTitle).value = data.title;	
+			document.getElementById(this.contentId).value = data.text;
+			this._setposition(data.cursor);
+			WPCLib.canvas._removeblank();	
+
+			// Load links
+			WPCLib.context.sticky = data.links.sticky || [];
+			WPCLib.context.links = data.links.normal || [];
+			WPCLib.context.blacklist = data.links.blacklist || [];	
+			if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();
+			if (WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();
+			document.getElementById(WPCLib.context.statusId).innerHTML = 'Welcome back!';							
+
+			// Set internal values	
+			this.text = data.text;	
+			this.docid = data.id;
+			this.created = data.created;
+			this.lastUpdated = data.last_updated;
+		},
 
 		newdoc: function() {
 			// Create a new document (canvas part)
@@ -675,7 +779,12 @@ var WPCLib = {
 			// FInd the URL, this is a bit suboptimal as it breaks with dom changes
 			var url = link.getElementsByTagName("a")[2].getAttribute("href");
 			this.blacklist.push(url);
+
+			// We do not need to render the links again in this case, just pop the node
 			link.parentNode.removeChild(link);
+
+			// Save document
+			WPCLib.canvas.savedoc();			
 		},
 
 		makesticky: function(el) {
@@ -692,6 +801,9 @@ var WPCLib = {
 					this.renderresults();
 				}
 			}
+
+			// Save document
+			WPCLib.canvas.savedoc();
 		},
 
 		unstick: function(el) {
@@ -709,7 +821,10 @@ var WPCLib = {
 					this.sticky.splice(i,1);					
 					this.renderresults();
 				}
-			}			
+			}
+
+			// Save document
+			WPCLib.canvas.savedoc();						
 		}
 	},
 
@@ -745,8 +860,6 @@ var WPCLib = {
 			this.onstartup( function() {
 				WPCLib.canvas._init();
 				console.log('page started for user ' + WPCLib.sys.user.id);
-				// Set user level, TODO Discuss how we hand this over from Django
-				WPCLib.sys.user.setStage(0);
 				// Load settings into dialog
 				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);
 			});
@@ -846,6 +959,10 @@ var WPCLib = {
 						logout.style.display = 'inline-block'					
 						break;	
 				}				
+			},
+
+			upgrade: function(level) {
+				console.log('Upgrade user to ', level);
 			}
 		},
 	},
@@ -1214,4 +1331,3 @@ var WPCLib = {
 		}
 	}
 };
-WPCLib.sys.init();
