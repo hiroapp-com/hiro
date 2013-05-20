@@ -74,6 +74,20 @@ def create_document():
     doc_id = doc.put()
     return str(doc_id.id()), 201
 
+def edit_document(doc_id):
+    data = request.json
+    if not data:
+        return "empty payload", 400
+    doc = Document.get_by_id(doc_id)
+    if not doc:
+        return "document not found", 404
+    doc.title = data['title'] 
+    doc.text = data['text']
+    doc.cursor = data['cursor']
+    doc.hidecontext = data['hidecontext']
+    doc.put()
+    return "", 204
+
 def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
     resp = make_response(doc.to_json())
