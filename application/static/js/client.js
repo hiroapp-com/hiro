@@ -44,10 +44,18 @@ var WPCLib = {
 				});
 			},
 
-			loadlocal: function(localdoc) {				
-				console.log('Localstorage doc found, loading ', localdoc);
+			loadlocal: function(localdoc) {	
+				// Load locally saved document
+				var ld = JSON.parse(localdoc);					
+				console.log('Localstorage doc found, loading ', ld);						
 				document.getElementById('landing').style.display = 'none';
-				WPCLib.canvas.loadlocal(localdoc);
+
+				// Render doc in folio
+				this.active.push(ld);
+				this.update();
+
+				// Render doc on canvas
+				WPCLib.canvas.loadlocal(ld);
 			},
 
 			update: function() {
@@ -196,17 +204,14 @@ var WPCLib = {
 			file.id = this.docid;
 			file.title = document.getElementById(this.pageTitle).value;
 			file.text = this.text;
-			//file.created = this.created;
-			//file.last_updated = this.lastUpdated;
+			file.created = this.created;
+			file.last_updated = this.lastUpdated;
 			file.cursor = this.caretPosition;
 			file.hidecontext = WPCLib.context.show;
 			file.links = {};
-			file.links.sticky = [];
-			file.links.normal = [];
-			file.links.blacklist = [];
-			//file.links.sticky = WPCLib.context.sticky;
-			//file.links.normal = WPCLib.context.links;
-			//file.links.blacklist = WPCLib.context.blacklist;			
+			file.links.sticky = WPCLib.context.sticky;
+			file.links.normal = WPCLib.context.links;
+			file.links.blacklist = WPCLib.context.blacklist;			
 
 			// TODO: Wire up backend saving
 			if (this.docid!='doc_localdoc' && WPCLib.sys.user.level > 0) {
@@ -222,7 +227,7 @@ var WPCLib = {
 				});
 			} else {
 				console.log('saving locally: ', file);					
-				localStorage.setItem("WPCdoc", file);
+				localStorage.setItem("WPCdoc", JSON.stringify(file));
 			}						
 
 			this.saved = true;
@@ -235,7 +240,7 @@ var WPCLib = {
 
 			// If we already know the title, we shorten the waiting time
 			if (title) document.getElementById(this.pageTitle).value = title;	
-			document.getElementById(this.contentId).value = 'Loading...'	
+			document.getElementById(this.contentId).value = 'Loading...'
 
 			// Load data onto canvas
 			var file = 'docs/'+docid;
@@ -260,14 +265,31 @@ var WPCLib = {
 					WPCLib.context.sticky = data.links.sticky || [];
 					WPCLib.context.links = data.links.normal || [];
 					WPCLib.context.blacklist = data.links.blacklist || [];	
-					if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();	
+					if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();
+					document.getElementById(WPCLib.context.statusId).innerHTML = 'All loaded, keep going.';						
 				}
 			});						
 		},	
 
-		loadlocal: function(localdoc) {
+		loadlocal: function(data) {
 			// Loading a local document on the canvas
-			console.log(localdoc);
+			document.getElementById(this.pageTitle).value = data.title;	
+			document.getElementById(this.contentId).value = data.text;
+			this._setposition(data.cursor);
+			WPCLib.canvas._removeblank();	
+
+			// Load links
+			WPCLib.context.sticky = data.links.sticky || [];
+			WPCLib.context.links = data.links.normal || [];
+			WPCLib.context.blacklist = data.links.blacklist || [];	
+			if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();
+			if (WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();
+			document.getElementById(WPCLib.context.statusId).innerHTML = 'Welcome back!';							
+
+			// Set internal values		
+			this.docid = data.id;
+			this.created = data.created;
+			this.lastUpdated = data.last_updated;
 		},
 
 		newdoc: function() {
@@ -778,8 +800,6 @@ var WPCLib = {
 			this.onstartup( function() {
 				WPCLib.canvas._init();
 				console.log('page started for user ' + WPCLib.sys.user.id);
-				// Set user level, TODO Discuss how we hand this over from Django
-				WPCLib.sys.user.setStage(0);
 				// Load settings into dialog
 				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);
 			});

@@ -59,7 +59,7 @@
 		</div>
 		
 		<div class="context" id="context">
-			<div id="status" title="Select a word or paragraph to limit your search."></div>
+			<div id="status" title="Select a word or paragraph to limit your search.">&nbsp;</div>
 			<div class="results" id="results">																				
 			</div>
 			<div class="upgrade" id="signupButton">
@@ -81,7 +81,8 @@
 
 			// fires on page load
 			WPCLib.sys.onstartup( function() {
-
+				// Set user level, TODO Discuss how we hand this over from Django
+				WPCLib.sys.user.setStage(0);
 			});
 		</script>	
 
