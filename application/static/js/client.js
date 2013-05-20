@@ -9,8 +9,19 @@ var WPCLib = {
 		init: function() {
 			// Basic Folio Setup
 
-			// Load list of documents from server
-			this.docs.loaddocs();
+			// Load list of documents from server or create localdoc if user is unknown			
+			if (WPCLib.sys.user.level==0) {
+				// See if we can find a local doc
+				var ld = localStorage.getItem('WPCdoc');
+				if (ld) {
+					this.docs.loadlocal(ld);
+				} else {
+					document.getElementById(this.docs.doclistId).innerHTML='';
+					this.docs.newdoc();
+				}
+			} else {
+				this.docs.loaddocs();
+			}
 
 			// Register "close folio" events to rest of the page
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
@@ -26,10 +37,17 @@ var WPCLib = {
 				// Get the list of documents from the server
 				$.getJSON('/docs/', function(data) {
 					var f = WPCLib.folio.docs;
+					// TODO: This if catches a case when data is being returned empty, make sure we need this
 					if (data.active) { f.active = data.active } else { f.newdoc(); };
 					f.archived = data.archived;						
 					f.update();			
 				});
+			},
+
+			loadlocal: function(localdoc) {				
+				console.log('Localstorage doc found, loading ', localdoc);
+				document.getElementById('landing').style.display = 'none';
+				WPCLib.canvas.loadlocal(localdoc);
 			},
 
 			update: function() {
@@ -44,7 +62,7 @@ var WPCLib = {
 						var docid = act[i].id;
 						var title = act[i].title;
 						d.className = 'document';
-						d.setAttribute('href','/apiblabla/'+docid);	
+						d.setAttribute('href','/docs/'+docid);	
 						d.setAttribute('id','doc_'+docid);
 						d.setAttribute('onclick','return false;');
 
@@ -69,12 +87,6 @@ var WPCLib = {
 				WPCLib.util.registerEvent(document.getElementById('doc_'+docid),'click', function() {
 					WPCLib.canvas.loaddoc(docid, title);
 				});
-			},
-
-
-			savedocs: function() {
-				// Save all docs to the server (do we need this or can we build all safety into newdocs etc?)
-
 			},
 
 			creatingDoc: false,
@@ -103,6 +115,21 @@ var WPCLib = {
 				// Create the doc on the canvas
 				WPCLib.canvas.newdoc();
 				WPCLib.ui.menuHide();
+
+				// Get/Set ID of new document
+				if (WPCLib.sys.user.level==0) {
+					var doc = document.getElementById('doc_creating');
+					console.log('unknown user, setting up localstore ');
+
+					// Set params for local doc
+					WPCLib.canvas.docid = 'localdoc';
+
+					// Save document & cleanup
+					doc.firstChild.innerHTML = 'New Document';
+					doc.id = 'doc_localdoc';
+				} else {
+					// Request new document id
+				}
 
 				// Get ready for the creation of new documents
 				this.creatingDoc = false;
@@ -155,10 +182,7 @@ var WPCLib = {
 			WPCLib.util.registerEvent(el,'change',this._resize);	
 			WPCLib.util.registerEvent(el,'cut',this._delayedresize);	
 			WPCLib.util.registerEvent(el,'paste',this._delayedresize);
-			WPCLib.util.registerEvent(el,'drop',this._delayedresize);			
-
-			// Create first doc as long we don't have a backend yet
-			this.newdoc();
+			WPCLib.util.registerEvent(el,'drop',this._delayedresize);		
 		},	
 
 
@@ -185,17 +209,21 @@ var WPCLib = {
 			//file.links.blacklist = WPCLib.context.blacklist;			
 
 			// TODO: Wire up backend saving
-			console.log('saving ', JSON.stringify(file));
-
-			$.ajax({
-				url: "/docs/",
-                type: "POST",
-                contentType: "application/json; charset=UTF-8",
-                data: JSON.stringify(file),
-				success: function(data) {
-                    window.console.log("Saved!");
-				}
-			});						
+			if (this.docid!='doc_localdoc' && WPCLib.sys.user.level > 0) {
+				console.log('saving remotely: ', JSON.stringify(file));				
+				$.ajax({
+					url: "/docs/"+this.docid,
+	                type: "POST",
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(file),
+					success: function(data) {
+	                    window.console.log("Saved!");
+					}
+				});
+			} else {
+				console.log('saving locally: ', file);					
+				localStorage.setItem("WPCdoc", file);
+			}						
 
 			this.saved = true;
 		},		
@@ -236,6 +264,11 @@ var WPCLib = {
 				}
 			});						
 		},	
+
+		loadlocal: function(localdoc) {
+			// Loading a local document on the canvas
+			console.log(localdoc);
+		},
 
 		newdoc: function() {
 			// Create a new document (canvas part)
