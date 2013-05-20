@@ -77,12 +77,12 @@
 		<script src="/static/js/client.js" type="text/javascript"></script>	
 		<script type="text/javascript">
 
-			WPCLib.sys.user.id = 'lalala';
+			// Set user level, TODO Discuss how we hand this over from Django
+			WPCLib.sys.user.setStage(1);
+			WPCLib.sys.init();
 
 			// fires on page load
 			WPCLib.sys.onstartup( function() {
-				// Set user level, TODO Discuss how we hand this over from Django
-				WPCLib.sys.user.setStage(0);
 			});
 		</script>	
 
