@@ -45,11 +45,12 @@ def list_documents():
         "archived": []
     }
 
-    for doc in  Document.query():
+    for doc in  Document.query().order(-Document.updated_at):
         docs['active'].append({ 
             "id": doc.key.id(),
             "title": doc.title,
-            "created": time.mktime(doc.created_at.timetuple())
+            "created": time.mktime(doc.created_at.timetuple()),
+            "updated": time.mktime(doc.updated_at.timetuple())
             })
     resp = make_response(json.dumps(docs, indent=2))
     resp.mimetype = 'application/json'
