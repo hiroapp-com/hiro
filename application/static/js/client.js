@@ -53,6 +53,8 @@ var WPCLib = {
 
 				// Render doc in folio
 				this.active.push(ld);
+				// Fix for different namings in frontend/backend
+				this.active[0].updated = ld.last_updated;
 				this.update();
 
 				// Render doc on canvas
@@ -377,7 +379,7 @@ var WPCLib = {
 			WPCLib.context.links = data.links.normal || [];
 			WPCLib.context.blacklist = data.links.blacklist || [];	
 			WPCLib.context.renderresults();
-			if (WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();
+			if (data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Welcome back!';							
 
 			// Set internal values	
