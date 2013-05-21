@@ -25,7 +25,7 @@ from flask.ext.login import login_user, logout_user, current_user
 
 from application import app
 from models import User, Document
-from forms import SignonForm
+from forms import LoginForm, SignupForm
 
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
@@ -40,25 +40,26 @@ def logout():
 
     
 def login():
-    form = SignonForm(csrf_enabled=False)
+    form = LoginForm(csrf_enabled=False)
     if form.validate_on_submit():
-        #TBD perform user existance-check and instantiation in custom form validator/sanitizer?
+        # form-validation already checked whether given email is registered
         user = User.query(User.email == form.email.data).get()
-        if not user:
-            return "This E-mail address is not registered.", 401
-        elif not user.check_password(form.password.data):
-            return "Wrong password.", 401
-        elif login_user(user, remember=True):
-            return "Logged in! {0}".format(user.email)
+        if user.check_password(form.password.data):
+            if login_user(user, remember=True):
+                return '', 204 # No Content
+            else:
+                return "Could not login. Maybe account was suspended?", 401
         else:
-            return "Could not login. Maybe account was suspended?", 401
+            resp = jsonify(password=["Wrong Password"])
+            resp.status = "401"
+            return resp
     else:
         resp = jsonify(form.errors)
         resp.status = "401"
         return resp
 
 def register():
-    form = SignonForm(csrf_enabled=False)
+    form = SignupForm(csrf_enabled=False)
     if form.validate_on_submit():
         user = User.query(User.email == form.email.data).get()
         if user is not None:
@@ -66,7 +67,9 @@ def register():
                 login_user(user, remember=True)
                 return '', 204 # No Content
             else:
-                return 'email already in use, wrong password', 401
+                resp = jsonify(email=["E-Mail already registered"])
+                resp.status = "401"
+                return resp
         user = User()
         user.token = uuid.uuid4().hex
         user.email = form.email.data

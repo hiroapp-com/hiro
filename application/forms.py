@@ -13,7 +13,16 @@ class EmailFieldConverter(ModelConverter):
         else:
             return super(EmailFieldConverter, self).convert_StringProperty(model, prop, kwargs)
 
-SignonForm = model_form(User, wtf.Form, converter=EmailFieldConverter(), field_args={
-    'email': dict(validators=[validators.Required()]),
+def is_email_registered(form, field):
+    if User.query(User.email == field.data).get() is None:
+        raise validators.StopValidation("E-Mail not registered")
+
+LoginForm = model_form(User, wtf.Form, converter=EmailFieldConverter(), field_args={
+    'email': dict(validators=[validators.Required(), validators.Email(), is_email_registered]),
+    'password': dict(validators=[validators.Required()]),
+    })
+
+SignupForm = model_form(User, wtf.Form, converter=EmailFieldConverter(), field_args={
+    'email': dict(validators=[validators.Required(), validators.Email()]),
     'password': dict(validators=[validators.Required()]),
     })
