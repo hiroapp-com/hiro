@@ -119,7 +119,7 @@ def create_document():
     timestamp = data.get('created')
     if timestamp is not None:
         doc.created_at = datetime.fromtimestamp(timestamp)
-    doc.title = data.get('title', '') 
+    doc.title = data.get('title', 'Untitled') 
     doc.text = data.get('text', '')
     doc.cursor = data.get('cursor', 0)
     doc.hidecontext = data.get('hidecontext', False)
