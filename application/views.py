@@ -13,6 +13,8 @@ import time
 import string
 import random
 import logging as log
+from datetime import datetime
+
 from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 from google.appengine.ext import ndb
 
@@ -67,11 +69,13 @@ def create_document():
         doc = Document.get_by_id(data['id'])
     else:
         doc = Document(key=ndb.Key(Document, gen_key()))
-    doc.title = data['title'] 
-    doc.text = data['text']
-    doc.cursor = data['cursor']
-    doc.hidecontext = data['hidecontext']
-
+    timestamp = data.get('created')
+    if timestamp is not None:
+        doc.created_at = datetime.fromtimestamp(timestamp)
+    doc.title = data.get('title', '') 
+    doc.text = data.get('text', '')
+    doc.cursor = data.get('cursor', 0)
+    doc.hidecontext = data.get('hidecontext', False)
     doc_id = doc.put()
     return str(doc_id.id()), 201
 
