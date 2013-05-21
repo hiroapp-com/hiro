@@ -12,6 +12,10 @@ app.add_url_rule('/_ah/warmup', 'warmup', view_func=views.warmup)
 # Home page
 app.add_url_rule('/', 'home', view_func=views.home)
 
+app.add_url_rule('/register', 'register', view_func=views.register, methods=['POST'])
+app.add_url_rule('/login', 'login', view_func=views.login, methods=['POST'])
+app.add_url_rule('/logout', 'logout', view_func=views.logout, methods=['POST'])
+
 app.add_url_rule('/landing/', 'landing', view_func=views.landing)
 app.add_url_rule('/settings/', 'settings', view_func=views.settings)
 

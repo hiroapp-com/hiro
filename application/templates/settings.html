@@ -9,6 +9,7 @@
 	<a href="#" onclick="_wpc.ui.hideDialog(); return false;" class="close">Close</a>
 	<div>
 
+        {% if not current_user.is_authenticated() %}
 		<div id="s_login">
 			<div id="s_signup">
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Sign-In With <b>Facebook</b></a>
@@ -32,7 +33,9 @@
 			</div>	
 		</div>
 
-		<div id="s_settings" style="display:none;">
+        {% else %}
+
+		<div id="s_settings">
 
 			<div id="s_account" style="display:none;">
 				<div class="header">
@@ -118,6 +121,7 @@
 			</div>
 
 		</div>	
+        {% endif %}
 
 
 	</div>

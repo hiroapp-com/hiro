@@ -12,24 +12,73 @@ import json
 import time
 import string
 import random
+import uuid
 import logging as log
 from datetime import datetime
 
-from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
+#from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 from google.appengine.ext import ndb
 
-from flask import request, render_template, make_response
-
+from flask import request, session, render_template, redirect, url_for, jsonify
 from flask_cache import Cache
+from flask.ext.login import login_user, logout_user, current_user
 
 from application import app
-from models import Document
+from models import User, Document
+from forms import SignonForm
 
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
 
 # Flask-Cache (configured to use App Engine Memcache API)
 cache = Cache(app)
+
+
+def logout():
+    logout_user()
+    return '', 204
+
+    
+def login():
+    form = SignonForm(csrf_enabled=False)
+    if form.validate_on_submit():
+        #TBD perform user existance-check and instantiation in custom form validator/sanitizer?
+        user = User.query(User.email == form.email.data).get()
+        if not user:
+            return "This E-mail address is not registered.", 401
+        elif not user.check_password(form.password.data):
+            return "Wrong password.", 401
+        elif login_user(user, remember=True):
+            return "Logged in! {0}".format(user.email)
+        else:
+            return "Could not login. Maybe account was suspended?", 401
+    else:
+        resp = jsonify(form.errors)
+        resp.status = "401"
+        return resp
+
+def register():
+    form = SignonForm(csrf_enabled=False)
+    if form.validate_on_submit():
+        user = User.query(User.email == form.email.data).get()
+        if user is not None:
+            if user.check_password(form.password.data):
+                login_user(user, remember=True)
+                return '', 204 # No Content
+            else:
+                return 'email already in use, wrong password', 401
+        user = User()
+        user.token = uuid.uuid4().hex
+        user.email = form.email.data
+        user.password = User.hash_password(form.password.data)
+        user.put()
+        login_user(user)
+        return '', 201 # Created
+    else:
+        resp = jsonify(form.errors)
+        resp.status = "401"
+        return resp
+
 
 def home():
     return render_template('index.html')
@@ -54,9 +103,7 @@ def list_documents():
             "created": time.mktime(doc.created_at.timetuple()),
             "updated": time.mktime(doc.updated_at.timetuple())
             })
-    resp = make_response(json.dumps(docs, indent=2))
-    resp.mimetype = 'application/json'
-    return resp
+    return jsonify(docs)
 
 def create_document():
     #TODO sanitize & validate payload
@@ -72,7 +119,7 @@ def create_document():
     timestamp = data.get('created')
     if timestamp is not None:
         doc.created_at = datetime.fromtimestamp(timestamp)
-    doc.title = data.get('title', '') 
+    doc.title = data.get('title', 'Untitled') 
     doc.text = data.get('text', '')
     doc.cursor = data.get('cursor', 0)
     doc.hidecontext = data.get('hidecontext', False)
@@ -95,9 +142,7 @@ def edit_document(doc_id):
 
 def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
-    resp = make_response(doc.to_json())
-    resp.mimetype = 'application/json'
-    return resp
+    return jsonify(doc.to_dict())
 
 
 
