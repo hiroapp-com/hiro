@@ -18,8 +18,7 @@ from datetime import datetime
 from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 from google.appengine.ext import ndb
 
-from flask import request, render_template, make_response
-
+from flask import request, session, render_template, redirect, url_for, jsonify
 from flask_cache import Cache
 
 from application import app
@@ -54,9 +53,7 @@ def list_documents():
             "created": time.mktime(doc.created_at.timetuple()),
             "updated": time.mktime(doc.updated_at.timetuple())
             })
-    resp = make_response(json.dumps(docs, indent=2))
-    resp.mimetype = 'application/json'
-    return resp
+    return jsonify(docs)
 
 def create_document():
     #TODO sanitize & validate payload
@@ -95,9 +92,7 @@ def edit_document(doc_id):
 
 def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
-    resp = make_response(doc.to_json())
-    resp.mimetype = 'application/json'
-    return resp
+    return jsonify(doc.to_dict())
 
 
 
