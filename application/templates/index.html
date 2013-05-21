@@ -78,7 +78,7 @@
 		<script type="text/javascript">
 
 			// Set user level, TODO Discuss how we hand this over from Django
-			WPCLib.sys.user.setStage(0);
+            WPCLib.sys.user.setStage({% if current_user.is_authenticated() %}1{% else %}0{% endif %});
 			WPCLib.sys.init();
 
 			// fires on page load

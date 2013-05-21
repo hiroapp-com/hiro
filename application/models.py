@@ -1,5 +1,6 @@
 import time
-import json
+
+from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
 from flask.ext.login import UserMixin, AnonymousUser
 
@@ -9,6 +10,13 @@ class User(UserMixin, ndb.Model):
     email = ndb.StringProperty()
     password = ndb.StringProperty()
     signup_at =  ndb.DateTimeProperty(auto_now_add=True)
+
+    @classmethod
+    def hash_password(cls, pwd):
+        return pbkdf2_sha512.encrypt(pwd)
+
+    def check_password(self, candidate):
+        return pbkdf2_sha512.verify(candidate, self.password)
 
     def get_id(self):
         return unicode(self.key.id())
