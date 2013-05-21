@@ -193,14 +193,23 @@ var WPCLib = {
 			moveup: function(docid) {
 				// moves a specific doc to the top of the list based on it's id
 
-				// Move to top of internal array and draw DOM parts again
+				// Find and remove itenm from list
 				var act = WPCLib.folio.docs.active;
+				var obj = {};
 				for (var i=0,l=act.length;i<l;i++) {
 					if (act[i].id != docid) continue;
-					act.unshift(act[i]);
-					act.splice(i+1,1);
-					WPCLib.folio.docs.update();					
+					obj = act[i];
+					act.splice(i,1);
+					break;					
 				}
+
+				// Sort array by last edit
+				act.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
+
+				// Insert item at top of array and redraw list
+				act.unshift(obj);
+				WPCLib.folio.docs.update();				
+				console.log('we got a winner',obj);
 			}
 		},
 
@@ -318,7 +327,7 @@ var WPCLib = {
 
 			// If we already know the title, we shorten the waiting time
 			if (title) document.getElementById(this.pageTitle).value = title;	
-			document.getElementById(this.contentId).value = 'Loading...'
+			document.getElementById(WPCLib.context.statusId).value = 'Loading...'
 			WPCLib.ui.menuHide();
 
 			// Load data onto canvas
@@ -452,7 +461,7 @@ var WPCLib = {
 		_cleanwelcome: function() {
 			// Remove welcome teaser etc which was loaded if document was blank
 			var el = document.getElementById(WPCLib.canvas.contentId);		
-			WPCLib.ui.fade(document.getElementById('nicequote'),-1,1000);
+			WPCLib.ui.fade(document.getElementById('nicequote'),-1,500);
 			WPCLib.util.releaseEvent(el,'keydown',WPCLib.canvas._cleanwelcome);
 			WPCLib.canvas.quoteShown = false;
 		},
