@@ -69,7 +69,7 @@ var WPCLib = {
 					for (var i=0,l=act.length;i<l;i++) {
 						var d = document.createElement('a');
 						var docid = act[i].id;
-						var title = act[i].title;
+						var title = act[i].title || 'Untitled';
 						d.className = 'document';
 						d.setAttribute('href','/docs/'+docid);	
 						d.setAttribute('id','doc_'+docid);
@@ -80,7 +80,7 @@ var WPCLib = {
 						t.innerHTML = title;
 
 						var stats = document.createElement('small');
-						stats.appendChild(document.createTextNode(WPCLib.util.humanizeTimestamp(act[i].created) + " ago"))			
+						stats.appendChild(document.createTextNode(WPCLib.util.humanizeTimestamp(act[i].updated) + " ago"))			
 
 						d.appendChild(t);
 						d.appendChild(stats);	
@@ -149,15 +149,8 @@ var WPCLib = {
 					var doc = document.getElementById('doc_creating');
 					console.log('known user, setting up remote store ');
 
-					// /docs/ expects a payload, so we build one here
-					// TODO Flo pls remove this and allow requests for doc id without existing title/text
-					var file = {};
-					file.title = '';
-					file.text = '';
-					file.hidecontext = WPCLib.context.show;
-					file.cursor = 0;
-
-					// Only submit this timestamp
+					// Submit timestamp for new doc id
+					var file = {};				
 					file.created = WPCLib.util.now();				
 
 					// Get doc id from server
@@ -209,6 +202,8 @@ var WPCLib = {
 		quoteId: 'nicequote',
 		quoteShown: false,
 		text: '',
+		title: '',
+		tempTitle: '',
 		wordcount: 0,
 		linecount: 0,
 		welcomeText: 'Just write',
@@ -230,14 +225,23 @@ var WPCLib = {
 
 			// Document events
 			var el = document.getElementById(this.contentId);			
-			var p = document.getElementById(this.canvasId);								
+			var p = document.getElementById(this.canvasId);
+			var t = document.getElementById(this.pageTitle);								
 			WPCLib.util.registerEvent(p,'mouseup',this.textclick);
 			WPCLib.util.registerEvent(el,'keydown',this.keyhandler);	
 			WPCLib.util.registerEvent(el,'keyup',this.update);
 			WPCLib.util.registerEvent(el,'change',this._resize);	
 			WPCLib.util.registerEvent(el,'cut',this._delayedresize);	
 			WPCLib.util.registerEvent(el,'paste',this._delayedresize);
-			WPCLib.util.registerEvent(el,'drop',this._delayedresize);		
+			WPCLib.util.registerEvent(el,'drop',this._delayedresize);
+
+
+			// Title events	
+			WPCLib.util.registerEvent(t,'change',this.updatefolio);
+			WPCLib.util.registerEvent(t,'keyup',this.updatefolio);
+			WPCLib.util.registerEvent(t,'mouseover', this._showtitletip);
+			WPCLib.util.registerEvent(t,'mouseout', this._hidetitletip);
+			WPCLib.util.registerEvent(t,'click', this._clicktitletip);			
 		},	
 
 
@@ -249,7 +253,7 @@ var WPCLib = {
 			// Build the JSON object from th evarious pieces
 			var file = {};
 			file.id = this.docid;
-			file.title = document.getElementById(this.pageTitle).value;
+			file.title = this.title;
 			file.text = this.text;
 			file.created = this.created;
 			file.last_updated = this.lastUpdated;
@@ -288,6 +292,7 @@ var WPCLib = {
 			// If we already know the title, we shorten the waiting time
 			if (title) document.getElementById(this.pageTitle).value = title;	
 			document.getElementById(this.contentId).value = 'Loading...'
+			WPCLib.ui.menuHide();
 
 			// Load data onto canvas
 			var file = 'docs/'+docid;
@@ -301,14 +306,25 @@ var WPCLib = {
 					WPCLib.canvas.lastUpdated = data.last_updated;			
 
 					// Show data on canvas
-					if (WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();
-					WPCLib.ui.menuHide();						
+					if (data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
 					if (!title) document.getElementById(that.pageTitle).value = data.title;
 					document.getElementById(that.contentId).value = data.text;
 					that.text = data.text;
 					that._setposition(data.cursor);
-					WPCLib.canvas._removeblank();	
+					console.log('title length ',data.title.length);
 
+					// If body is empty show a quote
+					if (data.text.length == 0 || !data.text) {
+						WPCLib.ui.fade(document.getElementById(that.quoteId),+1,300);	
+					} else {
+						WPCLib.canvas._removeblank();
+					}	
+
+					// Show default title if none was saved	
+					if (!data.title || data.title.length==0) {
+						document.getElementById(that.pageTitle).value = 'Untitled';
+					}
+						
 					// Load links
 					WPCLib.context.sticky = data.links.sticky || [];
 					WPCLib.context.links = data.links.normal || [];
@@ -345,11 +361,7 @@ var WPCLib = {
 			// Create a new document (canvas part)
 
 			// See if the current document was changed in any way (Should we even allow the creation of new documents of the current one is blank?)
-			if (
-					!this.saved && 
-					document.getElementById(this.contentId).value && 
-					document.getElementById(this.pageTitle).value != this.defaultTitle
-				) this.savedoc();	
+			if (!this.saved) this.savedoc();	
 
 			// Set up blank document	
 			var title = document.getElementById(this.pageTitle);
@@ -359,7 +371,7 @@ var WPCLib = {
 			document.getElementById(this.quoteId).style.display = 'block';
 			WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);			
 			this.quoteShown = true;
-			if (WPCLib.context.show == false) WPCLib.context.switchview();
+			// if (WPCLib.context.show == false) WPCLib.context.switchview();
 			document.getElementById(WPCLib.context.resultsId).innerHTML = '';
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready to inspire';
 			this.created = WPCLib.util.now();
@@ -367,37 +379,35 @@ var WPCLib = {
 			// Empty the link lists
 			WPCLib.context.wipe();	
 
-
-			// Attach title event handlers, very crude atm but will refine if behaviour is liked by users
-			WPCLib.util.registerEvent(title,'mouseover', this._showtitletip);
-			WPCLib.util.registerEvent(title,'mouseout', this._hidetitletip);
-			WPCLib.util.registerEvent(title,'click', function() {
-				if (title.value == WPCLib.canvas.titleTip) {
-					title.value = '';	
-					WPCLib.canvas._removetitletips(title);						
-				};
-			})
-
 			WPCLib.util.registerEvent(content,'keydown',this._cleanwelcome);		
 			document.getElementById(WPCLib.canvas.contentId).focus();		
 		},
-		_showtitletip: function() {
+
+		_showtitletip: function() {									
 			var title = document.getElementById(WPCLib.canvas.pageTitle);	
-			var tip = WPCLib.canvas.titleTip;		
-			title.value = tip;			
-		},	
+			var tip = WPCLib.canvas.titleTip;
+			WPCLib.canvas.tempTitle = title.value;			
+			if (!title.value || title.value.length == 0 || title.value == "Untitled") title.value = tip;					
+		},
+
 		_hidetitletip: function() {
 			var title = document.getElementById(WPCLib.canvas.pageTitle);	
 			var tip = WPCLib.canvas.titleTip;	
 			if (title.value==tip) {
-				title.value = WPCLib.canvas.defaultTitle;
+				title.value = WPCLib.canvas.tempTitle;
 			}
 		},
-		_removetitletips: function(title) {
-			if (!title) var title = document.getElementById(WPCLib.canvas.pageTitle);
-			WPCLib.util.releaseEvent(title,'mouseover', WPCLib.canvas._showtitletip);
-			WPCLib.util.releaseEvent(title,'mouseout', WPCLib.canvas._hidetitletip);
+
+		_clicktitletip: function() {
+			var title = document.getElementById(WPCLib.canvas.pageTitle);
+			if (title.value==WPCLib.canvas.titleTip) title.value = '';	
 		},	
+
+		updatefolio: function() {
+			WPCLib.canvas.title = this.value;
+			var el = document.getElementById('doc_'+WPCLib.canvas.docid);
+			el.firstChild.innerHTML = this.value;
+		},
 
 		_cleanwelcome: function() {
 			// Remove welcome teaser etc which was loaded if document was blank
@@ -409,7 +419,6 @@ var WPCLib = {
 
 		_removeblank: function() {
 			// Make sure we remove all blank stuff from the canvas
-			this._removetitletips();
 			this._cleanwelcome();
 		},
 
