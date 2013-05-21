@@ -149,7 +149,7 @@ var WPCLib = {
 
 					// Set params for local doc
 					WPCLib.canvas.docid = 'localdoc';
-					WPCLib.folio.docs.active[0].id = 'doc_localdoc';
+					WPCLib.folio.docs.active[0].id = 'localdoc';
 
 					// Save document & cleanup
 					doc.firstChild.innerHTML = 'New Document';
@@ -320,8 +320,11 @@ var WPCLib = {
 					if (data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
 					if (!title) document.getElementById(that.pageTitle).value = data.title;
 					document.getElementById(that.contentId).value = data.text;
-					that.text = data.text;
 					that._setposition(data.cursor);
+
+					// Set internal values
+					that.text = data.text;
+					that.title = data.title;					
 
 					// If body is empty show a quote
 					if (data.text.length == 0 || !data.text) {
@@ -336,10 +339,11 @@ var WPCLib = {
 					}
 						
 					// Load links
+					WPCLib.context.wipe();
 					WPCLib.context.sticky = data.links.sticky || [];
 					WPCLib.context.links = data.links.normal || [];
 					WPCLib.context.blacklist = data.links.blacklist || [];	
-					if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();
+					WPCLib.context.renderresults();
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'All loaded, keep going.';						
 				}
 			});						
@@ -356,12 +360,13 @@ var WPCLib = {
 			WPCLib.context.sticky = data.links.sticky || [];
 			WPCLib.context.links = data.links.normal || [];
 			WPCLib.context.blacklist = data.links.blacklist || [];	
-			if (data.links.sticky || data.links.normal) WPCLib.context.renderresults();
+			WPCLib.context.renderresults();
 			if (WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Welcome back!';							
 
 			// Set internal values	
 			this.text = data.text;	
+			this.title = data.title;
 			this.docid = data.id;
 			this.created = data.created;
 			this.lastUpdated = data.last_updated;
