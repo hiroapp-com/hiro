@@ -50,7 +50,7 @@ def login():
             else:
                 return "Could not login. Maybe account was suspended?", 401
         else:
-            resp = jsonify(password="Wrong Password")
+            resp = jsonify(password=["Wrong Password"])
             resp.status = "401"
             return resp
     else:
@@ -67,7 +67,7 @@ def register():
                 login_user(user, remember=True)
                 return '', 204 # No Content
             else:
-                resp = jsonify(email="E-Mail already in registered")
+                resp = jsonify(email=["E-Mail already registered"])
                 resp.status = "401"
                 return resp
         user = User()
