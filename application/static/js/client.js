@@ -97,6 +97,7 @@ var WPCLib = {
 				// Attach events to doc links
 				WPCLib.util.registerEvent(document.getElementById('doc_'+docid),'click', function() {
 					WPCLib.canvas.loaddoc(docid, title);
+					WPCLib.folio.docs.moveup(docid);
 				});
 			},
 
@@ -185,6 +186,19 @@ var WPCLib = {
 
 				// Get ready for the creation of new documents
 				this.creatingDoc = false;
+			},
+
+			moveup: function(docid) {
+				// moves a specific doc to the top of the list based on it's id
+
+				// Move to top of internal array and draw DOM parts again
+				var act = WPCLib.folio.docs.active;
+				for (var i=0,l=act.length;i<l;i++) {
+					if (act[i].id != docid) continue;
+					act.unshift(act[i]);
+					act.splice(i+1,1);
+					WPCLib.folio.docs.update();					
+				}
 			}
 		},
 
@@ -324,7 +338,9 @@ var WPCLib = {
 
 					// Set internal values
 					that.text = data.text;
-					that.title = data.title;					
+					that.title = data.title;	
+					
+
 
 					// If body is empty show a quote
 					if (data.text.length == 0 || !data.text) {
