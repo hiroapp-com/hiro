@@ -116,6 +116,13 @@ var WPCLib = {
 					WPCLib.sys.user.upgrade(2);
 					return;					
 				}
+
+				// Add a doc placeholder to the internal folio array
+				var doc = {};
+				doc.title = 'Untitled';
+				doc.created = WPCLib.util.now();
+				this.active.splice(0,0,doc);
+
 				// Render a placeholder until we get the OK from the server
 				var ph = document.createElement('a');
 				ph.className = 'document';
@@ -142,6 +149,7 @@ var WPCLib = {
 
 					// Set params for local doc
 					WPCLib.canvas.docid = 'localdoc';
+					WPCLib.folio.docs.active[0].id = 'doc_localdoc';
 
 					// Save document & cleanup
 					doc.firstChild.innerHTML = 'New Document';
@@ -169,16 +177,10 @@ var WPCLib = {
 
 							// Save document & cleanup
 							doc.firstChild.innerHTML = 'New Document';
-							doc.id = 'doc_'+data;		                    
+							doc.id = 'doc_'+data;
+							WPCLib.folio.docs.active[0].id = data;									                    
 						}
-					});
-
-
-					WPCLib.canvas.docid = 'localdoc';
-
-					// Save document & cleanup
-					doc.firstChild.innerHTML = 'New Document';
-					doc.id = 'doc_localdoc';				
+					});				
 				}
 
 				// Get ready for the creation of new documents
