@@ -816,6 +816,25 @@ body#settingsPage a.close:hover {
   color: #333;
 }
 
+#s_signin .error, #s_signup .error {
+  float: left;
+  display: inline-block;
+  padding-top: 4px;
+  font-size: 14px;
+  color: red;  
+  position: absolute;
+  margin-top: -41px;
+  right: 188px;  
+}
+
+#signuperror {
+  float: left;
+  display: inline-block;
+  color: red;
+  font-size: 14px;
+  padding-top: 4px;
+}
+
 #s_login .divider {
   border-bottom: 1px solid #ccc;
   margin-top: 25px;

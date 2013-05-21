@@ -11,10 +11,11 @@
 	</head>
 	<body>
 
-		<!-- Show this if we have no session or previous cookie -->
-		<div id="landing">
-			<iframe src="/landing/" scrollbar="no"></iframe>
-		</div>	
+		{% if not current_user.is_authenticated() %}
+			<div id="landing">
+				<iframe src="/landing/" scrollbar="no"></iframe>
+			</div>	
+		{% endif %}	
 
 		<div class="menu" onmouseover="WPCLib.ui.menuSlide(1);" id="folio">
 			<div class="menuheader">
@@ -69,7 +70,7 @@
 
 		<div id="modalShield" onclick="WPCLib.ui.hideDialog();">
 			<div id="dialogWrapper">
-				<iframe></iframe>
+				<iframe id="dialog"></iframe>
 			</div>	
 		</div>	
 		

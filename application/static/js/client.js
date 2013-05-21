@@ -982,6 +982,47 @@ var WPCLib = {
 			id: '',
 			// levels: 0 = anon, 1 = free, 2 = paid
 			level: 0,
+			dialog: window.frames['dialog'],
+
+			register: function() { 
+				// Register a new user (or log in if credentials are from know user)
+				var button = dialog.document.getElementById('signupbutton');
+				var val = dialog.document.getElementById('signupform').getElementsByTagName('input');
+				var error = dialog.document.getElementById('signuperror');
+				var payload = {
+					email: val[0].value,
+					password: val[1].value
+				};
+				button.innerHTML ="Signing Up...";
+
+				// Clear any old error messages
+				val[0].nextSibling.innerHTML = '';
+				val[1].nextSibling.innerHTML = '';				
+				error.innerHTML = '';
+
+				// Send request to backend
+				$.ajax({
+					url: "/register",
+	                type: "POST",
+	                contentType: "application/x-www-form-urlencoded",
+	                data: payload,
+					success: function(data) {
+	                    console.log('woohoo, registered');							                    
+					},
+					error: function(xhr) {
+	                    button.innerHTML = "Create Account";						
+						if (xhr.status==500) {
+							error.innerHTML = "Something went wrong, please try again.";
+							return;
+						}
+						var et = JSON.parse(xhr.responseText); 
+						console.log(val[0].parentNode, val[0].nextSibling);
+	                    if (et.email) val[0].nextSibling.innerHTML = et.email;
+	                    if (et.password) val[1].nextSibling.innerHTML = et.password;                   		                    
+						                    
+					}										
+				});	
+			},
 
 			setStage: function(level) {
 				// Show / hide features based on user level, it's OK if some of that can be tweaked via js for now
