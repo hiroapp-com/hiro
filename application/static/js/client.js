@@ -61,9 +61,9 @@ var WPCLib = {
 
 			update: function() {
 				// update the document list from the active / archive arrays
-				// TODOs: Add timeout to update document age, implement for archive, create new doc if list is empty
-				var act = this.active;
-				var docs = document.getElementById(this.doclistId);	
+				// We use absolute pointers as this can also be called as event handler
+				var act = WPCLib.folio.docs.active;
+				var docs = document.getElementById(WPCLib.folio.docs.doclistId);	
 				docs.innerHTML = '';			
 				for (i=0,l=act.length;i<l;i++) {		
 					for (var i=0,l=act.length;i<l;i++) {
@@ -89,6 +89,8 @@ var WPCLib = {
 						WPCLib.folio.docs._events(docid,title);						
 					}						    
 				}
+				// Recursively call this to update the last edit times every minute
+				setTimeout(WPCLib.folio.docs.update,60000);
 			},
 
 			_events: function(docid,title) {
@@ -237,11 +239,14 @@ var WPCLib = {
 
 
 			// Title events	
-			WPCLib.util.registerEvent(t,'change',this.updatefolio);
-			WPCLib.util.registerEvent(t,'keyup',this.updatefolio);
+			WPCLib.util.registerEvent(t,'change',this.evaluatetitle);
+			WPCLib.util.registerEvent(t,'keyup',this.evaluatetitle);
 			WPCLib.util.registerEvent(t,'mouseover', this._showtitletip);
 			WPCLib.util.registerEvent(t,'mouseout', this._hidetitletip);
-			WPCLib.util.registerEvent(t,'click', this._clicktitletip);			
+			WPCLib.util.registerEvent(t,'click', this._clicktitletip);	
+			// We save the new title in the folio array but need to update the clickhandler without duplicating them
+			WPCLib.util.registerEvent(t,'blur', WPCLib.folio.docs.update);	
+			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);				
 		},	
 
 
@@ -249,6 +254,7 @@ var WPCLib = {
 			// Save the currently open document
 			// For now we only say a doc is updated once it's saved
 			this.lastUpdated = WPCLib.util.now();
+
 
 			// Build the JSON object from th evarious pieces
 			var file = {};
@@ -264,7 +270,7 @@ var WPCLib = {
 			file.links.normal = WPCLib.context.links;
 			file.links.blacklist = WPCLib.context.blacklist;			
 
-			// TODO: Wire up backend saving
+			// backend saving, locally or remote
 			if (this.docid!='doc_localdoc' && WPCLib.sys.user.level > 0) {
 				console.log('saving remotely: ', JSON.stringify(file));				
 				$.ajax({
@@ -281,7 +287,10 @@ var WPCLib = {
 				console.log('saving locally: ', file);					
 				localStorage.setItem("WPCdoc", JSON.stringify(file));
 				WPCLib.canvas.saved = true;					
-			}						
+			}	
+			// Update last edited counter in folio
+			WPCLib.folio.docs.active[0].updated = WPCLib.util.now();
+			WPCLib.folio.docs.update();					
 		},		
 
 		loaddoc: function(docid, title) {
@@ -311,7 +320,6 @@ var WPCLib = {
 					document.getElementById(that.contentId).value = data.text;
 					that.text = data.text;
 					that._setposition(data.cursor);
-					console.log('title length ',data.title.length);
 
 					// If body is empty show a quote
 					if (data.text.length == 0 || !data.text) {
@@ -387,7 +395,7 @@ var WPCLib = {
 			var title = document.getElementById(WPCLib.canvas.pageTitle);	
 			var tip = WPCLib.canvas.titleTip;
 			WPCLib.canvas.tempTitle = title.value;			
-			if (!title.value || title.value.length == 0 || title.value == "Untitled") title.value = tip;					
+			if (!title.value || title.value.length == 0 || title.value == "Untitled" || title.value == WPCLib.canvas.defaultTitle) title.value = tip;					
 		},
 
 		_hidetitletip: function() {
@@ -403,10 +411,17 @@ var WPCLib = {
 			if (title.value==WPCLib.canvas.titleTip) title.value = '';	
 		},	
 
-		updatefolio: function() {
+		evaluatetitle: function() {
+			// When the title changes we update the folio and initiate save
+			WPCLib.folio.docs.active[0].title = this.value;
+
+			// Visual updates
 			WPCLib.canvas.title = this.value;
 			var el = document.getElementById('doc_'+WPCLib.canvas.docid);
 			el.firstChild.innerHTML = this.value;
+
+			// Initiate save & search
+			WPCLib.canvas._settypingtimer();	
 		},
 
 		_cleanwelcome: function() {
@@ -516,7 +531,7 @@ var WPCLib = {
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {
 				WPCLib.canvas.savedoc();
-				WPCLib.context.analyze(WPCLib.canvas.text);					
+				WPCLib.context.analyze(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
 			},1000);
 		},	
