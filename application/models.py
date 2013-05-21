@@ -1,13 +1,21 @@
 import time
 import json
 from google.appengine.ext import ndb
+from flask.ext.login import UserMixin, AnonymousUser
 
 
-class User(ndb.Model):
+class User(UserMixin, ndb.Model):
     token = ndb.StringProperty()
     email = ndb.StringProperty()
     password = ndb.StringProperty()
-    signup_at =  ndb.DateTimeProperty()
+    signup_at =  ndb.DateTimeProperty(auto_now_add=True)
+
+    def get_id(self):
+        return unicode(self.key.id())
+
+
+class Anonymous(AnonymousUser):
+    name = u"Anonymous"
 
      
 class Context(ndb.Expando):
@@ -26,9 +34,8 @@ class Document(ndb.Model):
     blacklist = ndb.StructuredProperty(Context, repeated=True)
     cached = ndb.StructuredProperty(Context, repeated=True)
 
-
-    def to_json(self):
-        result = {
+    def to_dict(self):
+        return {
                 "id": self.key.id(),
                 "title": self.title,
                 "text": self.text,
@@ -38,4 +45,3 @@ class Document(ndb.Model):
                 "hidecontext": self.hidecontext,
                 "links": []
                 }
-        return json.dumps(result, indent=2)
