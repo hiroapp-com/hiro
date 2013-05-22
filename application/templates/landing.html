@@ -9,7 +9,7 @@
 		<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
 	</head>
 	<body id="landingPage">
-		<h1>An Essential Writing App.</h1>
+		<h1>Hiro. An Essential Writing App.</h1>
 		<div class="teaser">
 			<div class="screen">
 				<div class="manage blurb">
@@ -27,7 +27,12 @@
 			</div>							
 		</div>
 		<div class="cto">
-			<a href="#" class="wpcbutton blue" onclick="window.parent.WPCLib.ui.fade(window.parent.document.getElementById('landing'),-1,150); window.parent.document.getElementById('pageContent').focus(); return false;">Start Writing ( It's Free! )</a>			
+			<a href="#" class="wpcbutton blue start" id="startwriting" onclick="window.parent.WPCLib.ui.fade(window.parent.document.getElementById('landing'),-1,150); window.parent.document.getElementById('pageContent').focus(); return false;">Start Writing ( It's Free! )</a><br />
+			or <a href="#" onclick="window.parent.WPCLib.ui.fade(window.parent.document.getElementById('landing'),-1,150);window.parent.WPCLib.folio.showSettings(); return false;" class="signin">sign-in</a>		
 		</div>	
+		<script type="text/javascript">
+			// Prevent keystrokes to save document and focus button
+			if (parent.document.getElementById('landing').style.display != 'none') document.getElementById('startwriting').focus();
+		</script>
 	</body>
 </html>

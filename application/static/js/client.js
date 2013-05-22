@@ -393,7 +393,7 @@ var WPCLib = {
 
 
 					// If body is empty show a quote
-					if (data.text.length == 0 || !data.text) {
+					if (!data.text || data.text.length == 0) {
 						WPCLib.ui.fade(document.getElementById(that.quoteId),+1,300);	
 					} else {
 						WPCLib.canvas._removeblank();
@@ -420,7 +420,12 @@ var WPCLib = {
 			document.getElementById(this.pageTitle).value = data.title;	
 			document.getElementById(this.contentId).value = data.text;
 			this._setposition(data.cursor);
-			WPCLib.canvas._removeblank();	
+			WPCLib.canvas._removeblank();
+
+			// Show default title if none was saved	
+			if (!data.title || data.title.length==0) {
+				document.getElementById(this.pageTitle).value = 'Untitled';
+			}				
 
 			// Load links
 			WPCLib.context.sticky = data.links.sticky || [];
@@ -663,6 +668,7 @@ var WPCLib = {
 
 		_setposition: function(pos) {
 			// Set the cursor to a specified position
+			if (!pos) var pos = 0;
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
         		el.focus();
@@ -944,6 +950,7 @@ var WPCLib = {
 			// allow this only once			
 			if (this.initCalled) return;
 			WPCLib.ui.resolveAnimFrameAPI();
+
 			// Add startup event listeners for old & modern browser
 			if (document.addEventListener) {
 				document.addEventListener( 'DOMContentLoaded', this._DOMContentLoadedCallback, false );
@@ -953,6 +960,7 @@ var WPCLib = {
 				document.attachEvent( 'onreadystatechange', this._onreadystatechangeCallback);
 				document.attachEvent( 'onload', this._loadCallback, false );
 			}
+
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {
 				WPCLib.canvas._init();
@@ -1262,6 +1270,7 @@ var WPCLib = {
 			}
 		},
 		stopEvent: function(e) {
+			if (!e) return;
 			if (e.preventDefault) {
 				e.preventDefault();
 			}

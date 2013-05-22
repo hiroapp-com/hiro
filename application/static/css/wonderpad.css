@@ -670,16 +670,30 @@ body#landingPage h1 {
 
 body#landingPage .cto {
   position: absolute;
-  bottom: 55px;
+  bottom: 38px;
   left: 0;
   right: 0;
   width: 100%;
 }
 
-body#landingPage .cto a {
+body#landingPage .cto {
+  font-size: 14px;
+  color: #999;
+}
+
+body#landingPage .cto a.start {
   padding: 12px 50px 12px 50px;
   display: inline-block;
   font-size: 20px;
+  outline: none;
+}
+
+body#landingPage .cto a.signin {
+  padding: 0;
+  font-size: 14px;
+  outline: none;
+  color: #666;
+  text-decoration: none;
 }
 
 body#landingPage .teaser {
