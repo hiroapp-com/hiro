@@ -1223,7 +1223,7 @@ var WPCLib = {
 			// Show a modal popup 
 			var s = document.getElementById(this.modalShieldId);
 			var d = document.getElementById(this.dialogWrapperId);
-			if (event) event.preventDefault();			
+			WPCLib.util.stopEvent(event);			
 
 			// spawn shield
 			s.style.display = 'block';
