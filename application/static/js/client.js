@@ -116,7 +116,7 @@ var WPCLib = {
 				if (this.creatingDoc == true) return;
 				this.creatingDoc = true;
 
-				if (WPCLib.sys.user.level == 0) {
+				if (WPCLib.sys.user.level == 0 && this.active.length!=0) {
 					WPCLib.sys.user.upgrade(1);
 					return;
 				}
