@@ -200,12 +200,15 @@ var WPCLib = {
 				// Moves a doc from localstorage to remote storage and clears localstorage
 				// Doublecheck here for future safety
 				if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
+					// Strip id from file to get new one from backend
+					var file = WPCLib.canvas.builddoc();
+					file.id = '';
 					// Get doc id from server
 					$.ajax({
 						url: "/docs/",
 		                type: "POST",
 		                contentType: "application/json; charset=UTF-8",
-		                data: JSON.stringify(WPCLib.canvas.builddoc()),
+		                data: JSON.stringify(file),
 						success: function(data) {
 		                    console.log("move local to backend with new id ", data);
 		                    // Delete local item
