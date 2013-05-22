@@ -114,7 +114,6 @@ var WPCLib = {
 
 				// Avoid creating multiple docs at once and check for user level
 				if (this.creatingDoc == true) return;
-				this.creatingDoc = true;
 
 				if (WPCLib.sys.user.level == 0 && this.active.length!=0) {
 					WPCLib.sys.user.upgrade(1);
@@ -124,6 +123,9 @@ var WPCLib = {
 					WPCLib.sys.user.upgrade(2);
 					return;					
 				}
+
+				// All good to go
+				this.creatingDoc = true;				
 
 				// Add a doc placeholder to the internal folio array
 				var doc = {};
