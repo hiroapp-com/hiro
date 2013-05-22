@@ -209,7 +209,6 @@ var WPCLib = {
 				// Insert item at top of array and redraw list
 				act.unshift(obj);
 				WPCLib.folio.docs.update();				
-				console.log('we got a winner',obj);
 			}
 		},
 
@@ -1016,13 +1015,51 @@ var WPCLib = {
 							return;
 						}
 						var et = JSON.parse(xhr.responseText); 
-						console.log(val[0].parentNode, val[0].nextSibling);
 	                    if (et.email) val[0].nextSibling.innerHTML = et.email;
 	                    if (et.password) val[1].nextSibling.innerHTML = et.password;                   		                    
 						                    
 					}										
 				});	
 			},
+
+			login: function() { 
+				// Register a new user (or log in if credentials are from know user)
+				var button = dialog.document.getElementById('loginbutton');
+				var val = dialog.document.getElementById('loginform').getElementsByTagName('input');
+				var error = dialog.document.getElementById('loginerror');
+				var payload = {
+					email: val[0].value,
+					password: val[1].value
+				};
+				button.innerHTML ="Logging in...";
+
+				// Clear any old error messages
+				val[0].nextSibling.innerHTML = '';
+				val[1].nextSibling.innerHTML = '';				
+				error.innerHTML = '';
+
+				// Send request to backend
+				$.ajax({
+					url: "/login",
+	                type: "POST",
+	                contentType: "application/x-www-form-urlencoded",
+	                data: payload,
+					success: function(data) {
+	                    console.log('woohoo, logged in');							                    
+					},
+					error: function(xhr) {
+	                    button.innerHTML = "Log-In";						
+						if (xhr.status==500) {
+							error.innerHTML = "Something went wrong, please try again.";
+							return;
+						}
+						var et = JSON.parse(xhr.responseText); 
+	                    if (et.email) val[0].nextSibling.innerHTML = et.email;
+	                    if (et.password) val[1].nextSibling.innerHTML = et.password;                   		                    
+						                    
+					}										
+				});	
+			},			
 
 			setStage: function(level) {
 				// Show / hide features based on user level, it's OK if some of that can be tweaked via js for now

@@ -25,11 +25,12 @@
 			<div id="s_signin" style="display:none;">
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Log-In With <b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
-				<form>
-					<input type="text" placeholder="E-Mail">
-					<input type="password" placeholder="Password">
+				<form id="loginform">
+					<input type="text" placeholder="E-Mail"><div class="error"></div>
+					<input type="password" placeholder="Password"><div class="error"></div>
 				</form>		
-				<a href="#" class="wpcbutton green" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Log-In</b></a>	
+				<a href="#" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login();">Log-In</b></a>	
+				<div id="loginerror"></div>				
 				<a href="#" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup'));">Create an account</a>					
 			</div>	
 		</div>
@@ -37,7 +38,7 @@
 
 		<div id="s_settings" style="display:none;">
 
-			<div id="s_account">
+			<div id="s_account" style="display:none;">
 				<div class="header">
 					<div class="active">Your Account</div>
 					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));">Plans &amp; Payment</a>

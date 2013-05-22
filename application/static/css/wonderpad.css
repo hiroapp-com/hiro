@@ -827,7 +827,7 @@ body#settingsPage a.close:hover {
   right: 188px;  
 }
 
-#signuperror {
+#signuperror, #loginerror {
   float: left;
   display: inline-block;
   color: red;
