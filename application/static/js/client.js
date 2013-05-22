@@ -41,7 +41,12 @@ var WPCLib = {
 					if (data.active) { f.active = data.active } else { f.newdoc(); };
 					f.archived = data.archived;						
 					f.update();
-					WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);			
+
+					// load top doc if not already on canvas, currently this should only be the 
+					// case if a user logs when sitting in front of an empty document
+					if (data.active[0].id != WPCLib.canvas.docid) {
+						WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);
+					}			
 				});
 			},
 
@@ -146,7 +151,8 @@ var WPCLib = {
 				WPCLib.ui.menuHide();
 
 				// Get/Set ID of new document
-				if (WPCLib.sys.user.level==0||!WPCLib.sys.user.level) {
+				if ( WPCLib.sys.user.level==0) {
+					// Anon user doc gets stored locally
 					var doc = document.getElementById('doc_creating');
 					console.log('unknown user, setting up localstore ');
 
@@ -188,6 +194,31 @@ var WPCLib = {
 
 				// Get ready for the creation of new documents
 				this.creatingDoc = false;
+			},
+
+			movetoremote: function() {
+				// Moves a doc from localstorage to remote storage and clears localstorage
+				// Doublecheck here for future safety
+				if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
+					// Get doc id from server
+					$.ajax({
+						url: "/docs/",
+		                type: "POST",
+		                contentType: "application/json; charset=UTF-8",
+		                data: JSON.stringify(WPCLib.canvas.builddoc()),
+						success: function(data) {
+		                    console.log("move local to backend with new id ", data);
+		                    // Delete local item
+		                    localStorage.removeItem('WPCdoc')
+
+							// Set new id for former local doc
+							WPCLib.canvas.docid = data;
+
+							// Get updated file list
+							WPCLib.folio.docs.loaddocs();								                    
+						}
+					});
+				}
 			},
 
 			moveup: function(docid) {
@@ -275,13 +306,8 @@ var WPCLib = {
 			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);				
 		},	
 
-
-		savedoc: function() {
-			// Save the currently open document
-			// For now we only say a doc is updated once it's saved
-			this.lastUpdated = WPCLib.util.now();
-
-
+		builddoc: function() {
+			// Collects doc properties from across the client lib and returns object
 			// Build the JSON object from th evarious pieces
 			var file = {};
 			file.id = this.docid;
@@ -294,10 +320,19 @@ var WPCLib = {
 			file.links = {};
 			file.links.sticky = WPCLib.context.sticky;
 			file.links.normal = WPCLib.context.links;
-			file.links.blacklist = WPCLib.context.blacklist;			
+			file.links.blacklist = WPCLib.context.blacklist;
+			return file;			
+		},
+
+		savedoc: function() {
+			// Save the currently open document
+			// For now we only say a doc is updated once it's saved
+			this.lastUpdated = WPCLib.util.now();
+
+			var file = this.builddoc();			
 
 			// backend saving, locally or remote
-			if (this.docid!='doc_localdoc' && WPCLib.sys.user.level > 0) {
+			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
 				console.log('saving remotely: ', JSON.stringify(file));				
 				$.ajax({
 					url: "/docs/"+this.docid,
@@ -1006,7 +1041,19 @@ var WPCLib = {
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
 					success: function(data) {
-	                    console.log('woohoo, registered');							                    
+						// On registration switch to userlevel 1 
+						// TODO Bruno: Get flo to return user level in register response 
+						//             if known user is using register form to log in
+						// TODO Flo: Return if user is registering or logging anyways, as we need to load doclist in that case
+	                    WPCLib.sys.user.setStage(1);
+
+	                    // Move any local docs to backend
+	                    if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
+	                    	WPCLib.folio.docs.movetoremote();
+	                    }
+
+	                    // Hide dialog
+	                    WPCLib.ui.hideDialog();							                    
 					},
 					error: function(xhr) {
 	                    button.innerHTML = "Create Account";						
@@ -1045,7 +1092,21 @@ var WPCLib = {
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
 					success: function(data) {
-	                    console.log('woohoo, logged in');							                    
+						// All that needs to be done at this point
+						// TODO Get user level from flo in response
+	                    WPCLib.sys.user.setStage(1);
+
+	                    // Check for and move any saved local docs to backend
+	                    if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
+	                    	WPCLib.folio.docs.movetoremote();
+	                    } else {
+	                    	// We assume that it's not possible that a previously registered user has no local docs stored
+	                    	// TODO: Make sure this gets taken care of during registration
+							WPCLib.docs.loaddocs();	                    	
+	                    }
+
+	                    // Hide dialog
+	                    WPCLib.ui.hideDialog();								                    
 					},
 					error: function(xhr) {
 	                    button.innerHTML = "Log-In";						
@@ -1059,7 +1120,19 @@ var WPCLib = {
 						                    
 					}										
 				});	
-			},			
+			},		
+
+			logout: function() {
+				// Simply log out user and reload window
+				$.ajax({
+					url: "/logout",
+	                type: "POST",
+					success: function(data) {
+	                    location.reload();							                    
+					}									
+				});				
+
+			},	
 
 			setStage: function(level) {
 				// Show / hide features based on user level, it's OK if some of that can be tweaked via js for now
