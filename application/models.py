@@ -10,6 +10,7 @@ class User(UserMixin, ndb.Model):
     email = ndb.StringProperty()
     password = ndb.StringProperty()
     signup_at =  ndb.DateTimeProperty(auto_now_add=True)
+    facebook_uid = ndb.StringProperty()
 
     @classmethod
     def hash_password(cls, pwd):
