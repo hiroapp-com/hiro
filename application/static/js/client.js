@@ -370,7 +370,7 @@ var WPCLib = {
 			console.log('loading doc id: ', docid);
 
 			// If we already know the title, we shorten the waiting time
-			if (title) document.getElementById(this.pageTitle).value = title;	
+			if (title) document.getElementById(this.pageTitle).value = document.title = title;	
 			document.getElementById(WPCLib.context.statusId).value = 'Loading...'
 			WPCLib.ui.menuHide();
 
@@ -387,7 +387,7 @@ var WPCLib = {
 
 					// Show data on canvas
 					if (data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
-					if (!title) document.getElementById(that.pageTitle).value = data.title;
+					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title;
 					document.getElementById(that.contentId).value = data.text;
 					that._setposition(data.cursor);
 
@@ -422,14 +422,14 @@ var WPCLib = {
 
 		loadlocal: function(data) {
 			// Loading a local document on the canvas
-			document.getElementById(this.pageTitle).value = data.title;	
+			document.getElementById(this.pageTitle).value = document.title = data.title;	
 			document.getElementById(this.contentId).value = data.text;
 			this._setposition(data.cursor);
 			WPCLib.canvas._removeblank();
 
 			// Show default title if none was saved	
 			if (!data.title || data.title.length==0) {
-				document.getElementById(this.pageTitle).value = 'Untitled';
+				document.getElementById(this.pageTitle).value = document.title ='Untitled';
 			}				
 
 			// Load links
@@ -499,9 +499,8 @@ var WPCLib = {
 			WPCLib.folio.docs.active[0].title = this.value;
 
 			// Visual updates
-			WPCLib.canvas.title = this.value;
-			var el = document.getElementById('doc_'+WPCLib.canvas.docid);
-			el.firstChild.innerHTML = this.value;
+			var el = document.getElementById('doc_'+WPCLib.canvas.docid);			
+			WPCLib.canvas.title = el.firstChild.innerHTML = document.title = this.value;
 
 			// Initiate save & search
 			WPCLib.canvas._settypingtimer();	
@@ -969,7 +968,6 @@ var WPCLib = {
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {
 				WPCLib.canvas._init();
-				console.log('page started for user ' + WPCLib.sys.user.id);
 				// Load settings into dialog
 				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);
 			});
@@ -1120,7 +1118,7 @@ var WPCLib = {
 	                    } else {
 	                    	// We assume that it's not possible that a previously registered user has no local docs stored
 	                    	// TODO: Make sure this gets taken care of during registration
-							WPCLib.docs.loaddocs();	                    	
+							WPCLib.folio.docs.loaddocs();	                    	
 	                    }
 
 	                    // Hide dialog
