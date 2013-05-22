@@ -25,11 +25,18 @@ class User(UserMixin, ndb.Model):
 class Anonymous(AnonymousUser):
     name = u"Anonymous"
 
+class Link(ndb.Model):
+    url = ndb.StringProperty(required=True)
+    title = ndb.StringProperty()
+    description = ndb.StringProperty()
+
+    def to_dict(self):
+        return {
+                'url': self.url,
+                'title': self.title,
+                'description': self.description
+                }
      
-class Context(ndb.Expando):
-    type = ndb.StringProperty(required=True) # e.g. "link"
-    hash = ndb.StringProperty(required=True) # used for blacklist filtering
-    
 
 class Document(ndb.Model):
     title = ndb.StringProperty()
@@ -38,9 +45,12 @@ class Document(ndb.Model):
     hidecontext = ndb.BooleanProperty()
     created_at = ndb.DateTimeProperty(auto_now_add=True)
     updated_at = ndb.DateTimeProperty(auto_now=True)
-    sticky = ndb.StructuredProperty(Context, repeated=True)
-    blacklist = ndb.StructuredProperty(Context, repeated=True)
-    cached = ndb.StructuredProperty(Context, repeated=True)
+
+    # contextual links
+    sticky = ndb.StructuredProperty(Link, repeated=True)
+    blacklist = ndb.StructuredProperty(Link, repeated=True)
+    cached_ser = ndb.StructuredProperty(Link, repeated=True)
+    
 
     def to_dict(self):
         return {
@@ -51,5 +61,9 @@ class Document(ndb.Model):
                 "updated": time.mktime(self.updated_at.timetuple()),
                 "cursor": self.cursor,
                 "hidecontext": self.hidecontext,
-                "links": []
+                "links": {
+                    "normal": [c.to_dict() for c in self.cached_ser],
+                    "sticky": [c.to_dict() for c in self.sticky],
+                    "blacklist": [c.url for c in self.blacklist]
+                    }
                 }

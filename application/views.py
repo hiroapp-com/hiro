@@ -24,7 +24,7 @@ from flask_cache import Cache
 from flask.ext.login import login_user, logout_user, current_user
 
 from application import app
-from models import User, Document
+from models import User, Document, Link
 from forms import LoginForm, SignupForm
 
 
@@ -140,6 +140,10 @@ def edit_document(doc_id):
     doc.text = data['text']
     doc.cursor = data['cursor']
     doc.hidecontext = data['hidecontext']
+    links = data.get('links', {})
+    doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
+    doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
+    doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc.put()
     return "", 204
 
