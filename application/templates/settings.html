@@ -15,8 +15,8 @@
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Sign-In With <b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform">
-					<input type="text" placeholder="E-Mail"><div class="error"></div>					
-					<input type="password" placeholder="Choose a password"><div class="error"></div>					
+					<input type="text" placeholder="E-Mail" onkeyup="document.getElementById('s_signin').getElementsByTagName('input')[0].value=this.value"></input><div class="error"></div>					
+					<input type="password" placeholder="Choose a password"></input><div class="error"></div>					
 				</form>		
 				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register();">Create Account</b></a>	
 				<div id="signuperror"></div>
@@ -26,14 +26,14 @@
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Log-In With <b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="loginform">
-					<input type="text" placeholder="E-Mail"><div class="error"></div>
-					<input type="password" placeholder="Password"><div class="error"></div>
+					<input type="text" placeholder="E-Mail" onkeyup="document.getElementById('s_signup').getElementsByTagName('input')[0].value=this.value"></input><div class="error"></div>
+					<input type="password" placeholder="Password"></input><div class="error"></div>
 				</form>		
 				<a href="#" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login();">Log-In</b></a>	
 				<div id="loginerror"></div>				
 				<a href="#" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup'));">Create an account</a>					
 			</div>	
-		</div>
+		</div>	
         {% endif %}
 
 		<div id="s_settings" {% if not current_user.is_authenticated() %}style="display:none;"{% endif %}>

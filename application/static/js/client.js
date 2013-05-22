@@ -248,8 +248,13 @@ var WPCLib = {
 			}
 		},
 
-		showSettings: function() {
-			WPCLib.ui.showDialog(event);
+		showSettings: function(section,field) {
+			// Show settings dialog
+			if (WPCLib.sys.user.level==0 && !field) {
+				field = true;
+				section = 's_signup';
+			} 
+			WPCLib.ui.showDialog(event,'',section,field);
 			WPCLib.ui.menuHide();
 		}
 	},	
@@ -1306,10 +1311,11 @@ var WPCLib = {
 			frame.src = url;
 		},
 
-		showDialog: function(event,url,section, width, height) {
+		showDialog: function(event,url,section,field,width,height) {
 			// Show a modal popup 
 			var s = document.getElementById(this.modalShieldId);
 			var d = document.getElementById(this.dialogWrapperId);
+			var frame = window.frames['dialog'];			
 			WPCLib.util.stopEvent(event);			
 
 			// spawn shield
@@ -1323,6 +1329,18 @@ var WPCLib = {
 
 			// load url into iframe, only if we need a special URL, otherwise it's preloaded on init
 			if (url) this.loadDialog(url);
+
+			// show a specific section and / or focus on a specific field
+
+			if (section) {
+				var el = frame.document.getElementById(section);	
+				WPCLib.ui.switchView(el);
+				// Supports either a field id or finds the first input if boolean is provided	
+				if (field) {
+					if (typeof field == 'boolean') el.getElementsByTagName('input')[0].focus();													
+					if (typeof field == 'string') frame.document.getElementById(field).focus();
+				}					
+			}	
 
 			// Recenter on window size changes
 			WPCLib.util.registerEvent(window, 'resize', this._centerDialog);
