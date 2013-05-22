@@ -16,7 +16,11 @@ class User(UserMixin, ndb.Model):
         return pbkdf2_sha512.encrypt(pwd)
 
     def check_password(self, candidate):
-        return pbkdf2_sha512.verify(candidate, self.password)
+        if self.password:
+            return pbkdf2_sha512.verify(candidate, self.password)
+        else:
+            # empty password is disabled password, e.g. fb connected user
+            return False
 
     def get_id(self):
         return unicode(self.key.id())
