@@ -21,6 +21,12 @@ body {
   color: #1a1a1a;
 }
 
+@media (max-width: 480px){
+  body{
+    -webkit-text-size-adjust: none;
+  }
+}
+
 /* ------ Basic button & interaction styles ------*/
 
 .icon, .button {
@@ -120,7 +126,6 @@ a.wpcbutton:hover {
 /* ------ Left hand menu aka Folio ------*/
 
 .menu {
-  width: 50px;
   position: fixed;
   top: 0;
   left: 0;
@@ -239,6 +244,11 @@ a.wpcbutton:hover {
   background-position: -2px -1px;
   background-repeat: no-repeat;  
 }
+
+@media (max-width: 700px) {
+
+}
+
 
 /* ------ Editor ------*/
 
@@ -642,7 +652,8 @@ a.wpcbutton:hover {
   z-index: 80000;
 }
 
-/* Ladning page overlay */
+/* Landing page overlay */
+
 
 #landing iframe {
   width: 100%;
@@ -668,17 +679,18 @@ body#landingPage h1 {
   display: block; 
 }
 
+body#landingPage h1 em {
+  font-style: normal; 
+}
+
 body#landingPage .cto {
   position: absolute;
   bottom: 38px;
   left: 0;
   right: 0;
   width: 100%;
-}
-
-body#landingPage .cto {
   font-size: 14px;
-  color: #999;
+  color: #999;  
 }
 
 body#landingPage .cto a.start {
@@ -776,6 +788,93 @@ body#landingPage .teaser .screen  .blurb .desc em {
   font-style: normal;
   color: #000;
 }
+
+@media (max-width: 480px) {
+  body#landingPage h1 em {
+    font-size: 40px; 
+    display: block;
+    color: #333;
+  }
+
+  body#landingPage h1 {
+    margin: 10% auto 0 auto;    
+    font-size: 16px; 
+    line-height: 25px;  
+    color: #666;  
+  }
+
+  body#landingPage .teaser {
+    position: absolute;
+    top: 21%;
+    bottom: 90px;
+    border-bottom: none;
+    overflow: hidden;   
+  }  
+
+  body#landingPage .teaser .screen {
+    background: url(../img/site/landing.png) no-repeat;
+    background-size: 80% auto;
+    background-position: center top;  
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 98000;
+  } 
+
+  body#landingPage .teaser .screen .manage,  body#landingPage .teaser .screen .write {
+    position: static;  
+  }
+
+  body#landingPage .teaser .screen .manage {
+    margin-top: 40%; 
+    border-top: 1px solid rgba(0,0,0,0.3);
+    padding-top: 10px;
+  }
+
+  body#landingPage .teaser .screen .manage .header, body#landingPage .teaser .screen .write .header, body#landingPage .teaser .screen .research .header {
+    width: 100%;
+  }
+
+  body#landingPage .teaser .screen .research {
+    position: static;
+    text-align: left; 
+  }
+
+  body#landingPage .teaser .screen .research .desc {
+    float: left;
+    width: 100% !important;  
+  }   
+
+  body#landingPage .teaser .screen .blurb {
+    background-color: #fff;   
+  }    
+
+  body#landingPage .teaser .screen .blurb .header {
+    padding-bottom: 0;
+    border-bottom: none;    
+  }  
+
+  body#landingPage .teaser .screen .blurb .desc {
+    width: 100%;
+    padding-top: 0; 
+    padding-bottom: 10px;   
+  }
+
+  body#landingPage .cto {
+    bottom: 9px;
+  }
+
+  body#landingPage .cto a.start {
+    padding: 8px 0 8px 0;
+    width: 80%;
+    margin-bottom: 8px;
+  }
+
+}
+
+/*--------------- Settings---------------------*/
 
 body#settingsPage {
   background-color: #fcfcfc;

@@ -307,13 +307,14 @@ var WPCLib = {
 
 			// Title events	
 			WPCLib.util.registerEvent(t,'change',this.evaluatetitle);
-			WPCLib.util.registerEvent(t,'keyup',this.evaluatetitle);
+			WPCLib.util.registerEvent(t,'keydown',this.evaluatetitle);
+			WPCLib.util.registerEvent(t,'keyup',this.evaluatetitle);			
 			WPCLib.util.registerEvent(t,'mouseover', this._showtitletip);
 			WPCLib.util.registerEvent(t,'mouseout', this._hidetitletip);
 			WPCLib.util.registerEvent(t,'click', this._clicktitletip);	
 			// We save the new title in the folio array but need to update the clickhandler without duplicating them
 			WPCLib.util.registerEvent(t,'blur', WPCLib.folio.docs.update);	
-			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);				
+			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);			
 		},	
 
 		builddoc: function() {
@@ -501,6 +502,7 @@ var WPCLib = {
 			// Visual updates
 			var el = document.getElementById('doc_'+WPCLib.canvas.docid);			
 			WPCLib.canvas.title = el.firstChild.innerHTML = document.title = this.value;
+			if (!this.value) document.title = 'Untitled';
 
 			// Initiate save & search
 			WPCLib.canvas._settypingtimer();	
@@ -968,6 +970,8 @@ var WPCLib = {
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {
 				WPCLib.canvas._init();
+				// Remove address bar on mobile browsers
+				window.scrollTo(0,1);
 				// Load settings into dialog
 				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);
 			});
