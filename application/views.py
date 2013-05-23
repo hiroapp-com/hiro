@@ -8,7 +8,6 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
   must be passed *username* as the argument.
 
 """
-import json
 import time
 import string
 import random
@@ -16,29 +15,76 @@ import uuid
 import logging as log
 from datetime import datetime
 
-#from google.appengine.runtime.apiproxy_errors import CapabilityDisabledError
 from google.appengine.ext import ndb
 
 from flask import request, session, render_template, redirect, url_for, jsonify
 from flask_cache import Cache
-from flask.ext.login import login_user, logout_user, current_user
+from flask.ext.login import login_user, logout_user
+from flask.ext.oauth import OAuth
 
+from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
 from application import app
-from models import User, Document
+from models import User, Document, Link
 from forms import LoginForm, SignupForm
 
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
+close_window_html =  """
+<html>
+    <head></head>
+    <body>
+        <script> window.close(); </script>
+    </body>
+</html>
+"""
+
+
 
 # Flask-Cache (configured to use App Engine Memcache API)
 cache = Cache(app)
 
+oauth = OAuth()
+facebook = oauth.remote_app('facebook',
+        base_url='https://graph.facebook.com/',
+        request_token_url=None,
+        access_token_url='/oauth/access_token',
+        authorize_url='https://www.facebook.com/dialog/oauth',
+        consumer_key=FACEBOOK_APP_ID,
+        consumer_secret=FACEBOOK_APP_SECRET,
+        request_token_params={'scope': 'email'}
+)
+facebook.tokengetter(lambda: session.get('oauth_token'))
 
 def logout():
     logout_user()
     return '', 204
 
     
+def fb_connect():
+    return facebook.authorize(callback=url_for('fb_authorized',
+                              next=request.args.get('next') or request.referrer or None,
+                              _external=True))
+
+@facebook.authorized_handler
+def fb_authorized(resp):
+    if resp is None:
+        # not authorized, something went wrong 
+        return close_window_html
+    session['oauth_token'] = (resp['access_token'], '')
+    me = facebook.get('/me')
+    user = User.query(User.email == me.data['email']).get()
+    if user is None:
+        user = User(email=me.data['email'],
+                    facebook_uid=me.data['id'],
+                    token=uuid.uuid4().hex)
+        user.put()
+    elif not user.facebook_uid:
+        user.facebook_uid = me.data['id']
+        user.put()
+    login_user(user, remember=True)
+    return close_window_html
+
+
 def login():
     form = LoginForm(csrf_enabled=False)
     if form.validate_on_submit():
@@ -140,6 +186,10 @@ def edit_document(doc_id):
     doc.text = data['text']
     doc.cursor = data['cursor']
     doc.hidecontext = data['hidecontext']
+    links = data.get('links', {})
+    doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
+    doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
+    doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc.put()
     return "", 204
 
