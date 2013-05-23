@@ -28,6 +28,10 @@ handlers:
   static_files: application/static/img/favicon.ico
   upload: application/static/img/favicon.ico
 
+- url:   /apple-touch-icon-precomposed.png
+  static_files: application/static/img/apple-touch-icon-precomposed.png
+  upload: application/static/img/apple-touch-icon-precomposed.png  
+
 - url: /robots.txt
   static_files: application/static/robots.txt
   upload: application/static/robots.txt
