@@ -49,7 +49,6 @@
 	                data: JSON.stringify(response.authResponse),
 					success: function(data) {
 	                    // All that needs to be done at this point
-						// TODO Get user level from flo in response
 	                    _wpc.sys.user.authed('login',data);									                    
 					}
 				});				    
@@ -65,7 +64,6 @@
 			                data: JSON.stringify(response.authResponse),
 							success: function(data) {
 			                    // All that needs to be done at this point
-								// TODO Get user level from flo in response
 			                    _wpc.sys.user.authed('register',data);									                    
 							}
 						});

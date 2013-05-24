@@ -6,11 +6,16 @@ from flask.ext.login import UserMixin, AnonymousUser
 
 
 class User(UserMixin, ndb.Model):
+    TIER_ANON, TIER_FREE, TIER_PREM = 0, 1, 2
+
     token = ndb.StringProperty()
     email = ndb.StringProperty()
     password = ndb.StringProperty()
     signup_at =  ndb.DateTimeProperty(auto_now_add=True)
     facebook_uid = ndb.StringProperty()
+    tier = ndb.IntegerProperty(default=TIER_FREE)
+
+    
 
     @classmethod
     def hash_password(cls, pwd):
@@ -25,6 +30,13 @@ class User(UserMixin, ndb.Model):
 
     def get_id(self):
         return unicode(self.key.id())
+
+    def to_dict(self):
+        return {
+                'id': self.get_id(),
+                'email': self.email,
+                'tier': self.tier
+                }
 
 
 class Anonymous(AnonymousUser):

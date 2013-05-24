@@ -61,17 +61,18 @@ def logout():
 
     
 def fb_connect():
-    return facebook.authorize(callback=url_for('fb_authorized',
-                              next=request.args.get('next') or request.referrer or None,
-                              _external=True))
-
-@facebook.authorized_handler
-def fb_authorized(resp):
-    if resp is None:
-        # not authorized, something went wrong 
-        return close_window_html
-    session['oauth_token'] = (resp['access_token'], '')
+    """ Register/Login user after validating passed `authResponse` (from JS auth request) """
+    auth_resp = request.json
+    session['oauth_token'] = (auth_resp['accessToken'], '')
     me = facebook.get('/me')
+    if me.headers['status'] != '200' or me.data.get('id') != auth_resp.get('userID'):
+        del session['oauth_token'] 
+        resp = jsonify(errors=["Invalid access token"])
+        resp.status = "401"
+        return resp
+
+    # generally imply that user has granted email access rights
+    # and base database search on email 
     user = User.query(User.email == me.data['email']).get()
     if user is None:
         user = User(email=me.data['email'],
@@ -82,7 +83,7 @@ def fb_authorized(resp):
         user.facebook_uid = me.data['id']
         user.put()
     login_user(user, remember=True)
-    return close_window_html
+    return jsonify(user.to_dict())
 
 
 def login():
@@ -92,7 +93,8 @@ def login():
         user = User.query(User.email == form.email.data).get()
         if user.check_password(form.password.data):
             if login_user(user, remember=True):
-                return '', 204 # No Content
+                # logged in; returning userinfo
+                return jsonify(user.to_dict())
             else:
                 return "Could not login. Maybe account was suspended?", 401
         else:
@@ -111,7 +113,7 @@ def register():
         if user is not None:
             if user.check_password(form.password.data):
                 login_user(user, remember=True)
-                return '', 204 # No Content
+                return jsonify(user.to_dict())
             else:
                 resp = jsonify(email=["E-Mail already registered"])
                 resp.status = "401"
@@ -122,7 +124,9 @@ def register():
         user.password = User.hash_password(form.password.data)
         user.put()
         login_user(user)
-        return '', 201 # Created
+        resp = jsonify(user.to_dict())
+        resp.status = "201" # Created
+        return resp
     else:
         resp = jsonify(form.errors)
         resp.status = "401"
