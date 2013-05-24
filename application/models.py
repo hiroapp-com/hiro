@@ -56,6 +56,7 @@ class Link(ndb.Model):
      
 
 class Document(ndb.Model):
+    owner = ndb.KeyProperty(kind=User)
     title = ndb.StringProperty()
     text = ndb.TextProperty()
     cursor = ndb.IntegerProperty()
@@ -68,6 +69,9 @@ class Document(ndb.Model):
     blacklist = ndb.StructuredProperty(Link, repeated=True)
     cached_ser = ndb.StructuredProperty(Link, repeated=True)
     
+
+    def allow_access(self, user):
+        return user.key == self.owner 
 
     def to_dict(self):
         return {

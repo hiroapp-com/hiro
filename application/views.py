@@ -19,7 +19,7 @@ from google.appengine.ext import ndb
 
 from flask import request, session, render_template, redirect, url_for, jsonify
 from flask_cache import Cache
-from flask.ext.login import login_user, logout_user
+from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
@@ -142,6 +142,7 @@ def landing():
 def settings():
     return render_template('settings.html')
 
+@login_required
 def list_documents():
     docs = {                                                                                 
         "level": 0,
@@ -149,7 +150,7 @@ def list_documents():
         "archived": []
     }
 
-    for doc in  Document.query().order(-Document.updated_at):
+    for doc in  Document.query(Document.owner == current_user.key).order(-Document.updated_at):
         docs['active'].append({ 
             "id": doc.key.id(),
             "title": doc.title,
@@ -158,27 +159,31 @@ def list_documents():
             })
     return jsonify(docs)
 
+
+@login_required
 def create_document():
     #TODO sanitize & validate payload
     data = request.json
-    log.info(data)
     if not data:
         return "empty payload", 400
-    if data.get('id'):
-        # todo: check ownership
-        doc = Document.get_by_id(data['id'])
-    else:
-        doc = Document(key=ndb.Key(Document, gen_key()))
+    doc = Document(id=gen_key(), owner=current_user.key)
     timestamp = data.get('created')
     if timestamp is not None:
         doc.created_at = datetime.fromtimestamp(timestamp)
-    doc.title = data.get('title', 'Untitled') 
+    doc.title = data.get('title') 
     doc.text = data.get('text', '')
     doc.cursor = data.get('cursor', 0)
     doc.hidecontext = data.get('hidecontext', False)
+
+    links = data.get('links', {})
+    doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
+    doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
+    doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc_id = doc.put()
     return str(doc_id.id()), 201
 
+
+@login_required
 def edit_document(doc_id):
     data = request.json
     if not data:
@@ -186,6 +191,9 @@ def edit_document(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
+    elif not doc.allow_access(current_user):
+        return "access denied, sorry.", 403
+
     doc.title = data['title'] 
     doc.text = data['text']
     doc.cursor = data['cursor']
@@ -197,8 +205,13 @@ def edit_document(doc_id):
     doc.put()
     return "", 204
 
+@login_required
 def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
+    if not doc:
+        return "document not found", 404
+    elif not doc.allow_access(current_user):
+        return "access denied, sorry.", 403
     return jsonify(doc.to_dict())
 
 
