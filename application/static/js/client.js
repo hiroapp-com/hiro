@@ -1131,14 +1131,10 @@ var WPCLib = {
 				});	
 			},
 
-			authed: function(type,data) {
-				// On successfull backend auth the returned data (user level etc) 
+			authed: function(type, user) {
+				// On successfull backend auth the returned user-data 
 				// from the various endpoints and finishes up auth process
-				// TODO Get user level from flo in response	data
-
-				// TODO Bruno: Get flo to return user level in register response 
-				// if known user is using register form to log in					
-            	WPCLib.sys.user.setStage(1);						
+            	WPCLib.sys.user.setStage(user.tier);
 
                 // Check for and move any saved local docs to backend
                 if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
