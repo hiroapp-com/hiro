@@ -425,8 +425,16 @@ var WPCLib = {
 			// Loading a local document on the canvas
 			document.getElementById(this.pageTitle).value = document.title = data.title;	
 			document.getElementById(this.contentId).value = data.text;
-			this._setposition(data.cursor);
 			WPCLib.canvas._removeblank();
+			// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
+			// TODO Bruno findout why, it's not about something else setting the focus elsewhere			
+			if (window.navigator.standalone) {
+				setTimeout( function(){
+					WPCLib.canvas._setposition(data.cursor);							
+				},1000);								
+			} else {					
+				this._setposition(data.cursor);							
+			} 					
 
 			// Show default title if none was saved	
 			if (!data.title || data.title.length==0) {
@@ -446,7 +454,7 @@ var WPCLib = {
 			this.title = data.title;
 			this.docid = data.id;
 			this.created = data.created;
-			this.lastUpdated = data.last_updated;
+			this.lastUpdated = data.last_updated;						
 		},
 
 		newdoc: function() {
@@ -684,8 +692,8 @@ var WPCLib = {
 			if (!pos) var pos = 0;
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
-        		el.focus();
-        		el.setSelectionRange(pos,pos);
+				el.focus();							
+				el.setSelectionRange(pos,pos);									
     		} else if (el.createTextRange) {
         		var range = el.createTextRange();
         		range.collapse(true);
@@ -980,7 +988,7 @@ var WPCLib = {
 				// Remove address bar on mobile browsers
 				window.scrollTo(0,1);
 				// Load settings into dialog
-				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);
+				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);    							
 			});
 
 			WPCLib.folio.init();
@@ -1003,7 +1011,7 @@ var WPCLib = {
 				return;
 			}
 		},
-		_loadCallback: function() {
+		_loadCallback: function() {	
 			if (document.addEventListener) {
 				document.removeEventListener( 'DOMContentLoaded', this._DOMContentLoadedCallback, false);
 				document.removeEventListener( 'load', this._loadCallback, false);
