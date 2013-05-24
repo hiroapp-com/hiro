@@ -1061,19 +1061,7 @@ var WPCLib = {
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
 					success: function(data) {
-						// On registration switch to userlevel 1 
-						// TODO Bruno: Get flo to return user level in register response 
-						//             if known user is using register form to log in
-						// TODO Flo: Return if user is registering or logging anyways, as we need to load doclist in that case
-	                    WPCLib.sys.user.setStage(1);
-
-	                    // Move any local docs to backend
-	                    if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
-	                    	WPCLib.folio.docs.movetoremote();
-	                    }
-
-	                    // Hide dialog
-	                    WPCLib.ui.hideDialog();							                    
+						WPCLib.sys.user.authed('register',data);						                    
 					},
 					error: function(xhr) {
 	                    button.innerHTML = "Create Account";						
@@ -1112,21 +1100,7 @@ var WPCLib = {
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
 					success: function(data) {
-						// All that needs to be done at this point
-						// TODO Get user level from flo in response
-	                    WPCLib.sys.user.setStage(1);
-
-	                    // Check for and move any saved local docs to backend
-	                    if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
-	                    	WPCLib.folio.docs.movetoremote();
-	                    } else {
-	                    	// We assume that it's not possible that a previously registered user has no local docs stored
-	                    	// TODO: Make sure this gets taken care of during registration
-							WPCLib.folio.docs.loaddocs();	                    	
-	                    }
-
-	                    // Hide dialog
-	                    WPCLib.ui.hideDialog();								                    
+						WPCLib.sys.user.authed('login',data);	                    
 					},
 					error: function(xhr) {
 	                    button.innerHTML = "Log-In";						
@@ -1140,6 +1114,30 @@ var WPCLib = {
 						                    
 					}										
 				});	
+			},
+
+			authed: function(type,data) {
+				// On successfull backend auth the returned data (user level etc) 
+				// from the various endpoints and finishes up auth process
+				// TODO Get user level from flo in response	data
+
+				// TODO Bruno: Get flo to return user level in register response 
+				// if known user is using register form to log in					
+            	WPCLib.sys.user.setStage(1);						
+
+                // Check for and move any saved local docs to backend
+                if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
+                	WPCLib.folio.docs.movetoremote();
+                }
+
+				if (type=='login') {
+                	// We assume that it's not possible that a previously registered user has no local docs stored
+                	// TODO Bruno: Make sure this gets taken care of during registration
+					WPCLib.folio.docs.loaddocs();					
+				}
+
+                // Hide dialog
+                WPCLib.ui.hideDialog();	
 			},		
 
 			logout: function() {

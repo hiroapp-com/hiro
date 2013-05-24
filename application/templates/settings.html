@@ -1,18 +1,18 @@
 <html style="overflow: hidden;">
 <head>
-	<script>var _wpc = window.parent.WPCLib;</script>
+	<script>var _wpc=window.parent.WPCLib,$=window.parent.$;</script>
     <link rel="stylesheet" type="text/css" href="/static/css/wonderpad.css">
 	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
 </head>
 <body id="settingsPage">
+	<div id="fb-root"></div>
 	<a href="#" onclick="_wpc.ui.hideDialog();return false;" class="close">Close</a>
 	<div>
         {% if not current_user.is_authenticated() %}
 		<div id="s_login">
 			<div id="s_signup">
-				<a href="/connect/facebook" class="fb wpcbutton">Sign-In With <b>Facebook</b></a>
-				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Sign-In With <b>Facebook</b></a>
+				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';facebooklogin();return false;">Sign-In With <b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform">
 					<input type="text" placeholder="E-Mail" onkeyup="document.getElementById('s_signin').getElementsByTagName('input')[0].value=this.value"></input><div class="error"></div>					
@@ -23,7 +23,7 @@
 				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin')); return false;">Already have an account?</a>			
 			</div>	
 			<div id="s_signin" style="display:none;">
-				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Log-In With <b>Facebook</b></a>
+				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';facebooklogin();return false;">Log-In With <b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="loginform">
 					<input type="text" placeholder="E-Mail" onkeyup="document.getElementById('s_signup').getElementsByTagName('input')[0].value=this.value"></input><div class="error"></div>
@@ -34,6 +34,57 @@
 				<a href="" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>					
 			</div>	
 		</div>	
+
+		<script type="text/javascript">
+		function facebooklogin() {
+			var WPFBbuttonHTML = 'Sign-In With <b>Facebook</b>';
+			FB.getLoginStatus(function(response) {
+			  console.log('trying to log in');	
+			  if (response.status === 'connected') {
+			    console.log('Already have all permissions! ',response.authResponse);
+				$.ajax({
+					url: "/connect/facebook",
+	                type: "POST",
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(response.authResponse),
+					success: function(data) {
+	                    // All that needs to be done at this point
+						// TODO Get user level from flo in response
+	                    _wpc.sys.user.authed('login',data);									                    
+					}
+				});				    
+			  } else if (response.status === 'not_authorized') {
+			    console.log('Hm, not authed,triggering fb auth dialog');
+				FB.login(function(response) {
+				   if (response.authResponse) {
+					    console.log('facebook perms granted! ',response.authResponse);
+						$.ajax({
+							url: "/connect/facebook",
+			                type: "POST",
+			                contentType: "application/json; charset=UTF-8",
+			                data: JSON.stringify(response.authResponse),
+							success: function(data) {
+			                    // All that needs to be done at this point
+								// TODO Get user level from flo in response
+			                    _wpc.sys.user.authed('register',data);									                    
+							}
+						});
+				   } else {
+				   	 // FB auth process aborted by user
+				     console.log('User cancelled login or did not fully authorize.');
+				     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
+				   }
+				 },{scope: 'email'});
+			  } else {
+			  	// User not signed in to Facebook
+			    console.log('y u no facebook?',$('.fb.wpcbutton').html());
+				if (confirm("You are not signed in to Facebook. Visit Facebook now?")) window.open('https://www.facebook.com');
+				$("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);				
+			  }
+			});
+		}
+		</script>
+
         {% endif %}
 
 		<div id="s_settings" {% if not current_user.is_authenticated() %}style="display:none;"{% endif %}>
@@ -123,5 +174,26 @@
 
 		</div>	
 	</div>
+
+	<script>
+	  window.fbAsyncInit = function() {
+	    // init the FB JS SDK
+	    FB.init({
+	      appId      : '{{ config.FACEBOOK_APP_ID }}',                       
+	      status     : true,                                 // Check Facebook Login status
+	      xfbml      : true                                  // Look for social plugins on the page
+	    });
+	  };
+
+	  // Load the SDK asynchronously
+	  (function(d, s, id){
+	     var js, fjs = d.getElementsByTagName(s)[0];
+	     if (d.getElementById(id)) {return;}
+	     js = d.createElement(s); js.id = id;
+	     js.src = "http://connect.facebook.net/en_US/all.js";
+	     fjs.parentNode.insertBefore(js, fjs);
+	   }(document, 'script', 'facebook-jssdk'));
+	</script>
+
 </body>
 </html>	
