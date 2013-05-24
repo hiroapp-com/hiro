@@ -310,7 +310,8 @@ a.wpcbutton:hover {
   line-height: 1.9em;
   border: 0px;
   overflow: hidden;
-  color: #333;  
+  color: #333;
+  z-index: 2100;
 }
 
 .canvas .page .content textarea:focus {
@@ -321,6 +322,7 @@ a.wpcbutton:hover {
   position: absolute;
   bottom: 3.2em;
   left: 6em;
+  z-index: 2110;  
 }
 
 .canvas #nicequote .quote {
@@ -379,9 +381,14 @@ a.wpcbutton:hover {
     border: 0px;
     overflow: hidden;
     color: #333; 
-    padding: 52px 12px 0 12px; 
-    z-index: 2100;    
-  }  
+    padding: 52px 12px 0 12px;     
+  } 
+
+  .canvas #nicequote {
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+  }   
 }
 
 

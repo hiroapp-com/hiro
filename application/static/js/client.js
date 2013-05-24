@@ -438,7 +438,7 @@ var WPCLib = {
 			WPCLib.context.links = data.links.normal || [];
 			WPCLib.context.blacklist = data.links.blacklist || [];	
 			WPCLib.context.renderresults();
-			if (data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();
+			if (data.hidecontext && WPCLib.context.show == data.hidecontext) WPCLib.context.switchview();
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Welcome back!';							
 
 			// Set internal values	
