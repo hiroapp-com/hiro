@@ -284,6 +284,7 @@ a.wpcbutton:hover {
   margin: 0 6em 0 6em;
   padding-top: 3em;
 }
+
 .canvas .page .content input.title {
   display: block;
   font-family: "urbana",sans-serif;
@@ -331,6 +332,56 @@ a.wpcbutton:hover {
   display: block;
   color: #999;
   font-size: 0.9em;
+}
+
+@media (max-width: 480px){
+  .canvas {
+    left: 0;
+    right: 0;
+    border-right: none;
+    border-left: none;
+  }
+  .canvas .page {
+    margin:0;
+    padding-top: 10px;
+  }
+
+  .canvas .page .content {
+    position: relative;
+  }  
+
+  .canvas .page .content input.title {
+    position: absolute;
+    width: auto;
+    top: 0;
+    left: 50px;
+    right: 50px;
+    margin-bottom: 0;
+    font-family: "urbana",sans-serif;
+    padding: 0.2em 0.1em 0.15em 0.1em;
+    border: none; 
+    font-size: 1.9em;
+    font-weight: 600;
+    color: #333;
+    z-index: 2110;
+  }
+
+  .canvas .page .content textarea {
+    position: absolute;
+    width: auto;
+    top: 0;
+    left: 0;
+    right: 0;    
+    min-height: 30em;
+    font-family: "ff-meta-serif-web-pro", serif;
+    font-size: 1em;
+    line-height: 1.9em;
+    border: 0px;
+    overflow: hidden;
+    color: #333; 
+    padding: 52px 12px 0 12px; 
+    z-index: 2100;    
+  }  
 }
 
 
@@ -594,6 +645,13 @@ a.wpcbutton:hover {
 
 }
 
+@media (max-width: 480px){
+  .context {
+    display: none;
+    left: 51px;
+    width: auto;
+  }
+}
 
 /*   Settings and other Dialogs */
 
