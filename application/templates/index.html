@@ -16,9 +16,7 @@
 	<body>
 
 		{% if not current_user.is_authenticated() %}
-			<div id="landing">
-				<iframe src="/landing/" scrollbar="no"></iframe>
-			</div>	
+			<iframe src="/landing/" scrollbar="no" id="landing"></iframe>	
 		{% endif %}	
 
 		<div class="menu" onmouseover="WPCLib.ui.menuSlide(1);" id="folio">
