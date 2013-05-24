@@ -471,8 +471,14 @@ var WPCLib = {
 			// Empty the link lists
 			WPCLib.context.wipe();	
 
-			WPCLib.util.registerEvent(content,'keydown',this._cleanwelcome);		
-			document.getElementById(WPCLib.canvas.contentId).focus();		
+			WPCLib.util.registerEvent(content,'keydown',this._cleanwelcome);
+			// If the landing page is loaded, don't pull the focus from it, bit expensive here, maybve add callback to newdoc later
+			if (WPCLib.sys.user.level==0 && document.getElementById('landing').style.display != 'none') {
+				window.frames['dialog'].document.getElementById('startwriting').focus();
+			} else {
+				document.getElementById(WPCLib.canvas.contentId).focus();				
+			} 							
+		
 		},
 
 		_showtitletip: function() {									
