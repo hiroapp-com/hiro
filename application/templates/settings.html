@@ -2,13 +2,12 @@
 <head>
 	<script>var _wpc = window.parent.WPCLib;</script>
     <link rel="stylesheet" type="text/css" href="/static/css/wonderpad.css">
-	<script type="text/javascript" src="//use.typekit.net/bgy6gxf.js"></script>
+	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
 </head>
 <body id="settingsPage">
-	<a href="#" onclick="_wpc.ui.hideDialog(); return false;" class="close">Close</a>
+	<a href="#" onclick="_wpc.ui.hideDialog();return false;" class="close">Close</a>
 	<div>
-
         {% if not current_user.is_authenticated() %}
 		<div id="s_login">
 			<div id="s_signup">
@@ -19,9 +18,9 @@
 					<input type="text" placeholder="E-Mail" onkeyup="document.getElementById('s_signin').getElementsByTagName('input')[0].value=this.value"></input><div class="error"></div>					
 					<input type="password" placeholder="Choose a password"></input><div class="error"></div>					
 				</form>		
-				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register();">Create Account</b></a>	
+				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(); return false;">Create Account</b></a>	
 				<div id="signuperror"></div>
-				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin'));">Already have an account?</a>			
+				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin')); return false;">Already have an account?</a>			
 			</div>	
 			<div id="s_signin" style="display:none;">
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';setTimeout(function() {_wpc.sys.user.setStage(1);_wpc.ui.switchView(document.getElementById('s_settings'));},1000);return false;">Log-In With <b>Facebook</b></a>
@@ -30,9 +29,9 @@
 					<input type="text" placeholder="E-Mail" onkeyup="document.getElementById('s_signup').getElementsByTagName('input')[0].value=this.value"></input><div class="error"></div>
 					<input type="password" placeholder="Password"></input><div class="error"></div>
 				</form>		
-				<a href="#" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login();">Log-In</b></a>	
+				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</b></a>	
 				<div id="loginerror"></div>				
-				<a href="#" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup'));">Create an account</a>					
+				<a href="" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>					
 			</div>	
 		</div>	
         {% endif %}
@@ -42,16 +41,16 @@
 			<div id="s_account" style="display:none;">
 				<div class="header">
 					<div class="active">Your Account</div>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));">Plans &amp; Payment</a>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));">About</a>	
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Plans &amp; Payment</a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>	
 				</div>
 			</div>
 				
 			<div id="s_plan">
 				<div class="header">
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));">Your Account</a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;">Your Account</a>
 					<div class="active">Plans &amp; Payment</div>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));">About</a>							
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>							
 					<!--<em>Welcome!</em> Do you want to unlock more features right away?-->
 				</div>
 
@@ -100,17 +99,17 @@
 
 			<div id="s_checkout" style="display:none;">
 				<div class="header">
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));">Your Account</a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;">Your Account</a>
 					<div class="active">Plans &amp; Payment</div>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));">About</a>						
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>						
 				</div>
 				<a href="#" class="skip" onclick="_wpc.ui.hideDialog();return false;">Not now, thanks.</a>
 			</div>
 
 			<div id="s_about" style="display:none;">
 				<div class="header">
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));">Your Account</a>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));">Plans &amp; Payment</a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;">Your Account</a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Plans &amp; Payment</a>
 					<div class="active">About</div>	
 				</div>
 				Writing, may it be emails, documents or posts takes up a large amount of our time in front of screens.<br /><br />

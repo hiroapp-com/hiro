@@ -1325,8 +1325,8 @@ var WPCLib = {
 
 			// spawn dialogwrapper
 			d.style.display = 'block';
-			d.style.width = (width || this.dialogDefaultWidth) + 'px';
-			d.style.height = (height || this.dialogDefaultHeight) + 'px';
+			if (width) d.style.width = (width) + 'px';
+			if (height) d.style.height = (height) + 'px';
 			this._centerDialog();
 
 			// load url into iframe, only if we need a special URL, otherwise it's preloaded on init
@@ -1377,8 +1377,8 @@ var WPCLib = {
 		_centerDialog: function() {
 			var s = document.getElementById(WPCLib.ui.modalShieldId);
 			var d = document.getElementById(WPCLib.ui.dialogWrapperId);
-			d.style.left= Math.floor((s.offsetWidth - d.offsetWidth)/2) +'px';
-			d.style.top= Math.floor((s.offsetHeight - d.offsetHeight)/2) +'px';
+			d.style.left= Math.floor((s.offsetWidth - d.offsetWidth)/2-10) +'px';
+			d.style.top= Math.floor((s.offsetHeight - d.offsetHeight)/2-10) +'px';
 		},
 
 		menuSlide: function(direction, callback) {

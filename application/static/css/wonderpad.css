@@ -863,18 +863,24 @@ body#landingPage .teaser .screen  .blurb .desc em {
   }
 
   body#landingPage .cto {
-    bottom: 9px;
+    bottom: 8px;
   }
 
   body#landingPage .cto a.start {
     padding: 8px 0 8px 0;
     width: 80%;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
   }
 
 }
 
+
 /*--------------- Settings---------------------*/
+
+#dialogWrapper {
+  width: 750px;
+  height: 480px;
+}
 
 body#settingsPage {
   background-color: #fcfcfc;
@@ -1090,4 +1096,25 @@ body#settingsPage a.close:hover {
 
 #s_plan .box.3 {
   margin-right: 0;
+}
 
+@media (max-width: 480px) {
+
+  #dialogWrapper {
+    width: 85%;
+    height: 90%;
+    overflow: hidden;
+  }
+
+  #s_signin, #s_signup {
+    width: 90%;
+    margin-top: 58px;    
+  }
+
+  #s_login a.fb {
+    font-size: 20px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+}  
