@@ -59,19 +59,33 @@ def logout():
     logout_user()
     return '', 204
 
-    
+
 def fb_connect():
-    """ Register/Login user after validating passed `authResponse` (from JS auth request) """
-    auth_resp = request.json
-    session['oauth_token'] = (auth_resp['accessToken'], '')
+    return facebook.authorize(callback=url_for('fb_callback',
+                              next=request.args.get('next') or request.referrer or None,
+                              _external=True))
+    
+
+def fb_callback():
+    """ Verify fb-auth response (initiated by wonderpad or /connect/facebook flow"""
+    if request.method == 'POST':
+        # request by own JS-code, communicating JS-SDK login to backend
+        auth_resp = request.json
+        access_token, check_userid = auth_resp['accessToken'], auth_resp.get('userID')
+    elif request.method == 'GET':
+        # request was initiaed by popup flow, auth request via /connect/facebook
+        auth_resp = facebook.authorized_handler(lambda resp: resp)()
+        access_token, check_userid = auth_resp['access_token'], None
+
+    session['oauth_token'] = (access_token, '')
     me = facebook.get('/me')
-    if me.headers['status'] != '200' or me.data.get('id') != auth_resp.get('userID'):
+    if me.headers['status'] != '200' or (check_userid and me.data.get('id') != check_userid):
         del session['oauth_token'] 
         resp = jsonify(errors=["Invalid access token"])
         resp.status = "401"
         return resp
 
-    # generally imply that user has granted email access rights
+    # generally imply that user has granted email-scope
     # and base database search on email 
     user = User.query(User.email == me.data['email']).get()
     if user is None:
@@ -83,7 +97,9 @@ def fb_connect():
         user.facebook_uid = me.data['id']
         user.put()
     login_user(user, remember=True)
-    return jsonify(user.to_dict())
+    return {'GET': close_window_html,
+            'POST': jsonify(user.to_dict())
+            }[request.method]
 
 
 def login():

@@ -43,7 +43,7 @@
 			  if (response.status === 'connected') {
 			    console.log('Already have all permissions! ',response.authResponse);
 				$.ajax({
-					url: "/connect/facebook",
+					url: "/_cb/facebook",
 	                type: "POST",
 	                contentType: "application/json; charset=UTF-8",
 	                data: JSON.stringify(response.authResponse),
@@ -58,7 +58,7 @@
 				   if (response.authResponse) {
 					    console.log('facebook perms granted! ',response.authResponse);
 						$.ajax({
-							url: "/connect/facebook",
+							url: "/_cb/facebook",
 			                type: "POST",
 			                contentType: "application/json; charset=UTF-8",
 			                data: JSON.stringify(response.authResponse),
