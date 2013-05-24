@@ -430,7 +430,9 @@ var WPCLib = {
 			// TODO Bruno findout why, it's not about something else setting the focus elsewhere			
 			if (window.navigator.standalone) {
 				setTimeout( function(){
-					WPCLib.canvas._setposition(data.cursor);							
+					if (document.activeElement.id != WPCLib.canvas.contentId) {
+						WPCLib.canvas._setposition(data.cursor);		
+					}										
 				},1000);								
 			} else {					
 				this._setposition(data.cursor);							
@@ -471,12 +473,15 @@ var WPCLib = {
 			document.getElementById(this.quoteId).style.display = 'block';
 			WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);			
 			this.quoteShown = true;
+
 			// if (WPCLib.context.show == false) WPCLib.context.switchview();
 			document.getElementById(WPCLib.context.resultsId).innerHTML = '';
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready to inspire';
 			this.created = WPCLib.util.now();
 
-			// Empty the link lists
+			// Empty the link lists & internal values
+			this.title = '';
+			this.text = '';
 			WPCLib.context.wipe();	
 
 			WPCLib.util.registerEvent(content,'keydown',this._cleanwelcome);
@@ -722,28 +727,16 @@ var WPCLib = {
 			// show / hide searchbar
 			var c = document.getElementById(this.id);
 			var can = document.getElementById(WPCLib.canvas.canvasId);
-			var t = document.getElementById(WPCLib.canvas.pageTitle);
-			var con = document.getElementById(WPCLib.canvas.contentId);
 			var sw = document.getElementById('switchview');
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			if (this.show) {
 				c.style.display = 'none';
-				var cr = menu - 1;
-				can.style.right = cr+'px';
-				t.style.fontSize = '2.5em';
-				con.style.fontSize = '1.2em';
-				// because the min height is set on an empty document, the changed line height will make the textarea too large
-				if (con.value=='') con.style.minHeight = '22em';				
+				can.className += " full";								
 				sw.innerHTML = '+';
 				this.show = false;
 			} else {
 				c.style.display = 'block';
-				//Make sure we move the context back into the picture when it was moved right via loaddoc while the menu was open
-				if (menu==0) c.style.right = 0;
-				var cr = menu + 300;			
-				can.style.right = cr+'px';
-				t.style.fontSize = '1.9em';
-				con.style.fontSize = '1em';
+				can.className = "canvas";			
 				sw.innerHTML = 'x';				
 				this.show = true;
 			}
@@ -1299,9 +1292,7 @@ var WPCLib = {
 	},
 
 	// Everything UI / visually relevant
-	ui: {
-		menuCanvasLeft: 50,
-		menuCanvasRight: 300,	
+	ui: {	
 		menuContextRight: 0,
 		menuSlideSpan: 301,
 		menuSlideDuration: 200,
@@ -1393,14 +1384,7 @@ var WPCLib = {
 		menuSlide: function(direction, callback) {
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
-			var context = document.getElementById('context');
-			var mCaRi = this.menuCanvasRight;
-			var mCoRi = this.menuContextRight;			
-			// Adjust the right positions if context menu is not shown	
-			if (!WPCLib.context.show) {
-				mCaRi = mCaRi - 301;
-				mCoRi = mCoRi - 301;
-			}	
+			var context = document.getElementById('context');	
 			/**
 			 * Easing equation function for a quadratic (t^2) easing in/out: acceleration until halfway, then deceleration.
 			 *
@@ -1424,10 +1408,11 @@ var WPCLib = {
 					done=false;
 				}
 				var v=ref.menuCurrPos=x0+Math.round(easeInOutQuad(dt, 0, dx, duration));
+				console.log(ref);
 				// do some ...
-				canvas.style.left=ref.menuCanvasLeft+v+'px';
-				canvas.style.right=mCaRi-v+'px';
-				context.style.right=mCoRi-v+'px';								
+				canvas.style.left=v+'px';
+				canvas.style.right=(v*-1)+'px';
+				context.style.right=(v*-1)+'px';								
 				if (done) {
 					if (typeof callback=='function') callback();
 					ref.menuSlideCurrDirection=0;

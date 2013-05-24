@@ -255,13 +255,18 @@ a.wpcbutton:hover {
 
 .canvas {
   position: absolute;
-  left: 50px;
-  right: 300px;
-  border-right: 1px solid #c5c5c5;
+  left: 0;
+  right: 0;
+  margin-left: 50px;
+  margin-right: 300px;
   min-height: 100%;
   z-index: 2000;
   background: #fff;
   border-left: 1px solid #222;
+}
+
+.canvas.full {
+  margin-right: 0;
 }
 
 #switchview {
@@ -297,6 +302,10 @@ a.wpcbutton:hover {
   color: #333;
 }
 
+.canvas.full .page .content input.title {
+  font-size: 2.5em;
+}
+
 .canvas .page .content input.title:focus {
     outline: none;
 }
@@ -312,6 +321,10 @@ a.wpcbutton:hover {
   overflow: hidden;
   color: #333;
   z-index: 2100;
+}
+
+.canvas.full .page .content textarea {
+  font-size: 1.2em;
 }
 
 .canvas .page .content textarea:focus {
@@ -338,8 +351,8 @@ a.wpcbutton:hover {
 
 @media (max-width: 480px){
   .canvas {
-    left: 0;
-    right: 0;
+    margin-left: 0;
+    margin-right: 0;
     border-right: none;
     border-left: none;
   }
@@ -403,6 +416,7 @@ a.wpcbutton:hover {
   right: 0;
   bottom: 0;
   z-index: 3000;
+  border-left: 1px solid #dcdcdc;
 }
 
 .context #status {
@@ -461,9 +475,7 @@ a.wpcbutton:hover {
   -o-transition: background-color 750ms ease-out; 
 }
 
-.context .results .result.sticky:last-child {
-  border-bottom: 1px dotted #fff;
-}
+
 
 .context .results .result:first-child {
   margin-top: 1px;    
