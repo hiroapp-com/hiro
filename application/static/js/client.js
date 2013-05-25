@@ -979,6 +979,9 @@ var WPCLib = {
 				document.attachEvent( 'onload', this._loadCallback, false );
 			}
 
+			// Prevent browser window elasticity onotuch devices
+			if ('ontouchstart' in document.documentElement) document.addEventListener('touchmove',function(e) {e.preventDefault();},false);
+
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {
 				WPCLib.canvas._init();
@@ -1399,7 +1402,8 @@ var WPCLib = {
 		menuSlide: function(direction, callback) {
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
-			var context = document.getElementById('context');	
+			var context = document.getElementById('context');
+			var distance = ((document.body.offsetWidth-50)<this.menuSlideSpan) ? (document.body.offsetWidth-50) : this.menuSlideSpan;
 			/**
 			 * Easing equation function for a quadratic (t^2) easing in/out: acceleration until halfway, then deceleration.
 			 *
@@ -1442,11 +1446,11 @@ var WPCLib = {
 			direction=(direction<0)? -1:1;
 			if ((this.menuSlideCurrDirection==direction) ||
 				(this.menuCurrPos==0 && direction<0) ||
-				(this.menuCurrPos==this.menuSlideSpan && direction>0)) return;
+				(this.menuCurrPos==distance && direction>0)) return;
 			x0=this.menuCurrPos;
-			x1=(direction<0)? 0:this.menuSlideSpan;
+			x1=(direction<0)? 0:distance;
 			dx=x1-x0;
-			duration=this.menuSlideDuration/this.menuSlideSpan*Math.abs(dx);
+			duration=this.menuSlideDuration/distance*Math.abs(dx);
 			startTime=new Date().getTime();
 			ref=this;
 			this.menuSlideCurrDirection=direction;
