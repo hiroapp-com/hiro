@@ -140,16 +140,10 @@ a.wpcbutton:hover {
   padding-left: 0.5em;
 }
 
-.menu .menuheader .showmenu {
-  background: url(../img/icon-menu.png) no-repeat 0.65em 0.65em;
-  background-size: 0.9em 0.9em;
-  float: left;
-}
-
 .menu .menuheader a.newdoc {
   font-family: "urbana", sans-serif;  
   display: inline-block;
-  margin: 0.38em 0 0 0.55em;
+  margin: 6px 0 0 42px;
   color: #ddd;
   font-size: 18px;
   font-weight: 400;  
@@ -279,6 +273,14 @@ a.wpcbutton:hover {
   font-weight: bold;
 }
 
+.icon.showmenu {
+  position: fixed;
+  background: url(../img/icon-menu.png) no-repeat 0.65em 0.65em;
+  background-size: 0.9em 0.9em;
+  left: 8px;
+  top: 9px;  
+  z-index: 2200;
+}
 
 .editor .expand {
   float: right;
@@ -356,32 +358,38 @@ a.wpcbutton:hover {
     border-right: none;
     border-left: none;
   }
+  .icon.showmenu {
+    position: absolute;
+    background: url(../img/icon-menu-black.png) no-repeat 0.65em 0.65em; 
+    background-size: 0.9em 0.9em; 
+    cursor: pointer;   
+  }  
   .canvas .page {
     margin:0;
-    padding-top: 10px;
+    padding-top: 0;
   }
 
   .canvas .page .content {
     position: relative;
   }  
 
-  .canvas .page .content input.title {
+  .canvas .page .content input.title, .canvas.full .page .content input.title {
     position: absolute;
     width: auto;
-    top: 0;
+    top: 10px;
     left: 50px;
     right: 50px;
     margin-bottom: 0;
     font-family: "urbana",sans-serif;
-    padding: 0.2em 0.1em 0.15em 0.1em;
+    padding: 0;
     border: none; 
-    font-size: 1.9em;
+    font-size: 1.7em;
     font-weight: 600;
     color: #333;
     z-index: 2110;
   }
 
-  .canvas .page .content textarea {
+  .canvas .page .content textarea, .canvas.full .page .content textarea {
     position: absolute;
     width: auto;
     top: 0;
@@ -389,12 +397,12 @@ a.wpcbutton:hover {
     right: 0;    
     min-height: 30em;
     font-family: "ff-meta-serif-web-pro", serif;
-    font-size: 1em;
-    line-height: 1.9em;
+    font-size: 17px;
+    line-height: 28px;
     border: 0px;
     overflow: hidden;
     color: #333; 
-    padding: 52px 12px 0 12px;     
+    padding: 48px 12px 0 12px;     
   } 
 
   .canvas #nicequote {

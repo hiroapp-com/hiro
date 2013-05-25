@@ -25,6 +25,7 @@ var WPCLib = {
 
 			// Register "close folio" events to rest of the page
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
+			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'touchstart', WPCLib.ui.menuHide);			
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);			
 		},
 
@@ -288,9 +289,11 @@ var WPCLib = {
 		docid: '',
 		created: 0,
 		lastUpdated: 0,
+		safariinit: false,
 
 		_init: function() {
 			// Basic init on page load
+			if (window.navigator.standalone) this.safariinit = true;
 
 			// Document events
 			var el = document.getElementById(this.contentId);			
@@ -311,7 +314,9 @@ var WPCLib = {
 			WPCLib.util.registerEvent(t,'keyup',this.evaluatetitle);			
 			WPCLib.util.registerEvent(t,'mouseover', this._showtitletip);
 			WPCLib.util.registerEvent(t,'mouseout', this._hidetitletip);
-			WPCLib.util.registerEvent(t,'click', this._clicktitletip);	
+			WPCLib.util.registerEvent(t,'focus', this._clicktitletip);			
+			WPCLib.util.registerEvent(t,'select', this._clicktitletip);	
+			WPCLib.util.registerEvent(t,'click', this._clicktitletip);				
 			// We save the new title in the folio array but need to update the clickhandler without duplicating them
 			WPCLib.util.registerEvent(t,'blur', WPCLib.folio.docs.update);	
 			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);			
@@ -427,17 +432,8 @@ var WPCLib = {
 			document.getElementById(this.contentId).value = data.text;
 			WPCLib.canvas._removeblank();
 			// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
-			// TODO Bruno findout why, it's not about something else setting the focus elsewhere			
-			if (window.navigator.standalone) {
-				setTimeout( function(){
-					if (document.activeElement.id != WPCLib.canvas.contentId) {
-						WPCLib.canvas._setposition(data.cursor);		
-					}										
-				},1000);								
-			} else {					
-				this._setposition(data.cursor);							
-			} 					
-
+			// TODO Bruno findout why, it's not about something else setting the focus elsewhere							
+			this._setposition(data.cursor);
 			// Show default title if none was saved	
 			if (!data.title || data.title.length==0) {
 				document.getElementById(this.pageTitle).value = document.title ='Untitled';
@@ -693,12 +689,20 @@ var WPCLib = {
 		},	
 
 		_setposition: function(pos) {
-			// Set the cursor to a specified position
+			// Set the cursor to a specified position	
 			if (!pos) var pos = 0;
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
-				el.focus();							
-				el.setSelectionRange(pos,pos);									
+				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
+				if (window.navigator.standalone&&this.safariinit) {				
+					setTimeout( function(){
+						el.focus();							
+						el.setSelectionRange(pos,pos);											
+					},1000);								
+				} else {	
+					el.focus();							
+					el.setSelectionRange(pos,pos);															
+				}     									
     		} else if (el.createTextRange) {
         		var range = el.createTextRange();
         		range.collapse(true);
@@ -1381,6 +1385,17 @@ var WPCLib = {
 			d.style.top= Math.floor((s.offsetHeight - d.offsetHeight)/2-10) +'px';
 		},
 
+		menuSwitch: function() {			
+			// Handler for elements acting as open and close trigger
+			var mp = this.menuCurrPos;
+			// On touch devices we also remove the keyboard
+			if ('ontouchstart' in document.documentElement) {
+				if (document.activeElement.id==WPCLib.canvas.contentId&&mp==0) document.activeElement.blur();
+			}			
+			if (mp==0) this.menuSlide(1);
+			if (mp!=0) this.menuSlide(-1);
+		},
+
 		menuSlide: function(direction, callback) {
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
@@ -1408,7 +1423,6 @@ var WPCLib = {
 					done=false;
 				}
 				var v=ref.menuCurrPos=x0+Math.round(easeInOutQuad(dt, 0, dx, duration));
-				console.log(ref);
 				// do some ...
 				canvas.style.left=v+'px';
 				canvas.style.right=(v*-1)+'px';
