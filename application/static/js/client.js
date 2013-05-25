@@ -691,13 +691,17 @@ var WPCLib = {
 		_setposition: function(pos) {
 			// Set the cursor to a specified position	
 			if (!pos) var pos = 0;
+    		// Abort if device is mobile and menu not fully closed yet
+    		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;
+
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
 				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
 				if (window.navigator.standalone&&this.safariinit) {				
 					setTimeout( function(){
 						el.focus();							
-						el.setSelectionRange(pos,pos);											
+						el.setSelectionRange(pos,pos);	
+						WPCLib.canvas.safariinit = false;										
 					},1000);								
 				} else {	
 					el.focus();							

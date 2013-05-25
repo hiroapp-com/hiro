@@ -155,7 +155,13 @@ a.wpcbutton:hover {
 }
 
 .menu .documents {
-  margin: 1.5em 0 0 3.15em;
+  position: absolute;
+  top: 48px;
+  left: 50px;
+  bottom: 50px;
+  overflow: hidden;  
+  -webkit-overflow-scrolling: touch; 
+  z-index: 1010;
 }
 
 .menu .documents a.document {
