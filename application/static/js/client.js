@@ -691,14 +691,15 @@ var WPCLib = {
 		_setposition: function(pos) {
 			// Set the cursor to a specified position	
 			if (!pos) var pos = 0;
-    		// Abort if device is mobile and menu not fully closed yet
-    		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;
+    		// Abort if device is mobile and menu not fully closed yet    		
+    		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;	
 
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
 				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
 				if (window.navigator.standalone&&this.safariinit) {				
 					setTimeout( function(){
+						if (WPCLib.ui.menuCurrPos!=0) return;
 						el.focus();							
 						el.setSelectionRange(pos,pos);	
 						WPCLib.canvas.safariinit = false;										
@@ -740,12 +741,14 @@ var WPCLib = {
 			if (this.show) {
 				c.style.display = 'none';
 				can.className += " full";								
-				sw.innerHTML = '+';
+				sw.innerHTML = '&#171;';
+				sw.className = ''
 				this.show = false;
 			} else {
 				c.style.display = 'block';
 				can.className = "canvas";			
-				sw.innerHTML = 'x';				
+				sw.innerHTML = '&#187;';
+				sw.className = 'open'
 				this.show = true;
 			}
 		},
@@ -1434,7 +1437,8 @@ var WPCLib = {
 				// do some ...
 				canvas.style.left=v+'px';
 				canvas.style.right=(v*-1)+'px';
-				context.style.right=(v*-1)+'px';								
+				context.style.right=(v*-1)+'px';	
+				context.style.left=v+'px';											
 				if (done) {
 					if (typeof callback=='function') callback();
 					ref.menuSlideCurrDirection=0;
