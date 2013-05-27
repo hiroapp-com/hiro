@@ -289,12 +289,10 @@ var WPCLib = {
 		docid: '',
 		created: 0,
 		lastUpdated: 0,
-		safariinit: false,
+		safariinit: true,
 
 		_init: function() {
 			// Basic init on page load
-			if (window.navigator.standalone) this.safariinit = true;
-
 			// Document events
 			var el = document.getElementById(this.contentId);			
 			var p = document.getElementById(this.canvasId);
@@ -345,8 +343,7 @@ var WPCLib = {
 			// For now we only say a doc is updated once it's saved
 			this.lastUpdated = WPCLib.util.now();
 
-			var file = this.builddoc();	
-			file.		
+			var file = this.builddoc();			
 
 			// backend saving, locally or remote
 			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
@@ -694,7 +691,6 @@ var WPCLib = {
 			if (!pos) var pos = 0;
     		// Abort if device is mobile and menu not fully closed yet    		
     		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;	
-    		alert(this.safariinit);
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
 				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
