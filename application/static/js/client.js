@@ -305,7 +305,6 @@ var WPCLib = {
 			WPCLib.util.registerEvent(el,'paste',this._delayedresize);
 			WPCLib.util.registerEvent(el,'drop',this._delayedresize);
 
-
 			// Title events	
 			WPCLib.util.registerEvent(t,'change',this.evaluatetitle);
 			WPCLib.util.registerEvent(t,'keydown',this.evaluatetitle);
@@ -317,7 +316,10 @@ var WPCLib = {
 			WPCLib.util.registerEvent(t,'click', this._clicktitletip);				
 			// We save the new title in the folio array but need to update the clickhandler without duplicating them
 			WPCLib.util.registerEvent(t,'blur', WPCLib.folio.docs.update);	
-			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);			
+			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);		
+
+			// Always set context sidebar icon to open on mobiles
+			if (document.body.offsetWidth<=480) document.getElementById('switchview').innerHTML = '&#171;';				
 		},	
 
 		builddoc: function() {
@@ -734,19 +736,22 @@ var WPCLib = {
 			var c = document.getElementById(this.id);
 			var can = document.getElementById(WPCLib.canvas.canvasId);
 			var sw = document.getElementById('switchview');
+			var mobile = (document.body.offsetWidth<=480);
 			var menu = WPCLib.ui.menuCurrPos * -1;
-			if (this.show) {
+			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
+			console.log('mobile: ',mobile,' internal value ',this.show,' current display property ',c.style.display);
+			if ((!mobile&&this.show)||(mobile&&c.style.display=='block')) {
 				c.style.display = 'none';
 				can.className += " full";								
 				sw.innerHTML = '&#171;';
 				sw.className = ''
-				this.show = false;
+				if (!mobile) this.show = false;
 			} else {
 				c.style.display = 'block';
 				can.className = "canvas";			
 				sw.innerHTML = '&#187;';
 				sw.className = 'open'
-				this.show = true;
+				if (!mobile) this.show = true;
 			}
 		},
 
