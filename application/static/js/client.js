@@ -345,7 +345,8 @@ var WPCLib = {
 			// For now we only say a doc is updated once it's saved
 			this.lastUpdated = WPCLib.util.now();
 
-			var file = this.builddoc();			
+			var file = this.builddoc();	
+			file.		
 
 			// backend saving, locally or remote
 			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
@@ -693,7 +694,7 @@ var WPCLib = {
 			if (!pos) var pos = 0;
     		// Abort if device is mobile and menu not fully closed yet    		
     		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;	
-
+    		alert(this.safariinit);
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
 				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
@@ -1410,7 +1411,10 @@ var WPCLib = {
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
 			var context = document.getElementById('context');
-			var distance = ((document.body.offsetWidth-50)<this.menuSlideSpan) ? (document.body.offsetWidth-50) : this.menuSlideSpan;
+			var switcher = document.getElementById('switchview');			
+			var screenwidth = document.body.offsetWidth;
+			var distance = ((screenwidth-50)<this.menuSlideSpan) ? (screenwidth-50) : this.menuSlideSpan;
+			
 			/**
 			 * Easing equation function for a quadratic (t^2) easing in/out: acceleration until halfway, then deceleration.
 			 *
@@ -1437,8 +1441,9 @@ var WPCLib = {
 				// do some ...
 				canvas.style.left=v+'px';
 				canvas.style.right=(v*-1)+'px';
-				context.style.right=(v*-1)+'px';	
-				context.style.left=v+'px';											
+				context.style.right=(v*-1)+'px';
+				if (screenwidth<480) context.style.left=v+'px'; 
+				switcher.style.right=(v*-1)+'px';												
 				if (done) {
 					if (typeof callback=='function') callback();
 					ref.menuSlideCurrDirection=0;

@@ -271,7 +271,8 @@ a.wpcbutton:hover {
 
 #switchview {
   position: fixed;
-  right: 8px;
+  margin-right: 8px;
+  right: 0;
   top: 5px;
   z-index: 31000;
   color: #999;
@@ -282,7 +283,7 @@ a.wpcbutton:hover {
 }
 
 #switchview.open {
-  right: 4px;
+  margin-right: 4px;
   top: 0;
 }
 
@@ -422,7 +423,18 @@ a.wpcbutton:hover {
     bottom: 20px;
     left: 20px;
     right: 20px;
-  }   
+  }  
+
+  #switchview {
+    margin-right: 8px;
+    top: 5px;
+  }
+
+  #switchview.open {
+    margin-right: 4px;
+    top: 5px;
+  }
+
 }
 
 
@@ -690,8 +702,8 @@ a.wpcbutton:hover {
   .context {
     display: none;
     left: 0;
+    margin-left: 48px;
     width: auto;
-    margin-left: 47px;
   }
 
   .context #status {
@@ -704,7 +716,20 @@ a.wpcbutton:hover {
 
   .context .results .result.sticky {
     background-color: #f0f0ed;  
+    margin-left: 51px;
+    padding-left: 63px;    
   }  
+
+  .context .results .result:hover {
+    margin-left: 51px;
+    border-left: none;
+    padding-left: 63px;        
+  }  
+
+  .context .upgrade {
+    right: 0;
+    left: 0;    
+  }
 
   .context .upgrade a {
     width: auto;
