@@ -26,6 +26,9 @@ app.add_url_rule('/docs/', 'create_document', view_func=views.create_document, m
 app.add_url_rule('/docs/<doc_id>', 'get_document', view_func=views.get_document, methods=['GET'])
 app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_document, methods=['POST'])
 
+app.add_url_rule('/analyze', 'analyze_content', view_func=views.analyze_content, methods=['POST'])
+app.add_url_rule('/relevant', 'relevant', view_func=views.search_results, methods=['POST'])
+
 
 ## Error handlers
 # Handle 404 errors

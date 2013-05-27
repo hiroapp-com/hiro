@@ -21,12 +21,18 @@ from flask import request, session, render_template, redirect, url_for, jsonify
 from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
+from pattern.en import tag
+from pattern.web import Yahoo
 
-from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
+from textmodels.textrank import get_top_keywords_list
+
+from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
+from utils import create_query_string, get_search_term_list, wrap_term
 from application import app
 from models import User, Document, Link
 from forms import LoginForm, SignupForm
 
+yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
 close_window_html =  """
@@ -229,6 +235,57 @@ def get_document(doc_id):
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
     return jsonify(doc.to_dict())
+
+
+# old code copypasta follows
+
+#@app.route('/analyze', methods=['POST'])
+def analyze_content():
+    text = request.form['content']
+    textrank_chunks = get_top_keywords_list(text, 8)
+    return jsonify(textrank_chunks=textrank_chunks)
+
+#@app.route('/relevant', methods=['POST'])
+def search_results():
+    terms = request.form.getlist('search_terms')
+    stripped_terms = ''.join(terms).strip()
+    search_terms = get_search_term_list(stripped_terms)
+                
+    use_shortening = request.form.get('use_shortening') == 'true'
+                
+    keyword_count = len(search_terms)
+    result_urls = {}
+    result_list = []
+                
+    if use_shortening:
+        while keyword_count >= 1 and len(result_list) < 20:
+            current_search_terms = search_terms[:keyword_count]
+            #log('Searching with query: %s' % ' '.join(
+                #map(wrap_term, current_search_terms)))
+            query_string = create_query_string(current_search_terms)
+            results = yahoo.search(query_string, count=20)
+                
+            #log('Yahoo search with %d keywords resulted in %d urls...' % \
+                    #(keyword_count, len(results)))
+                
+            # check for dupes
+            for result in results:
+                if result.url not in result_urls:
+                    result_urls[result.url] = result
+                    result_list.append(result)
+            
+            keyword_count = keyword_count - 2
+            
+    else:   
+        #log('Searching with query: %s' % ' '.join(
+            #map(wrap_term, search_terms)))
+        query_string = create_query_string(search_terms)
+        result_list = yahoo.search(query_string, count=20)
+            
+    #log('Yahoo search resulted in %d urls...' % (len(result_list)))
+    return jsonify(results=result_list)
+
+
 
 
 
