@@ -45,9 +45,14 @@ var WPCLib = {
 
 					// load top doc if not already on canvas, currently this should only be the 
 					// case if a user logs in when sitting in front of an empty document
-					if (data.active[0].id != WPCLib.canvas.docid) {
+					if (data.active[0] && data.active[0].id != WPCLib.canvas.docid) {
 						WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);
-					}			
+					}
+
+					// Edge case where user logs in with neither stored nor current document
+					if (data && !data.active[0]) {
+						WPCLib.folio.docs.newdoc();
+					}		
 				});
 			},
 
@@ -1148,13 +1153,10 @@ var WPCLib = {
                 // Check for and move any saved local docs to backend
                 if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
                 	WPCLib.folio.docs.movetoremote();
-                }
-
-				if (type=='login') {
-                	// We assume that it's not possible that a previously registered user has no local docs stored
-                	// TODO Bruno: Make sure this gets taken care of during registration
-					WPCLib.folio.docs.loaddocs();					
-				}
+                } else {
+	                // Always load external docs as register endpoint can be used for existing login
+					WPCLib.folio.docs.loaddocs();	
+                }				
 
                 // Hide dialog
                 WPCLib.ui.hideDialog();	
