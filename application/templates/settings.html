@@ -70,7 +70,7 @@
 				   } else {
 				   	 // FB auth process aborted by user
 				     console.log('User cancelled login or did not fully authorize.');
-				     $(".fb.wpcbutton").html(WPFBbuttonHTML);
+				     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
 				   }
 				 },{scope: 'email'});
 			  } else {
@@ -91,7 +91,7 @@
 				   } else {
 				   	 // FB auth process aborted by user
 				     console.log('User did not log in to facebook');
-				     $(".fb.wpcbutton").html(WPFBbuttonHTML);
+				     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
 				   }
 				 },{scope: 'email'});			
 			  }
