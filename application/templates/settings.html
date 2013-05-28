@@ -54,46 +54,56 @@
 				});				    
 			  } else if (response.status === 'not_authorized') {
 			    console.log('Hm, not authed,triggering fb auth dialog');
-				FB.login(function(response) {
-				   if (response.authResponse) {
-					    console.log('facebook perms granted! ',response.authResponse);
-						$.ajax({
-							url: "/_cb/facebook",
-			                type: "POST",
-			                contentType: "application/json; charset=UTF-8",
-			                data: JSON.stringify(response.authResponse),
-							success: function(data) {
-			                    // All that needs to be done at this point
-			                    _wpc.sys.user.authed('register',data);									                    
-							}
-						});
-				   } else {
-				   	 // FB auth process aborted by user
-				     console.log('User cancelled login or did not fully authorize.');
-				     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
-				   }
-				 },{scope: 'email'});
+			    if (window.navigator.standalone) {
+			    	// On mobile devices with potentially no popups we do a classic flow
+			    	window.parent.location = '/connect/facebook';
+			    } else {
+					FB.login(function(response) {
+					   if (response.authResponse) {
+						    console.log('facebook perms granted! ',response.authResponse);
+							$.ajax({
+								url: "/_cb/facebook",
+				                type: "POST",
+				                contentType: "application/json; charset=UTF-8",
+				                data: JSON.stringify(response.authResponse),
+								success: function(data) {
+				                    // All that needs to be done at this point
+				                    _wpc.sys.user.authed('register',data);									                    
+								}
+							});
+					   } else {
+					   	 // FB auth process aborted by user
+					     console.log('User cancelled login or did not fully authorize.');
+					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
+					   }
+					},{scope: 'email'});
+				}	
 			  } else {
 			  	// User not signed in to Facebook, so on otuch devices we use redirect the window and otehrwise open a popup
-				FB.login(function(response) {
-				   if (response.authResponse) {
-					    console.log('facebook perms granted! ',response.authResponse);
-						$.ajax({
-							url: "/_cb/facebook",
-			                type: "POST",
-			                contentType: "application/json; charset=UTF-8",
-			                data: JSON.stringify(response.authResponse),
-							success: function(data) {
-			                    // All that needs to be done at this point
-			                    _wpc.sys.user.authed('register',data);									                    
-							}
-						});
-				   } else {
-				   	 // FB auth process aborted by user
-				     console.log('User did not log in to facebook');
-				     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
-				   }
-				 },{scope: 'email'});			
+			    if (window.navigator.standalone) {
+			    	// On mobile devices with potentially no popups we do a classic flow
+			    	window.parent.location = '/connect/facebook';
+			    } else {
+					FB.login(function(response) {
+					   if (response.authResponse) {
+						    console.log('facebook perms granted! ',response.authResponse);
+							$.ajax({
+								url: "/_cb/facebook",
+				                type: "POST",
+				                contentType: "application/json; charset=UTF-8",
+				                data: JSON.stringify(response.authResponse),
+								success: function(data) {
+				                    // All that needs to be done at this point
+				                    _wpc.sys.user.authed('register',data);									                    
+								}
+							});
+					   } else {
+					   	 // FB auth process aborted by user
+					     console.log('User cancelled login or did not fully authorize.');
+					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
+					   }
+					},{scope: 'email'});
+				}			
 			  }
 			});
 		}
