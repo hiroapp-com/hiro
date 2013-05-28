@@ -26,7 +26,10 @@ var WPCLib = {
 			// Register "close folio" events to rest of the page
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'touchstart', WPCLib.ui.menuHide);			
-			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);			
+			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);		
+
+			// Make sure the scrollbar is also visible on small devices
+			if (document.body.offsetWidth<=350) document.getElementById(this.docs.doclistId).style.width = (document.body.offsetWidth-107)+'px';	
 		},
 
 		docs: {
@@ -102,6 +105,10 @@ var WPCLib = {
 						d.appendChild(t);
 						d.appendChild(stats);	
 
+						if ('ontouchstart' in document.documentElement) {
+							d.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
+						}
+
 						docs.appendChild(d);
 						WPCLib.folio.docs._events(docid,title);						
 					}						    
@@ -115,7 +122,7 @@ var WPCLib = {
 				WPCLib.util.registerEvent(document.getElementById('doc_'+docid),'click', function() {
 					WPCLib.canvas.loaddoc(docid, title);
 					WPCLib.folio.docs.moveup(docid);
-				});
+				});				
 			},
 
 			creatingDoc: false,
@@ -876,7 +883,7 @@ var WPCLib = {
 				st.className = 'stick action';
 				st.setAttribute('href','#');
 				if (l) st.setAttribute('title','Pin');				
-				st.setAttribute('onclick','WPCLib.context.makesticky(this); return false;');	
+				st.setAttribute('onclick','WPCLib.context.makesticky(this); return false;');					
 				e.appendChild(st);							
 			}	
 
@@ -885,8 +892,8 @@ var WPCLib = {
 				us.className = 'unstick action';
 				us.setAttribute('href','#');
 				if (l) us.setAttribute('title','Unpin');					
-				us.setAttribute('onclick','WPCLib.context.unstick(this); return false;');	
-				e.appendChild(us);							
+				us.setAttribute('onclick','WPCLib.context.unstick(this); return false;');				
+				e.appendChild(us);												
 			}						
 
 			var r = document.createElement('a');
@@ -911,7 +918,11 @@ var WPCLib = {
 				r.appendChild(b);
 			}
 					
-			e.appendChild(r);	
+			e.appendChild(r);
+			// Avoid full window wobbling & layout messup on touch devices
+			if ('ontouchstart' in document.documentElement) {
+				e.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
+			}				
 			return e;
 		},
 
@@ -1002,7 +1013,11 @@ var WPCLib = {
 			}
 
 			// Prevent browser window elasticity onotuch devices
-			if ('ontouchstart' in document.documentElement) document.addEventListener('touchmove',function(e) {e.preventDefault();},false);
+			if ('ontouchstart' in document.documentElement) {
+				document.addEventListener('touchmove',function(e) {e.preventDefault();},false);
+				document.getElementById('doclist').addEventListener('touchmove',function(e){e.stopPropagation()},false);
+				document.getElementById('results').addEventListener('touchmove',function(e){e.stopPropagation()},false);				
+			}
 
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {

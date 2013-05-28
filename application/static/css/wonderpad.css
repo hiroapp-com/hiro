@@ -159,9 +159,37 @@ a.wpcbutton:hover {
   top: 48px;
   left: 50px;
   bottom: 50px;
-  overflow: hidden;  
+  width: 290px;
+  overflow-x: hidden; 
+  overflow-y: auto;  
   -webkit-overflow-scrolling: touch; 
   z-index: 1010;
+}
+
+.menu .documents::-webkit-scrollbar {
+    width: 7px;
+    height: 9px;
+}
+.menu .documents::-webkit-scrollbar-button:start:decrement, 
+.menu .documents::-webkit-scrollbar-button:end:increment {
+    display: block;
+    height: 0;
+    background-color: transparent;
+}
+.menu .documents::-webkit-scrollbar-track-piece {
+    -webkit-border-radius: 0;
+    -webkit-border-bottom-right-radius: 4px;
+    -webkit-border-bottom-left-radius: 4px;
+}
+.menu .documents::-webkit-scrollbar-thumb:vertical {
+    height: 50px;
+    background-color: rgba(0, 0, 0, 0.2);
+    -webkit-border-radius: 4px;
+}
+.menu .documents::-webkit-scrollbar-thumb:horizontal {
+    width: 50px;
+    background-color: rgba(0, 0, 0, 0.2);
+    -webkit-border-radius: 4px;
 }
 
 .menu .documents a.document {
@@ -172,7 +200,7 @@ a.wpcbutton:hover {
   font-size: 18px;
   font-weight: 400;  
   text-decoration: none;
-  width: 290px;
+  width: auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; 
@@ -246,7 +274,9 @@ a.wpcbutton:hover {
 }
 
 @media (max-width: 700px) {
-
+  .menu .documents {
+    width: 240px;
+  }
 }
 
 
