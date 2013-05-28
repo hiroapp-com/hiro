@@ -35,15 +35,6 @@ from forms import LoginForm, SignupForm
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
-close_window_html =  """
-<html>
-    <head></head>
-    <body>
-        <script> window.close(); </script>
-    </body>
-</html>
-"""
-
 
 
 # Flask-Cache (configured to use App Engine Memcache API)
@@ -103,7 +94,7 @@ def fb_callback():
         user.facebook_uid = me.data['id']
         user.put()
     login_user(user, remember=True)
-    return {'GET': close_window_html,
+    return {'GET': redirect(request.args.get('next', '/')),
             'POST': jsonify(user.to_dict())
             }[request.method]
 
