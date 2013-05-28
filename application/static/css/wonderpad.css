@@ -273,7 +273,7 @@ a.wpcbutton:hover {
   position: fixed;
   margin-right: 8px;
   right: 0;
-  top: 5px;
+  top: 0;
   z-index: 31000;
   color: #999;
   text-decoration: none;
@@ -427,12 +427,12 @@ a.wpcbutton:hover {
 
   #switchview {
     margin-right: 8px;
-    top: 5px;
+    top: 7px;
   }
 
   #switchview.open {
     margin-right: 4px;
-    top: 5px;
+    top: 7px;
   }
 
 }
@@ -719,6 +719,15 @@ a.wpcbutton:hover {
     margin-left: 51px;
     padding-left: 63px;    
   }  
+
+  .context .results .result.sticky:first-child {
+    border-top: 1px dotted #d6d6d6;  
+    margin-top: 0; 
+  }  
+
+    .context .results .result.sticky:first-child:hover {
+    border-top: 1px solid #c5c5c5;
+  } 
 
   .context .results .result:hover {
     margin-left: 51px;

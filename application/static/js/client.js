@@ -425,7 +425,11 @@ var WPCLib = {
 					WPCLib.context.sticky = data.links.sticky || [];
 					WPCLib.context.links = data.links.normal || [];
 					WPCLib.context.blacklist = data.links.blacklist || [];	
-					WPCLib.context.renderresults();
+					if (data.links.normal.length!=0) {
+						WPCLib.context.renderresults();
+					} else {
+						WPCLib.context.analyze(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
+					}
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'All loaded, keep going.';						
 				}
 			});						
