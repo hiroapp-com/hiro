@@ -105,7 +105,7 @@ var WPCLib = {
 						d.appendChild(t);
 						d.appendChild(stats);	
 
-						if ('ontouchstart' in document.documentElement) {
+						if (('ontouchstart' in document.documentElement)&&l>1) {
 							d.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
 						}
 
@@ -920,7 +920,7 @@ var WPCLib = {
 					
 			e.appendChild(r);
 			// Avoid full window wobbling & layout messup on touch devices
-			if ('ontouchstart' in document.documentElement) {
+			if (('ontouchstart' in document.documentElement)&&WPCLib.sys.user.level!=0) {
 				e.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
 			}				
 			return e;
@@ -1014,9 +1014,7 @@ var WPCLib = {
 
 			// Prevent browser window elasticity onotuch devices
 			if ('ontouchstart' in document.documentElement) {
-				document.addEventListener('touchmove',function(e) {e.preventDefault();},false);
-				document.getElementById('doclist').addEventListener('touchmove',function(e){e.stopPropagation()},false);
-				document.getElementById('results').addEventListener('touchmove',function(e){e.stopPropagation()},false);				
+				document.addEventListener('touchmove',function(e) {e.preventDefault();},false);			
 			}
 
 			// Add events that should be called when DOM is ready to the setupTask queue
@@ -1179,7 +1177,12 @@ var WPCLib = {
                 } else {
 	                // Always load external docs as register endpoint can be used for existing login
 					WPCLib.folio.docs.loaddocs();	
-                }				
+                }	
+
+                // Render results to attach new scroll event handlers on mobilre devices
+                if ('ontouchstart' in document.documentElement) {
+                	WPCLib.context.renderresults();
+                }			
 
                 // Hide dialog
                 WPCLib.ui.hideDialog();	
