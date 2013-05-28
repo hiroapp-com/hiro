@@ -36,10 +36,6 @@ handlers:
   static_files: application/static/robots.txt
   upload: application/static/robots.txt
 
-- url: /MkkSxms8WBmBCNrYGZTbJFtTUw5EBdPG250YWCsNlg--.html
-  static_files: application/static/robots.txt
-  upload: application/static/robots.txt
-
 - url: /gae_mini_profiler/static
   static_dir: lib/gae_mini_profiler/static
 

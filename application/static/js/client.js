@@ -93,7 +93,11 @@ var WPCLib = {
 						t.innerHTML = title;
 
 						var stats = document.createElement('small');
-						stats.appendChild(document.createTextNode(WPCLib.util.humanizeTimestamp(act[i].updated) + " ago"))			
+						if (act[i].updated) {
+							stats.appendChild(document.createTextNode(WPCLib.util.humanizeTimestamp(act[i].updated) + " ago"))
+						} else {
+							stats.appendChild(document.createTextNode('Not saved yet'))							
+						}			
 
 						d.appendChild(t);
 						d.appendChild(stats);	
@@ -1244,9 +1248,14 @@ var WPCLib = {
 			var now = this.now();
 			var t = now - timestamp;
 			if (t<60) return "Moments";
+			if (t<120) return Math.round(t/60) + " minute";			
 			if (t<3600) return Math.round(t/60) + " minutes";
+			// if less than 1 hour ago			
+			if (t<7200) return Math.round(t/3600) + " hour";			
 			// if less than 36 hours ago			
-			if (t<129600) return Math.round(t/3600) + " hours";		
+			if (t<129600) return Math.round(t/3600) + " hours";	
+			// if less than 2 days ago
+			if (t<172800) return Math.round(t/86400) + " day";				
 			// if less than 14 days ago
 			if (t<1209600) return Math.round(t/86400) + " days";
 			// if less than 8 weeks ago
