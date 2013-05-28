@@ -1,5 +1,5 @@
 application: wondapad
-version: 2
+version: 3
 runtime: python27
 api_version: 1
 threadsafe: true
@@ -33,6 +33,10 @@ handlers:
   upload: application/static/img/apple-touch-icon-precomposed.png  
 
 - url: /robots.txt
+  static_files: application/static/robots.txt
+  upload: application/static/robots.txt
+
+- url: /MkkSxms8WBmBCNrYGZTbJFtTUw5EBdPG250YWCsNlg--.html
   static_files: application/static/robots.txt
   upload: application/static/robots.txt
 

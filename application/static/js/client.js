@@ -44,7 +44,7 @@ var WPCLib = {
 					f.update();
 
 					// load top doc if not already on canvas, currently this should only be the 
-					// case if a user logs when sitting in front of an empty document
+					// case if a user logs in when sitting in front of an empty document
 					if (data.active[0].id != WPCLib.canvas.docid) {
 						WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);
 					}			
@@ -252,7 +252,7 @@ var WPCLib = {
 		showSettings: function(section,field) {
 			// Show settings dialog
 			if (WPCLib.sys.user.level==0 && !field) {
-				field = true;
+				field = 'signup_mail';
 				section = 's_signup';
 			} 
 			WPCLib.ui.showDialog(event,'',section,field);
@@ -1355,8 +1355,9 @@ var WPCLib = {
 				WPCLib.ui.switchView(el);
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
+					document.activeElement.blur();
 					if (typeof field == 'boolean') el.getElementsByTagName('input')[0].focus();													
-					if (typeof field == 'string') frame.document.getElementById(field).focus();
+					if (typeof field == 'string') frame.document.getElementById(field).focus();	
 				}					
 			}	
 

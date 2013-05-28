@@ -1078,14 +1078,12 @@ body#settingsPage a.close:hover {
 }
 
 #s_signin .error, #s_signup .error {
-  float: left;
+  float: right;
   display: inline-block;
-  padding-top: 4px;
   font-size: 14px;
   color: red;  
-  position: absolute;
-  margin-top: -41px;
-  right: 188px;  
+  margin-top: -38px;
+  margin-right: 10px; 
 }
 
 #signuperror, #loginerror {
