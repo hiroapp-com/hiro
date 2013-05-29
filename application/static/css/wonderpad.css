@@ -1190,13 +1190,12 @@ body#settingsPage a.close:hover {
 }
 
 #s_settings .header em {
-  color: #666;
   font-style: normal;
 }
 
 #s_settings .header span {
   display: block;
-  padding: 20px 0 16px 20px;
+  padding: 5px 40px 2px 5px;
 }
 
 #s_settings .header a {
@@ -1308,6 +1307,14 @@ body#settingsPage a.close:hover {
     height: 90%;
     overflow: hidden;
   }
+
+  #s_settings .header em {
+    display: none;
+  }  
+
+  #s_settings .header .active, #s_settings .header a  {
+    margin-right: 10px;
+  }  
 
   #s_signin, #s_signup {
     width: 90%;

@@ -140,7 +140,7 @@ var WPCLib = {
 					return;
 				}
 				if (this.active && WPCLib.sys.user.level == 1 && this.active.length >= 10) {
-					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc);
+					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade now for unlimited documents &amp; much more.');
 					return;					
 				}
 
