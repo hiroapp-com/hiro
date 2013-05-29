@@ -4,7 +4,7 @@ var WPCLib = {
 	// Folio is the nav piece on the left, holding all file management pieces
 	folio: {
 		folioId: 'folio',
-		logoutId: 'logout',	
+		logioId: 'logio',	
 
 		init: function() {
 			// Basic Folio Setup
@@ -132,12 +132,15 @@ var WPCLib = {
 				// Avoid creating multiple docs at once and check for user level
 				if (this.creatingDoc == true) return;
 
+				// TODO Bruno get up to speed with callback scoping & call(), in the meantime a quickfix for edge case			
+				if (typeof this.active === 'undefined') return;				
+
 				if (WPCLib.sys.user.level == 0 && this.active.length!=0) {
-					WPCLib.sys.user.upgrade(1);
+					WPCLib.sys.user.upgrade(1,WPCLib.folio.docs.newdoc);
 					return;
 				}
-				if (WPCLib.sys.user.level == 1 && this.active.length >= 10) {
-					WPCLib.sys.user.upgrade(2);
+				if (this.active && WPCLib.sys.user.level == 1 && this.active.length >= 10) {
+					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc);
 					return;					
 				}
 
@@ -408,7 +411,10 @@ var WPCLib = {
 					WPCLib.canvas.lastUpdated = data.last_updated;			
 
 					// Show data on canvas
-					if (data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
+					var mobile = (document.body.offsetWidth<=480);
+					// Always hide context on mobile size
+					if (mobile && document.getElementById(WPCLib.context.id).style.display=='block') WPCLib.context.switchview();
+					if (!mobile && data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title;
 					document.getElementById(that.contentId).value = data.text;
 					that._setposition(data.cursor);
@@ -416,8 +422,6 @@ var WPCLib = {
 					// Set internal values
 					that.text = data.text;
 					that.title = data.title;	
-					
-
 
 					// If body is empty show a quote
 					if (!data.text || data.text.length == 0) {
@@ -531,7 +535,7 @@ var WPCLib = {
 			if (title.value==WPCLib.canvas.titleTip) title.value = '';	
 		},	
 
-		evaluatetitle: function() {
+		evaluatetitle: function(e) {
 			// When the title changes we update the folio and initiate save
 			WPCLib.folio.docs.active[0].title = this.value;
 
@@ -541,7 +545,13 @@ var WPCLib = {
 			if (!this.value) document.title = 'Untitled';
 
 			// Initiate save & search
-			WPCLib.canvas._settypingtimer();	
+			WPCLib.canvas._settypingtimer();
+
+			// If user presses enter automatically move to body	
+		    if (e.keyCode == 13) {
+				e.preventDefault();
+		        WPCLib.canvas._setposition(WPCLib.canvas.caretPosition);
+		    }			
 		},
 
 		_cleanwelcome: function() {
@@ -713,6 +723,8 @@ var WPCLib = {
 			if (!pos) var pos = 0;
     		// Abort if device is mobile and menu not fully closed yet    		
     		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;	
+    		// Unfocus any existing elements
+    		document.activeElement.blur();
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
 				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
@@ -759,7 +771,6 @@ var WPCLib = {
 			var mobile = (document.body.offsetWidth<=480);
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
-			console.log('mobile: ',mobile,' internal value ',this.show,' current display property ',c.style.display);
 			if ((!mobile&&this.show)||(mobile&&c.style.display=='block')) {
 				c.style.display = 'none';
 				can.className += " full";								
@@ -1087,6 +1098,8 @@ var WPCLib = {
 			// levels: 0 = anon, 1 = free, 2 = paid
 			level: 0,
 			dialog: window.frames['dialog'],
+			signinCallback: null,
+			upgradeCallback: null,
 
 			register: function() { 
 				// Register a new user (or log in if credentials are from know user)
@@ -1179,14 +1192,26 @@ var WPCLib = {
 					WPCLib.folio.docs.loaddocs();	
                 }	
 
-                // Render results to attach new scroll event handlers on mobilre devices
+                // Render results to attach new scroll event handlers on mobile devices
                 if ('ontouchstart' in document.documentElement) {
                 	WPCLib.context.renderresults();
-                }			
+                }
 
-                // Hide dialog
-                WPCLib.ui.hideDialog();	
-			},		
+                // See if we have a callback waitin
+                if (this.signinCallback) WPCLib.util.docallback(this.signinCallback);			
+
+                // Suggest upgrade afetr initial registration or just hide dialog
+                if (user.tier==1&&type=='register') {
+                	this.forceupgrade(2,'Unlock more features right away?');
+                } else {
+                	WPCLib.ui.hideDialog();	
+                }
+			},	
+
+			logio: function() {
+				if (this.level==0) WPCLib.folio.showSettings('s_signin','signin_mail');				
+				else this.logout();
+			},	
 
 			logout: function() {
 				// Simply log out user and reload window
@@ -1194,7 +1219,7 @@ var WPCLib = {
 					url: "/logout",
 	                type: "POST",
 					success: function(data) {
-	                    location.reload();							                    
+	                    window.location.href = '/';							                    
 					}									
 				});				
 
@@ -1207,7 +1232,7 @@ var WPCLib = {
 
 				var results = document.getElementById(WPCLib.context.resultsId);
 				var signupButton = document.getElementById(WPCLib.context.signupButtonId);
-				var logout = document.getElementById(WPCLib.folio.logoutId);
+				var logio = document.getElementById(WPCLib.folio.logioId);
 
 				switch(level) {
 					case 0:
@@ -1231,13 +1256,36 @@ var WPCLib = {
 						results.style.marginRight = '1px';
 						results.style.paddingRight = '2px';						
 						signupButton.style.display = 'none';
-						logout.style.display = 'inline-block'					
+						logio.className = 'logio logout';
+						logio.getElementsByTagName('a')[0].title = 'Logout';
+						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';					
 						break;	
 				}				
 			},
 
-			upgrade: function(level) {
-				console.log('Upgrade user to ', level);
+			upgrade: function(level,callback,reason) {
+				if (this.level==0) {
+					// If user is not loggedin yet we show the regsitration first
+					// TODO Refactor dialog & login flow to enable callback without going spaghetti
+					this.signinCallback = callback;
+					WPCLib.ui.showDialog(event,'','s_signup','signup_mail');
+					return;
+				}
+				if (this.level<level) this.forceupgrade(level,reason);
+			},
+
+			forceupgrade: function(level,reason) {
+				// Show an upgrade to paid dialog and do callback
+				console.log('trying to upgrade to ',level,reason);
+
+				// Change default header to reason for upgrade
+				var el = window.frames['dialog'].document.getElementById('s_plan').getElementsByTagName('div')[0];
+				el.innerHTML = '<span class="reason">' + reason + '</span>';
+
+				// Make sure the parent node is set to block, bit redundant but working fine
+				WPCLib.ui.showDialog(event,'','s_settings');	
+				WPCLib.ui.showDialog(event,'','s_plan');
+				if (this.upgradeCallback) WPCLib.util.docallback(this.upgradeCallback);				
 			}
 		},
 	},
@@ -1337,6 +1385,16 @@ var WPCLib = {
 			}
 			e.returnValue = false;
 			e.cancelBubble = true;
+		},
+
+		docallback: function(callback) {
+			// Execute a callback
+			if (typeof callback == 'function') {
+				callback();
+			}
+			else if (typeof callback == 'string') {
+				eval(callback);
+			} 			
 		}
 	},
 
@@ -1384,7 +1442,7 @@ var WPCLib = {
 			// show a specific section and / or focus on a specific field
 
 			if (section) {
-				var el = frame.document.getElementById(section);	
+				var el = frame.document.getElementById(section);
 				WPCLib.ui.switchView(el);
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {

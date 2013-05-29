@@ -231,11 +231,18 @@ a.wpcbutton:hover {
   left: 0.50em;
 }
 
-.menu .menufooter .logout {
-  display: none;
+.menu .menufooter .logio {
+  display: block;
 }
 
-.menu .menufooter .logout a span {
+.menu .menufooter .logio.login a span {
+  background-image: url(../img/icon-logout.png);
+  background-position: 1px 1px;
+  background-repeat: no-repeat;
+  background-size: 16px 14px;
+}
+
+.menu .menufooter .logio.logout a span {
   background-image: url(../img/icon-logout.png);
   background-position: 1px 1px;
   background-repeat: no-repeat;
@@ -716,6 +723,14 @@ a.wpcbutton:hover {
   bottom: 0;
   padding: 0.7em 1em 0.7em 1em;
   background-color: rgba(240,240,237,0.9);
+text-align: center;  
+}
+
+.context .upgrade small {
+  font-size: 14px;
+  color: #666;
+  display: none;
+  padding-bottom: 3px;
 }
 
 .context .upgrade a {
@@ -769,6 +784,10 @@ a.wpcbutton:hover {
     right: 0;
     left: 0;    
   }
+
+  .context .upgrade small {
+    display: block;
+  }  
 
   .context .upgrade a {
     width: auto;
@@ -1173,6 +1192,11 @@ body#settingsPage a.close:hover {
 #s_settings .header em {
   color: #666;
   font-style: normal;
+}
+
+#s_settings .header span {
+  display: block;
+  padding: 20px 0 16px 20px;
 }
 
 #s_settings .header a {
