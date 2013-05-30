@@ -59,6 +59,18 @@ body {
   color: #eee;
 }
 
+.button.dark span {
+  background-position: 1px 1px;
+  background-repeat: no-repeat;
+  background-size: 15px 15px;  
+}
+
+.panel.dark span {
+  background-position: 1px 1px;
+  background-repeat: no-repeat;
+  background-size: 15px 15px;  
+}
+
 .button.dark:hover, .panel.dark:hover {
   background: -webkit-gradient(linear, left top, left bottom, from(#666), to(#444)); 
   border: 1px solid #1d1d1d;   
@@ -236,17 +248,11 @@ a.wpcbutton:hover {
 }
 
 .menu .menufooter .logio.login a span {
-  background-image: url(../img/icon-logout.png);
-  background-position: 1px 1px;
-  background-repeat: no-repeat;
-  background-size: 16px 14px;
+  background-image: url(../img/icon-login.png);
 }
 
 .menu .menufooter .logio.logout a span {
   background-image: url(../img/icon-logout.png);
-  background-position: 1px 1px;
-  background-repeat: no-repeat;
-  background-size: 16px 14px;
 }
 
 .menu .menufooter .archive {
@@ -263,9 +269,7 @@ a.wpcbutton:hover {
 }
 
 .menu .menufooter a.settings span {
-  background-image: url(../img/settings.png);
-  background-position: -2px -1px;
-  background-repeat: no-repeat;  
+  background-image: url(../img/settings.png); 
 }
 
 .menu .menufooter a.archbutton {
@@ -275,9 +279,7 @@ a.wpcbutton:hover {
 
 .menu .menufooter a.archbutton span {
   background-image: url(../img/archive.png);
-  padding-left: 28px;
-  background-position: -2px -1px;
-  background-repeat: no-repeat;  
+  padding-left: 28px; 
 }
 
 @media (max-width: 700px) {
@@ -607,19 +609,25 @@ a.wpcbutton:hover {
   background-color: #bbb;
 }
 
+.context .results .result a.action {
+  background-repeat: no-repeat;
+  background-position: 8px 8px;
+  background-size: 17px 17px;  
+}
+
 .context .results .result a.stick {
-  background: url(../img/stick-white-semi.png) no-repeat 6px 6px;  
+  background-image: url(../img/stick-white-semi.png);  
   position: absolute;
   top: 10px;
   left: 10px;
 }
 
 .context .results .result a.stick:hover {
-  background: url(../img/stick.png) no-repeat 6px 6px;  
+  background-image: url(../img/stick.png);  
 }
 
 .context .results .result a.unstick {
-  background: url(../img/stick.png) no-repeat 6px 6px;  
+  background-image: url(../img/stick.png);  
   position: absolute;
   display: block;
   background-color: none;
@@ -629,7 +637,7 @@ a.wpcbutton:hover {
 }
 
 .context .results .result:hover a.unstick {
-  background: url(../img/unstick-white-semi.png) no-repeat 6px 6px;  
+  background-image: url(../img/unstick-white-semi.png);  
   background-color: #ccc;  
   top: 10px;
   left: 10px;  
@@ -637,21 +645,21 @@ a.wpcbutton:hover {
 }
 
 .context .results .result:hover a.unstick:hover {
-  background: url(../img/unstick.png) no-repeat 6px 6px;  
+  background-image: url(../img/unstick.png);  
   background-color: #bbb;  
   top: 10px;
   left: 10px;  
 }
 
 .context .results .result a.delete {
-  background: url(../img/hide-white-semi.png) no-repeat 5px 6px;  
+  background-image: url(../img/hide-white-semi.png);  
   position: absolute;
   top: 49px;
   left: 10px;
 }
 
 .context .results .result a.delete:hover {
-  background: url(../img/hide.png) no-repeat 5px 6px;  
+  background-image: url(../img/hide.png);  
 }
 
 .context .results .result a.link {
@@ -1087,7 +1095,8 @@ body#settingsPage {
 }
 
 body#settingsPage a.close {
-  background: url(../img/hide.png) no-repeat top right;  
+  background: url(../img/hide.png) no-repeat top right; 
+  background-size: 17px 17px; 
   position: absolute;
   display: block;
   padding-right: 30px;
