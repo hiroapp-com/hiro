@@ -30,6 +30,20 @@ pagespeed:
   - http://www.hiroapp.com/analyze
   enabled_rewriters:
   - MinifyCss
+  - CollapseWhitespace
+  disabled_rewriters:
+  - InlineCss
+  - ImageConvertToJpeg
+  - ImageResize
+  - LazyloadImages
+  - InlinePreviewImages
+  - MoveCssToHead
+  - CombineCss
+  - CombineJs
+  - WebpOptimization
+  - ImageRecompressJpeg 
+  - ImageProgressiveJpeg
+  - ConvertMetaTags
 
 
 handlers:
