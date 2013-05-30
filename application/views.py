@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 views.py
 
@@ -12,27 +13,28 @@ import time
 import string
 import random
 import uuid
-import logging as log
 from datetime import datetime
 
-from google.appengine.ext import ndb
 
 from flask import request, session, render_template, redirect, url_for, jsonify
 from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
-from pattern.en import tag
 from pattern.web import Yahoo
 
 from textmodels.textrank import get_top_keywords_list
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
-from utils import create_query_string, get_search_term_list, wrap_term
 from application import app
 from models import User, Document, Link
 from forms import LoginForm, SignupForm
+from utils import get_sorted_chunks
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
+def search_yahoo(terms, num_results=20):
+    quoter = lambda s: '"{0}"'.format(s) if ' ' in s else s
+    qry = '+'.join(quoter(t) for t in terms)
+    return yahoo.search(qry, count=num_results)
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
 
@@ -227,56 +229,33 @@ def get_document(doc_id):
         return "access denied, sorry.", 403
     return jsonify(doc.to_dict())
 
-
-# old code copypasta follows
-
-#@app.route('/analyze', methods=['POST'])
 def analyze_content():
     text = request.form['content']
+    normal_noun_chunks, proper_noun_chunks = get_sorted_chunks(text)
     textrank_chunks = get_top_keywords_list(text, 8)
-    return jsonify(textrank_chunks=textrank_chunks)
+    return jsonify(textrank_chunks=textrank_chunks, 
+                   noun_chunks=normal_noun_chunks, 
+                   proper_chunks=proper_noun_chunks)
 
-#@app.route('/relevant', methods=['POST'])
-def search_results():
-    terms = request.form.getlist('search_terms')
-    stripped_terms = ''.join(terms).strip()
-    search_terms = get_search_term_list(stripped_terms)
-                
-    use_shortening = request.form.get('use_shortening') == 'true'
-                
-    keyword_count = len(search_terms)
-    result_urls = {}
-    result_list = []
-                
-    if use_shortening:
-        while keyword_count >= 1 and len(result_list) < 20:
-            current_search_terms = search_terms[:keyword_count]
-            #log('Searching with query: %s' % ' '.join(
-                #map(wrap_term, current_search_terms)))
-            query_string = create_query_string(current_search_terms)
-            results = yahoo.search(query_string, count=20)
-                
-            #log('Yahoo search with %d keywords resulted in %d urls...' % \
-                    #(keyword_count, len(results)))
-                
-            # check for dupes
-            for result in results:
-                if result.url not in result_urls:
-                    result_urls[result.url] = result
-                    result_list.append(result)
-            
-            keyword_count = keyword_count - 2
-            
-    else:   
-        #log('Searching with query: %s' % ' '.join(
-            #map(wrap_term, search_terms)))
-        query_string = create_query_string(search_terms)
-        result_list = yahoo.search(query_string, count=20)
-            
-    #log('Yahoo search resulted in %d urls...' % (len(result_list)))
-    return jsonify(results=result_list)
+def relevant_links():
+    urls_seen, results = {}, []
+    terms, shorten = request.json['terms'], request.json['use_shortening']
 
-
+    if shorten:
+        while len(terms) > 0 and len(results) < 20:
+            serp = search_yahoo(terms) 
+            for result in serp:
+                if result.url not in urls_seen:
+                    urls_seen[result.url] = True
+                    results.append(result)
+            terms = terms[:-2]
+    else:
+        results = search_yahoo(terms)
+        
+    results = [{'url': link.url,
+                'title': link.title,
+                'description': link.text} for link in results]
+    return jsonify(results=results)
 
 
 
@@ -286,4 +265,3 @@ def warmup():
 
     """
     return ''
-
