@@ -18,7 +18,7 @@
 					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signin_mail').value=this.value;" id="signup_mail"></input><div class="error"></div>					
 					<input type="password" placeholder="Choose a password"></input><div class="error"></div>					
 				</form>		
-				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(); return false;">Create Account</b></a>	
+				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(); return false;">Create Account</a>	
 				<div id="signuperror"></div>
 				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin')); return false;">Already have an account?</a>			
 			</div>	
@@ -29,7 +29,7 @@
 					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signup_mail').value=this.value;" id="signin_mail"></input><div class="error"></div>
 					<input type="password" placeholder="Password"></input><div class="error"></div>
 				</form>		
-				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</b></a>	
+				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</a>	
 				<div id="loginerror"></div>				
 				<a href="" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>					
 			</div>	
@@ -119,7 +119,20 @@
 					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Plan<em>s &amp; Payment</em></a>
 					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>	
 				</div>
-				{{ current_user }}
+				{% if current_user.is_authenticated() %}
+				<div class="accountdetails">
+					<form>
+						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via <a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
+						<input type="text" value="Member Since: {{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption">Thanks!</div>
+						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %} Plan: 8 of 10 documents" disabled></input>{% if current_user.tier<3 %}<div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>{% endif %}			
+					</form>		
+					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
+					<a href="#" class="wpcbutton share fb" onclick="_wpc.sys.user.register(); return false;">via <b>Facebook</b></a>
+					<a href="#" class="wpcbutton share tw" onclick="_wpc.sys.user.register(); return false;">via <b>Twitter</b></a>	
+					<a href="#" class="wpcbutton share mail" onclick="_wpc.sys.user.register(); return false;">via <b>Mail</b></a>	
+					<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F" class="wpcbutton share sms">via <b>SMS</b></a>
+				</div>	
+				{% endif %}					
 			</div>
 				
 			<div id="s_plan" style="display:none;">

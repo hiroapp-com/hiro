@@ -1125,8 +1125,8 @@ body#settingsPage a.close {
   position: absolute;
   display: block;
   padding-right: 30px;
-  top: 19px;
-  right: 20px;
+  top: 21px;
+  right: 22px;
   color: #fff;
   opacity: 0.3;
 }
@@ -1135,12 +1135,17 @@ body#settingsPage a.close:hover {
   opacity: 0.6;
 }
 
-#s_login {
+#s_login, .accountdetails {
   text-align: center;
 }
 
 #s_signin, #s_signup {
   margin: 98px auto 0 auto;
+  width: 400px;
+}
+
+#s_settings .accountdetails {
+  margin: 80px auto 0 auto;
   width: 400px;
 }
 
@@ -1178,6 +1183,26 @@ body#settingsPage a.close:hover {
   margin-right: 10px; 
 }
 
+#s_settings form .ioption {
+  float: right;
+  display: inline-block;
+  font-size: 14px;  
+  margin-top: -38px;
+  margin-right: 10px; 
+  color: #999;
+}
+
+#s_settings form .ioption a {
+  text-decoration: none;
+  color: #055a0b;
+}
+
+#s_settings form .ioption a.facebook {
+  text-decoration: none;
+  color: #3b5998;
+  font-weight: 600;
+}
+
 #signuperror, #loginerror {
   float: left;
   display: inline-block;
@@ -1186,12 +1211,12 @@ body#settingsPage a.close:hover {
   padding-top: 4px;
 }
 
-#s_login .divider {
+#s_login .divider, .accountdetails .divider {
   border-bottom: 1px solid #ccc;
   margin-top: 25px;
 }
 
-#s_login .divider .or {
+#s_login .divider .or, .accountdetails .divider .or {
   color: #999;
   margin-bottom: -10px;
   display: block;
@@ -1200,11 +1225,11 @@ body#settingsPage a.close:hover {
   display: inline-block;
 }
 
-#s_login form {
+#s_login form, .accountdetails form {
   margin-top: 33px;
 }
 
-#s_login form input {
+#s_login form input, .accountdetails form input {
   font-family: "urbana",sans-serif;
   font-size: 18px;
   padding: 8px 10px 8px 10px;  
@@ -1214,6 +1239,35 @@ body#settingsPage a.close:hover {
   font-weight: 200;
   border-radius: 3px;
   border: 1px solid #bbb;
+}
+
+.accountdetails a.wpcbutton.share {
+  width: 100px;
+  display: inline-block;
+  margin-top: 20px;
+  margin-right: 20px;
+  font-size: 14px;
+}
+
+.accountdetails a.wpcbutton.share b {
+  font-size: 18px;
+}
+
+.accountdetails a.wpcbutton.share.fb {
+  background-color: #3b5998;
+}
+
+.accountdetails a.wpcbutton.share.tw {
+  background-color: #0271bf;
+}
+
+.accountdetails a.wpcbutton.share.mail {
+  background-color: #DD4B39;  
+  margin-right: 0;
+}
+
+.accountdetails a.wpcbutton.share.sms {
+  display: none;
 }
 
 #s_settings .header {
@@ -1342,6 +1396,11 @@ body#settingsPage a.close:hover {
     overflow: hidden;
   }
 
+  body#settingsPage a.close {
+    color: transparent;
+    padding-right: 0;
+  }
+
   #s_settings .header em {
     display: none;
   }  
@@ -1354,6 +1413,33 @@ body#settingsPage a.close:hover {
     width: 90%;
     margin-top: 58px;    
   }
+
+  #s_settings .accountdetails {
+    width: 90%;
+    margin-top: 17px;    
+  }
+
+  #s_settings .accountdetails form {
+    margin-top: 0;   
+  }
+
+  .accountdetails a.wpcbutton.share {
+    width: auto;
+    display: block;
+    margin-top: 10px;
+    margin-right: 0;
+    text-align: left;
+    padding-left: 10px;
+  }  
+
+  .accountdetails a.wpcbutton.share.fb {
+    margin-top: 20px;
+  }   
+
+  .accountdetails a.wpcbutton.share.sms {
+    display: block;
+    background-color: #055a0b;
+  }  
 
   #s_login a.fb {
     font-size: 20px;
