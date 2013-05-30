@@ -4,16 +4,20 @@ Initialize Flask app
 """
 from flask import Flask
 
-#from flask_debugtoolbar import DebugToolbarExtension
-from gae_mini_profiler import profiler, templatetags
-from werkzeug.debug import DebuggedApplication
 from flask.ext import login
+from werkzeug.debug import DebuggedApplication
+from gae_mini_profiler import profiler, templatetags
+from custom_session import ItsdangerousSessionInterface
 
 from application.models import User, Anonymous
 
 
 app = Flask('application')
 app.config.from_object('application.settings')
+
+
+app.session_interface = ItsdangerousSessionInterface()
+
 
 # Enable jinja2 loop controls extension
 app.jinja_env.add_extension('jinja2.ext.loopcontrols')
