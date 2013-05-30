@@ -22,13 +22,12 @@ from flask.ext.login import current_user, login_user, logout_user, login_require
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
 
-from textmodels.textrank import get_top_keywords_list
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
 from application import app
-from models import User, Document, Link
-from forms import LoginForm, SignupForm
-from utils import get_sorted_chunks
+
+from .models import User, Document, Link
+from .forms import LoginForm, SignupForm
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 def search_yahoo(terms, num_results=20):
@@ -230,16 +229,21 @@ def get_document(doc_id):
     return jsonify(doc.to_dict())
 
 def analyze_content():
-    text = request.form['content']
-    normal_noun_chunks, proper_noun_chunks = get_sorted_chunks(text)
-    textrank_chunks = get_top_keywords_list(text, 8)
-    return jsonify(textrank_chunks=textrank_chunks, 
-                   noun_chunks=normal_noun_chunks, 
-                   proper_chunks=proper_noun_chunks)
+    tmpdoc = Document(text=request.form.get('content', ''))
+    return jsonify(tmpdoc.analyze())
 
 def relevant_links():
     urls_seen, results = {}, []
-    terms, shorten = request.json['terms'], request.json['use_shortening']
+    if not request.json:
+        return 'payload missing', 400
+    shorten = request.json.get('use_shortening', True)
+
+    if 'text' in request.json:
+        terms = Document(text=request.json['text']).analyze()['textrank_chunks']
+    elif 'terms' in request.json:
+        terms = request.json['terms']
+    else:
+        return '"text"(str) or "terms"(array) property mandatory, neither provided.', 400
 
     if shorten:
         while len(terms) > 0 and len(results) < 20:
