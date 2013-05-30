@@ -23,6 +23,15 @@ libraries:
 inbound_services:
 - warmup
 
+pagespeed:
+  url_blacklist:
+  - http://www.hiroapp.com/docs/*
+  - http://www.hiroapp.com/relevant
+  - http://www.hiroapp.com/analyze
+  enabled_rewriters:
+  - MinifyCss
+
+
 handlers:
 - url: /favicon.ico
   static_files: application/static/img/favicon.ico
