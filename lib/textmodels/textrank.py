@@ -248,7 +248,7 @@ def get_keywords(text):
 
 def get_top_keywords_list(text, keyword_count):
     ranked_keywords = get_keywords(text)
-    return ['"' + x[0] + '"' for x in ranked_keywords[:keyword_count]]
+    return [x[0] for x in ranked_keywords[:keyword_count]]
 
 # Demo usage
 import sys

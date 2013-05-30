@@ -789,7 +789,7 @@ var WPCLib = {
 		analyze: function(string, chunktype) {
 			// Send text to server for analysis
 			document.getElementById(this.statusId).innerHTML = 'Analyzing...';
-			$.post('http://wonderpad-old.herokuapp.com/analyze', {content: string}, 
+			$.post('/analyze', {content: string}, 
 			function(data){	
 				console.log(data);
 	            WPCLib.context.search(data,chunktype);
@@ -808,30 +808,35 @@ var WPCLib = {
 			// Search according to search terms returned
 			document.getElementById(this.statusId).innerHTML = 'Searching...';			
 			var data = data.chunktype || data.textrank_chunks;
-			var searchstring = "";
+            var terms = [];
 
-			// Build the searchstring from JSON object
+			// collect search terms from JSON object
 			for (var item in data) {
 			  if (data.hasOwnProperty(item)) {
 			  	if (chunktype=='proper_chunks') {
-			    	searchstring = searchstring + ' "' + data[item].head + '"';
+                    terms.push(data[item].head);
 			  	} else {
-			    	searchstring = searchstring + data[item] + ' ';			  		
+                    terms.push(data[item]);
 			  	}
 			  }
 			};
 
-			// Post data if we have a proper searchstring
-			if (searchstring) {
-				var postData = {search_terms: searchstring,use_shortening: true};
+			// Post data if we have a proper terms
+			if (terms.length > 0) {
+				var postData = {terms: terms, use_shortening: true};
 				console.log('searching for: ',postData);
 				var that = this;						
-				$.post('http://wonderpad-old.herokuapp.com/relevant', postData,
-		           function(data) {
-		            WPCLib.context.storeresults(data.results);
-		            WPCLib.context.renderresults();		             
-					document.getElementById(that.statusId).innerHTML = 'Ready for more?';		             
-		        });
+                $.ajax({
+                    url: "/relevant",
+                    type: "POST",
+                    contentType: "application/json; charset=UTF-8",
+                    data: JSON.stringify(postData),
+                    success: function(data) {
+                        WPCLib.context.storeresults(data.results);
+                        WPCLib.context.renderresults();		             
+                        document.getElementById(that.statusId).innerHTML = 'Ready for more?';
+                    }
+                });				
 			} else {
 					document.getElementById(this.statusId).innerHTML = 'Nothing interesting found.';
 			}

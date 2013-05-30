@@ -1,11 +1,4 @@
 # -*- coding: utf-8 -*-
-from urllib import quote
-import re
-from datetime import timedelta
-from functools import update_wrapper
-
-from flask import make_response, request, current_app
-
 from pattern.en import parsetree
 
 _UNICODE_REPLACEMENTS = {
@@ -89,6 +82,7 @@ def get_sorted_chunks(text, n=10):
     Each element in the tuple is a sorted list of tuples 
     (frequency, head, list of chunk strings).
     """
+    text = replace_unicode_character(text)
     relevant_chunks = get_relevant_chunks(text)    
     # get chunks already sorted and with frequency
     normal_noun_chunks, proper_noun_chunks = map(get_frequencies,
@@ -103,87 +97,3 @@ def replace_unicode_character(text):
         text = text.replace(char, repl)
     return text
 
-def wrap_term(search_term):
-    if ' ' in search_term:
-        return '"%s"' % search_term
-    return search_term
-
-
-def create_query_string(query_terms):
-    wrapped_terms = map(wrap_term, query_terms)
-    return quote(' '.join(wrapped_terms))
-
-
-def get_search_term_list(a):
-    scan_index = 0
-    term_start = 0
-    within_quote = False
-    split_char = ' '
-    terms = []
-
-    while scan_index < len(a):
-        if within_quote:
-            if a[scan_index]=='"':
-                terms.append(a[term_start:scan_index])
-                term_start = scan_index + 1
-                within_quote = False
-        else:
-            if a[scan_index]==' ':
-                if term_start < scan_index:
-                    terms.append(a[term_start:scan_index])
-                    term_start = scan_index + 1
-                    within_quote = False
-            elif a[scan_index]=='"':
-                term_start = scan_index + 1
-                within_quote = True
-        scan_index += 1
-
-    if (term_start<len(a)):
-        terms.append(a[term_start:len(a)])
-
-    return filter(len, [re.sub(r'\s+', ' ', x.strip()) for x in terms])
-
-
-def crossdomain(origin=None, methods=None, headers=None,
-                max_age=21600, attach_to_all=True,
-                automatic_options=True):
-    """
-    A decorator that adds support for CORS.
-    """
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-        if headers is not None and not isinstance(headers, basestring):
-            headers = ', '.join(x.upper() for x in headers)
-            if not isinstance(origin, basestring):
-                origin = ', '.join(origin)
-                if isinstance(max_age, timedelta):
-                    max_age = max_age.total_seconds()
-
-    def get_methods():
-        if methods is not None:
-            return methods
-
-        options_resp = current_app.make_default_options_response()
-        return options_resp.headers['allow']
-
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
-                resp = current_app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-                if not attach_to_all and request.method != 'OPTIONS':
-                    return resp
-
-            h = resp.headers
-
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            return resp
-
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-    return decorator
