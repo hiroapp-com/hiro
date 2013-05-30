@@ -415,7 +415,8 @@ a.wpcbutton:hover {
     position: absolute;
     background: url(../img/icon-menu-black.png) no-repeat 0.65em 0.65em; 
     background-size: 0.9em 0.9em; 
-    cursor: pointer;   
+    cursor: pointer; 
+    left: 7px;  
   }  
   .canvas .page {
     margin:0;
@@ -778,7 +779,7 @@ text-align: center;
     margin-top: 0; 
   }  
 
-    .context .results .result.sticky:first-child:hover {
+  .context .results .result.sticky:first-child:hover {
     border-top: 1px solid #c5c5c5;
   } 
 
@@ -786,6 +787,30 @@ text-align: center;
     margin-left: 51px;
     border-left: none;
     padding-left: 63px;        
+  }  
+
+  .context .results .result a.action {
+    width: 32px;
+    height: 32px;
+    border-radius: 3px;
+    display: block;
+    margin-left: -51px;
+    background-color: rgba(230,230,230,0.9);    
+  }
+
+  .context .results .result a.unstick {
+    margin-left: -3px !important;
+    background-color: transparent;     
+  }  
+
+  .context .results .result:hover a.action {
+    margin-left: -2px;
+    display: block;
+    background-color: #ccc;
+  }
+
+  .context .results .result:hover a.action:hover {
+    background-color: #bbb;
   }  
 
   .context .upgrade {
