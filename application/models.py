@@ -3,6 +3,9 @@ import time
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
 from flask.ext.login import UserMixin, AnonymousUser
+from textmodels.textrank import get_top_keywords_list
+
+from .utils import get_sorted_chunks
 
 
 class User(UserMixin, ndb.Model):
@@ -72,6 +75,15 @@ class Document(ndb.Model):
 
     def allow_access(self, user):
         return user.key == self.owner 
+
+    def analyze(self):
+        data = (self.title or '') + (self.text or '')
+        normal_noun_chunks, proper_noun_chunks = get_sorted_chunks(data)
+        textrank_chunks = get_top_keywords_list(data, 8)
+        return {'textrank_chunks': textrank_chunks, 
+                'noun_chunks': normal_noun_chunks, 
+                'proper_chunks':proper_noun_chunks
+                }
 
     def to_dict(self):
         return {
