@@ -1291,6 +1291,56 @@ var WPCLib = {
 				WPCLib.ui.showDialog(event,'','s_settings');	
 				WPCLib.ui.showDialog(event,'','s_plan');
 				if (this.upgradeCallback) WPCLib.util.docallback(this.upgradeCallback);				
+			},
+
+			checkoutActive: false,
+			upgradeto: 0,
+			checkout: function() {
+				// handles the complete checkout flow from stripe and our backend
+				var frame = window.frames['dialog'];
+				var Stripe = frame.Stripe;
+				if (this.checkoutActive) return;
+
+				// Preparation 
+				this.checkoutActive = true;
+				var checkoutbutton = frame.document.getElementById('checkoutbutton');
+				checkoutbutton.innerHTML = 'Verifying...';
+
+				// TODO Bruno: add LUHN checks etc
+
+				// Get plan
+				var subscription = {};
+				subscription.plan = this.upgradeto;
+
+				// Get Stripe token & send to ur backend
+				var form = frame.document.getElementById('checkoutform');
+				Stripe.createToken(form, function(status,response) {					
+					if (response.error) {
+						// Our IDs are named alongside the stripe naming conventions
+						frame.document.getElementById('cc_'+response.error.param).className += " error";
+						if (response.error.param == 'number') {
+							frame.document.getElementById('cc_'+response.error.param).nextSibling.innerHTML = response.error.message;							
+						} else {
+							frame.document.getElementById('checkout_error').innerHTML = response.error.message;
+						}
+						WPCLib.sys.user.checkoutActive = false;
+						checkoutbutton.innerHTML = "Try again"
+					} else {
+						// add stripe data to subscription object and post
+						subscription.stripe = response;
+						console.log('subscribing with ', subscription);
+						$.ajax({
+							url: "/checkout/",
+			                type: "POST",
+			                contentType: "application/json; charset=UTF-8",
+			                data: JSON.stringify(subscription),
+							success: function(data) {
+			                    console.log('Woohoo, checkout worked');	
+			                    WPCLib.sys.user.checkoutActive = false;								                    
+							}
+						});		
+					}				
+				});	
 			}
 		},
 	},
@@ -1483,6 +1533,26 @@ var WPCLib = {
 
 		upgrade: function() {
 			
+		},
+
+		fillcheckout: function(plan) {
+			// Get the checkout form ready for checkout and switch view
+			var frame = window.frames['dialog'].document;
+			var startdesc = "Starter Plan for USD 9.99";
+			var startid = 'lalala';
+			var prodesc = "Pro Plan for USD 29";
+			var proid = 'lalal';
+			if (plan == 'starter') {
+				frame.getElementById('cc_desc').value = startdesc;
+				WPCLib.sys.user.upgradeto = 2;
+			}
+			if (plan == 'pro') {
+				frame.getElementById('cc_desc').value = prodesc;
+				WPCLib.sys.user.upgradeto = 3;
+			}			
+
+
+			this.switchView(frame.getElementById('s_checkout'));
 		},
 
 		_centerDialog: function() {

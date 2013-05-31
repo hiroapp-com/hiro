@@ -1144,8 +1144,8 @@ body#settingsPage a.close:hover {
   width: 400px;
 }
 
-#s_settings .accountdetails {
-  margin: 80px auto 0 auto;
+#s_settings .accountdetails, #s_settings .checkoutdetails {
+  margin: 85px auto 0 auto;
   width: 400px;
 }
 
@@ -1156,7 +1156,7 @@ body#settingsPage a.close:hover {
   padding-bottom: 10px;
 }
 
-#s_login a.green {
+#s_login a.green, #s_settings .checkoutdetails a.green {
   padding-top: 8px;
   padding-bottom: 8px;
 }
@@ -1225,11 +1225,11 @@ body#settingsPage a.close:hover {
   display: inline-block;
 }
 
-#s_login form, .accountdetails form {
+#s_login form, .accountdetails form, .checkoutdetails form {
   margin-top: 33px;
 }
 
-#s_login form input, .accountdetails form input {
+#s_login form input, .accountdetails form input, .checkoutdetails form input {
   font-family: "urbana",sans-serif;
   font-size: 18px;
   padding: 8px 10px 8px 10px;  
@@ -1239,6 +1239,24 @@ body#settingsPage a.close:hover {
   font-weight: 200;
   border-radius: 3px;
   border: 1px solid #bbb;
+}
+
+#s_settings form input.error {
+  border: 1px solid red; 
+}
+
+.checkoutdetails form input.small {
+  width: 100px;
+  display: inline-block;
+}
+
+.checkoutdetails form input.small.cvc {
+  float: right;
+  width: 120px;
+}
+
+.checkoutdetails a.wpcbutton {
+  text-align: center;
 }
 
 .accountdetails a.wpcbutton.share {
