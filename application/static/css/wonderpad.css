@@ -1135,6 +1135,10 @@ body#settingsPage a.close:hover {
   opacity: 0.6;
 }
 
+body#settingsPage input.error {
+  border: 1px solid rgba(209, 11, 11, 0.7);
+}
+
 #s_login, .accountdetails {
   text-align: center;
 }
@@ -1192,6 +1196,11 @@ body#settingsPage a.close:hover {
   color: #999;
 }
 
+#s_settings form .ioption.error {
+  color: red;
+  background: none;
+}
+
 #s_settings form .ioption a {
   text-decoration: none;
   color: #055a0b;
@@ -1241,10 +1250,6 @@ body#settingsPage a.close:hover {
   border: 1px solid #bbb;
 }
 
-#s_settings form input.error {
-  border: 1px solid red; 
-}
-
 .checkoutdetails form input.small {
   width: 100px;
   display: inline-block;
@@ -1257,6 +1262,13 @@ body#settingsPage a.close:hover {
 
 .checkoutdetails a.wpcbutton {
   text-align: center;
+}
+
+.checkoutdetails #checkout_error {
+  font-size: 14px;
+  display: block;
+  color: red;
+  margin: -5px 0 5px 1px;
 }
 
 .accountdetails a.wpcbutton.share {
@@ -1359,6 +1371,7 @@ body#settingsPage a.close:hover {
 
 #s_plan .box .price sup {
   font-size: 12px;
+  vertical-align: baseline;  
 }
 
 #s_plan .box .curr {
@@ -1432,14 +1445,36 @@ body#settingsPage a.close:hover {
     margin-top: 58px;    
   }
 
-  #s_settings .accountdetails {
+  #s_login a.fb {
+    font-size: 20px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }  
+
+  #s_settings .accountdetails, #s_settings .checkoutdetails {
     width: 90%;
     margin-top: 17px;    
   }
 
-  #s_settings .accountdetails form {
+  #s_settings .accountdetails form, #s_settings .checkoutdetails form {
     margin-top: 0;   
   }
+
+  .checkoutdetails form input.small, .checkoutdetails form input.small.cvc {
+    width: 50px;
+    display: inline-block;
+  }  
+
+  #s_settings form .ioption {
+    color: transparent;
+  }   
+
+  #s_settings form .ioption.error {
+    width: 110px;
+    text-align: right;
+    line-height: 14px;
+    margin-top: -43px;
+  }  
 
   .accountdetails a.wpcbutton.share {
     width: auto;
@@ -1457,12 +1492,89 @@ body#settingsPage a.close:hover {
   .accountdetails a.wpcbutton.share.sms {
     display: block;
     background-color: #055a0b;
+  } 
+
+  #s_plan .plans {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 47px;
+    overflow-x: hidden; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
+    border-bottom: 1px dotted #ddd;    
   }  
 
-  #s_login a.fb {
-    font-size: 20px;
-    padding-top: 8px;
-    padding-bottom: 8px;
+  #s_plan .box {
+    float: none;
+    margin: 15px auto 10px auto;
+    display: block;
+    width: 90%;
+    height: auto;
+    text-align: center;
+  } 
+
+  #s_plan .box .head {
+    display: block;
+    font-size: 18px;
+    color: #666;
+    padding-top: 10px;
+    width: 90%;
+    margin: auto;
+    text-align: left;
+  }  
+  #s_plan .box .price {
+    position: absolute;
+    font-size: 18px;
+    color: #333;
+    font-weight: normal;
+    top: 5px;
+    right: 13px;
+  }
+  #s_plan .box .price sup {
+    font-size: 12px;
+  }  
+  #s_plan .box .curr {
+    position: absolute;
+    top: 30px;
+    right: 13px;
+    width: 30px;
+    text-align: right;
+  }
+  #s_plan .box ul {
+    display: block;
+    font-size: 16px;
+    text-align: left;
+    color: #666;
+    vertical-align: top;
+    list-style-type: none;
+    padding: 0 0 5px 0;
+    font-size: 14px;
+    width: 90%;
+    margin: auto;    
+  } 
+
+  #s_plan .box ul {
+    display: block;
+    font-size: 16px;
+    text-align: left;
+    color: #666;
+    vertical-align: top;
+    list-style-type: none;
+    padding: 0 0 5px 0;
+    font-size: 14px;
+    width: 90%;
+    margin: auto;    
+  }
+
+  #s_plan .box a.wpcbutton {
+    bottom: 0;
+    left: 0;
+    position: relative;
+    display: block;
+    margin: 0 auto 10px auto;
+    width: 85%;
   }
 
 }  

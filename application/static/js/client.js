@@ -1319,7 +1319,9 @@ var WPCLib = {
 						// Our IDs are named alongside the stripe naming conventions
 						frame.document.getElementById('cc_'+response.error.param).className += " error";
 						if (response.error.param == 'number') {
-							frame.document.getElementById('cc_'+response.error.param).nextSibling.innerHTML = response.error.message;							
+							var el = frame.document.getElementById('cc_'+response.error.param).nextSibling;
+							el.innerHTML = response.error.message;	
+							el.className += ' error';						
 						} else {
 							frame.document.getElementById('checkout_error').innerHTML = response.error.message;
 						}
@@ -1493,7 +1495,6 @@ var WPCLib = {
 			if (url) this.loadDialog(url);
 
 			// show a specific section and / or focus on a specific field
-
 			if (section) {
 				var el = frame.document.getElementById(section);
 				WPCLib.ui.switchView(el);
@@ -1508,22 +1509,33 @@ var WPCLib = {
 			// Recenter on window size changes
 			WPCLib.util.registerEvent(window, 'resize', this._centerDialog);
 			this.dialogTimer = window.setInterval(this._centerDialog, 200);
+
+			// Attach clean error styling (red border) on all input
+			var inputs = frame.document.getElementsByTagName('input');
+			for (i=0,l=inputs.length;i<l;i++) {
+				WPCLib.util.registerEvent(inputs[i], 'focus', this.cleanerror);
+			}
 		},
 
 		hideDialog: function() {
 			// Hide the current dialog
 			var s = document.getElementById(this.modalShieldId);
 			var d = document.getElementById(this.dialogWrapperId);
+			var frame = d.getElementsByTagName('iframe')[0];
 
 			// remove resize clickhandler & timer
 			if (this.dialogTimer) {
 				window.clearInterval(this.dialogTimer);
 				this.dialogTimer=null;
 				WPCLib.util.releaseEvent(window, 'resize', this._centerDialog);
+				var inputs = frame.document.getElementsByTagName('input');
+				for (i=0,l=inputs.length;i<l;i++) {
+					WPCLib.util.releaseEvent(inputs[i], 'focus', this.cleanerror);
+				}				
 			}
 
 			// reload iframe
-			d.getElementsByTagName('iframe')[0].src = d.getElementsByTagName('iframe')[0].src;
+			frame.src = frame.src;
 
 			// Hide shield & dialog
 			s.style.display = 'none';
@@ -1538,9 +1550,9 @@ var WPCLib = {
 		fillcheckout: function(plan) {
 			// Get the checkout form ready for checkout and switch view
 			var frame = window.frames['dialog'].document;
-			var startdesc = "Starter Plan for USD 9.99";
+			var startdesc = "Starter Plan: USD 9.99";
 			var startid = 'lalala';
-			var prodesc = "Pro Plan for USD 29";
+			var prodesc = "Pro Plan: USD 29";
 			var proid = 'lalal';
 			WPCLib.sys.user.upgradeto = plan;			
 			if (plan == 'starter') {
@@ -1664,6 +1676,11 @@ var WPCLib = {
 			else if (typeof userCallback == 'string') {
 				eval(userCallback);
 			}
+		},
+
+		cleanerror: function() {
+			// remove the CSS class error from object
+			if (this.className) this.className = this.className.replace(' error', '');
 		},
 
 		fade: function(element, direction, duration, callback) {	
