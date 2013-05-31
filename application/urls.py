@@ -13,6 +13,8 @@ app.add_url_rule('/_ah/warmup', 'warmup', view_func=views.warmup)
 app.add_url_rule('/', 'home', view_func=views.home)
 app.add_url_rule('/landing/', 'landing', view_func=views.landing)
 app.add_url_rule('/settings/', 'settings', view_func=views.settings)
+# payment
+app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan, methods=['POST'])
 
 # auth
 app.add_url_rule('/register', 'register', view_func=views.register, methods=['POST'])
@@ -28,8 +30,6 @@ app.add_url_rule('/docs/', 'create_document', view_func=views.create_document, m
 app.add_url_rule('/docs/<doc_id>', 'get_document', view_func=views.get_document, methods=['GET'])
 app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_document, methods=['POST'])
 
-# payment
-app.add_url_rule('/checkout', 'checkout', view_func=views.checkout, methods=['POST'])
 
 # textanalysis & semantic search
 app.add_url_rule('/analyze', 'analyze_content', view_func=views.analyze_content, methods=['POST'])

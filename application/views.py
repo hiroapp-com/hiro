@@ -54,6 +54,11 @@ facebook = oauth.remote_app('facebook',
 )
 facebook.tokengetter(lambda: session.get('oauth_token'))
 
+def jsonify_err(status, *args):
+    resp = jsonify(errors=args)
+    resp.status = str(status)
+    return resp
+
 def logout():
     logout_user()
     return '', 204
@@ -148,19 +153,15 @@ def register():
         return resp
 
 @login_required
-def checkout():
-    #TODO: move this to /settings/plan {plan: 'pro', stripeToken(opt): '...'}
-    #TODO validate token obj (replay attack?)
-    plan, token = request.json['plan'], request.json['stripe']['id']
-    
-    # only support upgrades for h0tierw
-    if plan not in User.PAID_PLANS:
-        return 'sorry only upgrade supported', 400
+def change_plan():
+    payload = request.json or {}
+    plan, token = payload.get('plan'), payload.get('stripeToken')
+    if not plan: 
+        return jsonify_err(400, 'plan field required')
+
     ok, err = current_user.change_plan(plan, token)
     if not ok:
-        return err, 400
-    # log usage of this token for replay-attack detection
-    StripeToken(id=token, used_by=current_user.key).put()
+        return jsonify_err(400, err)
     return jsonify(current_user.to_dict())
 
 
