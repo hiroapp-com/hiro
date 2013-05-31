@@ -1332,7 +1332,7 @@ var WPCLib = {
 						subscription.stripe = response;
 						console.log('subscribing with ', subscription);
 						$.ajax({
-							url: "/checkout/",
+							url: "/checkout",
 			                type: "POST",
 			                contentType: "application/json; charset=UTF-8",
 			                data: JSON.stringify(subscription),

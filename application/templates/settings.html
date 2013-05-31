@@ -154,7 +154,11 @@
 							<li>
 							<li>
 						</ul>	
-						<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
+                    {% if current_user.plan == 'free' %}
+					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
+                    {% else %}
+					<a href="#" class="wpcbutton green" onclick="set user.plan = free">Downgrade</a>
+                    {% endif %}
 					</div>
 					<div class="box 2">
 						<div class="head">Starter</div>
@@ -166,7 +170,13 @@
 							<li>Archive	
 							<li>	
 						</ul>
-						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('starter');return false;">Upgrade !</a>		
+                    {% if current_user.plan == 'starter' %}
+					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
+                    {% elif current_user.has_paid_plan %}
+					<a href="#" class="wpcbutton green" onclick="set user.plan = starter">Downgrade</a>
+                    {% else %}
+					<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('starter');return false;">Upgrade !</a>
+                    {% endif %}
 					</div>
 					<div class="box 3">
 						<div class="head">Pro</div>
@@ -179,7 +189,13 @@
 							<li>Team editing
 							<li>One-click publishing	
 						</ul>
-						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('pro');return false;">Upgrade !</a>
+                    {% if current_user.plan == 'pro' %}
+					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
+                    {% elif current_user.has_paid_plan %}
+                    <a href="#" class="wpcbutton green" onclick="set user.plan = pro">Upgrade ({{ current_user.get_stripe_customer()['active_card']['last4'] }})</a>
+                    {% else %}
+					<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('pro');return false;">Upgrade !</a>
+                    {% endif %}
 					</div>
 				</div>	
 				<div id="s_planfooter" class="footer">
@@ -246,7 +262,7 @@
 	</script>
 	<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 	<script type="text/javascript">
-  		Stripe.setPublishableKey('{{ config.STRIPE_KEY }}');
+  		Stripe.setPublishableKey('{{ config.STRIPE_PUBLIC_KEY }}');
 	</script>
 </body>
 </html>	

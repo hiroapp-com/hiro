@@ -10,7 +10,14 @@ Important: Place your keys in the secret_keys.py module,
 
 import os
 
-from secret_keys import CSRF_SECRET_KEY, SESSION_KEY, FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET, STRIPE_KEY, STRIPE_SECRET
+from secret_keys import (CSRF_SECRET_KEY,
+                         SESSION_KEY, 
+                         FACEBOOK_APP_ID, 
+                         FACEBOOK_APP_SECRET, 
+                         YAHOO_CONSUMER_KEY, 
+                         YAHOO_CONSUMER_SECRET,
+                         STRIPE_PUBLIC_KEY,
+                         STRIPE_SECRET_KEY)
 
 
 DEBUG_MODE = False
