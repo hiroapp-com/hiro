@@ -1528,7 +1528,7 @@ var WPCLib = {
 				window.clearInterval(this.dialogTimer);
 				this.dialogTimer=null;
 				WPCLib.util.releaseEvent(window, 'resize', this._centerDialog);
-				var inputs = frame.document.getElementsByTagName('input');
+				var inputs = window.frames[frame.id].document.getElementsByTagName('input');
 				for (i=0,l=inputs.length;i<l;i++) {
 					WPCLib.util.releaseEvent(inputs[i], 'focus', this.cleanerror);
 				}				

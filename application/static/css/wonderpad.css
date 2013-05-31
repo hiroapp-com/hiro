@@ -1234,8 +1234,12 @@ body#settingsPage input.error {
   display: inline-block;
 }
 
-#s_login form, .accountdetails form, .checkoutdetails form {
+#s_login form, .accountdetails form {
   margin-top: 33px;
+}
+
+#s_settings .checkoutdetails form {
+  margin-top: 100px;
 }
 
 #s_login form input, .accountdetails form input, .checkoutdetails form input {
