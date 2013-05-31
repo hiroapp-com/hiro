@@ -1294,7 +1294,7 @@ var WPCLib = {
 			},
 
 			checkoutActive: false,
-			upgradeto: 0,
+			upgradeto: '',
 			checkout: function() {
 				// handles the complete checkout flow from stripe and our backend
 				var frame = window.frames['dialog'];
@@ -1542,16 +1542,13 @@ var WPCLib = {
 			var startid = 'lalala';
 			var prodesc = "Pro Plan for USD 29";
 			var proid = 'lalal';
+			WPCLib.sys.user.upgradeto = plan;			
 			if (plan == 'starter') {
 				frame.getElementById('cc_desc').value = startdesc;
-				WPCLib.sys.user.upgradeto = 2;
 			}
 			if (plan == 'pro') {
 				frame.getElementById('cc_desc').value = prodesc;
-				WPCLib.sys.user.upgradeto = 3;
 			}			
-
-
 			this.switchView(frame.getElementById('s_checkout'));
 		},
 
