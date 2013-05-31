@@ -393,11 +393,13 @@ var WPCLib = {
 			// Load a specific document to the canvas
 			if (!this.saved) this.savedoc();			
 			console.log('loading doc id: ', docid);
+			var mobile = (document.body.offsetWidth<=480);			
 
 			// If we already know the title, we shorten the waiting time
 			if (title) document.getElementById(this.pageTitle).value = document.title = title;	
-			document.getElementById(WPCLib.context.statusId).value = 'Loading...'
+			document.getElementById(WPCLib.context.statusId).value = 'Loading...';			
 			WPCLib.ui.menuHide();
+			if (mobile && document.getElementById(WPCLib.context.id).style.display=='block') WPCLib.context.switchview();
 
 			// Load data onto canvas
 			var file = 'docs/'+docid;
@@ -411,9 +413,7 @@ var WPCLib = {
 					WPCLib.canvas.lastUpdated = data.last_updated;			
 
 					// Show data on canvas
-					var mobile = (document.body.offsetWidth<=480);
 					// Always hide context on mobile size
-					if (mobile && document.getElementById(WPCLib.context.id).style.display=='block') WPCLib.context.switchview();
 					if (!mobile && data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title;
 					document.getElementById(that.contentId).value = data.text;
@@ -1501,8 +1501,10 @@ var WPCLib = {
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
 					document.activeElement.blur();
-					if (typeof field == 'boolean') el.getElementsByTagName('input')[0].focus();													
-					if (typeof field == 'string') frame.document.getElementById(field).focus();	
+					// On some mobiel browser the input field is frozen if we don't focus the iframe first					 
+					if ('ontouchstart' in document.documentElement) window.frames['dialog'].focus();
+					if (typeof field == 'boolean') el = el.getElementsByTagName('input')[0].focus();													
+					if (typeof field == 'string') el = frame.document.getElementById(field).focus();										
 				}					
 			}	
 
@@ -1551,17 +1553,19 @@ var WPCLib = {
 			// Get the checkout form ready for checkout and switch view
 			var frame = window.frames['dialog'].document;
 			var startdesc = "Starter Plan: USD 9.99";
-			var startid = 'lalala';
 			var prodesc = "Pro Plan: USD 29";
-			var proid = 'lalal';
+			var cc_num = frame.getElementById('cc_number'); 
 			WPCLib.sys.user.upgradeto = plan;			
 			if (plan == 'starter') {
 				frame.getElementById('cc_desc').value = startdesc;
 			}
 			if (plan == 'pro') {
 				frame.getElementById('cc_desc').value = prodesc;
-			}			
+			}							
 			this.switchView(frame.getElementById('s_checkout'));
+			if (cc_num.value.length==0) {
+				cc_num.focus();
+			} 			
 		},
 
 		_centerDialog: function() {

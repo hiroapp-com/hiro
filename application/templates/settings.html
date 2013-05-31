@@ -31,7 +31,7 @@
 				</form>		
 				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</a>	
 				<div id="loginerror"></div>				
-				<a href="" class="small">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>					
+				<a href="#" class="small" onclick="return false;">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>
 			</div>	
 		</div>	
 
@@ -153,8 +153,8 @@
 							<li>100 context searches	
 							<li>
 							<li>
-						</ul>	
-                    {% if current_user.plan == 'free' %}
+						</ul>
+                    {% if current_user.plan == 'free' or not current_user.is_authenticated() %}
 					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
                     {% else %}
 					<a href="#" class="wpcbutton green" onclick="set user.plan = free">Downgrade</a>
@@ -262,6 +262,7 @@
 	</script>
 	<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 	<script type="text/javascript">
+		// Set stripe key
   		Stripe.setPublishableKey('{{ config.STRIPE_PUBLIC_KEY }}');
 	</script>
 </body>

@@ -1194,6 +1194,7 @@ body#settingsPage input.error {
   margin-top: -38px;
   margin-right: 10px; 
   color: #999;
+  z-index: 10000;
 }
 
 #s_settings form .ioption.error {
@@ -1479,6 +1480,10 @@ body#settingsPage input.error {
     line-height: 14px;
     margin-top: -43px;
   }  
+
+  .accountdetails .divider {
+    margin-top: 10px;
+  }
 
   .accountdetails a.wpcbutton.share {
     width: auto;
