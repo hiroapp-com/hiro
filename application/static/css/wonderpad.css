@@ -1312,6 +1312,10 @@ body#settingsPage input.error {
   border-bottom: 1px dotted #ddd;
 }
 
+#s_settings .header.forced {
+  display: none;
+}
+
 #s_settings .header em {
   font-style: normal;
 }

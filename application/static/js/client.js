@@ -1105,6 +1105,7 @@ var WPCLib = {
 			dialog: window.frames['dialog'],
 			signinCallback: null,
 			upgradeCallback: null,
+			justloggedin: false,
 
 			register: function() { 
 				// Register a new user (or log in if credentials are from know user)
@@ -1188,6 +1189,7 @@ var WPCLib = {
 				// On successfull backend auth the returned user-data 
 				// from the various endpoints and finishes up auth process
             	WPCLib.sys.user.setStage(user.tier);
+            	this.justloggedin = true;
 
                 // Check for and move any saved local docs to backend
                 if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
@@ -1284,8 +1286,11 @@ var WPCLib = {
 				console.log('trying to upgrade to ',level,reason);
 
 				// Change default header to reason for upgrade
-				var el = window.frames['dialog'].document.getElementById('s_plan').getElementsByTagName('div')[0];
-				el.innerHTML = '<span class="reason">' + reason + '</span>';
+				var plan = window.frames['dialog'].document.getElementById('s_plan').getElementsByTagName('div');
+				var checkout = window.frames['dialog'].document.getElementById('s_checkout').getElementsByTagName('div');
+				plan[0].innerHTML = checkout[0].innerHTML = '<span class="reason">' + reason + '</span>';
+				plan[0].style.display = checkout[0].style.display = 'block';
+				plan[1].style.display = checkout[1].style.display = 'none';
 
 				// Make sure the parent node is set to block, bit redundant but working fine
 				WPCLib.ui.showDialog(event,'','s_settings');	
@@ -1536,8 +1541,28 @@ var WPCLib = {
 				}				
 			}
 
-			// reload iframe
-			frame.src = frame.src;
+			// reset the frame
+			if (WPCLib.sys.user.justloggedin) {
+				frame.src = frame.src;
+				WPCLib.sys.user.justloggedin = false;
+			} else {
+				// Depending on user level switch to register or account overview
+				if (WPCLib.sys.user.level==0) {
+					this.switchView(window.frames['dialog'].document.getElementById('s_login'));
+					this.switchView(window.frames['dialog'].document.getElementById('s_signup'));				
+				} else {
+					this.switchView(window.frames['dialog'].document.getElementById('s_settings'));
+					this.switchView(window.frames['dialog'].document.getElementById('s_account'));	
+				}
+			}
+
+			// See if we had a forced upgrade header
+			var plan = window.frames['dialog'].document.getElementById('s_plan').getElementsByTagName('div');
+			if (plan[0].style.display=='block') {
+				var checkout = window.frames['dialog'].document.getElementById('s_checkout').getElementsByTagName('div');
+				plan[0].style.display = checkout[0].style.display = 'none';
+				plan[1].style.display = checkout[1].style.display = 'block';
+			}
 
 			// Hide shield & dialog
 			s.style.display = 'none';
