@@ -142,8 +142,7 @@
 					<div class="active">Plan<em>s &amp; Payment</em></div>
 					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
 				</div>
-				<!-- TODO Django: Render plan up/downgrad buttons accordingly -->
-				<div class="plans">
+				<div class="plans" id="s_planboxes">
 					<div class="box 1">
 						<div class="head">Basic</div>
 						<div class="price">Free!</div>
@@ -154,11 +153,8 @@
 							<li>
 							<li>
 						</ul>
-                    {% if current_user.plan == 'free' or not current_user.is_authenticated() %}
-					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
-                    {% else %}
-					<a href="#" class="wpcbutton green" onclick="set user.plan = free">Downgrade</a>
-                    {% endif %}
+						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
+						<a href="#" class="wpcbutton red" onclick="set user.plan = free">Downgrade</a>							
 					</div>
 					<div class="box 2">
 						<div class="head">Starter</div>
@@ -170,13 +166,9 @@
 							<li>Archive	
 							<li>	
 						</ul>
-                    {% if current_user.plan == 'starter' %}
-					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
-                    {% elif current_user.has_paid_plan %}
-					<a href="#" class="wpcbutton green" onclick="set user.plan = starter">Downgrade</a>
-                    {% else %}
-					<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('starter');return false;">Upgrade !</a>
-                    {% endif %}
+						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
+						<a href="#" class="wpcbutton red" onclick="set user.plan = free">Downgrade</a>	
+						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('starter');return false;">Upgrade !</a>	
 					</div>
 					<div class="box 3">
 						<div class="head">Pro</div>
@@ -189,13 +181,8 @@
 							<li>Team editing
 							<li>One-click publishing	
 						</ul>
-                    {% if current_user.plan == 'pro' %}
-					<a href="#" class="wpcbutton" style="background-color: #666 !important" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>				
-                    {% elif current_user.has_paid_plan %}
-                    <a href="#" class="wpcbutton green" onclick="set user.plan = pro">Upgrade ({{ current_user.get_stripe_customer()['active_card']['last4'] }})</a>
-                    {% else %}
-					<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('pro');return false;">Upgrade !</a>
-                    {% endif %}
+						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
+						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('pro');return false;">Upgrade !</a>	
 					</div>
 				</div>	
 				<div id="s_planfooter" class="footer">

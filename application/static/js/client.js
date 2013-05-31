@@ -1267,7 +1267,10 @@ var WPCLib = {
 						logio.getElementsByTagName('a')[0].title = 'Logout';
 						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';					
 						break;	
-				}				
+				}	
+
+				// Show correct signup buttons
+				WPCLib.ui.setplans(level);			
 			},
 
 			upgrade: function(level,callback,reason) {
@@ -1334,15 +1337,15 @@ var WPCLib = {
 						checkoutbutton.innerHTML = "Try again"
 					} else {
 						// add stripe data to subscription object and post
-						subscription.stripe = response;
+						subscription.stripeToken = response.id;
 						console.log('subscribing with ', subscription);
 						$.ajax({
-							url: "/checkout",
+							url: "/settings/plan",
 			                type: "POST",
 			                contentType: "application/json; charset=UTF-8",
 			                data: JSON.stringify(subscription),
 							success: function(data) {
-			                    console.log('Woohoo, checkout worked');	
+			                    console.log('Woohoo, checkout worked', data);	
 			                    WPCLib.sys.user.checkoutActive = false;								                    
 							}
 						});		
@@ -1572,6 +1575,44 @@ var WPCLib = {
 
 		upgrade: function() {
 			
+		},
+
+		setplans: function(level) {
+			// Set the up/downgrade buttons on the plan selection screen according to the current level
+			var container = window.frames['dialog'].document.getElementById('s_planboxes');
+			if (!container) {
+				// We do not have a reliable settings dialog onload on all browsers (yet) so we retry until it's there
+				setTimeout(function(){
+					WPCLib.ui.setplans(level);
+				},100);
+				return;				
+			}
+			var boxes = container.getElementsByClassName('box');
+			if (!level) level = WPCLib.sys.user.level;
+
+			// Set all buttons to display none first
+			var buttons = container.getElementsByClassName('a');
+			for (i=0,l=buttons.length;i<l;i++) {
+				buttons[i].style.display = 'none';			
+			}
+			switch (level) {
+				case 0:
+				case 1:				
+					boxes[0].getElementsByClassName('grey')[0].style.display = 
+					boxes[1].getElementsByClassName('green')[0].style.display = 
+					boxes[2].getElementsByClassName('green')[0].style.display = 'block';
+					 break;
+				case 2:
+					boxes[0].getElementsByClassName('red')[0].style.display = 
+					boxes[1].getElementsByClassName('grey')[0].style.display = 
+					boxes[2].getElementsByClassName('green')[0].style.display = 'block';
+				 	break;
+				case 3:
+					boxes[0].getElementsByClassName('red')[0].style.display = 
+					boxes[1].getElementsByClassName('red')[0].style.display = 
+					boxes[2].getElementsByClassName('grey')[0].style.display = 'block';
+					break;
+			}
 		},
 
 		fillcheckout: function(plan) {
