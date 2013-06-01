@@ -15,7 +15,7 @@ class EmailFieldConverter(ModelConverter):
 
 def is_email_registered(form, field):
     if User.query(User.email == field.data).get() is None:
-        raise validators.StopValidation("E-Mail not registered")
+        raise validators.StopValidation("E-Mail not registered.")
 
 LoginForm = model_form(User, wtf.Form, converter=EmailFieldConverter(), field_args={
     'email': dict(validators=[validators.Required(), validators.Email(), is_email_registered]),

@@ -1187,7 +1187,7 @@ var WPCLib = {
 						var et = JSON.parse(xhr.responseText); 
 	                    if (et.email) {
 	                    	val[0].className += ' error';
-	                    	val[0].nextSibling.innerHTML = et.email;
+	                    	val[0].nextSibling.innerHTML = et.email[0];
 	                    }	
 	                    if (et.password) {
 	                    	val[1].className += ' error';	                    	
@@ -1834,6 +1834,8 @@ var WPCLib = {
 					WPCLib.ui.documentcounter();			
 				},500);					
 			} else {
+				// If the user level is 0 we dont have the form yet
+				if (level==0) return;
 				upgradelink = target.getElementsByTagName('input')[2].nextSibling;
 				// Get the plan name
 				switch (level) {

@@ -1515,6 +1515,10 @@ body#settingsPage input.error {
     margin-top: -43px;
   }  
 
+  #s_signin div.error, #s_signup div.error {
+    text-align: right;
+  }
+
   .accountdetails .divider {
     margin-top: 10px;
   }
