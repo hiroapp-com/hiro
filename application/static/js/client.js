@@ -1140,8 +1140,14 @@ var WPCLib = {
 							return;
 						}
 						var et = JSON.parse(xhr.responseText); 
-	                    if (et.email) val[0].nextSibling.innerHTML = et.email;
-	                    if (et.password) val[1].nextSibling.innerHTML = et.password;                   		                    
+	                    if (et.email) {
+	                    	val[0].className += ' error';
+	                    	val[0].nextSibling.innerHTML = et.email;
+	                    }	
+	                    if (et.password) {
+	                    	val[1].className += ' error';	                    	
+	                    	val[1].nextSibling.innerHTML = et.password;  
+	                    }	                 		                    
 						                    
 					}										
 				});	
@@ -1179,8 +1185,14 @@ var WPCLib = {
 							return;
 						}
 						var et = JSON.parse(xhr.responseText); 
-	                    if (et.email) val[0].nextSibling.innerHTML = et.email;
-	                    if (et.password) val[1].nextSibling.innerHTML = et.password;                   		                    
+	                    if (et.email) {
+	                    	val[0].className += ' error';
+	                    	val[0].nextSibling.innerHTML = et.email;
+	                    }	
+	                    if (et.password) {
+	                    	val[1].className += ' error';	                    	
+	                    	val[1].nextSibling.innerHTML = et.password;  
+	                    }	               		                    
 						                    
 					}										
 				});	
@@ -1562,7 +1574,7 @@ var WPCLib = {
 			// Attach clean error styling (red border) on all input
 			var inputs = frame.document.getElementsByTagName('input');
 			for (i=0,l=inputs.length;i<l;i++) {
-				WPCLib.util.registerEvent(inputs[i], 'focus', this.cleanerror);
+				WPCLib.util.registerEvent(inputs[i], 'keydown', this.cleanerror);
 			}
 		},
 
@@ -1579,7 +1591,7 @@ var WPCLib = {
 				WPCLib.util.releaseEvent(window, 'resize', this._centerDialog);
 				var inputs = window.frames[frame.id].document.getElementsByTagName('input');
 				for (i=0,l=inputs.length;i<l;i++) {
-					WPCLib.util.releaseEvent(inputs[i], 'focus', this.cleanerror);
+					WPCLib.util.releaseEvent(inputs[i], 'keydown', this.cleanerror);
 				}				
 			}
 
@@ -1815,32 +1827,33 @@ var WPCLib = {
 
 		documentcounter: function() {
 			// Updates the field in the settings with the current plan & document count
-			var val, level = WPCLib.sys.user.level, target = window.frames['dialog'].document.getElementById('s_account'), upgrade;
+			var val, level = WPCLib.sys.user.level, target = window.frames['dialog'].document.getElementById('s_account'), upgradelink;
 			if (!target) {
 				// If the settings dialog is not loaded yet try again later 
 				setTimeout(function(){
 					WPCLib.ui.documentcounter();			
 				},500);					
 			} else {
-				upgradelink = target.getElementsByTagName('input')[2].nextSibling.style.display;
+				upgradelink = target.getElementsByTagName('input')[2].nextSibling;
 				// Get the plan name
 				switch (level) {
 					case 0:
 					case 1:
 						val = 'Free';
-						upgradelink = 'block';
+						upgradelink.style.display = 'block';
 						break;
 					case 2:
 						val = 'Starter';
-						upgradelink = 'block';					
+						upgradelink.style.display = 'block';					
 						break;
 					case 3:
 						val = 'Pro';
-						upgradelink = 'none';					
+						upgradelink.style.display = 'none';					
 						break;		
 				}
 				val = val + ' plan: ';
 				if (WPCLib.folio.docs.active) val = val + WPCLib.folio.docs.active.length;
+				console.log(val,WPCLib.folio.docs.active.length);
 
 				// See if we have plan limits or mobile device
 				if (level < 2) val = val + ' of 10'

@@ -15,8 +15,8 @@
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';facebooklogin();return false;">Sign-In With <b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform">
-					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signin_mail').value=this.value;" id="signup_mail"></input><div class="error"></div>					
-					<input type="password" placeholder="Choose a password"></input><div class="error"></div>					
+					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signin_mail').value=this.value;" id="signup_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>					
+					<input type="password" placeholder="Choose a password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>					
 				</form>		
 				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(); return false;">Create Account</a>	
 				<div id="signuperror"></div>
@@ -26,8 +26,8 @@
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing In...';facebooklogin();return false;">Log-In With <b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="loginform">
-					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signup_mail').value=this.value;" id="signin_mail"></input><div class="error"></div>
-					<input type="password" placeholder="Password"></input><div class="error"></div>
+					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signup_mail').value=this.value;" id="signin_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
+					<input type="password" placeholder="Password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
 				</form>		
 				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</a>	
 				<div id="loginerror"></div>				
@@ -199,7 +199,7 @@
 				</div>
 				<div class="checkoutdetails">
 					<form id="checkoutform">
-						<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Change</a></div>
+						<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 						<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
 						<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
 						<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	

@@ -1178,7 +1178,7 @@ body#settingsPage input.error {
   color: #333;
 }
 
-#s_signin .error, #s_signup .error {
+#s_signin div.error, #s_signup div.error {
   float: right;
   display: inline-block;
   font-size: 14px;
@@ -1194,7 +1194,6 @@ body#settingsPage input.error {
   margin-top: -38px;
   margin-right: 10px; 
   color: #999;
-  z-index: 10000;
 }
 
 #s_settings form .ioption.error {
@@ -1494,6 +1493,20 @@ body#settingsPage input.error {
   #s_settings form .ioption {
     color: transparent;
   }   
+
+  #s_account form .ioption:last-child {
+    position: absolute;
+    top: 224px;
+    right: 17px;  
+    z-index: 99000;
+  }
+
+  #s_checkout form .ioption.changeplan {
+    position: absolute;
+    top: 126px;
+    right: 17px;  
+    z-index: 99000;  
+  }
 
   #s_settings form .ioption.error {
     width: 110px;
