@@ -1603,7 +1603,7 @@ body#settingsPage input.error {
     bottom: 0;
     left: 0;
     position: relative;
-    display: block;
+    display: none;
     margin: 0 auto 10px auto;
     width: 85%;
   }

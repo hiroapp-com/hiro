@@ -275,7 +275,6 @@ var WPCLib = {
 				section = 's_signup';
 			} 
 			WPCLib.ui.showDialog(event,'',section,field);
-			WPCLib.ui.menuHide();
 		}
 	},	
 
@@ -1207,8 +1206,9 @@ var WPCLib = {
                 // See if we have a callback waitin
                 if (this.signinCallback) WPCLib.util.docallback(this.signinCallback);			
 
-                // Suggest upgrade afetr initial registration or just hide dialog
+                // Suggest upgrade after initial registration or just hide dialog
                 if (user.tier==1&&type=='register') {
+                	WPCLib.ui.statusflash('green','Welcome, great to have you!');
                 	this.forceupgrade(2,'Unlock more features right away?');
                 } else {
                 	WPCLib.ui.hideDialog();	
@@ -1234,8 +1234,7 @@ var WPCLib = {
 
 			setStage: function(level) {
 				// Show / hide features based on user level, it's OK if some of that can be tweaked via js for now
-				// TODO replace once we get proper backend response
-				level = level || 0;
+				level = level || this.level;
 
 				var results = document.getElementById(WPCLib.context.resultsId);
 				var signupButton = document.getElementById(WPCLib.context.signupButtonId);
@@ -1252,12 +1251,16 @@ var WPCLib = {
 					case 2:
 						this.level = 2;
 						break;		
+					case 3:
+						this.level = 3;
+						break;							
 				}
 
 				// generic styles
 				switch(level) {
 					case 1:
-					case 2:					
+					case 2:	
+					case 3:				
 						results.style.overflowY = 'auto';
 						results.style.bottom = 0;
 						results.style.marginRight = '1px';
@@ -1286,7 +1289,6 @@ var WPCLib = {
 
 			forceupgrade: function(level,reason) {
 				// Show an upgrade to paid dialog and do callback
-				console.log('trying to upgrade to ',level,reason);
 
 				// Change default header to reason for upgrade
 				var plan = window.frames['dialog'].document.getElementById('s_plan').getElementsByTagName('div');
@@ -1338,19 +1340,47 @@ var WPCLib = {
 					} else {
 						// add stripe data to subscription object and post
 						subscription.stripeToken = response.id;
-						console.log('subscribing with ', subscription);
 						$.ajax({
 							url: "/settings/plan",
 			                type: "POST",
 			                contentType: "application/json; charset=UTF-8",
 			                data: JSON.stringify(subscription),
 							success: function(data) {
-			                    console.log('Woohoo, checkout worked', data);	
-			                    WPCLib.sys.user.checkoutActive = false;								                    
+								checkoutbutton.innerHTML = "Upgrade";
+			                    WPCLib.sys.user.setStage(data.tier);	
+			                    WPCLib.sys.user.checkoutActive = false;	
+			                    WPCLib.ui.hideDialog();				                    
+			                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!');						                    
 							}
 						});		
 					}				
 				});	
+			},
+
+			downgradeActive: false,
+			downgrade: function(targetplan) {
+				// downgrade to targetplan
+				if (this.downgradeActive) return;				
+				var boxes = window.frames['dialog'].document.getElementById('s_planboxes');
+				var box = (targetplan=="free") ? 0 : 1;
+				var button = boxes.getElementsByClassName('box')[box].getElementsByClassName('red')[0];
+				button.innerHTML = "Downgrading...";
+
+				// All styled, getting ready to downgrade
+				var payload = {plan:targetplan};
+				this.downgradeActive = true;
+				$.ajax({
+					url: "/settings/plan",
+	                type: "POST",
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(payload),
+					success: function(data) {
+	                    WPCLib.sys.user.setStage(data.tier);	
+	                    WPCLib.sys.user.downgradeActive = false;	
+	                    WPCLib.ui.hideDialog();	                    
+	                    WPCLib.ui.statusflash('green','Downgraded, sorry to see you go.');					                    
+					}
+				});					
 			}
 		},
 	},
@@ -1488,7 +1518,10 @@ var WPCLib = {
 			var s = document.getElementById(this.modalShieldId);
 			var d = document.getElementById(this.dialogWrapperId);
 			var frame = window.frames['dialog'];			
-			WPCLib.util.stopEvent(event);			
+			WPCLib.util.stopEvent(event);
+
+			// Close menu if left open
+			if (this.menuCurrPos!=0) this.menuHide();			
 
 			// spawn shield
 			s.style.display = 'block';
@@ -1584,15 +1617,19 @@ var WPCLib = {
 				// We do not have a reliable settings dialog onload on all browsers (yet) so we retry until it's there
 				setTimeout(function(){
 					WPCLib.ui.setplans(level);
-				},100);
+				},250);
 				return;				
 			}
 			var boxes = container.getElementsByClassName('box');
 			if (!level) level = WPCLib.sys.user.level;
 
-			// Set all buttons to display none first
-			var buttons = container.getElementsByClassName('a');
+			// Set all buttons to display none & reset content first
+			var buttons = container.getElementsByTagName('a');
 			for (i=0,l=buttons.length;i<l;i++) {
+				cn = buttons[i].className;
+				cc = buttons[i].innerHTML;
+				if (cn.indexOf('red') !== -1) cc = "Downgrade";
+				if (cn.indexOf('green') !== -1) cc = "Upgrade !";				
 				buttons[i].style.display = 'none';			
 			}
 			switch (level) {
@@ -1601,7 +1638,7 @@ var WPCLib = {
 					boxes[0].getElementsByClassName('grey')[0].style.display = 
 					boxes[1].getElementsByClassName('green')[0].style.display = 
 					boxes[2].getElementsByClassName('green')[0].style.display = 'block';
-					 break;
+					break;
 				case 2:
 					boxes[0].getElementsByClassName('red')[0].style.display = 
 					boxes[1].getElementsByClassName('grey')[0].style.display = 
@@ -1751,6 +1788,22 @@ var WPCLib = {
 		cleanerror: function() {
 			// remove the CSS class error from object
 			if (this.className) this.className = this.className.replace(' error', '');
+		},
+
+		statusflash: function(color,text) {
+			// briefly flash the status in a given color or show alert on mobile
+			if ('ontouchstart' in document.documentElement) {
+				// As the sidebar is mostly hidden on mobiles we show an alert
+				alert(text);
+				return;
+			}
+			var status = document.getElementById('status');
+			status.innerHTML = text;
+			if (color=='green') color = '#055a0b';
+			status.style.color = color;
+			setTimeout(function(){
+				status.style.color = '#999';				
+			},5000);
 		},
 
 		fade: function(element, direction, duration, callback) {	
