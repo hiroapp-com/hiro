@@ -209,7 +209,10 @@ var WPCLib = {
 							// Save document & cleanup
 							doc.firstChild.innerHTML = 'New Document';
 							doc.id = 'doc_'+data;
-							WPCLib.folio.docs.active[0].id = data;									                    
+							WPCLib.folio.docs.active[0].id = data;		
+
+							// Update the document counter
+							WPCLib.ui.documentcounter();														                    
 						}
 					});				
 				}
@@ -511,7 +514,6 @@ var WPCLib = {
 			} else {
 				document.getElementById(WPCLib.canvas.contentId).focus();				
 			} 							
-		
 		},
 
 		_showtitletip: function() {									
@@ -1239,20 +1241,19 @@ var WPCLib = {
 				var results = document.getElementById(WPCLib.context.resultsId);
 				var signupButton = document.getElementById(WPCLib.context.signupButtonId);
 				var logio = document.getElementById(WPCLib.folio.logioId);
-
 				switch(level) {
 					case 0:
 						signupButton.style.display = 'block';	
 						this.level = 0;					
 						break;
 					case 1:		
-						this.level = 1;			
+						this.level = 1;		
 						break;
 					case 2:
-						this.level = 2;
+						this.level = 2;					
 						break;		
 					case 3:
-						this.level = 3;
+						this.level = 3;						
 						break;							
 				}
 
@@ -1272,8 +1273,11 @@ var WPCLib = {
 						break;	
 				}	
 
-				// Show correct signup buttons
-				WPCLib.ui.setplans(level);			
+				// Show correct upgrade/downgrade buttons
+				WPCLib.ui.setplans(level);	
+
+				// Update the document counter
+				WPCLib.ui.documentcounter();		
 			},
 
 			upgrade: function(level,callback,reason) {
@@ -1349,6 +1353,7 @@ var WPCLib = {
 								checkoutbutton.innerHTML = "Upgrade";
 			                    WPCLib.sys.user.setStage(data.tier);	
 			                    WPCLib.sys.user.checkoutActive = false;	
+								document.activeElement.blur();
 			                    WPCLib.ui.hideDialog();				                    
 			                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!');						                    
 							}
@@ -1409,10 +1414,10 @@ var WPCLib = {
 			var now = this.now();
 			var t = now - timestamp;
 			if (t<60) return "Moments";
-			if (t<120) return Math.round(t/60) + " minute";			
+			if (t<90) return Math.round(t/60) + " minute";			
 			if (t<3600) return Math.round(t/60) + " minutes";
 			// if less than 1 hour ago			
-			if (t<7200) return Math.round(t/3600) + " hour";			
+			if (t<5200) return Math.round(t/3600) + " hour";			
 			// if less than 36 hours ago			
 			if (t<129600) return Math.round(t/3600) + " hours";					
 			// if less than 14 days ago
@@ -1544,8 +1549,9 @@ var WPCLib = {
 					document.activeElement.blur();
 					// On some mobiel browser the input field is frozen if we don't focus the iframe first					 
 					if ('ontouchstart' in document.documentElement) window.frames['dialog'].focus();
-					if (typeof field == 'boolean') el = el.getElementsByTagName('input')[0].focus();													
-					if (typeof field == 'string') el = frame.document.getElementById(field).focus();										
+					if (typeof field == 'boolean') el = el.getElementsByTagName('input')[0];													
+					if (typeof field == 'string') el = frame.document.getElementById(field);
+					if (el) el.focus();										
 				}					
 			}	
 
@@ -1604,6 +1610,8 @@ var WPCLib = {
 			s.style.display = 'none';
 			d.style.display = 'none';
 
+			// Put focus back on document 
+			if (!('ontouchstart' in document.documentElement)) WPCLib.canvas._setposition();
 		},
 
 		upgrade: function() {
@@ -1626,10 +1634,7 @@ var WPCLib = {
 			// Set all buttons to display none & reset content first
 			var buttons = container.getElementsByTagName('a');
 			for (i=0,l=buttons.length;i<l;i++) {
-				cn = buttons[i].className;
-				cc = buttons[i].innerHTML;
-				if (cn.indexOf('red') !== -1) cc = "Downgrade";
-				if (cn.indexOf('green') !== -1) cc = "Upgrade !";				
+				if (buttons[i].className.indexOf('red') > -1) buttons[i].innerHTML = "Downgrade";		
 				buttons[i].style.display = 'none';			
 			}
 			switch (level) {
@@ -1793,8 +1798,10 @@ var WPCLib = {
 		statusflash: function(color,text) {
 			// briefly flash the status in a given color or show alert on mobile
 			if ('ontouchstart' in document.documentElement) {
-				// As the sidebar is mostly hidden on mobiles we show an alert
-				alert(text);
+				// As the sidebar is mostly hidden on mobiles we show an alert, but give the menu a bit to adapt
+				setTimeout(function(){
+					alert(text);				
+				},250);				
 				return;
 			}
 			var status = document.getElementById('status');
@@ -1804,6 +1811,43 @@ var WPCLib = {
 			setTimeout(function(){
 				status.style.color = '#999';				
 			},5000);
+		},
+
+		documentcounter: function() {
+			// Updates the field in the settings with the current plan & document count
+			var val, level = WPCLib.sys.user.level, target = window.frames['dialog'].document.getElementById('s_account'), upgrade;
+			if (!target) {
+				// If the settings dialog is not loaded yet try again later 
+				setTimeout(function(){
+					WPCLib.ui.documentcounter();			
+				},500);					
+			} else {
+				upgradelink = target.getElementsByTagName('input')[2].nextSibling.style.display;
+				// Get the plan name
+				switch (level) {
+					case 0:
+					case 1:
+						val = 'Free';
+						upgradelink = 'block';
+						break;
+					case 2:
+						val = 'Starter';
+						upgradelink = 'block';					
+						break;
+					case 3:
+						val = 'Pro';
+						upgradelink = 'none';					
+						break;		
+				}
+				val = val + ' plan: ';
+				if (WPCLib.folio.docs.active) val = val + WPCLib.folio.docs.active.length;
+
+				// See if we have plan limits or mobile device
+				if (level < 2) val = val + ' of 10'
+				val = val + ((document.body.offsetWidth>480) ? ' documents' : ' docs');
+				
+				target.getElementsByTagName('input')[2].value = val;
+			}
 		},
 
 		fade: function(element, direction, duration, callback) {	
