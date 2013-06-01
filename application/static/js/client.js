@@ -419,6 +419,7 @@ var WPCLib = {
 					if (!mobile && data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title;
 					document.getElementById(that.contentId).value = data.text;
+					document.title = data.title || 'Untitled';
 					that._setposition(data.cursor);
 
 					// Set internal values
@@ -1114,7 +1115,7 @@ var WPCLib = {
 				var val = dialog.document.getElementById('signupform').getElementsByTagName('input');
 				var error = dialog.document.getElementById('signuperror');
 				var payload = {
-					email: val[0].value,
+					email: val[0].value.toLowerCase(),
 					password: val[1].value
 				};
 				button.innerHTML ="Signing Up...";
@@ -1159,7 +1160,7 @@ var WPCLib = {
 				var val = dialog.document.getElementById('loginform').getElementsByTagName('input');
 				var error = dialog.document.getElementById('loginerror');
 				var payload = {
-					email: val[0].value,
+					email: val[0].value.toLowerCase(),
 					password: val[1].value
 				};
 				button.innerHTML ="Logging in...";
@@ -1203,7 +1204,6 @@ var WPCLib = {
 				// from the various endpoints and finishes up auth process
             	WPCLib.sys.user.setStage(user.tier);
             	this.justloggedin = true;
-
                 // Check for and move any saved local docs to backend
                 if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
                 	WPCLib.folio.docs.movetoremote();
@@ -1835,7 +1835,7 @@ var WPCLib = {
 				},500);					
 			} else {
 				// If the user level is 0 we dont have the form yet
-				if (level==0) return;
+				if (level==0 || !target.getElementsByTagName('input')[2]) return;
 				upgradelink = target.getElementsByTagName('input')[2].nextSibling;
 				// Get the plan name
 				switch (level) {
@@ -1855,7 +1855,6 @@ var WPCLib = {
 				}
 				val = val + ' plan: ';
 				if (WPCLib.folio.docs.active) val = val + WPCLib.folio.docs.active.length;
-				console.log(val,WPCLib.folio.docs.active.length);
 
 				// See if we have plan limits or mobile device
 				if (level < 2) val = val + ' of 10'
