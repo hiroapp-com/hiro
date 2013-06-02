@@ -944,8 +944,11 @@ var WPCLib = {
 					
 			e.appendChild(r);
 			// Avoid full window wobbling & layout messup on touch devices
-			if (('ontouchstart' in document.documentElement)&&WPCLib.sys.user.level!=0) {
-				e.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
+			if ('ontouchstart' in document.documentElement) {
+				// If user level = 0 we have overflow: hidden anyway
+				if (WPCLib.sys.user.level!=0) e.addEventListener('touchmove',function(event){event.stopPropagation()},false);
+				// Attach seperate class to avoid switch to have styles when finger flicks over
+				e.className += ' touch';				
 			}				
 			return e;
 		},
@@ -1374,7 +1377,7 @@ var WPCLib = {
 			},
 
 			_completecheckout: function(subscription) {
-				// Get the data from the checkout above and post data to backen / cleanup ui 
+				// Get the data from the checkout above and post data to backend / cleanup ui 
 				$.ajax({
 					url: "/settings/plan",
 	                type: "POST",

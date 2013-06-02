@@ -536,7 +536,7 @@ a.wpcbutton:hover {
     -webkit-border-radius: 4px;
 }
 
-.context .results .result {
+.context .results .result, .context .results .result.touch:hover {
   margin-left: 100px;
   display: block;
   position: relative;
@@ -546,6 +546,12 @@ a.wpcbutton:hover {
   -webkit-transition: background-color 750ms ease-out;
   -moz-transition: background-color 750ms ease-out;
   -o-transition: background-color 750ms ease-out; 
+}
+
+.context .results .result.touch:hover {
+  border-bottom: 1px solid #c5c5c5; 
+  margin-left: 50px;   
+  padding-left: 63px;   
 }
 
 
@@ -567,10 +573,14 @@ a.wpcbutton:hover {
   -o-transition: background-color 0ms ease-in;     
 }
 
-.context .results .result.sticky {
+.context .results .result.sticky, .context .results .result.sticky.touch:hover {
   height: 37px;
   margin-left: 50px; 
   padding-left: 64px;  
+}
+
+.context .results .result.sticky.touch:hover {
+  padding-left: 63px;  
 }
 
 .context .results .result.sticky:hover {
@@ -578,7 +588,7 @@ a.wpcbutton:hover {
   padding-left: 63px;   
 }
 
-.context .results .result.sticky a.link .blurb {
+.context .results .result.sticky a.link .blurb, .context .results .result.sticky.touch:hover a.link .blurb {
   display: none;
 }
 
@@ -768,13 +778,23 @@ text-align: center;
     top: 48px;
   }
 
-  .context .results .result.sticky {
+  .context .results .result.sticky, .context .results .result.sticky.touch:hover {
     background-color: #f0f0ed;  
     margin-left: 51px;
     padding-left: 63px;    
   }  
 
-  .context .results .result.sticky:first-child {
+  .context .results .result.sticky:hover {
+    background-color: #e1e1dd;
+  }
+
+  .context .results .result.touch:hover {
+    border-bottom: 1px solid #c5c5c5; 
+    margin-left: 100px;   
+    padding-left: 14px;   
+  }  
+
+  .context .results .result.sticky:first-child, .context .results .result.sticky.touch:first-child:hover {
     border-top: 1px dotted #d6d6d6;  
     margin-top: 0; 
   }  
@@ -789,7 +809,7 @@ text-align: center;
     padding-left: 63px;        
   }  
 
-  .context .results .result a.action {
+  .context .results .result a.action, .context .results .result.touch:hover a.action {
     width: 32px;
     height: 32px;
     border-radius: 3px;
@@ -799,9 +819,9 @@ text-align: center;
   }
 
   .context .results .result a.unstick {
-    margin-left: -3px !important;
+    margin-left: -2px !important;
     background-color: transparent;     
-  }  
+  }     
 
   .context .results .result:hover a.action {
     margin-left: -2px;
