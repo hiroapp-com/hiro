@@ -29,15 +29,15 @@
 			</div>	
 			<div class="menufooter">
 				<div class="logio login" id="logio">
-					<a href="#" class="button dark" onclick="WPCLib.sys.user.logio();" title="Login">
+					<a href="#" class="button dark" onclick="WPCLib.sys.user.logio();return false;" title="Login">
 						<span>Login</span>
 					</a>			
 				</div>
 				<div class="archive">
-					<a href="#" class="button dark settings" title="Settings" onclick="WPCLib.folio.showSettings();">
+					<a href="#" class="button dark settings" title="Settings" onclick="WPCLib.folio.showSettings();return false;">
 						<span>Settings</span>
 					</a>					
-					<a href="#" class="panel dark archbutton">
+					<a href="#" class="panel dark archbutton" title="Archive" onclick="WPCLib.folio.docs.openarchive();return false;">
 						<span>Archive</span>
 					</a>								
 				</div>	

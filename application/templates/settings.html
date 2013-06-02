@@ -1,6 +1,6 @@
 <html style="overflow: hidden;">
 <head>
-	<script>var _wpc=window.parent.WPCLib,$=window.parent.$,Typekit=window.parent.Typekit;</script>
+	<script>var _wpc=window.parent.WPCLib,$=window.parent.$;</script>
     <link rel="stylesheet" type="text/css" href="/static/css/wonderpad.css">
 	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>    
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
@@ -129,9 +129,9 @@
 						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %} Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
-					<a href="#" class="wpcbutton share fb" onclick="_wpc.sys.user.register(); return false;">via <b>Facebook</b></a>
-					<a href="#" class="wpcbutton share tw" onclick="_wpc.sys.user.register(); return false;">via <b>Twitter</b></a>	
-					<a href="#" class="wpcbutton share mail green" onclick="_wpc.sys.user.register(); return false;">via <b>Mail</b></a>	
+					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="facebookshare(); return false;">via <b>Facebook</b></a>
+					<a href="https://twitter.com/intent/tweet?text=Hmm%2C%20%22Change%20the%20world%20with%20simple%20words%22%20they%20say.%20%23writerapp%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');" class="wpcbutton share tw">via <b>Twitter</b></a>	
+					<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Good%20way%20to%20write%20%26%20manage%20texts%3A%20www.hiroapp.com" class="wpcbutton share mail green" target="_blank">via <b>Mail</b></a>	
 					<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F" class="wpcbutton share sms">via <b>SMS</b></a>
 				</div>	
 				{% endif %}					
@@ -267,23 +267,38 @@
 	</div>
 
 	<script>
-	  window.fbAsyncInit = function() {
-	    // init the FB JS SDK
-	    FB.init({
-	      appId      : '{{ config.FACEBOOK_APP_ID }}',                       
-	      status     : true,                                 // Check Facebook Login status
-	      xfbml      : true                                  // Look for social plugins on the page
-	    });
-	  };
+	window.fbAsyncInit = function() {
+		// init the FB JS SDK
+		FB.init({
+		  appId      : '{{ config.FACEBOOK_APP_ID }}',                       
+		  status     : true,                                 // Check Facebook Login status
+		  xfbml      : true                                  // Look for social plugins on the page
+		});
+	};
 
-	  // Load the SDK asynchronously
-	  (function(d, s, id){
-	     var js, fjs = d.getElementsByTagName(s)[0];
-	     if (d.getElementById(id)) {return;}
-	     js = d.createElement(s); js.id = id;
-	     js.src = "//connect.facebook.net/en_US/all.js";
-	     fjs.parentNode.insertBefore(js, fjs);
-	   }(document, 'script', 'facebook-jssdk'));
+  	function facebookshare() {
+        var obj = {
+            method: 'feed',
+            link: 'https://www.hiroapp.com',
+            name: 'Hiro. The Essential Writing App.',
+            caption: 'https://www.hiroapp.com',
+            description: "Change the world with simple words. Hiro let's you write and manage your texts like never before: Simple, in your browser, across all your devices.",
+            actions: {
+                name: 'Start writing',
+                link: 'https://www.hiroapp.com',
+            }
+        };
+        FB.ui(obj);
+    };
+
+	// Load the SDK asynchronously
+	(function(d, s, id){
+	 var js, fjs = d.getElementsByTagName(s)[0];
+	 if (d.getElementById(id)) {return;}
+	 js = d.createElement(s); js.id = id;
+	 js.src = "//connect.facebook.net/en_US/all.js";
+	 fjs.parentNode.insertBefore(js, fjs);
+	}(document, 'script', 'facebook-jssdk'));
 	</script>
 	<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 	<script type="text/javascript">

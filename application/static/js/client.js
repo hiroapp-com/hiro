@@ -269,6 +269,12 @@ var WPCLib = {
 				// Insert item at top of array and redraw list
 				act.unshift(obj);
 				WPCLib.folio.docs.update();				
+			},
+
+			openarchive: function() {
+				if (WPCLib.sys.user.level < 2) {
+					WPCLib.sys.user.upgrade(2,'','Upgrade now to unlock the archive &amp; much more.');					
+				};							
 			}
 		},
 
@@ -792,7 +798,10 @@ var WPCLib = {
 				can.className = "canvas";			
 				sw.innerHTML = '&#187;';
 				sw.className = 'open'
-				if (!mobile) this.show = true;
+				if (!mobile) {
+					this.show = true;
+					c.style.left = 'auto';
+				}	
 			}
 		},
 
