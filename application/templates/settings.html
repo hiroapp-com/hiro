@@ -16,7 +16,8 @@
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform">
 					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signin_mail').value=this.value;" id="signup_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>					
-					<input type="password" placeholder="Choose a password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>					
+					<input type="password" placeholder="Choose a password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>	
+					<input type="submit" value="foo" onclick="_wpc.sys.user.register(); return false;" class="pseudobutton"></input>
 				</form>		
 				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(); return false;">Create Account</a>	
 				<div id="signuperror"></div>
@@ -28,6 +29,7 @@
 				<form id="loginform">
 					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signup_mail').value=this.value;" id="signin_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
 					<input type="password" placeholder="Password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
+					<input type="submit" value="foo" onclick="_wpc.sys.user.login(); return false;" class="pseudobutton"></input>
 				</form>		
 				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</a>	
 				<div id="loginerror"></div>				
@@ -207,15 +209,15 @@
 						<div class="small" id="checkout_error"></div>			
 						<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">
 						Upgrade</a>	
-
+						<input type="submit" value="foo" onclick="_wpc.sys.user.checkout(); return false;" class="pseudobutton"></input>
 					</form>		
 					{% if current_user.is_authenticated() and current_user.get_stripe_customer() %}
 						<script type="text/javascript">
 							{% with cc = current_user.get_stripe_customer()['active_card'] %}
 							var hirostripecard = {
 								cc_number: "{{ cc['type'] }}: " + '•••• •••• •••• ' + "{{ cc['last4'] }}",
-								cc_exp_month: "{{ current_user.get_stripe_customer()['active_card']['exp_month'] }}",
-								cc_exp_year: "{{ current_user.get_stripe_customer()['active_card']['exp_year'] }}",
+								cc_exp_month: "{{ cc['exp_month'] }}",
+								cc_exp_year: "{{ cc['exp_year'] }}",
 								cc_cvc: '•••'
 							};
 							{% endwith %}

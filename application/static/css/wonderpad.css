@@ -1159,6 +1159,13 @@ body#settingsPage input.error {
   border: 1px solid rgba(209, 11, 11, 0.7);
 }
 
+body#settingsPage input.pseudobutton {
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  top: -100px;
+}
+
 #s_login, .accountdetails {
   text-align: center;
 }
@@ -1498,7 +1505,8 @@ body#settingsPage input.error {
 
   #s_settings .accountdetails, #s_settings .checkoutdetails {
     width: 90%;
-    margin-top: 17px;    
+    margin-top: 17px;   
+    position: relative; 
   }
 
   #s_settings .accountdetails form, #s_settings .checkoutdetails form {
@@ -1516,15 +1524,15 @@ body#settingsPage input.error {
 
   #s_account form .ioption:last-child {
     position: absolute;
-    top: 224px;
-    right: 17px;  
+    top: 147px;
+    right: 0; 
     z-index: 99000;
   }
 
   #s_checkout form .ioption.changeplan {
     position: absolute;
-    top: 126px;
-    right: 17px;  
+    top: 49px;
+    right: 0; 
     z-index: 99000;  
   }
 

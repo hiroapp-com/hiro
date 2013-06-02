@@ -560,7 +560,7 @@ var WPCLib = {
 			// If user presses enter automatically move to body	
 		    if (e.keyCode == 13) {
 				e.preventDefault();
-		        WPCLib.canvas._setposition(WPCLib.canvas.caretPosition);
+		        WPCLib.canvas._setposition(0);
 		    }			
 		},
 
@@ -1597,8 +1597,16 @@ var WPCLib = {
 			var inputs = frame.document.getElementsByTagName('input');
 			for (i=0,l=inputs.length;i<l;i++) {
 				WPCLib.util.registerEvent(inputs[i], 'keydown', this.cleanerror);
+				WPCLib.util.registerEvent(inputs[i], 'keydown', this.autoconfirm);				
 			}
 		},
+
+		autoconfirm: function(event) {
+			console.log(this,event);
+		    if (event.keyCode == 13) {
+		        this.parentNode.getElementsByClassName('pseudobutton').click();
+		    }			
+		},		
 
 		hideDialog: function() {
 			// Hide the current dialog
@@ -1614,6 +1622,7 @@ var WPCLib = {
 				var inputs = window.frames[frame.id].document.getElementsByTagName('input');
 				for (i=0,l=inputs.length;i<l;i++) {
 					WPCLib.util.releaseEvent(inputs[i], 'keydown', this.cleanerror);
+					WPCLib.util.releaseEvent(inputs[i], 'keydown', this.autoconfirm);					
 				}				
 			}
 
