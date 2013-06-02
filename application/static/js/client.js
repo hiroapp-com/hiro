@@ -169,6 +169,7 @@ var WPCLib = {
 				document.getElementById(this.doclistId).insertBefore(ph,document.getElementById(this.doclistId).firstChild);
 
 				// Create the doc on the canvas
+				if (document.body.offsetWidth <= 480 && document.getElementById(WPCLib.context.id).style.display == "block") WPCLib.context.switchview();
 				WPCLib.canvas.newdoc();
 				WPCLib.ui.menuHide();
 
@@ -403,6 +404,7 @@ var WPCLib = {
 			WPCLib.ui.menuHide();
 			if (mobile && document.getElementById(WPCLib.context.id).style.display=='block') WPCLib.context.switchview();
 
+
 			// Load data onto canvas
 			var file = 'docs/'+docid;
 			var that = this;
@@ -416,7 +418,8 @@ var WPCLib = {
 
 					// Show data on canvas
 					// Always hide context on mobile size
-					if (!mobile && data.hidecontext && WPCLib.context.show != data.hidecontext) WPCLib.context.switchview();						
+
+					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title;
 					document.getElementById(that.contentId).value = data.text;
 					document.title = data.title || 'Untitled';
@@ -477,7 +480,7 @@ var WPCLib = {
 			WPCLib.context.links = data.links.normal || [];
 			WPCLib.context.blacklist = data.links.blacklist || [];	
 			WPCLib.context.renderresults();
-			if (data.hidecontext && WPCLib.context.show == data.hidecontext) WPCLib.context.switchview();
+			if (WPCLib.context.show == data.hidecontext) WPCLib.context.switchview();
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Welcome back!';							
 
 			// Set internal values	
@@ -503,7 +506,6 @@ var WPCLib = {
 			WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);			
 			this.quoteShown = true;
 
-			// if (WPCLib.context.show == false) WPCLib.context.switchview();
 			document.getElementById(WPCLib.context.resultsId).innerHTML = '';
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready to inspire';
 			this.created = WPCLib.util.now();
