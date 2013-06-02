@@ -429,6 +429,7 @@ var WPCLib = {
 					// If body is empty show a quote
 					if (!data.text || data.text.length == 0) {
 						WPCLib.ui.fade(document.getElementById(that.quoteId),+1,300);	
+						WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'keydown',WPCLib.canvas._cleanwelcome);						
 					} else {
 						WPCLib.canvas._removeblank();
 					}	
@@ -457,7 +458,12 @@ var WPCLib = {
 			// Loading a local document on the canvas
 			document.getElementById(this.pageTitle).value = document.title = data.title;	
 			document.getElementById(this.contentId).value = data.text;
-			WPCLib.canvas._removeblank();
+			if (data.text) {
+				WPCLib.canvas._removeblank();
+			} else {
+				WPCLib.ui.fade(document.getElementById(that.quoteId),+1,300);	
+				WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'keydown',WPCLib.canvas._cleanwelcome);
+			}	
 			// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
 			// TODO Bruno findout why, it's not about something else setting the focus elsewhere							
 			this._setposition(data.cursor);
@@ -1741,7 +1747,11 @@ var WPCLib = {
 				canvas.style.left=v+'px';
 				canvas.style.right=(v*-1)+'px';
 				context.style.right=(v*-1)+'px';
-				if (screenwidth<480) context.style.left=v+'px'; 
+				if (screenwidth<480) {
+					context.style.left=v+'px';
+				} else {
+					context.style.left='auto';					
+				}	
 				switcher.style.right=(v*-1)+'px';												
 				if (done) {
 					if (typeof callback=='function') callback();
@@ -1864,7 +1874,8 @@ var WPCLib = {
 			}
 		},
 
-		fade: function(element, direction, duration, callback) {	
+		fade: function(element, direction, duration, callback) {
+			// Generic function to fade in or out elements
 			var startTime, duration, ref=this;
 			function step() {
 				var dt=new Date().getTime()-startTime, done;
