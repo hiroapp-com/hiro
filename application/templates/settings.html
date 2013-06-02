@@ -1,8 +1,7 @@
 <html style="overflow: hidden;">
 <head>
-	<script>var _wpc=window.parent.WPCLib,$=window.parent.$;</script>
+	<script>var _wpc=window.parent.WPCLib,$=window.parent.$,Typekit=window.parent.Typekit;</script>
     <link rel="stylesheet" type="text/css" href="/static/css/wonderpad.css">
-	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
 </head>
 <body id="settingsPage">
@@ -206,8 +205,43 @@
 						<input type="text" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 						<div class="small" id="checkout_error"></div>			
 						<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">
-						Upgrade</a>
+						Upgrade</a>	
+
 					</form>		
+					{% if current_user.is_authenticated() and current_user.get_stripe_customer() %}
+						<script type="text/javascript">
+							{% with cc = current_user.get_stripe_customer()['active_card'] %}
+							var hirostripecard = {
+								cc_number: "{{ cc['type'] }}: " + '•••• •••• •••• ' + "{{ cc['last4'] }}",
+								cc_exp_month: "{{ current_user.get_stripe_customer()['active_card']['exp_month'] }}",
+								cc_exp_year: "{{ current_user.get_stripe_customer()['active_card']['exp_year'] }}",
+								cc_cvc: '•••'
+							};
+							{% endwith %}
+							var usehirostripecard = true;
+							function fillccform() {
+								for (var key in hirostripecard) {
+								   if (hirostripecard.hasOwnProperty(key)) {
+								   	var el = document.getElementById(key); 
+								   	el.value = hirostripecard[key];
+								   	if (key=='cc_number') el.addEventListener('click', clearccform(el));
+								   }
+								}
+							}
+							var clearccform = function(el) {
+							    var handler = function(event) {
+							    	var fields = el.parentNode.getElementsByTagName('input');
+							    	for (i=0,l=fields.length;i<l;i++) {
+							    		if (i>0) fields[i].value = '';
+							    	}
+							    	usehirostripecard = false;
+				           			el.removeEventListener('click', handler);
+							    };
+							    return handler;
+							};
+							fillccform();						
+						</script>
+					{% endif %}
 				</div>	
 			</div>
 

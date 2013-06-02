@@ -1344,40 +1344,51 @@ var WPCLib = {
 				var subscription = {};
 				subscription.plan = this.upgradeto;
 
-				// Get Stripe token & send to ur backend
-				var form = frame.document.getElementById('checkoutform');
-				Stripe.createToken(form, function(status,response) {					
-					if (response.error) {
-						// Our IDs are named alongside the stripe naming conventions
-						frame.document.getElementById('cc_'+response.error.param).className += " error";
-						if (response.error.param == 'number') {
-							var el = frame.document.getElementById('cc_'+response.error.param).nextSibling;
-							el.innerHTML = response.error.message;	
-							el.className += ' error';						
-						} else {
-							frame.document.getElementById('checkout_error').innerHTML = response.error.message;
-						}
-						WPCLib.sys.user.checkoutActive = false;
-						checkoutbutton.innerHTML = "Try again"
-					} else {
-						// add stripe data to subscription object and post
-						subscription.stripeToken = response.id;
-						$.ajax({
-							url: "/settings/plan",
-			                type: "POST",
-			                contentType: "application/json; charset=UTF-8",
-			                data: JSON.stringify(subscription),
-							success: function(data) {
-								checkoutbutton.innerHTML = "Upgrade";
-			                    WPCLib.sys.user.setStage(data.tier);	
-			                    WPCLib.sys.user.checkoutActive = false;	
-								document.activeElement.blur();
-			                    WPCLib.ui.hideDialog();				                    
-			                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!');						                    
+				// See if we already have all data in the backend or else get a new token
+				if (!window.frames['dialog'].usehirostripecard) {
+					// Get Stripe token & send to our backend
+					var form = frame.document.getElementById('checkoutform');
+					Stripe.createToken(form, function(status,response) {					
+						if (response.error) {
+							// Our IDs are named alongside the stripe naming conventions
+							frame.document.getElementById('cc_'+response.error.param).className += " error";
+							if (response.error.param == 'number') {
+								var el = frame.document.getElementById('cc_'+response.error.param).nextSibling;
+								el.innerHTML = response.error.message;	
+								el.className += ' error';						
+							} else {
+								frame.document.getElementById('checkout_error').innerHTML = response.error.message;
 							}
-						});		
-					}				
-				});	
+							WPCLib.sys.user.checkoutActive = false;
+							checkoutbutton.innerHTML = "Try again"
+							return;
+						} else {
+							// add new stripe data to subscription object
+							subscription.stripeToken = response.id;		
+							WPCLib.sys.user._completecheckout(subscription);							
+						}				
+					});					
+				} else {
+					this._completecheckout(subscription);
+				}
+			},
+
+			_completecheckout: function(subscription) {
+				// Get the data from the checkout above and post data to backen / cleanup ui 
+				$.ajax({
+					url: "/settings/plan",
+	                type: "POST",
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(subscription),
+					success: function(data) {
+						window.frames['dialog'].document.getElementById('checkoutbutton').innerHTML = "Upgrade";
+	                    WPCLib.sys.user.setStage(data.tier);	
+	                    WPCLib.sys.user.checkoutActive = false;	
+						document.activeElement.blur();
+	                    WPCLib.ui.hideDialog();				                    
+	                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!');						                    
+					}
+				});					
 			},
 
 			downgradeActive: false,
