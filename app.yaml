@@ -1,5 +1,5 @@
 application: wondapad
-version: 1
+version: 2
 runtime: python27
 api_version: 1
 threadsafe: true
@@ -70,7 +70,10 @@ handlers:
 
 - url: /static
   static_dir: application/static
-  secure: always  
+  secure: always 
+  expiration: "10s" 
+  # As we use pagespeed, this only applies to source > pagespeed
+  # see https://developers.google.com/speed/pagespeed/service/ProxyResources
 
 - url: /json
   static_dir: application/static/json
