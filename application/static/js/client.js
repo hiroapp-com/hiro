@@ -377,10 +377,10 @@ var WPCLib = {
 
 			// backend saving, locally or remote
 			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
-				console.log('saving remotely: ', JSON.stringify(file));				
+				console.log('saving remotely: ', file);				
 				$.ajax({
 					url: "/docs/"+this.docid,
-	                type: "POST",
+	                type: "PATCH",
 	                contentType: "application/json; charset=UTF-8",
 	                data: JSON.stringify(file),
 					success: function(data) {
@@ -390,7 +390,7 @@ var WPCLib = {
 				});
 			} else {
 				console.log('saving locally: ', file);					
-				localStorage.setItem("WPCdoc", JSON.stringify(file));
+				localStorage.setItem("WPCdoc", file);
 				WPCLib.canvas.saved = true;					
 			}	
 			// Update last edited counter in folio
