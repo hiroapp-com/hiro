@@ -226,14 +226,17 @@ def edit_document(doc_id):
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
 
-    doc.title = data['title'] 
-    doc.text = data['text']
-    doc.cursor = data['cursor']
-    doc.hidecontext = data['hidecontext']
+    doc.title = data.get('title') or doc.title
+    doc.text = data.get('text') or doc.text 
+    doc.cursor = data.get('cursor') or doc.cursor 
+    doc.hidecontext = data.get('hidecontext') or doc.hidecontext
     links = data.get('links', {})
-    doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
-    doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
-    doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
+    if links.get('normal') is not None:
+        doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
+    if links.get('sticky') is not None:
+        doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
+    if links.get('blacklist') is not None:
+        doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc.put()
     return "", 204
 
