@@ -32,8 +32,8 @@ from .forms import LoginForm, SignupForm
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 def search_yahoo(terms, num_results=20):
-    quoter = lambda s: '"{0}"'.format(s) if ' ' in s else s
-    qry = '+'.join(quoter(t) for t in terms)
+    quoter = lambda s: u'"{0}"'.format(s) if ' ' in s else s
+    qry = u'+'.join(quoter(t) for t in terms)
     return yahoo.search(qry, count=num_results)
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
