@@ -186,6 +186,7 @@ def list_documents():
         docs['active'].append({ 
             "id": doc.key.id(),
             "title": doc.title,
+            "status": doc.status,
             "created": time.mktime(doc.created_at.timetuple()),
             "updated": time.mktime(doc.updated_at.timetuple())
             })
@@ -227,6 +228,7 @@ def edit_document(doc_id):
         return "access denied, sorry.", 403
 
     doc.title = data.get('title') or doc.title
+    doc.status = data.get('status') or doc.status
     doc.text = data.get('text') or doc.text 
     doc.cursor = data.get('cursor') or doc.cursor 
     doc.hidecontext = data.get('hidecontext') or doc.hidecontext

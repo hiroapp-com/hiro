@@ -140,6 +140,7 @@ class Link(ndb.Model):
 class Document(ndb.Model):
     owner = ndb.KeyProperty(kind=User)
     title = ndb.StringProperty()
+    status = ndb.StringProperty(default='active', choices=('active', 'archived')) 
     text = ndb.TextProperty()
     cursor = ndb.IntegerProperty()
     hidecontext = ndb.BooleanProperty()
@@ -167,6 +168,7 @@ class Document(ndb.Model):
     def to_dict(self):
         return {
                 "id": self.key.id(),
+                "status": self.status,
                 "title": self.title,
                 "text": self.text,
                 "created": time.mktime(self.created_at.timetuple()),
