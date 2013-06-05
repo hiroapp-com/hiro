@@ -165,7 +165,7 @@ class Document(ndb.Model):
                 'proper_chunks':proper_noun_chunks
                 }
 
-    def to_dict(self):
+    def api_dict(self):
         return {
                 "id": self.key.id(),
                 "status": self.status,

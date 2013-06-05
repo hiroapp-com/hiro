@@ -13,6 +13,7 @@ import time
 import string
 import random
 import uuid
+from collections import defaultdict
 from datetime import datetime
 
 
@@ -176,14 +177,16 @@ def settings():
 
 @login_required
 def list_documents():
-    docs = {                                                                                 
-        "level": 0,
-        "active": [],
-        "archived": []
-    }
+    group_by = request.args.get('group_by')
+    if group_by is None or group_by not in ('status', ):
+        #default
+        group_key = lambda d: 'documents' 
+    else:
+        group_key = lambda d: d.get(group_by)
 
+    docs = defaultdict(list)
     for doc in  Document.query(Document.owner == current_user.key).order(-Document.updated_at):
-        docs['active'].append({ 
+        docs[group_key(doc.to_dict())].append({ 
             "id": doc.key.id(),
             "title": doc.title,
             "status": doc.status,
@@ -249,7 +252,7 @@ def get_document(doc_id):
         return "document not found", 404
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
-    return jsonify(doc.to_dict())
+    return jsonify(doc.api_dict())
 
 def analyze_content():
     tmpdoc = Document(text=request.form.get('content', ''))
