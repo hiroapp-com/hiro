@@ -211,9 +211,9 @@
 						Upgrade</a>	
 						<input type="submit" value="foo" onclick="_wpc.sys.user.checkout(); return false;" class="pseudobutton"></input>
 					</form>		
-					{% if current_user.is_authenticated() and current_user.get_stripe_customer() %}
+					{% if current_user.is_authenticated() and current_user.active_cc %}
 						<script type="text/javascript">
-							{% with cc = current_user.get_stripe_customer()['active_card'] %}
+							{% with cc = current_user.active_cc %}
 							var hirostripecard = {
 								cc_number: "{{ cc['type'] }}: " + '•••• •••• •••• ' + "{{ cc['last4'] }}",
 								cc_exp_month: "{{ cc['exp_month'] }}",

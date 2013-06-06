@@ -5,6 +5,7 @@ from datetime import datetime
 import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
+from google.appengine.api import memcache
 from flask.ext.login import UserMixin, AnonymousUser
 from textmodels.textrank import get_top_keywords_list
 from settings import STRIPE_SECRET_KEY
@@ -36,6 +37,26 @@ class User(UserMixin, ndb.Model):
 
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
+
+    @property
+    def active_cc(self):
+        #TODO: cache invalidation as soon as we support card edit/delete
+        if not self.stripe_cust_id:
+            return None
+        cache_key = 'stripe.active_card:{0}'.format(self.stripe_cust_id)
+        cc = memcache.get(cache_key)
+        if cc is None:
+            customer = self.get_stripe_customer()
+            if customer:
+                stripe_cc = customer.get('active_card', {})
+                cc = {u'type': stripe_cc.type,
+                      u'last4': stripe_cc.last4,
+                      u'exp_year': stripe_cc.exp_year,
+                      u'exp_month': stripe_cc.exp_month,
+                      }
+                memcache.set(cache_key, cc, time=60*60*2)
+        return cc
+
 
     def get_stripe_customer(self, token=None):
         stripe.api_key = STRIPE_SECRET_KEY

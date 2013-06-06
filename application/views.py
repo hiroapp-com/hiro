@@ -17,7 +17,6 @@ from collections import defaultdict
 from datetime import datetime
 
 
-import stripe
 from flask import request, session, render_template, redirect, url_for, jsonify
 from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
@@ -29,7 +28,7 @@ from google.appengine.api import memcache
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
 from application import app
 
-from .models import User, Document, Link, StripeToken
+from .models import User, Document, Link
 from .forms import LoginForm, SignupForm
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
@@ -39,14 +38,11 @@ def search_yahoo(terms, num_results=20):
     cache_key = u'yahoo:{0}'.format(qry)
     result = memcache.get(cache_key)
     if result is None:
-        app.logger.debug("cache MISS: {0}".format(cache_key))
         result = [{'url': link.url,
                    'title': link.title,
                    'description': link.text} for link in yahoo.search(qry, count=num_results)]
         memcache.add(cache_key, result, time=60*60*3) # cache results for 3hrs max
-    else:
-        app.logger.debug("cache HIT: {0}".format(cache_key))
-    app.logger.debug("result: {0}".format(result))
+
     return result
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
