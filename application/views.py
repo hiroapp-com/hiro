@@ -23,6 +23,7 @@ from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
+from google.appengine.api import memcache
 
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
@@ -35,7 +36,18 @@ yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 def search_yahoo(terms, num_results=20):
     quoter = lambda s: u'"{0}"'.format(s) if ' ' in s else s
     qry = u'+'.join(quoter(t) for t in terms)
-    return yahoo.search(qry, count=num_results)
+    cache_key = u'yahoo:{0}'.format(qry)
+    result = memcache.get(cache_key)
+    if result is None:
+        app.logger.debug("cache MISS: {0}".format(cache_key))
+        result = [{'url': link.url,
+                   'title': link.title,
+                   'description': link.text} for link in yahoo.search(qry, count=num_results)]
+        memcache.add(cache_key, result, time=60*60*3) # cache results for 3hrs max
+    else:
+        app.logger.debug("cache HIT: {0}".format(cache_key))
+    app.logger.debug("result: {0}".format(result))
+    return result
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
 
@@ -275,16 +287,12 @@ def relevant_links():
         while len(terms) > 0 and len(results) < 20:
             serp = search_yahoo(terms) 
             for result in serp:
-                if result.url not in urls_seen:
-                    urls_seen[result.url] = True
+                if result['url'] not in urls_seen:
+                    urls_seen[result['url']] = True
                     results.append(result)
             terms = terms[:-2]
     else:
         results = search_yahoo(terms)
-        
-    results = [{'url': link.url,
-                'title': link.title,
-                'description': link.text} for link in results]
     return jsonify(results=results)
 
 
