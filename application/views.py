@@ -13,6 +13,7 @@ import time
 import string
 import random
 import uuid
+from collections import defaultdict
 from datetime import datetime
 
 
@@ -32,8 +33,8 @@ from .forms import LoginForm, SignupForm
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 def search_yahoo(terms, num_results=20):
-    quoter = lambda s: '"{0}"'.format(s) if ' ' in s else s
-    qry = '+'.join(quoter(t) for t in terms)
+    quoter = lambda s: u'"{0}"'.format(s) if ' ' in s else s
+    qry = u'+'.join(quoter(t) for t in terms)
     return yahoo.search(qry, count=num_results)
 
 gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
@@ -176,16 +177,19 @@ def settings():
 
 @login_required
 def list_documents():
-    docs = {                                                                                 
-        "level": 0,
-        "active": [],
-        "archived": []
-    }
+    group_by = request.args.get('group_by')
+    if group_by is None or group_by not in ('status', ):
+        #default
+        group_key = lambda d: 'documents' 
+    else:
+        group_key = lambda d: d.get(group_by)
 
+    docs = defaultdict(list)
     for doc in  Document.query(Document.owner == current_user.key).order(-Document.updated_at):
-        docs['active'].append({ 
+        docs[group_key(doc.to_dict())].append({ 
             "id": doc.key.id(),
             "title": doc.title,
+            "status": doc.status,
             "created": time.mktime(doc.created_at.timetuple()),
             "updated": time.mktime(doc.updated_at.timetuple())
             })
@@ -226,14 +230,18 @@ def edit_document(doc_id):
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
 
-    doc.title = data['title'] 
-    doc.text = data['text']
-    doc.cursor = data['cursor']
-    doc.hidecontext = data['hidecontext']
+    doc.title = data.get('title') or doc.title
+    doc.status = data.get('status') or doc.status
+    doc.text = data.get('text') or doc.text 
+    doc.cursor = data.get('cursor') or doc.cursor 
+    doc.hidecontext = data.get('hidecontext') or doc.hidecontext
     links = data.get('links', {})
-    doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
-    doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
-    doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
+    if links.get('normal') is not None:
+        doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
+    if links.get('sticky') is not None:
+        doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
+    if links.get('blacklist') is not None:
+        doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc.put()
     return "", 204
 
@@ -244,7 +252,7 @@ def get_document(doc_id):
         return "document not found", 404
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
-    return jsonify(doc.to_dict())
+    return jsonify(doc.api_dict())
 
 def analyze_content():
     tmpdoc = Document(text=request.form.get('content', ''))

@@ -39,7 +39,7 @@ var WPCLib = {
 			archived: [],
 			loaddocs: function() {
 				// Get the list of documents from the server
-				$.getJSON('/docs/', function(data) {
+				$.getJSON('/docs/?group_by=status', function(data) {
 					var f = WPCLib.folio.docs;
 					// TODO: This if catches a case when data is being returned empty, make sure we need this
 					if (data.active) { f.active = data.active } else { f.newdoc(); };
