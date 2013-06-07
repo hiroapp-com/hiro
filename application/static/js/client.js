@@ -1061,7 +1061,15 @@ var WPCLib = {
 				// Remove address bar on mobile browsers
 				window.scrollTo(0,1);
 				// Load settings into dialog
-				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);    							
+				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);  
+				// Mount facebook asynchronously
+				(function(d, s, id){
+				 var js, fjs = d.getElementsByTagName(s)[0];
+				 if (d.getElementById(id)) {return;}
+				 js = d.createElement(s); js.id = id;
+				 js.src = "https://connect.facebook.net/en_US/all.js";
+				 fjs.parentNode.insertBefore(js, fjs);
+				}(document, 'script', 'facebook-jssdk'));										  							
 			});
 
 			WPCLib.folio.init();

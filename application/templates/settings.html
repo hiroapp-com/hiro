@@ -1,12 +1,11 @@
 <html style="overflow: hidden;">
 <head>
-	<script>var _wpc=window.parent.WPCLib,$=window.parent.$;</script>
+	<script>var _wpc=window.parent.WPCLib,$=window.parent.$,FB=window.parent.FB;</script>
     <link rel="stylesheet" type="text/css" href="/static/css/wonderpad.css">
 	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>    
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
 </head>
 <body id="settingsPage">
-	<div id="fb-root"></div>
 	<a href="#" onclick="_wpc.ui.hideDialog();return false;" class="close">Close</a>
 	<div>
         {% if not current_user.is_authenticated() %}
@@ -58,7 +57,7 @@
 			    console.log('Hm, not authed,triggering fb auth dialog');
 			    if (window.navigator.standalone) {
 			    	// On mobile devices with potentially no popups we do a classic flow
-			    	window.parent.location = '/connect/facebook';
+			    	window.parent.location = '/connect/facebook?next=/';
 			    } else {
 					FB.login(function(response) {
 					   if (response.authResponse) {
@@ -81,10 +80,10 @@
 					},{scope: 'email'});
 				}	
 			  } else {
-			  	// User not signed in to Facebook, so on otuch devices we use redirect the window and otehrwise open a popup
+			  	// User not signed in to Facebook, so on touch devices we use redirect the window and otehrwise open a popup
 			    if (window.navigator.standalone) {
 			    	// On mobile devices with potentially no popups we do a classic flow
-			    	window.parent.location = '/connect/facebook';
+			    	window.parent.location = '/connect/facebook?next=/';
 			    } else {
 					FB.login(function(response) {
 					   if (response.authResponse) {
@@ -118,8 +117,8 @@
 			<div id="s_account">
 				<div class="header">
 					<div class="active">You<em>r Account</em></div>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Plan<em>s &amp; Payment</em></a>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>	
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Plan<em>s &amp; Payment</em></a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>	
 				</div>
 				{% if current_user.is_authenticated() %}
 				<div class="accountdetails">
@@ -140,9 +139,9 @@
 			<div id="s_plan" style="display:none;">
 				<div class="header forced"></div>				
 				<div class="header">
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
 					<div class="active">Plan<em>s &amp; Payment</em></div>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;" ontochstart="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
 				</div>
 				<div class="plans" id="s_planboxes">
 					<div class="box 1">
@@ -195,23 +194,23 @@
 			<div id="s_checkout" style="display:none;">
 				<div class="header forced"></div>				
 				<div class="header">
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
 					<div class="active">Plan<em>s &amp; Payment</em></div>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
 				</div>
-				<div class="checkoutdetails">
-					<form id="checkoutform">
-						<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
-						<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
-						<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
-						<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
-						<input type="text" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
-						<div class="small" id="checkout_error"></div>			
-						<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">
-						Upgrade</a>	
-						<input type="submit" value="foo" onclick="_wpc.sys.user.checkout(); return false;" class="pseudobutton"></input>
-					</form>		
+				<div class="checkoutdetails">	
 					{% if current_user.is_authenticated() and current_user.active_cc %}
+						<form id="checkoutform">
+							<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+							<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
+							<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
+							<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+							<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+							<div class="small" id="checkout_error"></div>			
+							<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">
+							Upgrade</a>	
+							<input type="submit" value="foo" onclick="_wpc.sys.user.checkout(); return false;" class="pseudobutton"></input>
+						</form>						
 						<script type="text/javascript">
 							{% with cc = current_user.active_cc %}
 							var hirostripecard = {
@@ -244,14 +243,26 @@
 							};
 							fillccform();						
 						</script>
+					{% else %}	
+					<form id="checkoutform">
+						<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+						<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
+						<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
+						<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+						<input type="text" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+						<div class="small" id="checkout_error"></div>			
+						<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">
+						Upgrade</a>	
+						<input type="submit" value="foo" onclick="_wpc.sys.user.checkout(); return false;" class="pseudobutton"></input>
+					</form>						
 					{% endif %}
 				</div>	
 			</div>
 
 			<div id="s_about" style="display:none;">
 				<div class="header">
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Plan<em>s &amp; Payment</em></a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Plan<em>s &amp; Payment</em></a>
 					<div class="active">About</div>	
 				</div>
 				Writing, may it be emails, documents or posts takes up a large amount of our time in front of screens.<br /><br />
@@ -267,14 +278,6 @@
 	</div>
 
 	<script>
-	window.fbAsyncInit = function() {
-		// init the FB JS SDK
-		FB.init({
-		  appId      : '{{ config.FACEBOOK_APP_ID }}',                       
-		  status     : true,                                 // Check Facebook Login status
-		  xfbml      : true                                  // Look for social plugins on the page
-		});
-	};
 
   	function facebookshare() {
         var obj = {
@@ -289,16 +292,7 @@
             }
         };
         FB.ui(obj);
-    };
-
-	// Load the SDK asynchronously
-	(function(d, s, id){
-	 var js, fjs = d.getElementsByTagName(s)[0];
-	 if (d.getElementById(id)) {return;}
-	 js = d.createElement(s); js.id = id;
-	 js.src = "https://connect.facebook.net/en_US/all.js";
-	 fjs.parentNode.insertBefore(js, fjs);
-	}(document, 'script', 'facebook-jssdk'));
+    }; 
 	</script>
 	<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 	<script type="text/javascript">

@@ -27,6 +27,10 @@ body {
   }
 }
 
+.fb_dialog {
+  z-index: 99990 !important;
+}
+
 /* ------ Basic button & interaction styles ------*/
 
 .icon, .button {

@@ -14,6 +14,8 @@
 	</head>
 	<body>
 
+		<div id="fb-root"></div>		
+
 		{% if not current_user.is_authenticated() %}
 			<iframe src="/landing/" scrollbar="no" id="landing"></iframe>	
 		{% endif %}	
@@ -84,6 +86,14 @@
 
 			// fires on page load
 			WPCLib.sys.onstartup( function() {
+				window.fbAsyncInit = function() {
+					// init the FB JS SDK
+					FB.init({
+					  appId      : '{{ config.FACEBOOK_APP_ID }}',                       
+					  status     : true,                                 // Check Facebook Login status
+					  xfbml      : true                                  // Look for social plugins on the page
+					});
+				}; 				
 			});
 		</script>	
 
