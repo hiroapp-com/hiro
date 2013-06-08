@@ -325,11 +325,14 @@ var WPCLib = {
 			// Document events
 			var el = document.getElementById(this.contentId);			
 			var p = document.getElementById(this.canvasId);
-			var t = document.getElementById(this.pageTitle);								
-			WPCLib.util.registerEvent(p,'mouseup',this.textclick);
+			var t = document.getElementById(this.pageTitle);	
+			// See if a selection is performed and narrow search to selection
+			WPCLib.util.registerEvent(p,'mouseup',this.textclick);							
 			WPCLib.util.registerEvent(el,'keydown',this.keyhandler);	
 			WPCLib.util.registerEvent(el,'keyup',this.update);
-			WPCLib.util.registerEvent(el,'change',this._resize);	
+
+			// Resizing of textarea
+			WPCLib.util.registerEvent(el,'keyup',this._resize);
 			WPCLib.util.registerEvent(el,'cut',this._delayedresize);	
 			WPCLib.util.registerEvent(el,'paste',this._delayedresize);
 			WPCLib.util.registerEvent(el,'drop',this._delayedresize);
@@ -348,9 +351,7 @@ var WPCLib = {
 			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);	
 
 			if ('ontouchstart' in document.documentElement) {
-				el.addEventListener('touchmove',function(event){event.stopPropagation()},false);
-				var msg = 'this ' + el.scrollHeight + ' ' + document.body.offsetHeight;
-				// el.addEventListener('touchstart',function(event){alert(msg)},false);												
+				el.addEventListener('touchmove',function(event){event.stopPropagation()},false);											
 			}				
 
 			// Always set context sidebar icon to open on mobiles
@@ -477,7 +478,7 @@ var WPCLib = {
 			if (data.text) {
 				WPCLib.canvas._removeblank();
 			} else {
-				WPCLib.ui.fade(document.getElementById(that.quoteId),+1,300);	
+				WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);	
 				WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'keydown',WPCLib.canvas._cleanwelcome);
 			}	
 			// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
@@ -598,30 +599,28 @@ var WPCLib = {
 		_resize: function() {
 			// Resize canvas textarea as doc grows
 			// TODO: Consider cut/copy/paste, fix padding/margin glitches
-			if (document.body.offsetWidth<=480) return;
-		    var text = document.getElementById(WPCLib.canvas.contentId);
-        	text.style.height = 'auto';		    
-		    text.style.height = text.scrollHeight+'px';
+			// if (document.body.offsetWidth<=480) return;
+		    var text = document.getElementById(WPCLib.canvas.contentId);   
+		    text.style.height = (text.scrollHeight-50)+'px';
 		},
 
 		_delayedresize: function() {
 			// Experiment with crossbrowser resizing
+			// if (document.body.offsetWidth<=480) return;			
 	        window.setTimeout(WPCLib.canvas._resize, 0);
 		},
 
 		keyhandler: function(e) {
 			// Various actions when keys are pressed
 			var k = e.keyCode;
-			var r = [];
 			// Tab key insert 5 whitespaces
 			if (k==9) WPCLib.canvas._replacekey(e,'tab');
 
 			// Space and return triggers brief analysis
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				WPCLib.canvas._logcontent();	
+				// WPCLib.canvas._logcontent();	
 			}
-			WPCLib.canvas._resize();
 		},
 
 		_replacekey: function(e,key) {
@@ -630,7 +629,7 @@ var WPCLib = {
 			var pos = this._getposition()[1];		
 			var src = document.getElementById(WPCLib.canvas.contentId).value; 				
 			if (key == 'tab') {
-	  			document.getElementById(WPCLib.canvas.contentId).value = [src.slice(0, pos), '\t', src.slice(pos)].join('');         
+	  			// document.getElementById(WPCLib.canvas.contentId).value = [src.slice(0, pos), '\t', src.slice(pos)].join('');         
 	        }
 
 	        // Prevent default behaviour for those keys
@@ -700,7 +699,7 @@ var WPCLib = {
 			// Debug logging of text, position etc
 			var log = document.getElementById('log');
 			var pos = this.caretPosition;
-			// document.getElementById("wordcount").innerHTML = 'Words: ' + this.wordcount + " Lines: " + this.linecount + " Pos: " + pos;			
+			console.log('Words: ' + this.wordcount + " Lines: " + this.linecount + " Pos: " + pos);			
 		},
 
 		textclick: function() {
@@ -749,6 +748,7 @@ var WPCLib = {
     		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;	
     		// Unfocus any existing elements
     		document.activeElement.blur();
+    		this._resize();
 			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
 				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
@@ -1766,8 +1766,7 @@ var WPCLib = {
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
 			var context = document.getElementById('context');
-			var switcher = document.getElementById('switchview');	
-			var page = document.getElementById('pageContent');	
+			var switcher = document.getElementById('switchview');		
 			var title = document.getElementById('pageTitle');					
 			var screenwidth = document.body.offsetWidth;
 			var distance = ((screenwidth-50)<this.menuSlideSpan) ? (screenwidth-50) : this.menuSlideSpan;
@@ -1800,9 +1799,7 @@ var WPCLib = {
 				canvas.style.right=(v*-1)+'px';
 				context.style.right=(v*-1)+'px';
 				if (screenwidth<480) {
-					context.style.left=v+'px';
-					page.style.left=v+'px';	
-					page.style.right=(v*-1)+'px';						
+					context.style.left=v+'px';						
 					title.style.left=v+'px';	
 					title.style.right=(v*-1)+'px';														
 				} else {

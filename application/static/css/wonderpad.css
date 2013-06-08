@@ -25,17 +25,14 @@ body {
   body{
     -webkit-text-size-adjust: none;
   }
+  html {
+    overflow-y: hidden;
+  }
 }
 
 .fb_dialog {
   z-index: 99990 !important;
-}
-
-@media (max-width: 480px) {
-  html {
-     overflow-y: hidden;
-  }
-}  
+} 
 
 /* ------ Basic button & interaction styles ------*/
 
@@ -355,7 +352,7 @@ a.wpcbutton:hover {
   padding-top: 3em;
 }
 
-.canvas .page .content input.title {
+.canvas .page input.title {
   display: block;
   font-family: "urbana",sans-serif;
   padding: 0.2em 0.1em 0.15em 0.1em;
@@ -367,25 +364,26 @@ a.wpcbutton:hover {
   color: #333;
 }
 
-.canvas.full .page .content input.title {
+.canvas.full .page input.title {
   font-size: 2.5em;
 }
 
-.canvas .page .content input.title:focus {
+.canvas .page input.title:focus {
     outline: none;
 }
 
 .canvas .page .content textarea {
   margin: 0;
+  padding: 0;
   width: 100%;
-  min-height: 30em;
   font-family: "ff-meta-serif-web-pro", serif;
   font-size: 1em;
   line-height: 1.9em;
   border: 0px;
-  overflow: hidden;
+  overflow: hidden; 
   color: #333;
   z-index: 2100;
+  padding-bottom: 50px;
 }
 
 .canvas.full .page .content textarea {
@@ -434,15 +432,7 @@ a.wpcbutton:hover {
     padding-top: 0;
   }
 
-  .canvas .page .content {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }  
-
-  .canvas .page .content input.title, .canvas.full .page .content input.title {
+  .canvas .page input.title, .canvas.full .page input.title {
     position: fixed;
     width: auto;
     top: 10px;
@@ -461,24 +451,33 @@ a.wpcbutton:hover {
     background-color: transparent;
   }
 
+  .canvas .page .content {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;    
+    overflow-x: hidden;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;    
+  }  
+
   .canvas .page .content textarea, .canvas.full .page .content textarea {
-    position: fixed;
+    position: absolute;
     width: auto;
     height: auto;
     top: 0;
     left: 0;
     right: 0;  
-    bottom: 0;  
-    min-height: auto;
+    bottom: 0;
     font-family: "ff-meta-serif-web-pro", serif;
     font-size: 17px;
     line-height: 28px;
     border: 0px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;    
+    overflow: hidden;   
     color: #333; 
-    padding: 48px 12px 0 12px;     
+    padding: 48px 12px 2px 12px;    
+    background-color: #fff; 
   } 
 
   .canvas #nicequote {
