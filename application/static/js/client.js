@@ -61,6 +61,7 @@ var WPCLib = {
 
 			loadlocal: function(localdoc) {	
 				// Load locally saved document
+				console.log(localdoc);
 				var ld = JSON.parse(localdoc);					
 				console.log('Localstorage doc found, loading ', ld);						
 				document.getElementById('landing').style.display = 'none';
@@ -344,7 +345,13 @@ var WPCLib = {
 			WPCLib.util.registerEvent(t,'click', this._clicktitletip);				
 			// We save the new title in the folio array but need to update the clickhandler without duplicating them
 			WPCLib.util.registerEvent(t,'blur', WPCLib.folio.docs.update);	
-			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);		
+			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);	
+
+			if ('ontouchstart' in document.documentElement) {
+				el.addEventListener('touchmove',function(event){event.stopPropagation()},false);
+				var msg = 'this ' + el.scrollHeight + ' ' + document.body.offsetHeight;
+				// el.addEventListener('touchstart',function(event){alert(msg)},false);												
+			}				
 
 			// Always set context sidebar icon to open on mobiles
 			if (document.body.offsetWidth<=480) document.getElementById('switchview').innerHTML = '&#171;';				
@@ -390,7 +397,7 @@ var WPCLib = {
 				});
 			} else {
 				console.log('saving locally: ', file);					
-				localStorage.setItem("WPCdoc", file);
+				localStorage.setItem("WPCdoc", JSON.stringify(file));
 				WPCLib.canvas.saved = true;					
 			}	
 			// Update last edited counter in folio
@@ -591,6 +598,7 @@ var WPCLib = {
 		_resize: function() {
 			// Resize canvas textarea as doc grows
 			// TODO: Consider cut/copy/paste, fix padding/margin glitches
+			if (document.body.offsetWidth<=480) return;
 		    var text = document.getElementById(WPCLib.canvas.contentId);
         	text.style.height = 'auto';		    
 		    text.style.height = text.scrollHeight+'px';
@@ -1758,7 +1766,9 @@ var WPCLib = {
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
 			var context = document.getElementById('context');
-			var switcher = document.getElementById('switchview');			
+			var switcher = document.getElementById('switchview');	
+			var page = document.getElementById('pageContent');	
+			var title = document.getElementById('pageTitle');					
 			var screenwidth = document.body.offsetWidth;
 			var distance = ((screenwidth-50)<this.menuSlideSpan) ? (screenwidth-50) : this.menuSlideSpan;
 			
@@ -1791,6 +1801,10 @@ var WPCLib = {
 				context.style.right=(v*-1)+'px';
 				if (screenwidth<480) {
 					context.style.left=v+'px';
+					page.style.left=v+'px';	
+					page.style.right=(v*-1)+'px';						
+					title.style.left=v+'px';	
+					title.style.right=(v*-1)+'px';														
 				} else {
 					context.style.left='auto';					
 				}	

@@ -31,6 +31,12 @@ body {
   z-index: 99990 !important;
 }
 
+@media (max-width: 480px) {
+  html {
+     overflow-y: hidden;
+  }
+}  
+
 /* ------ Basic button & interaction styles ------*/
 
 .icon, .button {
@@ -416,11 +422,12 @@ a.wpcbutton:hover {
     border-left: none;
   }
   .icon.showmenu {
-    position: absolute;
+    position: fixed;
     background: url(../img/icon-menu-black.png) no-repeat 0.65em 0.65em; 
     background-size: 0.9em 0.9em; 
     cursor: pointer; 
     left: 7px;  
+    top: 9px;
   }  
   .canvas .page {
     margin:0;
@@ -428,15 +435,21 @@ a.wpcbutton:hover {
   }
 
   .canvas .page .content {
-    position: relative;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
   }  
 
   .canvas .page .content input.title, .canvas.full .page .content input.title {
-    position: absolute;
+    position: fixed;
     width: auto;
     top: 10px;
-    left: 51px;
-    right: 50px;
+    left: 0;
+    right: 0;
+    margin-left: 51px;
+    margin-right: 50px;    
     margin-bottom: 0;
     font-family: "urbana",sans-serif;
     padding: 0;
@@ -445,20 +458,25 @@ a.wpcbutton:hover {
     font-weight: 600;
     color: #333;
     z-index: 2110;
+    background-color: transparent;
   }
 
   .canvas .page .content textarea, .canvas.full .page .content textarea {
-    position: absolute;
+    position: fixed;
     width: auto;
+    height: auto;
     top: 0;
     left: 0;
-    right: 0;    
-    min-height: 30em;
+    right: 0;  
+    bottom: 0;  
+    min-height: auto;
     font-family: "ff-meta-serif-web-pro", serif;
     font-size: 17px;
     line-height: 28px;
     border: 0px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;    
     color: #333; 
     padding: 48px 12px 0 12px;     
   } 
