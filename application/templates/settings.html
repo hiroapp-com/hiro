@@ -6,7 +6,7 @@
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
 </head>
 <body id="settingsPage">
-	<a href="#" onclick="_wpc.ui.hideDialog();return false;" class="close">Close</a>
+	<a href="#" onclick="_wpc.ui.hideDialog();return false;" ontouchstart="_wpc.ui.hideDialog();return false;" class="close">Close</a>
 	<div>
         {% if not current_user.is_authenticated() %}
 		<div id="s_login">
@@ -141,7 +141,7 @@
 				<div class="header">
 					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
 					<div class="active">Plan<em>s &amp; Payment</em></div>
-					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;" ontochstart="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
+					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
 				</div>
 				<div class="plans" id="s_planboxes">
 					<div class="box 1">

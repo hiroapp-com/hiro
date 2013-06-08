@@ -329,7 +329,7 @@ var WPCLib = {
 			// See if a selection is performed and narrow search to selection
 			WPCLib.util.registerEvent(p,'mouseup',this.textclick);							
 			WPCLib.util.registerEvent(el,'keydown',this.keyhandler);	
-			WPCLib.util.registerEvent(el,'keyup',this.update);
+			WPCLib.util.registerEvent(el,'keyup',this.update);			
 
 			// Resizing of textarea
 			WPCLib.util.registerEvent(el,'keyup',this._resize);
@@ -351,7 +351,11 @@ var WPCLib = {
 			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);	
 
 			if ('ontouchstart' in document.documentElement) {
+				// Make sure the teaxtare contents are scrollable on mobile devices
 				el.addEventListener('touchmove',function(event){event.stopPropagation()},false);											
+			} else {
+				// click on the page puts focus on textarea
+				WPCLib.util.registerEvent(p,'click',function(){document.getElementById(WPCLib.canvas.contentId).focus()});
 			}				
 
 			// Always set context sidebar icon to open on mobiles

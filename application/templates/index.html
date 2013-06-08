@@ -36,7 +36,7 @@
 					</a>			
 				</div>
 				<div class="archive">
-					<a href="#" class="button dark settings" title="Settings" onclick="WPCLib.folio.showSettings();return false;">
+					<a href="#" class="button dark settings" title="Settings" onclick="WPCLib.folio.showSettings();return false;" ontouchstart="WPCLib.folio.showSettings();return false;">
 						<span>Settings</span>
 					</a>					
 					<a href="#" class="panel dark archbutton" title="Archive" onclick="WPCLib.folio.docs.openarchive();return false;">
@@ -46,7 +46,7 @@
 			</div>			
 		</div>
 		
-		<a href="#" onclick="WPCLib.context.switchview(); return false;" id="switchview">&#187;</a>	
+		<a href="#" onclick="WPCLib.context.switchview(); return false;" ontouchstart="WPCLib.context.switchview(); return false;" id="switchview">&#187;</a>	
 		<div class="icon showmenu" title="Show Menu" onclick="WPCLib.ui.menuSwitch();" ontouchstart="WPCLib.ui.menuSwitch();return false;">Show Menu</div>			
 		<div class="canvas" id="canvas">
 			<div class="page" id="page">
