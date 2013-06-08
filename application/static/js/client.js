@@ -279,7 +279,7 @@ var WPCLib = {
 			}
 		},
 
-		showSettings: function(section,field) {
+		showSettings: function(section,field,event) {
 			// Show settings dialog
 			if (WPCLib.sys.user.level==0 && !field) {
 				field = 'signup_mail';
@@ -536,7 +536,7 @@ var WPCLib = {
 			WPCLib.util.registerEvent(content,'keydown',this._cleanwelcome);
 			// If the landing page is loaded, don't pull the focus from it, bit expensive here, maybve add callback to newdoc later
 			if (WPCLib.sys.user.level==0 && document.getElementById('landing').style.display != 'none') {
-				var el = window.frames['landing'].document.getElementById('startwriting');
+				var el = document.getElementById('landing').contentDocument.getElementById('startwriting');
 				if (el) el.focus();
 			} else {
 				document.getElementById(WPCLib.canvas.contentId).focus();				
@@ -1144,16 +1144,16 @@ var WPCLib = {
 			id: '',
 			// levels: 0 = anon, 1 = free, 2 = paid
 			level: 0,
-			dialog: window.frames['dialog'],
+			dialog: document.getElementById('dialog').contentDocument,
 			signinCallback: null,
 			upgradeCallback: null,
 			justloggedin: false,
 
 			register: function() { 
 				// Register a new user (or log in if credentials are from know user)
-				var button = dialog.document.getElementById('signupbutton');
-				var val = dialog.document.getElementById('signupform').getElementsByTagName('input');
-				var error = dialog.document.getElementById('signuperror');
+				var button = document.getElementById('dialog').contentDocument.getElementById('signupbutton');
+				var val = document.getElementById('dialog').contentDocument.getElementById('signupform').getElementsByTagName('input');
+				var error = document.getElementById('dialog').contentDocument.getElementById('signuperror');
 				var payload = {
 					email: val[0].value.toLowerCase(),
 					password: val[1].value
@@ -1196,9 +1196,9 @@ var WPCLib = {
 
 			login: function() { 
 				// Register a new user (or log in if credentials are from know user)
-				var button = dialog.document.getElementById('loginbutton');
-				var val = dialog.document.getElementById('loginform').getElementsByTagName('input');
-				var error = dialog.document.getElementById('loginerror');
+				var button = document.getElementById('dialog').contentDocument.getElementById('loginbutton');
+				var val = document.getElementById('dialog').contentDocument.getElementById('loginform').getElementsByTagName('input');
+				var error = document.getElementById('dialog').contentDocument.getElementById('loginerror');
 				var payload = {
 					email: val[0].value.toLowerCase(),
 					password: val[1].value
@@ -1332,7 +1332,7 @@ var WPCLib = {
 				WPCLib.ui.documentcounter();		
 			},
 
-			upgrade: function(level,callback,reason) {
+			upgrade: function(level,callback,reason,event) {
 				if (this.level==0) {
 					// If user is not loggedin yet we show the regsitration first
 					// TODO Refactor dialog & login flow to enable callback without going spaghetti
@@ -1346,9 +1346,9 @@ var WPCLib = {
 			forceupgrade: function(level,reason) {
 				// Show an upgrade to paid dialog and do callback
 
-				// Change default header to reason for upgrade
-				var plan = window.frames['dialog'].document.getElementById('s_plan').getElementsByTagName('div');
-				var checkout = window.frames['dialog'].document.getElementById('s_checkout').getElementsByTagName('div');
+				// Change default header to reason for upgrade				
+				var plan = document.getElementById('dialog').contentDocument.getElementById('s_plan').getElementsByTagName('div');
+				var checkout = document.getElementById('dialog').contentDocument.getElementById('s_checkout').getElementsByTagName('div');
 				plan[0].innerHTML = checkout[0].innerHTML = '<span class="reason">' + reason + '</span>';
 				plan[0].style.display = checkout[0].style.display = 'block';
 				plan[1].style.display = checkout[1].style.display = 'none';
@@ -1363,13 +1363,13 @@ var WPCLib = {
 			upgradeto: '',
 			checkout: function() {
 				// handles the complete checkout flow from stripe and our backend
-				var frame = window.frames['dialog'];
-				var Stripe = frame.Stripe;
+				var frame = document.getElementById('dialog').contentDocument;
+				var Stripe = document.getElementById('dialog').contentWindow.Stripe;
 				if (this.checkoutActive) return;
 
 				// Preparation 
 				this.checkoutActive = true;
-				var checkoutbutton = frame.document.getElementById('checkoutbutton');
+				var checkoutbutton = frame.getElementById('checkoutbutton');
 				checkoutbutton.innerHTML = 'Verifying...';
 
 				// TODO Bruno: add LUHN checks etc
@@ -1379,19 +1379,19 @@ var WPCLib = {
 				subscription.plan = this.upgradeto;
 
 				// See if we already have all data in the backend or else get a new token
-				if (!window.frames['dialog'].usehirostripecard) {
+				if (!document.getElementById('dialog').contentWindow.usehirostripecard) {
 					// Get Stripe token & send to our backend
-					var form = frame.document.getElementById('checkoutform');
+					var form = frame.getElementById('checkoutform');
 					Stripe.createToken(form, function(status,response) {					
 						if (response.error) {
 							// Our IDs are named alongside the stripe naming conventions
-							frame.document.getElementById('cc_'+response.error.param).className += " error";
+							frame.getElementById('cc_'+response.error.param).className += " error";
 							if (response.error.param == 'number') {
-								var el = frame.document.getElementById('cc_'+response.error.param).nextSibling;
+								var el = frame.getElementById('cc_'+response.error.param).nextSibling;
 								el.innerHTML = response.error.message;	
 								el.className += ' error';						
 							} else {
-								frame.document.getElementById('checkout_error').innerHTML = response.error.message;
+								frame.getElementById('checkout_error').innerHTML = response.error.message;
 							}
 							WPCLib.sys.user.checkoutActive = false;
 							checkoutbutton.innerHTML = "Try again"
@@ -1415,7 +1415,7 @@ var WPCLib = {
 	                contentType: "application/json; charset=UTF-8",
 	                data: JSON.stringify(subscription),
 					success: function(data) {
-						window.frames['dialog'].document.getElementById('checkoutbutton').innerHTML = "Upgrade";
+						document.getElementById('dialog').contentDocument.getElementById('checkoutbutton').innerHTML = "Upgrade";
 	                    WPCLib.sys.user.setStage(data.tier);	
 	                    WPCLib.sys.user.checkoutActive = false;	
 						document.activeElement.blur();
@@ -1429,7 +1429,7 @@ var WPCLib = {
 			downgrade: function(targetplan) {
 				// downgrade to targetplan
 				if (this.downgradeActive) return;				
-				var boxes = window.frames['dialog'].document.getElementById('s_planboxes');
+				var boxes = document.getElementById('dialog').contentDocument.getElementById('s_planboxes');
 				var box = (targetplan=="free") ? 0 : 1;
 				var button = boxes.getElementsByClassName('box')[box].getElementsByClassName('red')[0];
 				button.innerHTML = "Downgrading...";
@@ -1585,7 +1585,7 @@ var WPCLib = {
 			// Show a modal popup 
 			var s = document.getElementById(this.modalShieldId);
 			var d = document.getElementById(this.dialogWrapperId);
-			var frame = window.frames['dialog'];			
+			var frame = document.getElementById('dialog').contentDocument;			
 			WPCLib.util.stopEvent(event);
 
 			// Close menu if left open
@@ -1605,15 +1605,15 @@ var WPCLib = {
 
 			// show a specific section and / or focus on a specific field
 			if (section) {
-				var el = frame.document.getElementById(section);
+				var el = frame.getElementById(section);
 				WPCLib.ui.switchView(el);
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
 					document.activeElement.blur();
 					// On some mobiel browser the input field is frozen if we don't focus the iframe first					 
-					if ('ontouchstart' in document.documentElement) window.frames['dialog'].focus();
+					if ('ontouchstart' in document.documentElement) document.getElementById('dialog').contentDocument.focus();
 					if (typeof field == 'boolean') el = el.getElementsByTagName('input')[0];													
-					if (typeof field == 'string') el = frame.document.getElementById(field);
+					if (typeof field == 'string') el = frame.getElementById(field);
 					if (el) el.focus();										
 				}					
 			}	
@@ -1623,7 +1623,7 @@ var WPCLib = {
 			this.dialogTimer = window.setInterval(this._centerDialog, 200);
 
 			// Attach clean error styling (red border) on all input
-			var inputs = frame.document.getElementsByTagName('input');
+			var inputs = frame.getElementsByTagName('input');
 			for (i=0,l=inputs.length;i<l;i++) {
 				WPCLib.util.registerEvent(inputs[i], 'keydown', this.cleanerror);
 				WPCLib.util.registerEvent(inputs[i], 'keydown', this.autoconfirm);				
@@ -1632,7 +1632,7 @@ var WPCLib = {
 
 		autoconfirm: function(event) {
 		    if (event.keyCode == 13) {
-		        this.parentNode.getElementsByClassName('pseudobutton').click();
+		        this.parentNode.getElementsByClassName('pseudobutton')[0].click();
 		    }			
 		},		
 
@@ -1647,7 +1647,7 @@ var WPCLib = {
 				window.clearInterval(this.dialogTimer);
 				this.dialogTimer=null;
 				WPCLib.util.releaseEvent(window, 'resize', this._centerDialog);
-				var inputs = window.frames[frame.id].document.getElementsByTagName('input');
+				var inputs = document.getElementById(frame.id).contentDocument.getElementsByTagName('input');
 				for (i=0,l=inputs.length;i<l;i++) {
 					WPCLib.util.releaseEvent(inputs[i], 'keydown', this.cleanerror);
 					WPCLib.util.releaseEvent(inputs[i], 'keydown', this.autoconfirm);					
@@ -1661,18 +1661,18 @@ var WPCLib = {
 			} else {
 				// Depending on user level switch to register or account overview
 				if (WPCLib.sys.user.level==0) {
-					this.switchView(window.frames['dialog'].document.getElementById('s_login'));
-					this.switchView(window.frames['dialog'].document.getElementById('s_signup'));				
+					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_login'));
+					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_signup'));				
 				} else {
-					this.switchView(window.frames['dialog'].document.getElementById('s_settings'));
-					this.switchView(window.frames['dialog'].document.getElementById('s_account'));	
+					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_settings'));
+					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_account'));	
 				}
 			}
 
 			// See if we had a forced upgrade header
-			var plan = window.frames['dialog'].document.getElementById('s_plan').getElementsByTagName('div');
+			var plan = document.getElementById('dialog').contentDocument.getElementById('s_plan').getElementsByTagName('div');
 			if (plan[0].style.display=='block') {
-				var checkout = window.frames['dialog'].document.getElementById('s_checkout').getElementsByTagName('div');
+				var checkout = document.getElementById('dialog').contentDocument.getElementById('s_checkout').getElementsByTagName('div');
 				plan[0].style.display = checkout[0].style.display = 'none';
 				plan[1].style.display = checkout[1].style.display = 'block';
 			}
@@ -1691,7 +1691,7 @@ var WPCLib = {
 
 		setplans: function(level) {
 			// Set the up/downgrade buttons on the plan selection screen according to the current level
-			var container = window.frames['dialog'].document.getElementById('s_planboxes');
+			var container = document.getElementById('dialog').contentDocument.getElementById('s_planboxes');
 			if (!container) {
 				// We do not have a reliable settings dialog onload on all browsers (yet) so we retry until it's there
 				setTimeout(function(){
@@ -1730,7 +1730,7 @@ var WPCLib = {
 
 		fillcheckout: function(plan) {
 			// Get the checkout form ready for checkout and switch view
-			var frame = window.frames['dialog'].document;
+			var frame = document.getElementById('dialog').contentDocument;
 			var startdesc = "Starter Plan: USD 9.99";
 			var prodesc = "Pro Plan: USD 29";
 			var cc_num = frame.getElementById('cc_number'); 
@@ -1893,7 +1893,7 @@ var WPCLib = {
 
 		documentcounter: function() {
 			// Updates the field in the settings with the current plan & document count
-			var val, level = WPCLib.sys.user.level, target = window.frames['dialog'].document.getElementById('s_account'), upgradelink;
+			var val, level = WPCLib.sys.user.level, target = document.getElementById('dialog').contentDocument.getElementById('s_account'), upgradelink;
 			if (!target) {
 				// If the settings dialog is not loaded yet try again later 
 				setTimeout(function(){
