@@ -39,10 +39,8 @@
 		<script type="text/javascript">
 		function facebooklogin() {
 			var WPFBbuttonHTML = 'Sign-In With <b>Facebook</b>';
-			FB.getLoginStatus(function(response) {
-			  console.log('trying to log in');	
+			FB.getLoginStatus(function(response) {	
 			  if (response.status === 'connected') {
-			    console.log('Already have all permissions! ',response.authResponse);
 				$.ajax({
 					url: "/_cb/facebook",
 	                type: "POST",
@@ -54,14 +52,12 @@
 					}
 				});				    
 			  } else if (response.status === 'not_authorized') {
-			    console.log('Hm, not authed,triggering fb auth dialog');
 			    if (window.navigator.standalone) {
 			    	// On mobile devices with potentially no popups we do a classic flow
 			    	window.parent.location = '/connect/facebook?next=/';
 			    } else {
 					FB.login(function(response) {
 					   if (response.authResponse) {
-						    console.log('facebook perms granted! ',response.authResponse);
 							$.ajax({
 								url: "/_cb/facebook",
 				                type: "POST",
@@ -74,7 +70,6 @@
 							});
 					   } else {
 					   	 // FB auth process aborted by user
-					     console.log('User cancelled login or did not fully authorize.');
 					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
 					   }
 					},{scope: 'email'});
@@ -86,8 +81,7 @@
 			    	window.parent.location = '/connect/facebook?next=/';
 			    } else {
 					FB.login(function(response) {
-					   if (response.authResponse) {
-						    console.log('facebook perms granted! ',response.authResponse);
+					   if (response.authResponse) {;
 							$.ajax({
 								url: "/_cb/facebook",
 				                type: "POST",
@@ -100,7 +94,6 @@
 							});
 					   } else {
 					   	 // FB auth process aborted by user
-					     console.log('User cancelled login or did not fully authorize.');
 					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
 					   }
 					},{scope: 'email'});

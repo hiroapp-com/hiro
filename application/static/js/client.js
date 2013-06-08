@@ -1631,7 +1631,6 @@ var WPCLib = {
 		},
 
 		autoconfirm: function(event) {
-			console.log(this,event);
 		    if (event.keyCode == 13) {
 		        this.parentNode.getElementsByClassName('pseudobutton').click();
 		    }			
