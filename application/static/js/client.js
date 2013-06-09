@@ -558,12 +558,13 @@ var WPCLib = {
 			}
 		},
 
-		_clicktitletip: function() {
+		_clicktitletip: function(event) {
+			event.stopPropagation();
 			var title = document.getElementById(WPCLib.canvas.pageTitle);
 			if (title.value==WPCLib.canvas.titleTip) title.value = '';	
 		},	
 
-		evaluatetitle: function(e) {
+		evaluatetitle: function(event) {
 			// When the title changes we update the folio and initiate save
 			WPCLib.folio.docs.active[0].title = this.value;
 
@@ -576,8 +577,8 @@ var WPCLib = {
 			WPCLib.canvas._settypingtimer();
 
 			// If user presses enter automatically move to body	
-		    if (e.keyCode == 13) {
-				e.preventDefault();
+		    if (event.keyCode == 13) {
+				event.preventDefault();
 		        WPCLib.canvas._setposition(0);
 		    }			
 		},
@@ -799,6 +800,7 @@ var WPCLib = {
 			var mobile = (document.body.offsetWidth<=480);
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
+			if (mobile) document.activeElement.blur();
 			if ((!mobile&&this.show)||(mobile&&c.style.display=='block')) {
 				c.style.display = 'none';
 				can.className += " full";								
@@ -1356,7 +1358,9 @@ var WPCLib = {
 				// Make sure the parent node is set to block, bit redundant but working fine
 				WPCLib.ui.showDialog(event,'','s_settings');	
 				WPCLib.ui.showDialog(event,'','s_plan');
-				if (this.upgradeCallback) WPCLib.util.docallback(this.upgradeCallback);				
+
+				// Do the intended action that triggered upgrade, this confuses most users atm
+				// if (this.upgradeCallback) WPCLib.util.docallback(this.upgradeCallback);				
 			},
 
 			checkoutActive: false,
@@ -1610,11 +1614,11 @@ var WPCLib = {
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
 					document.activeElement.blur();
-					// On some mobiel browser the input field is frozen if we don't focus the iframe first					 
-					if ('ontouchstart' in document.documentElement) document.getElementById('dialog').contentDocument.focus();
+					// On some mobiel browser the input field is frozen if we don't focus the iframe first				 
+					if ('ontouchstart' in document.documentElement) document.getElementById('dialog').contentWindow.focus();								
 					if (typeof field == 'boolean') el = el.getElementsByTagName('input')[0];													
 					if (typeof field == 'string') el = frame.getElementById(field);
-					if (el) el.focus();										
+					if (el) el.focus();																
 				}					
 			}	
 
@@ -1670,11 +1674,14 @@ var WPCLib = {
 			}
 
 			// See if we had a forced upgrade header
-			var plan = document.getElementById('dialog').contentDocument.getElementById('s_plan').getElementsByTagName('div');
-			if (plan[0].style.display=='block') {
-				var checkout = document.getElementById('dialog').contentDocument.getElementById('s_checkout').getElementsByTagName('div');
-				plan[0].style.display = checkout[0].style.display = 'none';
-				plan[1].style.display = checkout[1].style.display = 'block';
+			var plan = document.getElementById('dialog').contentDocument.getElementById('s_plan');
+			if (plan) {
+				var head = plan.getElementsByTagName('div');				
+				if (head[0].style.display=='block') {
+					var checkout = document.getElementById('dialog').contentDocument.getElementById('s_checkout').getElementsByTagName('div');
+					head[0].style.display = checkout[0].style.display = 'none';
+					head[1].style.display = checkout[1].style.display = 'block';
+				}
 			}
 
 			// Hide shield & dialog
@@ -1685,8 +1692,12 @@ var WPCLib = {
 			if (!('ontouchstart' in document.documentElement)) WPCLib.canvas._setposition();
 		},
 
-		upgrade: function() {
-			
+		upgradeboxclick: function(obj) {
+			// clicks the currently active button
+			var el = obj.getElementsByTagName('a');
+			for (i=0,l=el.length;i<l;i++) {
+				if (el[i].style.display != 'none') el[i].click();
+			}
 		},
 
 		setplans: function(level) {

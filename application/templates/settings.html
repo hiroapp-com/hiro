@@ -118,7 +118,7 @@
 					<form>
 						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via <a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
 						<input type="text" value="Member since: {{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %} Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
+						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %} Plan" disabled {% if current_user.tier<3 %}ontouchstart="_wpc.ui.switchView(document.getElementById('s_plan'));"{% endif %}></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_plan'));">Upgrade</a></div>			
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="facebookshare(); return false;">via <b>Facebook</b></a>
@@ -137,7 +137,7 @@
 					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
 				</div>
 				<div class="plans" id="s_planboxes">
-					<div class="box 1">
+					<div class="box 1" onclick="_wpc.ui.upgradeboxclick(this);">
 						<div class="head">Basic</div>
 						<div class="price">Free!</div>
 						<div class="curr">&nbsp;</div>	
@@ -150,7 +150,7 @@
 						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
 						<a href="#" class="wpcbutton red" onclick="_wpc.sys.user.downgrade('free');return false;">Downgrade</a>	
 					</div>
-					<div class="box 2">
+					<div class="box 2" onclick="_wpc.ui.upgradeboxclick(this);">
 						<div class="head">Starter</div>
 						<div class="price">9<sup>.90</sup></div>	
 						<div class="curr">USD / MONTH</div>	
@@ -164,7 +164,7 @@
 						<a href="#" class="wpcbutton red" onclick="_wpc.sys.user.downgrade('starter');return false;">Downgrade</a>	
 						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('starter');return false;">Upgrade !</a>	
 					</div>
-					<div class="box 3">
+					<div class="box 3" onclick="_wpc.ui.upgradeboxclick(this);">
 						<div class="head">Pro</div>
 						<div class="price">29</div>		
 						<div class="curr">USD / MONTH</div>	

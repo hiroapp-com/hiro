@@ -383,6 +383,7 @@ a.wpcbutton:hover {
   overflow: hidden; 
   color: #333;
   z-index: 2100;
+  min-height: 150px;
   padding-bottom: 50px;
 }
 
@@ -1405,6 +1406,7 @@ body#settingsPage input.pseudobutton {
   border: 1px solid #eee;
   border-radius: 3px;
   position: relative;
+  cursor: pointer;
 }
 
 #s_plan .box .head {
