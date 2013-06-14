@@ -333,9 +333,9 @@ var WPCLib = {
 
 			// Resizing of textarea
 			WPCLib.util.registerEvent(el,'keyup',this._resize);
-			WPCLib.util.registerEvent(el,'cut',this._delayedresize);	
-			WPCLib.util.registerEvent(el,'paste',this._delayedresize);
-			WPCLib.util.registerEvent(el,'drop',this._delayedresize);
+			WPCLib.util.registerEvent(el,'cut',this._copynpaste);	
+			WPCLib.util.registerEvent(el,'paste',this._copynpaste);
+			WPCLib.util.registerEvent(el,'drop',this._copynpaste);
 
 			// Title events	
 			WPCLib.util.registerEvent(t,'change',this.evaluatetitle);
@@ -384,8 +384,7 @@ var WPCLib = {
 			// Save the currently open document
 			// For now we only say a doc is updated once it's saved
 			this.lastUpdated = WPCLib.util.now();
-
-			var file = this.builddoc();			
+			var file = this.builddoc();		
 
 			// backend saving, locally or remote
 			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
@@ -435,12 +434,11 @@ var WPCLib = {
 					WPCLib.canvas.lastUpdated = data.last_updated;			
 
 					// Show data on canvas
-					// Always hide context on mobile size
-
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
-					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title;
-					document.getElementById(that.contentId).value = data.text;
-					document.title = data.title || 'Untitled';
+					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
+					var content = document.getElementById(that.contentId);
+					content.style.height = 'auto';
+					content.value = data.text;
 					that._setposition(data.cursor);
 
 					// Set internal values
@@ -484,10 +482,9 @@ var WPCLib = {
 			} else {
 				WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);	
 				WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'keydown',WPCLib.canvas._cleanwelcome);
-			}	
-			// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
-			// TODO Bruno findout why, it's not about something else setting the focus elsewhere							
+			}								
 			this._setposition(data.cursor);
+
 			// Show default title if none was saved	
 			if (!data.title || data.title.length==0) {
 				document.getElementById(this.pageTitle).value = document.title ='Untitled';
@@ -609,10 +606,12 @@ var WPCLib = {
 		    text.style.height = (text.scrollHeight-50)+'px';
 		},
 
-		_delayedresize: function() {
-			// Experiment with crossbrowser resizing
-			// if (document.body.offsetWidth<=480) return;			
+		_copynpaste: function() {
+			// on copy and paste actions					
 	        window.setTimeout(WPCLib.canvas._resize, 0);
+
+	        // Save Document
+	        WPCLib.canvas.savedoc();
 		},
 
 		keyhandler: function(e) {
@@ -749,15 +748,23 @@ var WPCLib = {
 		_setposition: function(pos) {
 			// Set the cursor to a specified position	
 			if (!pos) var pos = 0;
-    		// Abort if device is mobile and menu not fully closed yet    		
-    		if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos!=0) return;	
+			var el = document.getElementById(this.contentId);	
+
+			// Abort if focus is already on textarea
+			if (el.id == document.activeElement.id) return;  					
+
+    		// Abort if device is mobile and menu not fully closed yet or caret position is too far down   		
+    		if ('ontouchstart' in document.documentElement && document.body.offsetWidth<=480) {
+    			if (WPCLib.ui.menuCurrPos!=0 || pos > 150) return;   			
+    		};   		
+
     		// Unfocus any existing elements
     		document.activeElement.blur();
     		this._resize();
-			var el = document.getElementById(this.contentId);
     		if (el.setSelectionRange) {
-				// Standalone safari sets the focus n secs after pageload to body, so we need to delay
-				if (window.navigator.standalone&&this.safariinit) {				
+				if (window.navigator.standalone&&this.safariinit) {		
+					// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
+					// TODO Bruno findout why, it's not about something else setting the focus elsewhere						
 					setTimeout( function(){
 						if (WPCLib.ui.menuCurrPos!=0) return;
 						el.focus();							
@@ -1150,6 +1157,7 @@ var WPCLib = {
 			signinCallback: null,
 			upgradeCallback: null,
 			justloggedin: false,
+			authactive: false,
 
 			register: function() { 
 				// Register a new user (or log in if credentials are from know user)
@@ -1160,6 +1168,10 @@ var WPCLib = {
 					email: val[0].value.toLowerCase(),
 					password: val[1].value
 				};
+
+				// Preparation
+				if (this.authactive) return;
+				this.authactive = true;				
 				button.innerHTML ="Signing Up...";
 
 				// Clear any old error messages
@@ -1174,10 +1186,11 @@ var WPCLib = {
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
 					success: function(data) {
-						WPCLib.sys.user.authed('register',data);						                    
+						WPCLib.sys.user.authed('register',data);												                    
 					},
 					error: function(xhr) {
-	                    button.innerHTML = "Create Account";						
+	                    button.innerHTML = "Create Account";
+	                    WPCLib.sys.user.authactive = false;						
 						if (xhr.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							return;
@@ -1205,6 +1218,10 @@ var WPCLib = {
 					email: val[0].value.toLowerCase(),
 					password: val[1].value
 				};
+
+				// Preparing everything
+				if (this.authactive) return;
+				this.authactive = true;				
 				button.innerHTML ="Logging in...";
 
 				// Clear any old error messages
@@ -1222,7 +1239,8 @@ var WPCLib = {
 						WPCLib.sys.user.authed('login',data);	                    
 					},
 					error: function(xhr) {
-	                    button.innerHTML = "Log-In";						
+	                    button.innerHTML = "Log-In";
+	                    WPCLib.sys.user.authactive = false;						
 						if (xhr.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							return;
@@ -1269,6 +1287,9 @@ var WPCLib = {
                 } else {
                 	WPCLib.ui.hideDialog();	
                 }
+
+                // Housekeeping, switch authactive off
+                WPCLib.sys.user.authactive = false;
 			},	
 
 			logio: function() {
