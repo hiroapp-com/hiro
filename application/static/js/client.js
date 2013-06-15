@@ -446,7 +446,9 @@ var WPCLib = {
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
 					var content = document.getElementById(that.contentId);
+					// Reset the canvas size to document contents in the next 2 steps
 					content.style.height = 'auto';
+					WPCLib.canvas._resize();
 					content.value = data.text;
 					that._setposition(data.cursor);
 
