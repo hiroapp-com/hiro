@@ -238,11 +238,11 @@ def edit_document(doc_id):
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
 
-    doc.title = data.get('title') or doc.title
-    doc.status = data.get('status') or doc.status
-    doc.text = data.get('text') or doc.text 
-    doc.cursor = data.get('cursor') or doc.cursor 
-    doc.hidecontext = data.get('hidecontext') or doc.hidecontext
+    doc.title = data.get('title', doc.title)
+    doc.status = data.get('status', doc.status)
+    doc.text = data.get('text', doc.text)
+    doc.cursor = data.get('cursor', doc.cursor)
+    doc.hidecontext = data.get('hidecontext', doc.hidecontext)
     links = data.get('links', {})
     if links.get('normal') is not None:
         doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
