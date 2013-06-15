@@ -183,6 +183,9 @@ def landing():
 def settings():
     return render_template('settings.html')
 
+def test():
+    return render_template('test.html')    
+
 @login_required
 def list_documents():
     group_by = request.args.get('group_by')

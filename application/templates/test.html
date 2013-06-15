@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html style="overflow: hidden !important;">
+	<head>
+		<link rel="stylesheet" type="text/css" href="/static/css/wonderpad.css">
+		<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
+		<script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+		<style>
+		#x, #y, #action, #dx, #dy, #start_x, #start_y {
+			display: inline-block;
+		}
+		</style>
+	</head>
+	<body style="padding: 20px;height:2000px;">
+		<h1>js etc Testpage</h1>
+		<div>Action: <div id="action"></div></div>		
+		<div>Start x: <div id="start_x"></div>, x: <div id="x"></div>, dx: <div id="dx"></div></div>
+		<div>Start y: <div id="start_y"></div>, y: <div id="y"></div>, dy: <div id="dy"></div></div>
+		<div>Event: <div id="event"></div></div>		
+		<script type="text/javascript">	
+
+		/**
+			var swipe = {
+				inited: false,				
+				timeout: false,	
+				timer: null,
+				start_x: 0,
+				start_y: 0,
+
+				init: function(e) {
+					window.addEventListener('touchend', swipe.end, false);
+					this.start_x = e.pageX;
+					this.start_y = e.pageY;
+					this.timer = setTimeout(function(){swipe.timeout=true;},100);					
+					this.inited = true;
+				},
+
+				move: function(left,right,e) {
+					wpc_logevent(e);				
+					var dx, dy;
+					if (swipe.timeout) return;		
+					if (!swipe.inited) swipe.init(e);
+					dx = document.getElementById('dx').innerHTML = swipe.start_x - e.pageX;
+					dy = document.getElementById('dy').innerHTML = swipe.start_y - e.pageY;	
+					if (typeof right === 'function' && Math.abs(dy*2) < (dx*-1) && dx < (-80 * window.devicePixelRatio)) {
+						swipe.reset();
+						right();
+						e.preventDefault();						
+					}	
+					if (typeof left === 'function'  && Math.abs(dy*2) < dx && dx > (80 * window.devicePixelRatio)) {
+						swipe.reset();						
+						left();
+						e.preventDefault();						
+					}	
+				},
+
+				end: function() {					
+					swipe.reset();					
+				},
+
+				reset: function() {
+					this.start_x = 0;
+					this.start_y = 0;						
+					window.removeEventListener('touchend', swipe.end, false);
+					clearTimeout(swipe.timer);
+					this.timer = null;	
+					this.timeout = false;								
+					this.inited = false;									
+				}
+			};
+
+			function wpc_click() {
+				console.log('clicked');
+				wpc_logevent(event);
+			}
+
+			function wpc_drag() {
+				var x, y, dx, dy, listening;
+
+				wpc_logevent(event);
+				event.preventDefault();
+			}	
+
+			**/		
+
+			var swipe = {
+				start_x: 0,
+				start_y: 0,
+				active: false,
+
+				start: function(left,right,e) {
+		    		if (e.touches.length == 1) {
+		    			wpc_logevent(e);		    			
+		    			swipe.start_x = e.touches[0].pageX;
+		    			swipe.start_y = e.touches[0].pageY;
+		    			swipe.active = true;
+						e.srcElement.addEventListener('touchmove', swipe.move, false);
+		    			setTimeout(function(e){
+		    				swipe.active = false;
+		    				swipe.cancel(e);
+		    			},50);
+		    		 }
+				},
+
+				move: function(e) {
+		    		if (swipe.active) {
+			    	 	var x = e.touches[0].pageX;
+			    		var y = e.touches[0].pageY;
+			    		var dx = swipe.start_x - x;
+			    		var dy = swipe.start_y - y;
+			    		if (Math.abs(dx) >= (80 * window.devicePixelRatio)) {		    			
+			    			swipe.cancel(e);
+			    			if (Math.abs(dy) > Math.abs(dx*0.4)) return;
+			    			if(dx > 0) {
+			    				alert('left');
+			    			}
+			    			else {
+			    				alert('right');
+			    			}
+			    		}
+		    		}
+				},
+
+				cancel: function(e) {
+					e.srcElement.removeEventListener('touchmove', swipe.move);
+					swipe.start_x = null;
+					swipe.active = false;
+				}
+			}
+
+			function wpc_logevent(event) {
+				var event_str = '';
+				if (event) {
+				    for (var p in event) {
+				        if (event.hasOwnProperty(p)) {
+				            event_str += p + '::' + event[p] + '<br />';
+				        }
+				    }
+				}
+				// document.getElementById('x').innerHTML = event.pageX;
+				// document.getElementById('y').innerHTML = event.pageY;				
+				document.getElementById('event').innerHTML = event_str;
+			}
+
+			// window.addEventListener('click', wpc_click, false);
+			document.body.addEventListener('touchstart', function(e){swipe.start(alert,alert,e)}, false);	
+			console.log('rdy');				
+		</script>
+	</body>
+</html>

@@ -13,6 +13,7 @@ app.add_url_rule('/_ah/warmup', 'warmup', view_func=views.warmup)
 app.add_url_rule('/', 'home', view_func=views.home)
 app.add_url_rule('/landing/', 'landing', view_func=views.landing)
 app.add_url_rule('/settings/', 'settings', view_func=views.settings)
+app.add_url_rule('/test/', 'test', view_func=views.test)
 # payment
 app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan, methods=['POST'])
 

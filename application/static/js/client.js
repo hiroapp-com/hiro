@@ -25,7 +25,7 @@ var WPCLib = {
 
 			// Register "close folio" events to rest of the page
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
-			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'touchstart', WPCLib.ui.menuHide);			
+			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'touchstart', WPCLib.ui.menuHide);			
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);		
 
 			// Make sure the scrollbar is also visible on small devices
@@ -325,7 +325,8 @@ var WPCLib = {
 			// Document events
 			var el = document.getElementById(this.contentId);			
 			var p = document.getElementById(this.canvasId);
-			var t = document.getElementById(this.pageTitle);	
+			var t = document.getElementById(this.pageTitle);
+			var c = document.getElementById(WPCLib.context.id);	
 			// See if a selection is performed and narrow search to selection
 			WPCLib.util.registerEvent(p,'mouseup',this.textclick);							
 			WPCLib.util.registerEvent(el,'keydown',this.keyhandler);	
@@ -352,7 +353,15 @@ var WPCLib = {
 
 			if ('ontouchstart' in document.documentElement) {
 				// Make sure the teaxtare contents are scrollable on mobile devices
-				el.addEventListener('touchmove',function(event){event.stopPropagation()},false);											
+				el.addEventListener('touchstart',function(e){
+					// Attach the swipe actions to canvas					
+					WPCLib.ui.swipe.init(WPCLib.context.switchview,WPCLib.ui.menuSwitch,e);					
+				}, false);	
+				c.addEventListener('touchstart',function(e){
+					// Attach the swipe actions to canvas					
+					WPCLib.ui.swipe.init(null,WPCLib.context.switchview,e);					
+				}, false);				
+				el.addEventListener('touchmove',function(e){e.stopPropagation();},false);									
 			} else {
 				// click on the page puts focus on textarea
 				WPCLib.util.registerEvent(p,'click',function(){document.getElementById(WPCLib.canvas.contentId).focus()});
@@ -801,26 +810,26 @@ var WPCLib = {
 
 		switchview: function() {
 			// show / hide searchbar
-			var c = document.getElementById(this.id);
+			var c = document.getElementById(WPCLib.context.id);
 			var can = document.getElementById(WPCLib.canvas.canvasId);
 			var sw = document.getElementById('switchview');
 			var mobile = (document.body.offsetWidth<=480);
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
 			if (mobile) document.activeElement.blur();
-			if ((!mobile&&this.show)||(mobile&&c.style.display=='block')) {
+			if ((!mobile&&WPCLib.context.show)||(mobile&&c.style.display=='block')) {
 				c.style.display = 'none';
 				can.className += " full";								
 				sw.innerHTML = '&#171;';
 				sw.className = ''
-				if (!mobile) this.show = false;
+				if (!mobile) WPCLib.context.show = false;
 			} else {
 				c.style.display = 'block';
 				can.className = "canvas";			
 				sw.innerHTML = '&#187;';
 				sw.className = 'open'
 				if (!mobile) {
-					this.show = true;
+					WPCLib.context.show = true;
 					c.style.left = 'auto';
 				}	
 			}
@@ -1786,15 +1795,15 @@ var WPCLib = {
 			d.style.top= Math.floor((s.offsetHeight - d.offsetHeight)/2-10) +'px';
 		},
 
-		menuSwitch: function() {			
+		menuSwitch: function() {	
 			// Handler for elements acting as open and close trigger
-			var mp = this.menuCurrPos;
+			var mp = WPCLib.ui.menuCurrPos;
 			// On touch devices we also remove the keyboard
 			if ('ontouchstart' in document.documentElement) {
 				if (document.activeElement.id==WPCLib.canvas.contentId&&mp==0) document.activeElement.blur();
 			}			
-			if (mp==0) this.menuSlide(1);
-			if (mp!=0) this.menuSlide(-1);
+			if (mp==0) WPCLib.ui.menuSlide(1);
+			if (mp!=0) WPCLib.ui.menuSlide(-1);
 		},
 
 		menuSlide: function(direction, callback) {
@@ -1873,6 +1882,57 @@ var WPCLib = {
 			}
 			var that = WPCLib.ui;
 			this.menuHideTimer = setTimeout(function(){that.menuSlide(-1);},1);			
+		},
+
+		swipe: {
+			start_x: 0,
+			start_y: 0,
+			active: false,
+			callback_left: null,
+			callback_right: null, 
+
+			init: function(left,right,e) {	
+				if (WPCLib.ui.menuCurrPos!=0) return;			
+	    		if (e.touches.length == 1) {
+	    			WPCLib.ui.swipe.callback_left = left;	
+	    			WPCLib.ui.swipe.callback_right = right;		    			    			
+	    			WPCLib.ui.swipe.start_x = e.touches[0].pageX;
+	    			WPCLib.ui.swipe.start_y = e.touches[0].pageY;
+	    			WPCLib.ui.swipe.active = true;
+					e.srcElement.addEventListener('touchmove', WPCLib.ui.swipe.move, false);
+	    			setTimeout(function(e){
+	    				WPCLib.ui.swipe.active = false;
+						WPCLib.ui.swipe.callback_left = null;
+						WPCLib.ui.swipe.callback_right = null;		    				
+	    				WPCLib.ui.swipe.cancel(e);
+	    			},100);
+	    		}
+			},
+
+			move: function(e) {
+	    		if (WPCLib.ui.swipe.active) {   			
+		    	 	var x = e.touches[0].pageX;
+		    		var y = e.touches[0].pageY;
+		    		var dx = WPCLib.ui.swipe.start_x - x;
+		    		var dy = WPCLib.ui.swipe.start_y - y;
+		    		if (Math.abs(dx) >= (50 * window.devicePixelRatio)) {		    			
+		    			WPCLib.ui.swipe.cancel(e);
+		    			if (Math.abs(dy) > Math.abs(dx*0.4)) return;
+		    			if(dx > 0) {
+		    				WPCLib.ui.swipe.callback_left();
+		    			}
+		    			else {
+		    				WPCLib.ui.swipe.callback_right();
+		    			}
+		    		}
+	    		}
+			},
+
+			cancel: function(e) {
+				e.srcElement.removeEventListener('touchmove', WPCLib.ui.swipe.move);
+				WPCLib.ui.swipe.start_x = null;
+				WPCLib.ui.swipe.active = false;			
+			}
 		},
 
 		switchView: function(elementOrId, display, userCallback) {

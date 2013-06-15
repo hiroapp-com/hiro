@@ -81,7 +81,7 @@
 			    	window.parent.location = '/connect/facebook?next=/';
 			    } else {
 					FB.login(function(response) {
-					   if (response.authResponse) {;
+					   if (response.authResponse) {
 							$.ajax({
 								url: "/_cb/facebook",
 				                type: "POST",
