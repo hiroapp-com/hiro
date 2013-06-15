@@ -446,10 +446,12 @@ var WPCLib = {
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
 					var content = document.getElementById(that.contentId);
+					content.value = data.text;					
 					// Reset the canvas size to document contents in the next 2 steps
-					content.style.height = 'auto';
-					WPCLib.canvas._resize();
-					content.value = data.text;
+					content.style.height = 'auto';					
+					if (mobile) {
+						WPCLib.canvas._resize();
+					} 
 					that._setposition(data.cursor);
 
 					// Set internal values
@@ -1879,6 +1881,10 @@ var WPCLib = {
 		},
 
 		menuHide: function() {
+			if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos != 0) {
+				// Prevent delayed dragging of menu or setting focus
+				event.preventDefault();
+			}			
 			if (this.menuHideTimer) {
 				clearTimeout(this.menuHideTimer);				
 			}
@@ -1896,35 +1902,39 @@ var WPCLib = {
 			init: function(left,right,e) {	
 				if (WPCLib.ui.menuCurrPos!=0) return;			
 	    		if (e.touches.length == 1) {
-	    			WPCLib.ui.swipe.callback_left = left;	
-	    			WPCLib.ui.swipe.callback_right = right;		    			    			
-	    			WPCLib.ui.swipe.start_x = e.touches[0].pageX;
-	    			WPCLib.ui.swipe.start_y = e.touches[0].pageY;
-	    			WPCLib.ui.swipe.active = true;
+	    			var that = WPCLib.ui.swipe;
+	    			that.callback_left = left;	
+	    			that.callback_right = right;		    			    			
+	    			that.start_x = e.touches[0].pageX;
+	    			that.start_y = e.touches[0].pageY;
+	    			that.active = true;
 					e.srcElement.addEventListener('touchmove', WPCLib.ui.swipe.move, false);
 	    			setTimeout(function(e){
-	    				WPCLib.ui.swipe.active = false;
-						WPCLib.ui.swipe.callback_left = null;
-						WPCLib.ui.swipe.callback_right = null;		    				
-	    				WPCLib.ui.swipe.cancel(e);
+	    				that.active = false;
+						that.callback_left = null;
+						that.callback_right = null;		    				
+	    				that.swipe.cancel(e);
 	    			},100);
 	    		}
 			},
 
 			move: function(e) {
-	    		if (WPCLib.ui.swipe.active) {   			
+				var that = WPCLib.ui.swipe;
+	    		if (that.active) {   			
 		    	 	var x = e.touches[0].pageX;
 		    		var y = e.touches[0].pageY;
-		    		var dx = WPCLib.ui.swipe.start_x - x;
-		    		var dy = WPCLib.ui.swipe.start_y - y;
+		    		var dx = that.start_x - x;
+		    		var dy = that.start_y - y;
 		    		if (Math.abs(dx) >= (50 * window.devicePixelRatio)) {		    			
-		    			WPCLib.ui.swipe.cancel(e);
+		    			that.cancel(e);
 		    			if (Math.abs(dy) > Math.abs(dx*0.4)) return;
 		    			if(dx > 0) {
-		    				WPCLib.ui.swipe.callback_left();
+		    				that.callback_left();
+		    				e.preventDefault();
 		    			}
 		    			else {
-		    				WPCLib.ui.swipe.callback_right();
+		    				that.callback_right();
+		    				e.preventDefault();		    				
 		    			}
 		    		}
 	    		}
