@@ -175,10 +175,7 @@ def change_plan():
 
 
 def home():
-    latest_doc = None
-    if current_user.is_authenticated():
-        latest_doc = Document.query(Document.owner == current_user.key).order(-Document.updated_at).get()
-    return render_template('index.html', latest_doc=latest_doc)
+    return render_template('index.html')
 
 def landing():
     return render_template('landing.html')

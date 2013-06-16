@@ -37,6 +37,7 @@ class User(UserMixin, ndb.Model):
 
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
+    latest_doc = property(lambda self: Document.query(Document.owner == self.key).order(-Document.updated_at).get())
 
     @property
     def active_cc(self):
@@ -144,6 +145,7 @@ class User(UserMixin, ndb.Model):
 class Anonymous(AnonymousUser):
     name = u"Anonymous"
     has_paid_plan = False
+    latest_doc = None
 
 class Link(ndb.Model):
     url = ndb.StringProperty(required=True)
