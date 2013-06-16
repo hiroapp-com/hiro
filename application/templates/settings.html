@@ -118,7 +118,7 @@
 					<form>
 						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via <a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
 						<input type="text" value="Member since: {{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %} Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_plan'));">Upgrade</a></div>			
+						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %} Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="facebookshare(); return false;">via <b>Facebook</b></a>
@@ -281,7 +281,7 @@
             description: "Change the world with the right words. Hiro lets you write and manage your texts like never before: Simple, in your browser, across all your devices.",
             actions: {
                 name: 'Start writing',
-                link: 'https://www.hiroapp.com',
+                link: 'https://www.hiroapp.com/connect/facebook',
             }
         };
         FB.ui(obj);

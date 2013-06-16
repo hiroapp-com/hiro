@@ -428,7 +428,7 @@ a.wpcbutton:hover {
     left: 0px;
     top: 0px;
     height: 45px;
-    width: 45px;
+    width: 40px;
   }  
   .canvas .page {
     margin:0;
@@ -493,14 +493,14 @@ a.wpcbutton:hover {
     margin-right: 0;
     top: 0;
     padding-right: 20px;
-    padding-top: 14px;
+    padding-top: 15px;
   }
 
   #switchview.open {
     margin-right: 0;
     top: 4px;
     padding-right: 20px;
-    padding-top: 10px;
+    padding-top: 13px;
   }
 
 }
@@ -966,7 +966,7 @@ body#landingPage h1 em {
 
 body#landingPage .cto {
   position: absolute;
-  bottom: 38px;
+  bottom: 32px;
   left: 0;
   right: 0;
   width: 100%;
@@ -979,6 +979,7 @@ body#landingPage .cto a.start {
   display: inline-block;
   font-size: 20px;
   outline: none;
+  margin-bottom: 5px;
 }
 
 body#landingPage .cto a.signin {
@@ -1144,13 +1145,13 @@ body#landingPage .teaser .screen  .blurb .desc em {
   }
 
   body#landingPage .cto {
-    bottom: 8px;
+    bottom: 10px;
   }
 
   body#landingPage .cto a.start {
     padding: 8px 0 8px 0;
     width: 80%;
-    margin-bottom: 7px;
+    margin-bottom: 8px;
   }
 
 }

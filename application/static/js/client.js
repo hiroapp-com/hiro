@@ -841,7 +841,7 @@ var WPCLib = {
 
 		analyze: function(string, chunktype) {
 			// Send text to server for analysis
-			document.getElementById(this.statusId).innerHTML = 'Analyzing...';
+			document.getElementById(this.statusId).innerHTML = 'Saving & Analyzing...';
 			$.post('/analyze', {content: string}, 
 			function(data){	
 				console.log(data);
@@ -1925,9 +1925,9 @@ var WPCLib = {
 		    		var y = e.touches[0].pageY;
 		    		var dx = that.start_x - x;
 		    		var dy = that.start_y - y;
-		    		if (Math.abs(dx) >= (50 * window.devicePixelRatio)) {		    			
+		    		if (Math.abs(dx) >= (45 * window.devicePixelRatio)) {		    			
 		    			that.cancel(e);
-		    			if (Math.abs(dy) > Math.abs(dx*0.4)) return;
+		    			if (Math.abs(dy) > Math.abs(dx*0.5)) return;
 		    			if(dx > 0) {
 		    				that.callback_left();
 		    				e.preventDefault();
