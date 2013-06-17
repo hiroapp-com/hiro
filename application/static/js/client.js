@@ -1312,6 +1312,7 @@ var WPCLib = {
 
 			logout: function() {
 				// Simply log out user and reload window
+				WPCLib.ui.fade(document.body,-1,400);
 				$.ajax({
 					url: "/logout",
 	                type: "POST",

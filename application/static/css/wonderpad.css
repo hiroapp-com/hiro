@@ -14,11 +14,13 @@ html {
   -webkit-font-smoothing: antialiased;
    overflow-y: scroll;
    overflow-x: hidden; 
+   background-color: #fcfcfc;
 }
 
 body {
   font-family: "urbana", sans-serif;
   color: #1a1a1a;
+  background-color: #fcfcfc;  
 }
 
 @media (max-width: 480px){
