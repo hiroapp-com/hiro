@@ -60,10 +60,12 @@
 		<div class="icon showmenu" title="Show Menu" onclick="WPCLib.ui.menuSwitch();" ontouchstart="WPCLib.ui.menuSwitch();return false;">Show Menu</div>			
 		<div class="canvas" id="canvas">
 			<div class="page" id="page">
-				<input class="title" id="pageTitle">				
+				{% with doc = current_user.latest_doc %}				
+				<input class="title" id="pageTitle" value="{{ doc.title }}">				
 				<div class="content" id ="content">
-					<textarea placeholder="Just write" id="pageContent"></textarea>
-				</div>	
+					<textarea placeholder="Just write" id="pageContent">{{ doc.text }}</textarea>
+				</div>
+				{% endwith %}	
 			</div>	
 			<div id="nicequote" style="display:none;">
 				<span class="quote">“One day I will find the right words, and they will be simple.”</span>
@@ -91,6 +93,7 @@
 		<script src="/static/js/client.js" type="text/javascript"></script>	
 		<script type="text/javascript">
 			// Set user level, TODO Discuss how we hand this over from Django
+			WPCLib.canvas._resize();
             WPCLib.sys.user.setStage({% if current_user.is_authenticated() %}{{ current_user.tier }}{% else %}0{% endif %});
 			WPCLib.sys.init();
 

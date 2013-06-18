@@ -55,7 +55,10 @@ var WPCLib = {
 					// Edge case where user logs in with neither stored nor current document
 					if (data && !data.active[0]) {
 						WPCLib.folio.docs.newdoc();
-					}		
+					}	
+
+					// Update the document counter
+				    if (WPCLib.sys.user.level > 0) WPCLib.ui.documentcounter();	
 				});
 			},
 
@@ -449,9 +452,7 @@ var WPCLib = {
 					content.value = data.text;					
 					// Reset the canvas size to document contents in the next 2 steps
 					content.style.height = 'auto';					
-					if (mobile) {
-						WPCLib.canvas._resize();
-					} 
+					WPCLib.canvas._resize();
 					that._setposition(data.cursor);
 
 					// Set internal values
@@ -614,9 +615,13 @@ var WPCLib = {
 		_resize: function() {
 			// Resize canvas textarea as doc grows
 			// TODO: Consider cut/copy/paste, fix padding/margin glitches
-			// if (document.body.offsetWidth<=480) return;
+			var mobile = (document.body.offsetWidth<=480) ? true : false;
 		    var text = document.getElementById(WPCLib.canvas.contentId);   
-		    text.style.height = (text.scrollHeight-50)+'px';
+		    if (mobile) {
+		    	text.style.height = (text.scrollHeight-50)+'px';
+		    } else {
+		    	text.style.height = (text.scrollHeight-50)+'px';
+		    }
 		},
 
 		_copynpaste: function() {
@@ -764,11 +769,11 @@ var WPCLib = {
 			var el = document.getElementById(this.contentId);	
 
 			// Abort if focus is already on textarea
-			if (el.id == document.activeElement.id) return;  					
+			if (el.id == document.activeElement.id) return;  			
 
-    		// Abort if device is mobile and menu not fully closed yet or caret position is too far down   		
+    		// Abort if device is mobile and menu not fully closed yet or text length is larger than visible area   		
     		if ('ontouchstart' in document.documentElement && document.body.offsetWidth<=480) {
-    			if (WPCLib.ui.menuCurrPos!=0 || pos > 150) return;   			
+    			if (WPCLib.ui.menuCurrPos!=0 || el.value.length > 150) return;   			
     		};   		
 
     		// Unfocus any existing elements
@@ -1363,10 +1368,7 @@ var WPCLib = {
 				}	
 
 				// Show correct upgrade/downgrade buttons
-				WPCLib.ui.setplans(level);	
-
-				// Update the document counter
-				WPCLib.ui.documentcounter();		
+				WPCLib.ui.setplans(level);			
 			},
 
 			upgrade: function(level,callback,reason,event) {

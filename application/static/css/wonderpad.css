@@ -464,7 +464,7 @@ a.wpcbutton:hover {
     left: 0;    
     overflow-x: hidden;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;    
+    -webkit-overflow-scrolling: touch;   
   }  
 
   .canvas .page .content textarea, .canvas.full .page .content textarea {
@@ -482,7 +482,7 @@ a.wpcbutton:hover {
     overflow: hidden;   
     color: #333; 
     padding: 48px 12px 2px 12px;    
-    background-color: #fff; 
+    background-color: #fff;
   } 
 
   .canvas #nicequote {
