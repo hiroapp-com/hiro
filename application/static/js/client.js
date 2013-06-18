@@ -322,6 +322,7 @@ var WPCLib = {
 		created: 0,
 		lastUpdated: 0,
 		safariinit: true,
+		preloaded: false,
 
 		_init: function() {
 			// Basic init on page load
@@ -373,6 +374,12 @@ var WPCLib = {
 			// Always set context sidebar icon to open on mobiles
 			if (document.body.offsetWidth<=480) document.getElementById('switchview').innerHTML = '&#171;';				
 		},	
+
+		preload: function(title,text) {
+			// If flask already gave us the title and text values
+			this.preloaded = true;
+			this._resize();
+		},
 
 		builddoc: function() {
 			// Collects doc properties from across the client lib and returns object
@@ -428,7 +435,7 @@ var WPCLib = {
 			var mobile = (document.body.offsetWidth<=480);			
 
 			// If we already know the title, we shorten the waiting time
-			if (title) document.getElementById(this.pageTitle).value = document.title = title;	
+			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
 			document.getElementById(WPCLib.context.statusId).value = 'Loading...';			
 			WPCLib.ui.menuHide();
 			if (mobile && document.getElementById(WPCLib.context.id).style.display=='block') WPCLib.context.switchview();
@@ -449,15 +456,18 @@ var WPCLib = {
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
 					var content = document.getElementById(that.contentId);
-					content.value = data.text;					
-					// Reset the canvas size to document contents in the next 2 steps
-					content.style.height = 'auto';					
-					WPCLib.canvas._resize();
+					if (!that.preloaded) {
+						content.value = data.text;					
+						// Reset the canvas size to document contents in the next 2 steps
+						content.style.height = 'auto';					
+						WPCLib.canvas._resize();
+					}	
 					that._setposition(data.cursor);
 
 					// Set internal values
 					that.text = data.text;
 					that.title = data.title;	
+					that.preloaded = false;
 
 					// If body is empty show a quote
 					if (!data.text || data.text.length == 0) {
@@ -1363,7 +1373,8 @@ var WPCLib = {
 						signupButton.style.display = 'none';
 						logio.className = 'logio logout';
 						logio.getElementsByTagName('a')[0].title = 'Logout';
-						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';					
+						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
+						WPCLib.canvas.preloaded = false;				
 						break;	
 				}	
 
