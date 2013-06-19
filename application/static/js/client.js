@@ -1119,7 +1119,7 @@ var WPCLib = {
 				 js.src = "https://connect.facebook.net/en_US/all.js";
 				 fjs.parentNode.insertBefore(js, fjs);
 				}(document, 'script', 'facebook-jssdk'));										  							
-			});
+			});			
 
 			WPCLib.folio.init();
 			this.initCalled=true;
