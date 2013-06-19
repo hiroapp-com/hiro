@@ -23,7 +23,7 @@ body {
   background-color: #fcfcfc;  
 }
 
-@media (max-width: 480px){
+@media (max-width: 480px), (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
   body{
     -webkit-text-size-adjust: none;
   }
@@ -291,7 +291,7 @@ a.wpcbutton:hover {
   padding-left: 28px; 
 }
 
-@media (max-width: 700px) {
+@media (max-width: 480px) {
   .menu .documents {
     width: 240px;
   }
@@ -379,7 +379,7 @@ a.wpcbutton:hover {
   padding: 0;
   width: 100%;
   font-family: "ff-meta-serif-web-pro", serif;
-  font-size: 1em;
+  font-size: 17px;
   line-height: 1.9em;
   border: 0px;
   overflow: hidden; 
@@ -415,7 +415,7 @@ a.wpcbutton:hover {
   font-size: 0.9em;
 }
 
-@media (max-width: 480px){
+@media (max-width: 480px) {
   .canvas {
     margin-left: 0;
     margin-right: 0;
@@ -504,7 +504,91 @@ a.wpcbutton:hover {
     padding-right: 20px;
     padding-top: 13px;
   }
+}
 
+@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+  .canvas {
+    margin-left: 50px;
+    margin-right: 0;
+    border-right: none;
+    border-left: none;
+  }
+  .icon.showmenu {
+    position: fixed;
+    background: url(../img/icon-menu.png) no-repeat 18px 19px;
+    background-size: 0.9em 0.9em;
+    cursor: pointer;
+    left: 0px;
+    top: 0px;
+    height: 45px;
+    width: 40px;
+  }  
+  .canvas .page {
+    margin:0;
+    padding-top: 0;
+  }
+
+  .canvas .page input.title, .canvas.full .page input.title {
+    position: fixed;
+    width: auto;
+    top: 10px;
+    left: 0;
+    right: 0;
+    margin-left: 121px;
+    margin-right: 50px;  
+    margin-top: 40px;  
+    margin-bottom: 0;
+    font-family: "urbana",sans-serif;
+    padding: 0;
+    border: none; 
+    font-size: 1.7em;
+    font-weight: 600;
+    color: #333;
+    z-index: 2110;
+    background-color: transparent;
+  }
+
+  .canvas .page .content {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;    
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;   
+  }  
+
+  .canvas .page .content textarea, .canvas.full .page .content textarea {
+    position: absolute;
+    width: auto;
+    height: auto;
+    top: 0;
+    left: 0;
+    right: 0;  
+    bottom: 0;
+    font-family: "ff-meta-serif-web-pro", serif;
+    font-size: 17px;
+    line-height: 28px;
+    border: 0px;
+    overflow: hidden;   
+    color: #333; 
+    padding: 98px 12px 2px 70px;    
+    background-color: #fff;
+  } 
+  #switchview {
+    margin-right: 0;
+    top: 0;
+    padding-right: 22px;
+    padding-top: 14px;
+  }
+
+  #switchview.open {
+    margin-right: 0;
+    top: 0;
+    padding-right: 20px;
+    padding-top: 8px;
+  }   
 }
 
 
@@ -880,6 +964,13 @@ text-align: center;
 
 }
 
+@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+  .context {
+    display: none;
+    opacity: 0.9;
+  }
+}
+
 /*   Settings and other Dialogs */
 
 #modalShield {
@@ -1156,6 +1247,21 @@ body#landingPage .teaser .screen  .blurb .desc em {
     margin-bottom: 8px;
   }
 
+}
+
+@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+  body#landingPage h1 em {
+    font-size: 40px; 
+    display: block;
+    color: #333;
+  }
+
+  body#landingPage h1 {
+    margin: 8% auto 0 auto;    
+    font-size: 18px; 
+    line-height: 28px;  
+    color: #666;  
+  }
 }
 
 
@@ -1510,7 +1616,9 @@ body#settingsPage input.pseudobutton {
     height: 90%;
     overflow: hidden;
   }
+}
 
+@media (max-width: 440px) {
   body#settingsPage a.close {
     color: transparent;
     padding-right: 0;
@@ -1684,4 +1792,91 @@ body#settingsPage input.pseudobutton {
     width: 85%;
   }
 
+}
+
+@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+  #dialogWrapper {
+    width: 460px;
+    height: 400px;
+    overflow: hidden;
+  }
+}  
+
+@media (min-width: 441px) and (max-width: 700px) {
+  body#settingsPage a.close {
+    color: transparent;
+    padding-right: 0;
+  }
+
+  #s_settings .header .active, #s_settings .header a  {
+    margin-right: 10px;
+  }  
+
+  #s_signin, #s_signup {
+    width: 320px;
+    margin-top: 72px;    
+  } 
+
+  #s_settings .accountdetails, #s_settings .checkoutdetails {
+    width: 380px;
+    margin-top: 47px;   
+    position: relative; 
+  }
+
+  #s_settings .checkoutdetails form {
+    margin-top: 67px;
+  } 
+
+  #s_settings .footer {
+    bottom: 20px;
+    right: 26px;
+  }  
+
+  body#settingsPage input.pseudobutton {
+    top: -200px;
+  }   
+
+  .accountdetails a.wpcbutton.share {
+    width: 90px;
+  }   
+
+  #s_plan .box {
+    margin-top: 20px;
+    width: 175px;
+    height: 138px;
+    margin-left: 35px;    
+  }
+
+  #s_plan .box .head {
+    display: inline-block;
+    text-align: left;
+    padding-top: 10px;
+    padding-left: 14px;
+  }  
+
+  #s_plan .box .price {
+    font-size: 20px;
+    position: absolute;
+    top: 2px;
+    right: 10px;
+  }
+
+  #s_plan .box .curr {
+    text-align: right;
+    position: absolute;
+    top: 22px;
+    right: 10px;
+    width: 30px;
+    font-size: 10px;
+  }  
+
+  #s_plan .box ul {
+    font-size: 12px;
+    padding: 2px 0 0 15px;
+  }  
+
+  #s_plan .box a.wpcbutton {
+    width: 134px;
+    padding: 3px 4px 2px 4px;
+  }  
 }  

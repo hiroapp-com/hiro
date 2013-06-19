@@ -173,7 +173,7 @@ var WPCLib = {
 				document.getElementById(this.doclistId).insertBefore(ph,document.getElementById(this.doclistId).firstChild);
 
 				// Create the doc on the canvas
-				if (document.body.offsetWidth <= 480 && document.getElementById(WPCLib.context.id).style.display == "block") WPCLib.context.switchview();
+				if (document.body.offsetWidth <= 900 && document.getElementById(WPCLib.context.id).style.display == "block") WPCLib.context.switchview();
 				WPCLib.canvas.newdoc();
 				WPCLib.ui.menuHide();
 
@@ -372,7 +372,7 @@ var WPCLib = {
 			}				
 
 			// Always set context sidebar icon to open on mobiles
-			if (document.body.offsetWidth<=480) document.getElementById('switchview').innerHTML = '&#171;';				
+			if (document.body.offsetWidth<=900) document.getElementById('switchview').innerHTML = '&#171;';				
 		},	
 
 		preload: function(title,text) {
@@ -432,7 +432,7 @@ var WPCLib = {
 			// Load a specific document to the canvas
 			if (!this.saved) this.savedoc();			
 			console.log('loading doc id: ', docid);
-			var mobile = (document.body.offsetWidth<=480);			
+			var mobile = (document.body.offsetWidth<=900);			
 
 			// If we already know the title, we shorten the waiting time
 			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
@@ -625,10 +625,11 @@ var WPCLib = {
 		_resize: function() {
 			// Resize canvas textarea as doc grows
 			// TODO: Consider cut/copy/paste, fix padding/margin glitches
-			var mobile = (document.body.offsetWidth<=480) ? true : false;
+			var w = document.body.offsetWidth
+			var midi = (w > 480 && w <900) ? true : false;
 		    var text = document.getElementById(WPCLib.canvas.contentId);   
-		    if (mobile) {
-		    	text.style.height = (text.scrollHeight-50)+'px';
+		    if (midi) {
+		    	text.style.height = (text.scrollHeight-100)+'px';
 		    } else {
 		    	text.style.height = (text.scrollHeight-50)+'px';
 		    }
@@ -833,21 +834,22 @@ var WPCLib = {
 			var can = document.getElementById(WPCLib.canvas.canvasId);
 			var sw = document.getElementById('switchview');
 			var mobile = (document.body.offsetWidth<=480);
+			var midi = (document.body.offsetWidth<=900);
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
 			if (mobile) document.activeElement.blur();
-			if ((!mobile&&WPCLib.context.show)||(mobile&&c.style.display=='block')) {
+			if ((!midi&&WPCLib.context.show)||(midi&&c.style.display=='block')) {
 				c.style.display = 'none';
 				can.className += " full";								
 				sw.innerHTML = '&#171;';
 				sw.className = ''
-				if (!mobile) WPCLib.context.show = false;
+				if (!mobile||!midi) WPCLib.context.show = false;
 			} else {
 				c.style.display = 'block';
 				can.className = "canvas";			
 				sw.innerHTML = '&#187;';
 				sw.className = 'open'
-				if (!mobile) {
+				if (!mobile||!midi) {
 					WPCLib.context.show = true;
 					c.style.left = 'auto';
 				}	
@@ -1672,7 +1674,7 @@ var WPCLib = {
 
 			// Recenter on window size changes
 			WPCLib.util.registerEvent(window, 'resize', this._centerDialog);
-			this.dialogTimer = window.setInterval(this._centerDialog, 200);
+			if(!('ontouchstart' in document.documentElement)) this.dialogTimer = window.setInterval(this._centerDialog, 200);
 
 			// Attach clean error styling (red border) on all input
 			var inputs = frame.getElementsByTagName('input');
@@ -1733,8 +1735,12 @@ var WPCLib = {
 			}
 
 			// Hide shield & dialog
+			if ('ontouchstart' in document.documentElement) {
+				document.activeElement.blur();
+			}			
 			s.style.display = 'none';
 			d.style.display = 'none';
+
 
 			// Put focus back on document 
 			if (!('ontouchstart' in document.documentElement)) WPCLib.canvas._setposition();
@@ -1860,8 +1866,8 @@ var WPCLib = {
 				canvas.style.left=v+'px';
 				canvas.style.right=(v*-1)+'px';
 				context.style.right=(v*-1)+'px';
-				if (screenwidth<480) {
-					context.style.left=v+'px';						
+				if (screenwidth<900) {
+					if (screenwidth<480) context.style.left=v+'px';						
 					title.style.left=v+'px';	
 					title.style.right=(v*-1)+'px';														
 				} else {
