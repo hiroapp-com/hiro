@@ -111,7 +111,8 @@
 					  xfbml      : true                                  // Look for social plugins on the page
 					});
 					// Make FB available in settings frame
-					document.getElementById('dialog').contentWindow.FB = FB;
+					// TODO: work with callback / retries
+					setTimeout(function(){document.getElementById('dialog').contentWindow.FB = FB;},1000);
 				}; 						
 			});
 		</script>	
