@@ -39,7 +39,7 @@ class User(UserMixin, ndb.Model):
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
     latest_doc = property(lambda self: Document.query(Document.owner == self.key).order(-Document.updated_at).get())
 
-    sugnup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
+    signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
 
     @property
     def active_cc(self):
