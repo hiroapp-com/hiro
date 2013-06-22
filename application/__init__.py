@@ -11,6 +11,7 @@ from custom_session import ItsdangerousSessionInterface
 
 from application.models import User, Anonymous
 
+from .assets import assets_env
 
 app = Flask('application')
 app.config.from_object('application.settings')
@@ -25,6 +26,13 @@ app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 @app.context_processor
 def inject_profiler():
     return dict(profiler_includes=templatetags.profiler_includes())
+
+assets = assets_env(app)
+@app.context_processor
+def inject_assets():
+    ctx = {name: bundle.urls()[0] for name, bundle in assets._named_bundles.iteritems()}
+    return dict(assets=ctx)
+
 
 # Pull in URL dispatch routes
 import urls

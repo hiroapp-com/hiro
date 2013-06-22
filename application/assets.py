@@ -47,5 +47,5 @@ if __name__== "__main__":
     # build bundles
     env = assets_env(app)
     for bundle in list(env):
-        print('building bundle {0}'.format(bundle.output % {'version': str(bundle.get_version())}))
         bundle.build()
+        print('built {0}'.format(bundle.output % {'version': str(bundle.get_version())}))
