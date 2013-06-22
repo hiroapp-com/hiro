@@ -1,5 +1,5 @@
 application: wondapad
-version: 2
+version: 1-4
 runtime: python27
 api_version: 1
 threadsafe: true
@@ -22,28 +22,6 @@ libraries:
 
 inbound_services:
 - warmup
-
-pagespeed:
-  url_blacklist:
-  - http://www.hiroapp.com/docs/*
-  - http://www.hiroapp.com/relevant
-  - http://www.hiroapp.com/analyze
-  enabled_rewriters:
-  - MinifyCss
-  - CollapseWhitespace
-  disabled_rewriters:
-  - InlineCss
-  - ImageConvertToJpeg
-  - ImageResize
-  - LazyloadImages
-  - InlinePreviewImages
-  - MoveCssToHead
-  - CombineCss
-  - CombineJs
-  - WebpOptimization
-  - ImageRecompressJpeg 
-  - ImageProgressiveJpeg
-  - ConvertMetaTags
 
 
 handlers:
