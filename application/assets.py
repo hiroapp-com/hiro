@@ -12,9 +12,6 @@ lib_dir = os.path.join(root_dir, 'lib')
 if lib_dir not in sys.path:
    sys.path.insert(0, lib_dir)
 
-gae_root = os.environ['GAE_ROOT']
-sys.path.append(gae_root)
-sys.path.append(os.path.join(gae_root, 'lib'))
 
 # imports from a path added above, hence this import's position in code
 from flask.ext.assets import Environment
@@ -40,6 +37,9 @@ def assets_env(app):
 
 
 if __name__== "__main__":
+    gae_root = os.environ['GAE_ROOT']
+    sys.path.append(gae_root)
+    sys.path.append(os.path.join(gae_root, 'lib'))
     # setup flask app for context
     from flask import Flask
     app = Flask('application')
