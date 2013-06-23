@@ -2,7 +2,8 @@
 Initialize Flask app
 
 """
-from flask import Flask
+import os
+from flask import Flask, Markup
 
 from flask.ext import login
 from werkzeug.debug import DebuggedApplication
@@ -11,7 +12,7 @@ from custom_session import ItsdangerousSessionInterface
 
 from application.models import User, Anonymous
 
-from .assets import assets_env
+from .assets import assets_env, get_html_output
 
 app = Flask('application')
 app.config.from_object('application.settings')
@@ -27,11 +28,16 @@ app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 def inject_profiler():
     return dict(profiler_includes=templatetags.profiler_includes())
 
+
+
+
 assets = assets_env(app)
 @app.context_processor
-def inject_assets():
-    ctx = {name: bundle.urls()[0] for name, bundle in assets._named_bundles.iteritems()}
-    return dict(assets=ctx)
+def inject_asset_getter():
+    def get_asset(name):
+        bundle = assets._named_bundles[name]
+        return Markup(get_html_output(bundle.urls()))
+    return dict(get_asset=get_asset)
 
 
 # Pull in URL dispatch routes
