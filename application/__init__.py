@@ -24,6 +24,9 @@ app.session_interface = ItsdangerousSessionInterface()
 # Enable jinja2 loop controls extension
 app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 
+# Remove whitespaces from output HTML
+app.jinja_env.add_extension('jinja2htmlcompress.HTMLCompress')
+
 @app.context_processor
 def inject_profiler():
     return dict(profiler_includes=templatetags.profiler_includes())
