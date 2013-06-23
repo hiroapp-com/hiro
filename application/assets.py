@@ -31,8 +31,8 @@ def assets_env(app):
     env.manifest = ('file:' + os.path.join(root_dir,'webassets.manifest'))
     env.versions = 'hash:32'
     # create static bundles
-    env.register('hiro_js', 'js/client.js', output="javascript/hiro.%(version)s.js")
-    env.register('hiro_css', 'css/wonderpad.css', output="stylesheets/hiro.%(version)s.css")
+    env.register('hiro_js', 'js/client.js', filters='jsmin', output="javascript/hiro.%(version)s.js")
+    env.register('hiro_css', 'css/wonderpad.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")
     if os.environ.get('SERVER_SOFTWARE', '').startswith('Devel'):
         env.debug = True
     return env
