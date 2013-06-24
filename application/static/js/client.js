@@ -48,14 +48,9 @@ var WPCLib = {
 
 					// load top doc if not already on canvas, currently this should only be the 
 					// case if a user logs in when sitting in front of an empty document
-					if (data.active[0] && data.active[0].id != WPCLib.canvas.docid) {
+					if (data.active && data.active[0].id != WPCLib.canvas.docid) {
 						WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);
 					}
-
-					// Edge case where user logs in with neither stored nor current document
-					if (data && !data.active[0]) {
-						WPCLib.folio.docs.newdoc();
-					}	
 
 					// Update the document counter
 				    if (WPCLib.sys.user.level > 0) WPCLib.ui.documentcounter();	
@@ -132,7 +127,6 @@ var WPCLib = {
 			creatingDoc: false,
 			newdoc: function() {
 				// Initiate the creation of a new document
-
 				// Avoid creating multiple docs at once and check for user level
 				if (this.creatingDoc == true) return;
 
@@ -229,9 +223,9 @@ var WPCLib = {
 			movetoremote: function() {
 				// Moves a doc from localstorage to remote storage and clears localstorage
 				// Doublecheck here for future safety
-				if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
+				if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {					
 					// Strip id from file to get new one from backend
-					var file = WPCLib.canvas.builddoc();
+					var file = WPCLib.canvas.builddoc();					
 					file.id = '';
 					// Get doc id from server
 					$.ajax({
@@ -284,9 +278,12 @@ var WPCLib = {
 
 		showSettings: function(section,field,event) {
 			// Show settings dialog
-			if (WPCLib.sys.user.level==0 && !field) {
-				field = 'signup_mail';
-				section = 's_signup';
+			if (WPCLib.sys.user.level==0) {
+				if (!field) {
+					field = 'signup_mail';
+					section = 's_signup';
+				}
+				if (analytics) analytics.track('Sees Signup/Sign Screen');
 			} 
 			WPCLib.ui.showDialog(event,'',section,field);
 		}
@@ -532,7 +529,6 @@ var WPCLib = {
 
 		newdoc: function() {
 			// Create a new document (canvas part)
-
 			// See if the current document was changed in any way (Should we even allow the creation of new documents of the current one is blank?)
 			if (!this.saved) this.savedoc();	
 
@@ -1230,7 +1226,7 @@ var WPCLib = {
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
 					success: function(data) {
-						WPCLib.sys.user.authed('register',data);												                    
+						WPCLib.sys.user.authed('register',data,'Email');												                    
 					},
 					error: function(xhr) {
 	                    button.innerHTML = "Create Account";
@@ -1303,13 +1299,19 @@ var WPCLib = {
 				});	
 			},
 
-			authed: function(type, user) {
+			authed: function(type, user, method) {
 				// On successfull backend auth the returned user-data 
 				// from the various endpoints and finishes up auth process
             	WPCLib.sys.user.setStage(user.tier);
             	this.justloggedin = true;
+
+            	if (WPCLib.canvas.docid=='localdoc' && !localStorage.getItem('WPCdoc')) {
+            		// Remove empty document if user signs up / in right away            		
+            		WPCLib.folio.docs.active.length = 0;
+            	}
+
                 // Check for and move any saved local docs to backend
-                if (WPCLib.canvas.docid=='localdoc'&& localStorage.getItem('WPCdoc')) {
+                if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
                 	WPCLib.folio.docs.movetoremote();
                 } else {
 	                // Always load external docs as register endpoint can be used for existing login
@@ -1331,6 +1333,16 @@ var WPCLib = {
                 } else {
                 	WPCLib.ui.hideDialog();	
                 }
+
+                // Track signup (only on register, we also only pass the mathod variable then)
+                if (analytics) {
+	                if (type=='register' && method) {
+	                	analytics.track('Registers',{method:method});
+	                } else if (type == 'login') {
+	                	analytics.track('Logs back in');
+	                }	                	
+                }
+
 
                 // Housekeeping, switch authactive off
                 WPCLib.sys.user.authactive = false;
@@ -1430,6 +1442,7 @@ var WPCLib = {
 			checkoutActive: false,
 			upgradeto: '',
 			checkout: function() {
+				if (analytics) analytics.track('Initiates Checkout');				
 				// handles the complete checkout flow from stripe and our backend
 				var frame = document.getElementById('dialog').contentDocument;
 				var Stripe = document.getElementById('dialog').contentWindow.Stripe;
@@ -1477,6 +1490,8 @@ var WPCLib = {
 
 			_completecheckout: function(subscription) {
 				// Get the data from the checkout above and post data to backend / cleanup ui 
+				var tier = (subscription.plan == "starter") ? 2 : 3;				
+				if (analytics) analytics.track('Upgraded (Paid Tier)',{oldTier:WPCLib.sys.user.level,newTier:tier});				
 				$.ajax({
 					url: "/settings/plan",
 	                type: "POST",
@@ -1501,6 +1516,7 @@ var WPCLib = {
 				var box = (targetplan=="free") ? 0 : 1;
 				var button = boxes.getElementsByClassName('box')[box].getElementsByClassName('red')[0];
 				button.innerHTML = "Downgrading...";
+				if (analytics) analytics.track('Downgrades',{oldTier:WPCLib.sys.user.level,newTier:box});				
 
 				// All styled, getting ready to downgrade
 				var payload = {plan:targetplan};
@@ -1813,6 +1829,8 @@ var WPCLib = {
 			var startdesc = "Starter Plan: USD 9.99";
 			var prodesc = "Pro Plan: USD 29";
 			var cc_num = frame.getElementById('cc_number'); 
+			// Not optimal, as this dependend on the HTML not changing
+			var forced = (frame.getElementById('s_checkout').getElementsByClassName('header')[1].style.display=="none") ? true : false;
 			WPCLib.sys.user.upgradeto = plan;			
 			if (plan == 'starter') {
 				frame.getElementById('cc_desc').value = startdesc;
@@ -1823,7 +1841,8 @@ var WPCLib = {
 			this.switchView(frame.getElementById('s_checkout'));
 			if (cc_num.value.length==0) {
 				cc_num.focus();
-			} 			
+			} 
+            if (analytics) analytics.track('Chooses Plan',{Plan:plan,Forced:forced});
 		},
 
 		_centerDialog: function() {

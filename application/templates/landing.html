@@ -24,8 +24,8 @@
 			</div>							
 		</div>
 		<div class="cto">
-			<a href="#" class="wpcbutton blue start" id="startwriting" onclick="window.parent.WPCLib.ui.fade(window.parent.document.getElementById('landing'),-1,150); window.parent.document.getElementById('pageContent').focus(); return false;">Start Writing ( It's Free! )</a><br />
-			or&nbsp;<a href="#" onclick="window.parent.WPCLib.ui.fade(window.parent.document.getElementById('landing'),-1,150);window.parent.WPCLib.folio.showSettings('s_signin','signin_mail'); return false;" class="signin">sign-in</a>.		
+			<a href="#" class="wpcbutton blue start" id="startwriting" onclick="window.parent.WPCLib.ui.fade(window.parent.document.getElementById('landing'),-1,150); window.parent.document.getElementById('pageContent').focus();window.parent.analytics.track('Started Interacting');return false;">Start Writing ( It's Free! )</a><br />
+			or&nbsp;<a href="#" onclick="window.parent.WPCLib.ui.fade(window.parent.document.getElementById('landing'),-1,150);window.parent.WPCLib.folio.showSettings('s_signin','signin_mail');window.parent.analytics.track('Started Interacting');return false;" class="signin">sign-in</a>.		
 		</div>	
 	</body>
 </html>

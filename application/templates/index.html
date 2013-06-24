@@ -61,9 +61,9 @@
 		<div class="canvas" id="canvas">
 			<div class="page" id="page">	
 				{% with doc = current_user.latest_doc %}										
-				<input class="title" id="pageTitle" value="{{ doc.title }}">				
+				<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
 				<div class="content" id ="content">
-					<textarea placeholder="Just write" id="pageContent">{{ doc.text }}</textarea>
+					<textarea placeholder="Just write" id="pageContent">{{ doc.text or '' }}</textarea>
 				</div>
 				{% endwith %}
 			</div>	
