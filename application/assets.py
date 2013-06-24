@@ -16,9 +16,6 @@ if lib_dir not in sys.path:
 # imports from a path added above, hence this import's position in code
 from flask.ext.assets import Environment
 
-# gae profiler checks os.environ for gae dev server environment
-# this will trick it into thinking it is bein exec'd by de dev server
-os.environ["SERVER_SOFTWARE"] = 'Devel'
 
 
 env_path = os.path.join(root_dir, 'static')
@@ -51,6 +48,10 @@ def get_html_output(urls):
 
 
 if __name__== "__main__":
+    # gae profiler checks os.environ for gae dev server environment
+    # this will trick it into thinking it is bein exec'd by de dev server
+    os.environ["SERVER_SOFTWARE"] = 'Devel'
+
     gae_root = os.environ['GAE_ROOT']
     sys.path.append(gae_root)
     sys.path.append(os.path.join(gae_root, 'lib'))
