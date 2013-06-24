@@ -1,13 +1,9 @@
 <html style="overflow: hidden;">
 <head>
-	<script>var _wpc=window.parent.WPCLib,$=window.parent.$;</script>
+	<script>var _wpc=window.parent.WPCLib,$=window.parent.$,analytics=window.parent.analytics;</script>
     <link rel="stylesheet" type="text/css" href="{{ assets.hiro_css }}">				
 	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>    
-	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>	
-	<script type="text/javascript">
-	  var analytics=analytics||[];(function(){var e=["identify","track","trackLink","trackForm","trackClick","trackSubmit","page","pageview","ab","alias","ready","group"],t=function(e){return function(){analytics.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var n=0;n<e.length;n++)analytics[e[n]]=t(e[n])})(),analytics.load=function(e){var t=document.createElement("script");t.type="text/javascript",t.async=!0,t.src=("https:"===document.location.protocol?"https://":"http://")+"d2dq2ahtl5zl1z.cloudfront.net/analytics.js/v1/"+e+"/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n)};
-	  analytics.load("64nqb1cgw1");
-	</script>	
+	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>		
 </head>
 <body id="settingsPage">
 	<a href="#" onclick="_wpc.ui.hideDialog();return false;" ontouchstart="_wpc.ui.hideDialog();return false;" class="close">Close</a>
@@ -278,9 +274,9 @@
         var obj = {
             method: 'feed',
             link: 'https://www.hiroapp.com',
-            name: 'Hiro. The Essential Writing App.',
+            name: 'Hiro. Never Lose Your Best Ideas.',
             caption: 'https://www.hiroapp.com',
-            description: "Change the world with the right words. Hiro lets you write and manage your texts like never before: Simple, in your browser, across all your devices.",
+            description: "Hiro is a notetaking app that makes it easy to write down your ideas. It's extremely fast, beautifully designed and works on all your devices.",
             actions: {
                 name: 'Start writing',
                 link: 'https://www.hiroapp.com/connect/facebook',
@@ -295,6 +291,7 @@
   		Stripe.setPublishableKey('{{ config.STRIPE_PUBLIC_KEY }}');
   		// Various startup functions
   		_wpc.ui.setplans();
+  		_wpc.lib.init();
   		{% if current_user.is_authenticated() %}
 	  		// init segment io
 			analytics.identify('{{ current_user.token }}', {
