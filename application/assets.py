@@ -31,9 +31,23 @@ def assets_env(app):
     env.manifest = ('file:' + os.path.join(root_dir,'webassets.manifest'))
     env.versions = 'hash:32'
     # create static bundles
-    env.register('hiro_js', 'js/client.js', output="javascript/hiro.%(version)s.js")
-    env.register('hiro_css', 'css/wonderpad.css', output="stylesheets/hiro.%(version)s.css")
+    env.register('hiro_js', 'js/client.js', filters='jsmin', output="javascript/hiro.%(version)s.js")
+    env.register('hiro_css', 'css/wonderpad.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")
+    if os.environ.get('SERVER_SOFTWARE', '').startswith('Devel'):
+        env.debug = True
     return env
+
+asset_html = {
+    'css': '<link rel="stylesheet" type="text/css" href="{url}">',
+    'js': '<script src="{url}" type="text/javascript"></script>'
+    }
+
+def get_html_output(urls):
+    urls = [urls] if not hasattr(urls, '__iter__') else urls
+    return '\n'.join(asset_html.get(url.split('.')[-1], '').format(url=url) for url in urls)
+
+
+
 
 
 if __name__== "__main__":
