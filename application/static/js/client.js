@@ -1073,8 +1073,8 @@ var WPCLib = {
 
 		init: function() {
 			if (this.inited) return;
-			// kick off segment.io sequence
-			analytics.load("64nqb1cgw1");
+			// kick off segment.io sequence, only on our domain 
+			if (window.location.hostname.indexOf('hiroapp.com')>=0) analytics.load("64nqb1cgw1");
 
 			// Mount & init facebook
 			(function(d, s, id){
