@@ -1,7 +1,7 @@
 <html style="overflow: hidden;">
 <head>
 	<script>var _wpc=window.parent.WPCLib,$=window.parent.$,analytics=window.parent.analytics;</script>
-    <link rel="stylesheet" type="text/css" href="{{ assets.hiro_css }}">				
+    {{ get_asset('hiro_css') }}				
 	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>    
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>		
 </head>
@@ -117,14 +117,14 @@
 				<div class="accountdetails">
 					<form>
 						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via <a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
-						<input type="text" value="Member since: {{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %} Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
+						<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
+						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
-					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="facebookshare(); return false;">via <b>Facebook</b></a>
-					<a href="https://twitter.com/intent/tweet?text=Hmm%2C%20%22Change%20the%20world%20with%20the%20right%20words%22%20they%20say.%20%23writerapp%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');" class="wpcbutton share tw">via <b>Twitter</b></a>	
-					<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Good%20way%20to%20write%20%26%20manage%20texts%3A%20www.hiroapp.com" class="wpcbutton share mail green" target="_blank">via <b>Mail</b></a>	
-					<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F" class="wpcbutton share sms">via <b>SMS</b></a>
+					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
+					<a href="https://twitter.com/intent/tweet?text=Hmm%2C%20%22Change%20the%20world%20with%20the%20right%20words%22%20they%20say.%20%23writerapp%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');" class="wpcbutton share tw">via&nbsp;<b>Twitter</b></a>	
+					<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Good%20way%20to%20write%20%26%20manage%20texts%3A%20www.hiroapp.com" class="wpcbutton share mail green" target="_blank">via&nbsp;<b>Mail</b></a>	
+					<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F" class="wpcbutton share sms">via&nbsp;<b>SMS</b></a>
 				</div>	
 				{% endif %}					
 			</div>
@@ -195,8 +195,7 @@
 						<form id="checkoutform">
 							<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 							<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
-							<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
-							<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+							<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>&nbsp;/&nbsp;<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 							<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 							<div class="small" id="checkout_error"></div>			
 							<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">

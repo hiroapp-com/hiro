@@ -1089,8 +1089,6 @@ var WPCLib = {
 			 fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));	
 
-
-					
 			this.inited = true;
 		}
 	},
