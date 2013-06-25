@@ -511,7 +511,6 @@ a.wpcbutton:hover {
     margin-left: 50px;
     margin-right: 0;
     border-right: none;
-    border-left: none;
   }
   .icon.showmenu {
     position: fixed;
@@ -526,17 +525,25 @@ a.wpcbutton:hover {
   .canvas .page {
     margin:0;
     padding-top: 0;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;    
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;    
   }
 
   .canvas .page input.title, .canvas.full .page input.title {
-    position: fixed;
+    position: absolute;
     width: auto;
     top: 10px;
     left: 0;
     right: 0;
-    margin-left: 121px;
+    margin-left: 70px;
     margin-right: 50px;  
-    margin-top: 40px;  
+    margin-top: 30px;  
     margin-bottom: 0;
     font-family: "urbana",sans-serif;
     padding: 0;
@@ -549,14 +556,7 @@ a.wpcbutton:hover {
   }
 
   .canvas .page .content {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    left: 0;    
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;   
+   
   }  
 
   .canvas .page .content textarea, .canvas.full .page .content textarea {
@@ -573,7 +573,7 @@ a.wpcbutton:hover {
     border: 0px;
     overflow: hidden;   
     color: #333; 
-    padding: 98px 12px 2px 70px;    
+    padding: 98px 62px 2px 70px;    
     background-color: #fff;
   } 
   #switchview {

@@ -361,8 +361,9 @@ var WPCLib = {
 				c.addEventListener('touchstart',function(e){
 					// Attach the swipe actions to canvas					
 					WPCLib.ui.swipe.init(null,WPCLib.context.switchview,e);					
-				}, false);				
-				el.addEventListener('touchmove',function(e){e.stopPropagation();},false);									
+				}, false);	
+				// Make UI more stable with event listeners			
+				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);													
 			} else {
 				// click on the page puts focus on textarea
 				WPCLib.util.registerEvent(p,'click',function(){document.getElementById(WPCLib.canvas.contentId).focus()});
@@ -396,9 +397,12 @@ var WPCLib = {
 			return file;			
 		},
 
-		savedoc: function() {
+		savedoc: function(force) {
+			// force: Boolean if status indicator should be shown
 			// Save the currently open document
 			// For now we only say a doc is updated once it's saved
+			var status = document.getElementById('status');
+			if (force) status.innerHTML = 'Saving...';
 			this.lastUpdated = WPCLib.util.now();
 			var file = this.builddoc();		
 
@@ -412,13 +416,15 @@ var WPCLib = {
 	                data: JSON.stringify(file),
 					success: function(data) {
 	                    window.console.log("Saved!");
-						WPCLib.canvas.saved = true;	                    
+						WPCLib.canvas.saved = true;	 
+						if (force) status.innerHTML = 'Saved!';                   
 					}
 				});
 			} else {
 				console.log('saving locally: ', file);					
 				localStorage.setItem("WPCdoc", JSON.stringify(file));
-				WPCLib.canvas.saved = true;					
+				WPCLib.canvas.saved = true;	
+				if (force) status.innerHTML = 'Saved!';								
 			}	
 			// Update last edited counter in folio
 			WPCLib.folio.docs.active[0].updated = WPCLib.util.now();
@@ -487,7 +493,7 @@ var WPCLib = {
 					if (data.links.normal.length!=0) {
 						WPCLib.context.renderresults();
 					} else {
-						WPCLib.context.analyze(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
+						WPCLib.context.search(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
 					}
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'All loaded, keep going.';						
 				}
@@ -613,7 +619,9 @@ var WPCLib = {
 			this._cleanwelcome();
 		},
 
-		update: function() {
+		update: function(event) {
+			// Abort if keypress is F1-12 key
+			if (event.keyCode > 111 && event.keyCode < 124) return;			
 			// update function bound to page textarea, return to local canvas scope
 			WPCLib.canvas.evaluate();			
 		},		
@@ -654,17 +662,15 @@ var WPCLib = {
 
 		_replacekey: function(e,key) {
 			// Replace default key behavior with special actions
-			// TODO: Make sure this works properly on all browsers, fix position jump
 			var pos = this._getposition()[1];		
-			var src = document.getElementById(WPCLib.canvas.contentId).value; 				
-			if (key == 'tab') {
-	  			// document.getElementById(WPCLib.canvas.contentId).value = [src.slice(0, pos), '\t', src.slice(pos)].join('');         
-	        }
-
-	        // Prevent default behaviour for those keys
-			if (key == 'tab') {
-	            WPCLib.util.stopEvent(e);
-	        }	        
+			var src = document.getElementById(WPCLib.canvas.contentId); 				
+			if (key == 'tab') {	
+	            WPCLib.util.stopEvent(e);				
+	            src.value = WPCLib.canvas.text = [src.value.slice(0, pos), '\t', src.value.slice(pos)].join('');
+	            // We have to do this as some browser jump to the end of the textarea for some strange reason		
+	            document.activeElement.blur();
+	            WPCLib.canvas._setposition(pos+1);        
+	        }        
 		},
 
 		evaluate: function() {
@@ -713,7 +719,7 @@ var WPCLib = {
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {
 				WPCLib.canvas.savedoc();
-				WPCLib.context.analyze(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);					
+				WPCLib.context.search(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
 			},1000);
 		},	
@@ -734,7 +740,7 @@ var WPCLib = {
 		textclick: function() {
 			// when text is clicked
 			var sel = WPCLib.canvas._getposition();
-			if (sel[0] != sel[1]) WPCLib.context.analyze(sel[2]);
+			if (sel[0] != sel[1]) WPCLib.context.search(sel[2]);
 		},
 
 		_getposition: function() {
@@ -852,16 +858,6 @@ var WPCLib = {
 			}
 		},
 
-		analyze: function(string, chunktype) {
-			// Send text to server for analysis
-			document.getElementById(this.statusId).innerHTML = 'Saving & Analyzing...';
-			$.post('/analyze', {content: string}, 
-			function(data){	
-				console.log(data);
-	            WPCLib.context.search(data,chunktype);
-	        });
-		},
-
 		wipe: function() {
 			// reset the context sidebar contents
 			this.links.length = 0;
@@ -870,8 +866,19 @@ var WPCLib = {
 
 		},
 
-		search: function(data,chunktype) {
-			// Search according to search terms returned
+		analyze: function(string, chunktype) {
+			// Send text to server for analysis, returning text chunks
+			string = string || (WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
+			document.getElementById(this.statusId).innerHTML = 'Saving & Analyzing...';
+			$.post('/analyze', {content: string}, 
+			function(data){	
+				console.log(data);
+	            WPCLib.context.chuncksearch(data,chunktype);
+	        });
+		},		
+
+		chuncksearch: function(data,chunktype) {
+			// Search with specific chunks returned from analyzer above
 			document.getElementById(this.statusId).innerHTML = 'Searching...';			
 			var data = data.chunktype || data.textrank_chunks;
             var terms = [];
@@ -906,6 +913,25 @@ var WPCLib = {
 			} else {
 					document.getElementById(this.statusId).innerHTML = 'Nothing interesting found.';
 			}
+		},
+
+
+		search: function(string) {
+			// Chunk extraction and search in one step in the backend
+			document.getElementById(this.statusId).innerHTML = 'Saving & Searching...';			
+			var payload = {text: string};
+			var that = this;						
+            $.ajax({
+                url: "/relevant",
+                type: "POST",
+                contentType: "application/json; charset=UTF-8",
+                data: JSON.stringify(payload),
+                success: function(data) {
+                    WPCLib.context.storeresults(data.results);
+                    WPCLib.context.renderresults();		             
+                    document.getElementById(that.statusId).innerHTML = 'Ready for more?';
+                }
+            });				
 		},
 
 		storeresults: function(data) {
@@ -1131,7 +1157,10 @@ var WPCLib = {
 				window.scrollTo(0,1);
 				// Load settings into dialog
 				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);  										  							
-			});			
+			});		
+
+			// Add keyboard shortcuts
+			WPCLib.util.registerEvent(document,'keydown', WPCLib.ui.keyboardshortcut);
 
 			WPCLib.folio.init();
 			this.initCalled=true;
@@ -1658,6 +1687,22 @@ var WPCLib = {
 		dialogDefaultHeight: 480,
 		dialogTimer: null,
 
+		keyboardshortcut: function(event) {
+			// Simple event listener for keyboard shortcuts			
+			if (event.ctrlKey) {
+				if (event.keyCode == 83) {
+					// Ctrl+s
+					WPCLib.canvas.savedoc(true);
+		        	event.preventDefault();					
+				}
+				if (event.keyCode == 78) {
+					// Ctrl + N, this doesn't work in Chrome as chrome does not allow access to ctrl+n 
+					WPCLib.folio.docs.newdoc();
+		        	event.preventDefault();					
+				}		
+		    }
+		},
+
 		loadDialog: function(url) {
 			// (pre)load a special URL into our settings iframe
 			var d = document.getElementById(this.dialogWrapperId);
@@ -1899,8 +1944,8 @@ var WPCLib = {
 				canvas.style.left=v+'px';
 				canvas.style.right=(v*-1)+'px';
 				context.style.right=(v*-1)+'px';
-				if (screenwidth<900) {
-					if (screenwidth<480) context.style.left=v+'px';						
+				if (screenwidth<480) {
+					context.style.left=v+'px';						
 					title.style.left=v+'px';	
 					title.style.right=(v*-1)+'px';														
 				} else {

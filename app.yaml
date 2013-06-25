@@ -50,6 +50,8 @@ handlers:
   static_dir: application/static
   secure: always 
   expiration: "365d" 
+  http_headers:
+    Vary: Accept-Encoding  
 
 - url: /json
   static_dir: application/static/json
