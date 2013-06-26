@@ -5,7 +5,7 @@ var WPCLib = {
 	folio: {
 		folioId: 'folio',
 		logioId: 'logio',
-		consitencychecktimer: 30000,	
+		consistencychecktimer: 30000,	
 
 		init: function() {
 			// Basic Folio Setup
@@ -45,7 +45,7 @@ var WPCLib = {
 			// Repeat the check periodically
 			setTimeout(function(){
 				WPCLib.folio.checkconsistency();
-			},this.consitencychecktimer);
+			},this.consistencychecktimer);
 
 			// Get latest doc
 			$.getJSON('/docs/?group_by=status', function(data) {
@@ -55,11 +55,11 @@ var WPCLib = {
 				} else {
 					latest = data.active[0];
 				}
-				if (latest.updated > WPCLib.canvas.lastUpdated) {
+				if (WPCLib.canvas.lastUpdated != 0 && latest.updated > WPCLib.canvas.lastUpdated) {
 					console.log('Newer version on server detected, loading now');
 					WPCLib.canvas.loaddoc(latest.id,latest.title);					
 					WPCLib.folio.docs.loaddocs();
-				}
+				}				
 			});
 		},
 
@@ -606,7 +606,7 @@ var WPCLib = {
 				success: function(data) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
-					WPCLib.canvas.lastUpdated = data.last_updated;			
+					WPCLib.canvas.lastUpdated = data.updated;			
 
 					// Show data on canvas
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
