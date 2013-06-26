@@ -37,13 +37,19 @@ var WPCLib = {
 			doclistId: 'doclist',
 			active: [],
 			archived: [],
+			a_counterId: 'a_counter',
+			a_count: 0,
+			archiveId: 'archivelist',
+
 			loaddocs: function() {
 				// Get the list of documents from the server
+				var f = WPCLib.folio.docs;	
+				var a = document.getElementById(this.a_counterId);			
 				$.getJSON('/docs/?group_by=status', function(data) {
-					var f = WPCLib.folio.docs;
+
 					// TODO: This if catches a case when data is being returned empty, make sure we need this
 					if (data.active) { f.active = data.active } else { f.newdoc(); };
-					f.archived = data.archived;						
+					if (data.archived) f.archived = data.archived;						
 					f.update();
 
 					// load top doc if not already on canvas, currently this should only be the 
@@ -54,6 +60,12 @@ var WPCLib = {
 
 					// Update the document counter
 				    if (WPCLib.sys.user.level > 0) WPCLib.ui.documentcounter();	
+
+				    // 
+				    if (data.archived) {
+				    	var ac = WPCLib.folio.docs.a_count = data.archived.length;
+				    	a.innerHTML = 'Archive (' + ac + ')';
+				    }	
 				});
 			},
 
@@ -78,47 +90,80 @@ var WPCLib = {
 				// update the document list from the active / archive arrays
 				// We use absolute pointers as this can also be called as event handler
 				var act = WPCLib.folio.docs.active;
-				var docs = document.getElementById(WPCLib.folio.docs.doclistId);	
-				docs.innerHTML = '';			
+				var docs = document.getElementById(WPCLib.folio.docs.doclistId);				
+				var arc = WPCLib.folio.docs.archived;
+				var archive = document.getElementById(WPCLib.folio.docs.archiveId);					
+
+				// Reset all contents and handlers
+				docs.innerHTML = archive.innerHTML = '';	
+
+				// Render all links
 				for (i=0,l=act.length;i<l;i++) {		
-					for (var i=0,l=act.length;i<l;i++) {
-						var d = document.createElement('a');
-						var docid = act[i].id;
-						var title = act[i].title || 'Untitled';
-						d.className = 'document';
-						d.setAttribute('href','/docs/'+docid);	
-						d.setAttribute('id','doc_'+docid);
-						d.setAttribute('onclick','return false;');
-
-						var t = document.createElement('span');
-						t.className = 'doctitle';
-						t.innerHTML = title;
-
-						var stats = document.createElement('small');
-						if (act[i].updated) {
-							stats.appendChild(document.createTextNode(WPCLib.util.humanizeTimestamp(act[i].updated) + " ago"))
-						} else {
-							stats.appendChild(document.createTextNode('Not saved yet'))							
-						}			
-
-						d.appendChild(t);
-						d.appendChild(stats);	
-
-						if (('ontouchstart' in document.documentElement)&&l>1) {
-							d.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
-						}
-
-						docs.appendChild(d);
-						WPCLib.folio.docs._events(docid,title);						
-					}						    
+					this.renderlink(i,'active');						    
 				}
+				if (arc) {
+					for (i=0,l=arc.length;i<l;i++) {		
+						this.renderlink(i,'archive');						    
+					}					
+				}
+
 				// Recursively call this to update the last edit times every minute
 				setTimeout(WPCLib.folio.docs.update,60000);
 			},
 
+			renderlink: function(i,type) {
+				// Render active and archived document link
+				var item = (type=='active') ? this.active : this.archived;
+				var lvl = WPCLib.sys.user.level;
+				var docid = item[i].id;
+				var title = item[i].title || 'Untitled';
+
+				var d = document.createElement('div');
+				d.className = 'document';
+				d.setAttribute('id','doc_'+docid);
+
+				var link = document.createElement('a');
+				link.setAttribute('onclick','return false;');
+				link.setAttribute('href','/docs/'+docid);	
+
+				var t = document.createElement('span');
+				t.className = 'doctitle';
+				t.innerHTML = title;
+
+				var stats = document.createElement('small');
+				if (item[i].updated) {
+					stats.appendChild(document.createTextNode(WPCLib.util.humanizeTimestamp(item[i].updated) + " ago"))
+				} else {
+					stats.appendChild(document.createTextNode('Not saved yet'))							
+				}			
+
+				link.appendChild(t);
+				link.appendChild(stats);
+				d.appendChild(link);	
+
+				if (('ontouchstart' in document.documentElement)&&l>1) {
+					d.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
+				} else {
+					// Add archive link, only on non touch devices
+					if (lvl>1) {
+						var a = document.createElement('div');
+						a.className = 'archive';
+						a.addEventListener('click',function(e){WPCLib.folio.docs.toarchive(e)},false);							
+						d.appendChild(a);
+					}
+				}
+
+				if (type=='active') {
+					document.getElementById(WPCLib.folio.docs.doclistId).appendChild(d);
+					WPCLib.folio.docs._events(docid,title);		
+				} else if (type=='archive')	{
+					document.getElementById(WPCLib.folio.docs.archiveId).appendChild(d);					
+				}
+			},
+
 			_events: function(docid,title) {
 				// Attach events to doc links
-				WPCLib.util.registerEvent(document.getElementById('doc_'+docid),'click', function() {
+				WPCLib.util.registerEvent(document.getElementById('doc_'+docid).firstChild,'click', function() {
 					WPCLib.canvas.loaddoc(docid, title);
 					WPCLib.folio.docs.moveup(docid);
 				});				
@@ -152,10 +197,12 @@ var WPCLib = {
 				this.active.splice(0,0,doc);
 
 				// Render a placeholder until we get the OK from the server
+				var el = document.createElement('div');
+				el.className = 'document';	
+				el.setAttribute('id','doc_creating');
+
 				var ph = document.createElement('a');
-				ph.className = 'document';
 				ph.setAttribute('href','#');	
-				ph.setAttribute('id','doc_creating');
 				ph.setAttribute('onclick','return false;');	
 				var pht = document.createElement('span');
 				pht.className = 'doctitle';
@@ -164,7 +211,9 @@ var WPCLib = {
 				phs.appendChild(document.createTextNode("Right now"))
 				ph.appendChild(pht);
 				ph.appendChild(phs);
-				document.getElementById(this.doclistId).insertBefore(ph,document.getElementById(this.doclistId).firstChild);
+				el.appendChild(ph);
+
+				document.getElementById(this.doclistId).insertBefore(el,document.getElementById(this.doclistId).firstChild);
 
 				// Create the doc on the canvas
 				if (document.body.offsetWidth <= 900 && document.getElementById(WPCLib.context.id).style.display == "block") WPCLib.context.switchview();
@@ -182,7 +231,7 @@ var WPCLib = {
 					WPCLib.folio.docs.active[0].id = 'localdoc';
 
 					// Save document & cleanup
-					doc.firstChild.innerHTML = 'New Document';
+					doc.firstChild.firstChild.innerHTML = 'New Document';
 					doc.id = 'doc_localdoc';
 				} else {
 					// Request new document id
@@ -206,7 +255,7 @@ var WPCLib = {
 							WPCLib.canvas.docid = data;
 
 							// Save document & cleanup
-							doc.firstChild.innerHTML = 'New Document';
+							doc.firstChild.firstChild.innerHTML = 'New Document';
 							doc.id = 'doc_'+data;
 							WPCLib.folio.docs.active[0].id = data;		
 
@@ -269,10 +318,52 @@ var WPCLib = {
 				WPCLib.folio.docs.update();				
 			},
 
+			toarchive: function(e) {
+				// Move a current document to the archive
+				var a_id = e.srcElement.parentNode.id.substr(4);
+				var act = WPCLib.folio.docs.active;	
+
+				for (var i=0,l=act.length;i<l;i++) {
+					// Iterate through active docs and remove the one to be archived
+					if (act[i].id != a_id) continue;
+					act.splice(i,1);
+					break;					
+				}
+
+				// Render new list right away for snappiness
+				WPCLib.folio.docs.update();	
+				WPCLib.folio.docs.a_count++;
+				document.getElementById(this.a_counterId).innerHTML = 'Archive (' + WPCLib.folio.docs.a_count + ')';
+
+				var payload = {'status':'archived'};
+				$.ajax({
+					url: "/docs/"+a_id,
+	                type: "PATCH",
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(payload),
+					success: function(data) {
+						WPCLib.folio.docs.update();					                   
+					}
+				});			
+			},
+
 			openarchive: function() {
+				// Archive link
+				// Show signup screen if user has no appropriate tier
 				if (WPCLib.sys.user.level < 2) {
-					WPCLib.sys.user.upgrade(2,'','Upgrade now to unlock the archive &amp; much more.');					
-				};							
+					WPCLib.sys.user.upgrade(2,'','Upgrade now to unlock the archive &amp; much more.');
+					return;					
+				};	
+
+				var act = document.getElementById(this.doclistId);
+				var arc = document.getElementById(this.archiveId);
+				if (act.style.display=='none') {
+					act.style.display = 'block';
+					arc.style.display = 'none';
+				} else {
+					act.style.display = 'none';
+					arc.style.display = 'block';					
+				}				
 			}
 		},
 

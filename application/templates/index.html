@@ -32,13 +32,14 @@
 
 		<div class="menu" onmouseover="WPCLib.ui.menuSlide(1);" id="folio">
 			<div class="menuheader">
-				<a href="#" class="newdoc" onclick="WPCLib.folio.docs.newdoc();"><b>+</b> New Document</a>
+				<a href="#" class="newdoc" onclick="WPCLib.folio.docs.newdoc();"><b>+</b>&nbsp;New Document</a>
 			</div>
 			<div class="documents" id="doclist">
-				Loading...
+				<span class="loading">Loading...</span>
 				<div id="wordcount"></div><br />
 				<div id="log"></div>				
 			</div>	
+			<div class="documents" id="archivelist"></div>				
 			<div class="menufooter">
 				<div class="logio login" id="logio">
 					<a href="#" class="button dark" onclick="WPCLib.sys.user.logio();return false;" title="Login">
@@ -50,7 +51,7 @@
 						<span>Settings</span>
 					</a>					
 					<a href="#" class="panel dark archbutton" title="Archive" onclick="WPCLib.folio.docs.openarchive();return false;">
-						<span>Archive</span>
+						<span id="a_counter">Archive</span>
 					</a>								
 				</div>	
 			</div>			

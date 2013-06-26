@@ -177,14 +177,18 @@ a.wpcbutton:hover {
 
 .menu .documents {
   position: absolute;
-  top: 48px;
-  left: 50px;
+  top: 58px;
+  left: 0;
   bottom: 50px;
-  width: 290px;
+  width: 340px;
   overflow-x: hidden; 
   overflow-y: auto;  
   -webkit-overflow-scrolling: touch; 
   z-index: 1010;
+}
+
+.menu #archivelist {
+  display: none;
 }
 
 .menu .documents::-webkit-scrollbar {
@@ -213,36 +217,69 @@ a.wpcbutton:hover {
     -webkit-border-radius: 4px;
 }
 
-.menu .documents a.document {
+.menu .documents .loading {
+  display: block;
+  margin-left: 50px;
+}
+
+
+.menu .documents .document {
+  display: block;
+  padding-bottom: 15px;
+  position: relative;
+}
+
+.menu .documents .document .archive {
+  width: 30px;
+  height: 25px;
+  position: absolute;
+  top: 0;
+  left: 10px;
+  background-image: url(../img/to_archive.png);
+  background-size: 20px 20px;
+  background-position: 6px 5px;
+  opacity: 0.5;
+  cursor: pointer;
+  display: none;
+  background-repeat: no-repeat;
+}
+
+.menu .documents .document:hover .archive {
+  display: block;
+}
+
+.menu .documents .document .archive:hover {
+  opacity: 1;
+}
+
+.menu .documents .document a {
   font-family: "urbana", sans-serif;  
   display: block;
-  margin: 0.38em 0 0.75em 0;
+  margin: 0 10px 0 50px;
   color: #ddd;
   font-size: 18px;
   font-weight: 400;  
   text-decoration: none;
-  width: auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; 
-  line-height: 0.95em; 
+  line-height: 15px; 
 }
 
-.menu .documents a.document .doctitle {
+.menu .documents .document a .doctitle {
   display: block;
-  width: 290px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;  
 }
 
-.menu .documents a.document small {
+.menu .documents .document a small {
   color: #bbb;
   font-size: 0.8em;
   font-weight: normal;  
 }
 
-.menu .documents a.document:hover, .menu .documents a.document:hover small {
+.menu .documents .document:hover a, .menu .documents .document:hover a small {
   color: #fff;
 }
 
