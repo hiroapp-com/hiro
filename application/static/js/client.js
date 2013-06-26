@@ -1269,6 +1269,9 @@ var WPCLib = {
 				document.attachEvent( 'onload', this._loadCallback, false );
 			}
 
+			// Kick off tab or window active / background check
+			WPCLib.util.windowfocus();			
+
 			// Prevent browser window elasticity onotuch devices
 			if ('ontouchstart' in document.documentElement) {
 				document.addEventListener('touchmove',function(e) {e.preventDefault();},false);			
@@ -1785,6 +1788,33 @@ var WPCLib = {
 			e.cancelBubble = true;
 		},
 
+		windowfocus: function() {
+		    var hidden = "hidden";
+		    var that = WPCLib.util;
+
+		    // Standards:
+		    if (hidden in document)
+		        document.addEventListener("visibilitychange", that._focuschanged);
+		    else if ((hidden = "mozHidden") in document)
+		        document.addEventListener("mozvisibilitychange", that._focuschanged);
+		    else if ((hidden = "webkitHidden") in document)
+		        document.addEventListener("webkitvisibilitychange",  that._focuschanged);
+		    else if ((hidden = "msHidden") in document)
+		        document.addEventListener("msvisibilitychange",  that._focuschanged);
+		    // IE 9 and lower:
+		    else if ('onfocusin' in document)
+		        document.onfocusin = document.onfocusout =  that._focuschanged;
+		    // All others:
+		    else
+		        window.onpageshow = window.onpagehide = window.onfocus = window.onblur =  that._focuschanged;
+		},		
+
+		_focuschanged: function(e) {
+	        var v = true, h = false, eMap = {focus:v, focusin:v, pageshow:v, blur:h, focusout:h, pagehide:h};
+	        e = e || window.event;
+	        WPCLib.ui.windowfocused = (e.type in eMap) ? eMap[e.type] : ((WPCLib.ui.windowfocused) ? false : true);      
+		},
+
 		docallback: function(callback) {
 			// Execute a callback
 			if (typeof callback == 'function') {
@@ -1810,6 +1840,7 @@ var WPCLib = {
 		dialogDefaultWidth: 750,
 		dialogDefaultHeight: 480,
 		dialogTimer: null,
+		windowfocused: true,
 
 		keyboardshortcut: function(event) {
 			// Simple event listener for keyboard shortcuts			
