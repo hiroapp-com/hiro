@@ -152,7 +152,7 @@
 					</div>
 					<div class="box 2" onclick="_wpc.ui.upgradeboxclick(this);">
 						<div class="head">Starter</div>
-						<div class="price">9<sup>.90</sup></div>	
+						<div class="price">9</div>	
 						<div class="curr">USD / MONTH</div>	
 						<ul>
 							<li>Unlimited documents
@@ -193,7 +193,7 @@
 				<div class="checkoutdetails">	
 					{% if current_user.is_authenticated() and current_user.active_cc %}
 						<form id="checkoutform">
-							<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+							<input type="text" value="Starter Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 							<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
 							<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>&nbsp;/&nbsp;<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 							<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
@@ -236,7 +236,7 @@
 						</script>
 					{% else %}	
 					<form id="checkoutform">
-						<input type="text" value="Starter Plan for 9.99" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+						<input type="text" value="Starter Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 						<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
 						<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
 						<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	

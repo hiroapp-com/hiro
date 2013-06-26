@@ -1995,7 +1995,7 @@ var WPCLib = {
 		fillcheckout: function(plan) {
 			// Get the checkout form ready for checkout and switch view
 			var frame = document.getElementById('dialog').contentDocument;
-			var startdesc = "Starter Plan: USD 9.99";
+			var startdesc = "Starter Plan: USD 9";
 			var prodesc = "Pro Plan: USD 29";
 			var cc_num = frame.getElementById('cc_number'); 
 			// Not optimal, as this dependend on the HTML not changing
