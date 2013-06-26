@@ -36,6 +36,10 @@ var WPCLib = {
 		checkconsistency: function() {
 			// Pings the doc API and checks if current document is latest and no newer version on the server
 			var latest = {};
+			var latestlocal = {};
+			var current = WPCLib.canvas.docid;
+			var currentremote = {};
+			var local = WPCLib.folio.docs;
 			if (!WPCLib.ui.windowfocused) {
 				// If the window is not focused break recursive check and resume as soon as window is focused again
 				WPCLib.util._focuscallback = WPCLib.folio.checkconsistency;
@@ -49,16 +53,41 @@ var WPCLib = {
 
 			// Get latest doc
 			$.getJSON('/docs/?group_by=status', function(data) {
+				// Find the current doc in the returned data
+				var docs = data.active;
+				for (var key in docs) {
+					if (docs.hasOwnProperty(key)) {
+						if (docs[key].id == current) currentremote = docs[key];
+					}
+				}	
+
+				// Prepare all other data for comparison
 				if (WPCLib.sys.user.level > 1 && data.archived) {
+					// Make sure the current document is not in the archive
+					var docs = data.archived;
+					for (var key in docs) {
+						if (docs.hasOwnProperty(key)) {
+							if (docs[key].id == current) currentremote = docs[key];
+						}
+					}					
 					// check if an active or archived doc is the latest edited
 					latest = (data.archived[0].updated > data.active[0].updated) ? data.archived[0] : data.active[0];
+					latestlocal = (local.archived[0].updated > local.active[0].updated) ? local.archived[0] : local.active[0];
 				} else {
 					latest = data.active[0];
-				}
-				if (WPCLib.canvas.lastUpdated != 0 && latest.updated > WPCLib.canvas.lastUpdated) {
+					latestlocal = local.active[0];
+				}			
+
+				if (current == currentremote.id && currentremote.updated > WPCLib.canvas.lastUpdated) {
+					// If there's a newer version of the current document
 					console.log('Newer version on server detected, loading now');
-					if (latest.id = WPCLib.canvas.docid) WPCLib.canvas.loaddoc(latest.id,latest.title);					
-					WPCLib.folio.docs.loaddocs();
+					WPCLib.canvas.loaddoc(latest.id,latest.title);					
+					WPCLib.folio.docs.loaddocs(true);
+				}					
+
+				// There is a more recent document in the collection, but we only update the folio then				
+				if (latest.updated > latestlocal.updated) {
+					WPCLib.folio.docs.loaddocs(true);					
 				}				
 			});
 		},
@@ -73,7 +102,7 @@ var WPCLib = {
 			archiveId: 'archivelist',
 			archiveOpen: false,
 
-			loaddocs: function() {
+			loaddocs: function(folioonly) {
 				// Get the list of documents from the server
 				var f = WPCLib.folio.docs;	
 				var a = document.getElementById(this.a_counterId);			
@@ -87,7 +116,7 @@ var WPCLib = {
 
 					// load top doc if not already on canvas, currently this should only be the 
 					// case if a user logs in when sitting in front of an empty document
-					if (data.active && data.active[0].id != WPCLib.canvas.docid) {
+					if (!folioonly && data.active && data.active[0].id != WPCLib.canvas.docid) {
 						WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);
 					}
 
