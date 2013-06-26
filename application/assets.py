@@ -4,7 +4,12 @@ import sys, os
 
 
 # set correct pythonpaths
-root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+if os.name == 'nt':
+    # Set the absolute string on windows as quickfix
+    root_dir = 'C:\local\editor'
+else:
+    root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+
 if root_dir not in sys.path:
    sys.path.insert(0, root_dir)
 
@@ -50,10 +55,18 @@ def get_html_output(urls):
 if __name__== "__main__":
     # gae profiler checks os.environ for gae dev server environment
     # this will trick it into thinking it is bein exec'd by de dev server
+
     os.environ["SERVER_SOFTWARE"] = 'Devel'
 
     gae_root = os.environ['GAE_ROOT']
     sys.path.append(gae_root)
+
+    # Windows shit
+    if os.name == 'nt':
+        print os.environ['GAE_ROOT']        
+        from _python_runtime import fix_sys_path
+        fix_sys_path()  
+
     sys.path.append(os.path.join(gae_root, 'lib'))
     # setup flask app for context
     from flask import Flask
