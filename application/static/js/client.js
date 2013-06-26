@@ -40,6 +40,7 @@ var WPCLib = {
 			a_counterId: 'a_counter',
 			a_count: 0,
 			archiveId: 'archivelist',
+			archiveOpen: false,
 
 			loaddocs: function() {
 				// Get the list of documents from the server
@@ -47,8 +48,9 @@ var WPCLib = {
 				var a = document.getElementById(this.a_counterId);			
 				$.getJSON('/docs/?group_by=status', function(data) {
 
-					// TODO: This if catches a case when data is being returned empty, make sure we need this
-					if (data.active) { f.active = data.active } else { f.newdoc(); };
+					// See if we have any docs and load to internal model, otherwise create a new one
+					if (!data.active && !data.archived) f.newdoc();
+					if (data.active) f.active = data.active;
 					if (data.archived) f.archived = data.archived;						
 					f.update();
 
@@ -89,21 +91,22 @@ var WPCLib = {
 			update: function() {
 				// update the document list from the active / archive arrays
 				// We use absolute pointers as this can also be called as event handler
-				var act = WPCLib.folio.docs.active;
-				var docs = document.getElementById(WPCLib.folio.docs.doclistId);				
-				var arc = WPCLib.folio.docs.archived;
-				var archive = document.getElementById(WPCLib.folio.docs.archiveId);					
+				var that = WPCLib.folio.docs;
+				var act = that.active;
+				var docs = document.getElementById(that.doclistId);				
+				var arc = that.archived;
+				var archive = document.getElementById(that.archiveId);					
 
 				// Reset all contents and handlers
 				docs.innerHTML = archive.innerHTML = '';	
 
 				// Render all links
 				for (i=0,l=act.length;i<l;i++) {		
-					this.renderlink(i,'active');						    
+					that.renderlink(i,'active');						    
 				}
 				if (arc) {
 					for (i=0,l=arc.length;i<l;i++) {		
-						this.renderlink(i,'archive');						    
+						that.renderlink(i,'archive');						    
 					}					
 				}
 
@@ -117,6 +120,7 @@ var WPCLib = {
 				var lvl = WPCLib.sys.user.level;
 				var docid = item[i].id;
 				var title = item[i].title || 'Untitled';
+				var active = (type == 'active') ? true : false;
 
 				var d = document.createElement('div');
 				d.className = 'document';
@@ -148,24 +152,28 @@ var WPCLib = {
 					if (lvl>1) {
 						var a = document.createElement('div');
 						a.className = 'archive';
-						a.addEventListener('click',function(e){WPCLib.folio.docs.toarchive(e)},false);							
+						if (active) {
+							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,true);});	
+						} else {
+							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,false);});					
+						}								
 						d.appendChild(a);
 					}
 				}
 
-				if (type=='active') {
-					document.getElementById(WPCLib.folio.docs.doclistId).appendChild(d);
-					WPCLib.folio.docs._events(docid,title);		
-				} else if (type=='archive')	{
+				if (active) {
+					document.getElementById(WPCLib.folio.docs.doclistId).appendChild(d);		
+				} else {				
 					document.getElementById(WPCLib.folio.docs.archiveId).appendChild(d);					
-				}
+				}				
+				WPCLib.folio.docs._events(docid,title,active);				
 			},
 
-			_events: function(docid,title) {
+			_events: function(docid,title,active) {
 				// Attach events to doc links
 				WPCLib.util.registerEvent(document.getElementById('doc_'+docid).firstChild,'click', function() {
 					WPCLib.canvas.loaddoc(docid, title);
-					WPCLib.folio.docs.moveup(docid);
+					WPCLib.folio.docs.moveup(docid,active);
 				});				
 			},
 
@@ -186,6 +194,9 @@ var WPCLib = {
 					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade now for unlimited documents &amp; much more.');
 					return;					
 				}
+
+				// Check if the archive is open, otherwise switch view
+				if (this.archiveOpen) this.openarchive();
 
 				// All good to go
 				this.creatingDoc = true;				
@@ -297,52 +308,64 @@ var WPCLib = {
 				}
 			},
 
-			moveup: function(docid) {
+			moveup: function(docid,active) {
 				// moves a specific doc to the top of the list based on it's id
 
 				// Find and remove itenm from list
 				var act = WPCLib.folio.docs.active;
+				var arc = WPCLib.folio.docs.archived;
 				var obj = {};
-				for (var i=0,l=act.length;i<l;i++) {
-					if (act[i].id != docid) continue;
-					obj = act[i];
-					act.splice(i,1);
+				var bucket = (active) ? act : arc;
+				for (var i=0,l=bucket.length;i<l;i++) {
+					if (bucket[i].id != docid) continue;
+					obj = bucket[i];
+					bucket.splice(i,1);
 					break;					
 				}
 
 				// Sort array by last edit
-				act.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
+				bucket.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
 
 				// Insert item at top of array and redraw list
-				act.unshift(obj);
+				bucket.unshift(obj);
 				WPCLib.folio.docs.update();				
 			},
 
-			toarchive: function(e) {
+			archive: function(e,toarchive) {
 				// Move a current document to the archive
+				var that = WPCLib.folio.docs;				
 				var a_id = e.srcElement.parentNode.id.substr(4);
-				var act = WPCLib.folio.docs.active;	
+				var act = that.active;	
+				var arc = that.archived;
+				var obj = {};
+				var source = (toarchive) ? act : arc;
+				var target = (toarchive) ? arc : act;				
 
-				for (var i=0,l=act.length;i<l;i++) {
+				for (var i=0,l=source.length;i<l;i++) {
 					// Iterate through active docs and remove the one to be archived
-					if (act[i].id != a_id) continue;
-					act.splice(i,1);
+					if (source[i].id != a_id) continue;
+					obj = source[i];					
+					source.splice(i,1);
 					break;					
 				}
 
-				// Render new list right away for snappiness
-				WPCLib.folio.docs.update();	
-				WPCLib.folio.docs.a_count++;
-				document.getElementById(this.a_counterId).innerHTML = 'Archive (' + WPCLib.folio.docs.a_count + ')';
+				// Insert in archive and sort by updated. Should we sort by date archived here?
+				target.unshift(obj);						
+				target.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
 
-				var payload = {'status':'archived'};
+				// Render new list right away for snappiness
+				that.update();	
+				that.a_count++;
+				if (toarchive) document.getElementById(that.a_counterId).innerHTML = 'Archive (' + that.a_count + ')';
+
+				var payload = (toarchive) ? {'status':'archived'} : {'status':'active'};
 				$.ajax({
 					url: "/docs/"+a_id,
 	                type: "PATCH",
 	                contentType: "application/json; charset=UTF-8",
 	                data: JSON.stringify(payload),
-					success: function(data) {
-						WPCLib.folio.docs.update();					                   
+					success: function(data) {						
+						that.update();					                   
 					}
 				});			
 			},
@@ -357,12 +380,17 @@ var WPCLib = {
 
 				var act = document.getElementById(this.doclistId);
 				var arc = document.getElementById(this.archiveId);
+				var but = document.getElementById(this.a_counterId);
 				if (act.style.display=='none') {
 					act.style.display = 'block';
 					arc.style.display = 'none';
+					but.innerHTML = 'Archive (' + this.a_count + ')';
+					this.archiveOpen = false;
 				} else {
 					act.style.display = 'none';
-					arc.style.display = 'block';					
+					arc.style.display = 'block';	
+					but.innerHTML = 'Close Archive';
+					this.archiveOpen = true;					
 				}				
 			}
 		},
@@ -518,7 +546,10 @@ var WPCLib = {
 				if (force) status.innerHTML = 'Saved!';								
 			}	
 			// Update last edited counter in folio
-			WPCLib.folio.docs.active[0].updated = WPCLib.util.now();
+			var docs = WPCLib.folio.docs;
+			var bucket = (WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];		
+			// Check if user didn't navigate away from archive and set last updated
+			if (file.id == bucket.id) bucket.updated = WPCLib.util.now();
 			WPCLib.folio.docs.update();					
 		},		
 
@@ -680,7 +711,9 @@ var WPCLib = {
 
 		evaluatetitle: function(event) {
 			// When the title changes we update the folio and initiate save
-			WPCLib.folio.docs.active[0].title = this.value;
+			var docs = WPCLib.folio.docs;
+			var bucket = (WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];
+			bucket.title = this.value;
 
 			// Visual updates
 			var el = document.getElementById('doc_'+WPCLib.canvas.docid);			

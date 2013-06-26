@@ -244,6 +244,14 @@ a.wpcbutton:hover {
   background-repeat: no-repeat;
 }
 
+#doclist .document .archive {
+  background-image: url(../img/to_archive.png);
+}
+
+#archivelist .document .archive {
+  background-image: url(../img/unarchive.png);
+}
+
 .menu .documents .document:hover .archive {
   display: block;
 }
