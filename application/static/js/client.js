@@ -78,7 +78,7 @@ var WPCLib = {
 					latestlocal = local.active[0];
 				}			
 
-				if (current == currentremote.id && currentremote.updated > WPCLib.canvas.lastUpdated) {
+				if (currentremote.id == WPCLib.canvas.docid && currentremote.updated > WPCLib.canvas.lastUpdated) {
 					// If there's a newer version of the current document
 					console.log('Newer version on server detected, loading now');
 					WPCLib.canvas.loaddoc(latest.id,latest.title);					
@@ -607,7 +607,8 @@ var WPCLib = {
 			}	
 			// Update last edited counter in folio
 			var docs = WPCLib.folio.docs;
-			var bucket = (WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];		
+			var bucket = (WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];	
+
 			// Check if user didn't navigate away from archive and set last updated
 			if (file.id == bucket.id) bucket.updated = WPCLib.util.now();
 			WPCLib.folio.docs.update();					
