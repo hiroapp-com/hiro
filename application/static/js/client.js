@@ -78,7 +78,8 @@ var WPCLib = {
 					latestlocal = local.active[0];
 				}			
 
-				if (currentremote.id == WPCLib.canvas.docid && currentremote.updated > WPCLib.canvas.lastUpdated) {
+				// This is very hackish as we set the last_updated var in the frontend and back seperately
+				if (currentremote.id == WPCLib.canvas.docid && (currentremote.updated - WPCLib.canvas.lastUpdated) > 2 ) {
 					// If there's a newer version of the current document
 					console.log('Newer version on server detected, loading now');
 					WPCLib.canvas.loaddoc(latest.id,latest.title);					
