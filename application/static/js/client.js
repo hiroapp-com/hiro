@@ -4,7 +4,8 @@ var WPCLib = {
 	// Folio is the nav piece on the left, holding all file management pieces
 	folio: {
 		folioId: 'folio',
-		logioId: 'logio',	
+		logioId: 'logio',
+		consitencychecktimer: 30000,	
 
 		init: function() {
 			// Basic Folio Setup
@@ -30,6 +31,36 @@ var WPCLib = {
 
 			// Make sure the scrollbar is also visible on small devices
 			if (document.body.offsetWidth<=350) document.getElementById(this.docs.doclistId).style.width = (document.body.offsetWidth-107)+'px';	
+		},
+
+		checkconsistency: function() {
+			// Pings the doc API and checks if current document is latest and no newer version on the server
+			var latest = {};
+			if (!WPCLib.ui.windowfocused) {
+				// If the window is not focused break recursive check and resume as soon as window is focused again
+				WPCLib.util._focuscallback = WPCLib.folio.checkconsistency;
+				return;
+			}
+
+			// Repeat the check periodically
+			setTimeout(function(){
+				WPCLib.folio.checkconsistency();
+			},this.consitencychecktimer);
+
+			// Get latest doc
+			$.getJSON('/docs/?group_by=status', function(data) {
+				if (WPCLib.sys.user.level > 1 && data.archived) {
+					// check if an active or archived doc is the latest edited
+					latest = (data.archived[0].updated > data.active[0].updated) ? data.archived[0] : data.active[0];
+				} else {
+					latest = data.active[0];
+				}
+				if (latest.updated > WPCLib.canvas.lastUpdated) {
+					console.log('Newer version on server detected, loading now');
+					WPCLib.canvas.loaddoc(latest.id,latest.title);					
+					WPCLib.folio.docs.loaddocs();
+				}
+			});
 		},
 
 		docs: {
@@ -1545,7 +1576,7 @@ var WPCLib = {
 						break;							
 				}
 
-				// generic styles
+				// generic styles & functions
 				switch(level) {
 					case 1:
 					case 2:	
@@ -1558,7 +1589,10 @@ var WPCLib = {
 						logio.className = 'logio logout';
 						logio.getElementsByTagName('a')[0].title = 'Logout';
 						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
-						WPCLib.canvas.preloaded = false;				
+						WPCLib.canvas.preloaded = false;
+
+						// Kick of consitency checker 
+						WPCLib.folio.checkconsistency();				
 						break;	
 				}	
 
@@ -1807,12 +1841,17 @@ var WPCLib = {
 		    // All others:
 		    else
 		        window.onpageshow = window.onpagehide = window.onfocus = window.onblur =  that._focuschanged;
-		},		
+		},	
 
+		_focuscallback: null,
 		_focuschanged: function(e) {
 	        var v = true, h = false, eMap = {focus:v, focusin:v, pageshow:v, blur:h, focusout:h, pagehide:h};
 	        e = e || window.event;
-	        WPCLib.ui.windowfocused = (e.type in eMap) ? eMap[e.type] : ((WPCLib.ui.windowfocused) ? false : true);      
+	        var focus = WPCLib.ui.windowfocused = (e.type in eMap) ? eMap[e.type] : ((WPCLib.ui.windowfocused) ? false : true); 
+	        if (focus && WPCLib.util._focuscallback) {
+	        	WPCLib.util._focuscallback();
+	        	WPCLib.util._focuscallback = null;	        	
+	        }     
 		},
 
 		docallback: function(callback) {
