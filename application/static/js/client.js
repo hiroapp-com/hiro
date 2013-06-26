@@ -57,7 +57,7 @@ var WPCLib = {
 				}
 				if (WPCLib.canvas.lastUpdated != 0 && latest.updated > WPCLib.canvas.lastUpdated) {
 					console.log('Newer version on server detected, loading now');
-					WPCLib.canvas.loaddoc(latest.id,latest.title);					
+					if (latest.id = WPCLib.canvas.docid) WPCLib.canvas.loaddoc(latest.id,latest.title);					
 					WPCLib.folio.docs.loaddocs();
 				}				
 			});
