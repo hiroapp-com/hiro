@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html style="overflow: hidden !important;">
-	<head>
-		<link rel="stylesheet" type="text/css" href="{{ assets.hiro_css }}">				
+	<head>				
 		<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
 		<script type="text/javascript">try{Typekit.load();}catch(e){}</script>
 		<style>
@@ -82,50 +81,68 @@
 
 			**/		
 
+
 			var swipe = {
 				start_x: 0,
 				start_y: 0,
 				active: false,
 
 				start: function(left,right,e) {
-		    		if (e.touches.length == 1) {
-		    			wpc_logevent(e);		    			
-		    			swipe.start_x = e.touches[0].pageX;
-		    			swipe.start_y = e.touches[0].pageY;
-		    			swipe.active = true;
-						e.srcElement.addEventListener('touchmove', swipe.move, false);
-		    			setTimeout(function(e){
-		    				swipe.active = false;
-		    				swipe.cancel(e);
-		    			},50);
-		    		 }
+					var el = e.srcElement;
+					try {					
+			    		if (e.touches.length == 1) {
+			    			wpc_logevent(e);		    			
+			    			swipe.start_x = e.touches[0].pageX;
+			    			swipe.start_y = e.touches[0].pageY;
+			    			swipe.active = true;
+							e.srcElement.addEventListener('touchmove', swipe.move, false);
+			    			setTimeout(function(){
+			    				swipe.active = false;
+			    				swipe.cancel(el);			    				
+			    			},50);
+			    		 }
+					} catch(err) {
+						alert('start: ', err);
+					}				    		 
 				},
 
 				move: function(e) {
-		    		if (swipe.active) {
-			    	 	var x = e.touches[0].pageX;
-			    		var y = e.touches[0].pageY;
-			    		var dx = swipe.start_x - x;
-			    		var dy = swipe.start_y - y;
-			    		if (Math.abs(dx) >= (80 * window.devicePixelRatio)) {		    			
-			    			swipe.cancel(e);
-			    			if (Math.abs(dy) > Math.abs(dx*0.4)) return;
-			    			if(dx > 0) {
-			    				alert('left');
-			    			}
-			    			else {
-			    				alert('right');
-			    			}
+					try {					
+			    		if (swipe.active) {
+				    	 	var x = e.touches[0].pageX;
+				    		var y = e.touches[0].pageY;
+				    		var dx = swipe.start_x - x;
+				    		var dy = swipe.start_y - y;
+				    		if (Math.abs(dx) >= (80 * window.devicePixelRatio)) {		    			
+				    			swipe.cancel(e.srcElement);
+				    			if (Math.abs(dy) > Math.abs(dx*0.4)) return;
+				    			if(dx > 0) {
+				    				alert('left');
+				    			}
+				    			else {
+				    				alert('right');
+				    			}
+				    		}
 			    		}
-		    		}
+					} catch(err) {
+						alert('move: ', err);
+					}			    		
 				},
 
-				cancel: function(e) {
-					e.srcElement.removeEventListener('touchmove', swipe.move);
-					swipe.start_x = null;
-					swipe.active = false;
+				cancel: function(el) {
+					// alert('cancel: '+ e);
+						try {					
+							el.removeEventListener('touchmove', swipe.move);
+						} catch(err) {
+							alert('cancel: ' + err + el);
+						}	
+						swipe.start_x = null;
+						swipe.active = false;											
 				}
-			}
+			}				
+
+
+
 
 			function wpc_logevent(event) {
 				var event_str = '';
@@ -143,6 +160,7 @@
 
 			// window.addEventListener('click', wpc_click, false);
 			document.body.addEventListener('touchstart', function(e){swipe.start(alert,alert,e)}, false);	
+
 			console.log('rdy');				
 		</script>
 	</body>

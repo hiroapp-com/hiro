@@ -78,8 +78,9 @@ var WPCLib = {
 					latestlocal = local.active[0];
 				}			
 
-				// This is very hackish as we set the last_updated var in the frontend and back seperately
-				if (currentremote.id == WPCLib.canvas.docid && (currentremote.updated - WPCLib.canvas.lastUpdated) > 2 ) {
+				// This is very hackish as we set the last_updated var in the frontend and backen seperately
+				// 5 seconds should be sufficient between initializing save and the save arriving in the backend
+				if (currentremote.id == WPCLib.canvas.docid && (currentremote.updated - WPCLib.canvas.lastUpdated) > 5 ) {
 					// If there's a newer version of the current document
 					console.log('Newer version on server detected, loading now');
 					WPCLib.canvas.loaddoc(latest.id,latest.title);					
@@ -210,7 +211,7 @@ var WPCLib = {
 					d.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
 				} else {
 					// Add archive link, only on non touch devices
-					if (lvl>1) {
+					if (lvl>=1) {
 						var a = document.createElement('div');
 						a.className = 'archive';
 						if (active) {
@@ -393,7 +394,12 @@ var WPCLib = {
 			},
 
 			archive: function(e,toarchive) {
-				// Move a current document to the archive
+				// Move a current document to the archive, first abort if user has no account with archive
+				if (WPCLib.sys.user.level <= 1) {
+					WPCLib.sys.user.upgrade(2,'','Upgrade now to unlock the archive &amp; much more.');
+					return;
+				}	
+
 				var that = WPCLib.folio.docs;				
 				var a_id = e.srcElement.parentNode.id.substr(4);
 				var act = that.active;	
@@ -2225,22 +2231,22 @@ var WPCLib = {
 			init: function(left,right,e) {	
 				if (WPCLib.ui.menuCurrPos!=0) return;			
 	    		if (e.touches.length == 1) {
-	    			var that = WPCLib.ui.swipe;
+	    			var that = WPCLib.ui.swipe, el = e.srcElement;
 	    			that.callback_left = left;	
 	    			that.callback_right = right;		    			    			
 	    			that.start_x = e.touches[0].pageX;
 	    			that.start_y = e.touches[0].pageY;
 	    			that.active = true;
-					e.srcElement.addEventListener('touchmove', WPCLib.ui.swipe.move, false);
-	    			setTimeout(function(e){
+					el.addEventListener('touchmove', WPCLib.ui.swipe.move, false);
+	    			setTimeout(function(){
 	    				that.active = false;
 						that.callback_left = null;
 						that.callback_right = null;		    				
-	    				that.swipe.cancel(e);
+	    				that.cancel(el);
 	    			},100);
 	    		}
-			},
-
+			}
+,
 			move: function(e) {
 				var that = WPCLib.ui.swipe;
 	    		if (that.active) {   			
@@ -2249,7 +2255,7 @@ var WPCLib = {
 		    		var dx = that.start_x - x;
 		    		var dy = that.start_y - y;
 		    		if (Math.abs(dx) >= (45 * window.devicePixelRatio)) {		    			
-		    			that.cancel(e);
+		    			that.cancel(e.srcElement);
 		    			if (Math.abs(dy) > Math.abs(dx*0.5)) return;
 		    			if(dx > 0) {
 		    				that.callback_left();
@@ -2263,10 +2269,12 @@ var WPCLib = {
 	    		}
 			},
 
-			cancel: function(e) {
-				e.srcElement.removeEventListener('touchmove', WPCLib.ui.swipe.move);
-				WPCLib.ui.swipe.start_x = null;
-				WPCLib.ui.swipe.active = false;			
+			cancel: function(el) {
+				var that = WPCLib.ui.swipe;
+				if (!that.start_x) return;
+				el.removeEventListener('touchmove', WPCLib.ui.swipe.move);
+				that.start_x = null;
+				that.active = false;			
 			}
 		},
 
