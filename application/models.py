@@ -1,3 +1,4 @@
+import os
 import time
 import calendar
 from datetime import datetime
@@ -183,6 +184,7 @@ class Document(ndb.Model):
 
     def analyze(self):
         data = (self.title or '') + (self.text or '')
+        data = data.replace(os.linesep, ',') 
         normal_noun_chunks, proper_noun_chunks = get_sorted_chunks(data)
         textrank_chunks = get_top_keywords_list(data, 8)
         return {'textrank_chunks': textrank_chunks, 
