@@ -276,7 +276,10 @@ def relevant_links():
     shorten = request.json.get('use_shortening', True)
 
     if 'text' in request.json:
-        terms = Document(text=request.json['text']).analyze()['textrank_chunks']
+        terms = request.json['text'].strip().split(' ', 2)
+        if len(terms) > 2:
+            terms = Document(text=request.json['text']).analyze()['textrank_chunks']
+
     elif 'terms' in request.json:
         terms = request.json['terms']
     else:
