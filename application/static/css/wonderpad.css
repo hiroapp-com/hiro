@@ -327,8 +327,9 @@ a.wpcbutton:hover {
 }
 
 .menu .menufooter a.archbutton {
-  padding: 0 84px 0 4px;
-  margin-left: 6px;
+  padding: 0 0 0 4px;
+  margin-left: 10px;
+  width: 200px;  
 }
 
 .menu .menufooter a.archbutton span {
@@ -337,9 +338,50 @@ a.wpcbutton:hover {
 }
 
 @media (max-width: 480px) {
-  .menu .documents {
-    width: 240px;
+  .menu {
+    width: 100%;
   }
+
+  .menu .documents {
+    max-width: 290px;
+    right: 60px;
+    width: auto;
+  }
+
+  .menu .menufooter {
+    position: absolute;
+    bottom: 7px;
+    left: 7px;
+    right: 50px;
+  }  
+
+  .menu .menufooter .archive {
+    width: auto;
+    right: 0;
+    margin-left: 0;
+    left: 40px;
+  }
+
+  .menu .menufooter a.archbutton {
+    position: absolute;
+    left: 38px;
+    right: 9px;
+    padding: 0;
+    margin-left: 2px;  
+    max-width: 202px;
+    width: auto; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;           
+  } 
+
+  .menu .menufooter a.archbutton span {
+    padding-left: 24px; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;       
+  }  
+
 }
 
 
@@ -557,6 +599,12 @@ a.wpcbutton:hover {
     margin-right: 0;
     border-right: none;
   }
+
+  .canvas #nicequote {
+    left: 69px;
+    right: 60px;
+  }
+
   .icon.showmenu {
     position: fixed;
     background: url(../img/icon-menu.png) no-repeat 18px 19px;
@@ -1883,7 +1931,21 @@ body#settingsPage input.pseudobutton {
 
   .accountdetails a.wpcbutton.share {
     width: 90px;
-  }   
+  }     
+
+  #s_account form .ioption:last-child {
+    position: absolute;
+    top: 147px;
+    right: 0; 
+    z-index: 99000;
+  }
+
+  #s_checkout form .ioption.changeplan {
+    position: absolute;
+    top: 49px;
+    right: 0; 
+    z-index: 99000;  
+  }  
 
   #s_plan .box {
     margin-top: 20px;

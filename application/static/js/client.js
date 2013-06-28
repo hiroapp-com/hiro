@@ -28,9 +28,6 @@ var WPCLib = {
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'touchstart', WPCLib.ui.menuHide);			
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);		
-
-			// Make sure the scrollbar is also visible on small devices
-			if (document.body.offsetWidth<=350) document.getElementById(this.docs.doclistId).style.width = (document.body.offsetWidth-107)+'px';	
 		},
 
 		checkconsistency: function() {
@@ -50,6 +47,9 @@ var WPCLib = {
 			setTimeout(function(){
 				WPCLib.folio.checkconsistency();
 			},this.consistencychecktimer);
+
+			// If we didn't get the doclist yet, wait until next cycle
+			if (!local.active[0] && !local.archived[0]) return;
 
 			// Get latest doc
 			$.getJSON('/docs/?group_by=status', function(data) {
@@ -207,7 +207,7 @@ var WPCLib = {
 				link.appendChild(stats);
 				d.appendChild(link);	
 
-				if (('ontouchstart' in document.documentElement)&&l>1) {
+				if (('ontouchstart' in document.documentElement)&&l >= 1) {
 					d.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
 				} else {
 					// Add archive link, only on non touch devices
@@ -401,7 +401,7 @@ var WPCLib = {
 				}	
 
 				var that = WPCLib.folio.docs;				
-				var a_id = e.srcElement.parentNode.id.substr(4);
+				var a_id = e.target.parentNode.id.substr(4);
 				var act = that.active;	
 				var arc = that.archived;
 				var obj = {};
@@ -549,7 +549,11 @@ var WPCLib = {
 					WPCLib.ui.swipe.init(null,WPCLib.context.switchview,e);					
 				}, false);	
 				// Make UI more stable with event listeners			
-				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);													
+				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);
+
+				// Cancel safariinit after enough time passed to focus textarea fast after that
+				if (this.safariinit) setTimeout( function() { WPCLib.canvas.safariinit = false; },5000);				
+
 			} else {
 				// click on the page puts focus on textarea
 				WPCLib.util.registerEvent(p,'click',function(){document.getElementById(WPCLib.canvas.contentId).focus()});
@@ -2231,7 +2235,7 @@ var WPCLib = {
 			init: function(left,right,e) {	
 				if (WPCLib.ui.menuCurrPos!=0) return;			
 	    		if (e.touches.length == 1) {
-	    			var that = WPCLib.ui.swipe, el = e.srcElement;
+	    			var that = WPCLib.ui.swipe, el = e.target;
 	    			that.callback_left = left;	
 	    			that.callback_right = right;		    			    			
 	    			that.start_x = e.touches[0].pageX;
@@ -2255,7 +2259,7 @@ var WPCLib = {
 		    		var dx = that.start_x - x;
 		    		var dy = that.start_y - y;
 		    		if (Math.abs(dx) >= (45 * window.devicePixelRatio)) {		    			
-		    			that.cancel(e.srcElement);
+		    			that.cancel(e.target);
 		    			if (Math.abs(dy) > Math.abs(dx*0.5)) return;
 		    			if(dx > 0) {
 		    				that.callback_left();
