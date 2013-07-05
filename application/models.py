@@ -8,6 +8,7 @@ from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
 from google.appengine.api import memcache
 from flask.ext.login import UserMixin, AnonymousUser
+from flask import session
 from textmodels.textrank import get_top_keywords_list
 from settings import STRIPE_SECRET_KEY
 
@@ -35,6 +36,7 @@ class User(UserMixin, ndb.Model):
     signup_at =  ndb.DateTimeProperty(auto_now_add=True)
     facebook_uid = ndb.StringProperty()
     stripe_cust_id = ndb.StringProperty()
+    relevant_counter = ndb.IntegerProperty(default=0)
 
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
@@ -137,6 +139,29 @@ class User(UserMixin, ndb.Model):
     def get_id(self):
         return unicode(self.key.id())
 
+    @property
+    def usage_quota(self):
+        if self.has_paid_plan:
+            return float('inf')
+        return 100
+
+    def _get_usage_ctr(self):
+        key = 'relevant.counter:{0}'.format(self.key.id())
+        cached = memcache.get(key)
+        return cached if cached is not None else self.relevant_counter
+
+    def _set_usage_ctr(self, val):
+        key = 'relevant.counter:{0}'.format(self.key.id())
+        memcache.set(key, val)
+        if val % 5 == 0:
+            # write to db at certain times:
+            # hope that changes only happen incremently
+            self.relevant_counter = val
+            self.put()
+
+    usage_ctr = property(_get_usage_ctr, _set_usage_ctr)
+    del _get_usage_ctr, _set_usage_ctr
+
     def to_dict(self):
         return {
                 'id': self.get_id(),
@@ -149,6 +174,17 @@ class Anonymous(AnonymousUser):
     name = u"Anonymous"
     has_paid_plan = False
     latest_doc = None
+    usage_quota = 20
+
+    def _get_usage_ctr(self):
+        return session.get('usage-relevant', 0)
+
+    def _set_usage_ctr(self, val):
+        session['usage-relevant'] = val
+
+    usage_ctr = property(_get_usage_ctr, _set_usage_ctr)
+    del _get_usage_ctr, _set_usage_ctr
+
 
 class Link(ndb.Model):
     url = ndb.StringProperty(required=True)

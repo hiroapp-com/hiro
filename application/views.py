@@ -30,6 +30,7 @@ from application import app
 
 from .models import User, Document, Link
 from .forms import LoginForm, SignupForm
+from .decorators import limit_free_plans
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 def search_yahoo(terms, num_results=20):
@@ -269,6 +270,7 @@ def analyze_content():
     tmpdoc = Document(text=request.form.get('content', ''))
     return jsonify(tmpdoc.analyze())
 
+@limit_free_plans
 def relevant_links():
     urls_seen, results = {}, []
     if not request.json:
