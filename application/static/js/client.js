@@ -817,7 +817,10 @@ var WPCLib = {
 
 		update: function(event) {
 			// Abort if keypress is F1-12 key
-			if (event.keyCode > 111 && event.keyCode < 124) return;			
+			var kc = event.keyCode;
+			if (kc > 111 && kc < 124) return;		
+			// Return if shift key is pressed
+			if (event.ctrlKey || kc == 17 ) return;
 			// update function bound to page textarea, return to local canvas scope
 			WPCLib.canvas.evaluate();			
 		},		
@@ -1922,19 +1925,19 @@ var WPCLib = {
 		dialogTimer: null,
 		windowfocused: true,
 
-		keyboardshortcut: function(event) {
+		keyboardshortcut: function(e) {
 			// Simple event listener for keyboard shortcuts			
-			if (event.ctrlKey) {
-				if (event.keyCode == 83) {
+			if (e.ctrlKey) {
+				if (e.keyCode == 83) {
 					// Ctrl+s
 					WPCLib.canvas.savedoc(true);
-		        	event.preventDefault();					
+		    		e.preventDefault();											
 				}
-				if (event.keyCode == 78) {
+				if (e.keyCode == 78) {
 					// Ctrl + N, this doesn't work in Chrome as chrome does not allow access to ctrl+n 
-					WPCLib.folio.docs.newdoc();
-		        	event.preventDefault();					
-				}		
+					WPCLib.folio.docs.newdoc();	
+		    		e.preventDefault();									
+				}					
 		    }
 		},
 
