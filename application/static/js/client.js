@@ -216,7 +216,7 @@ var WPCLib = {
 						a.className = 'archive';
 						if (active) {
 							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,true);});	
-							if (lvl==1) a.title = "Archive";
+							if (lvl==1) a.title = "Move to archive";
 						} else {
 							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,false);});												
 						}								
@@ -515,6 +515,7 @@ var WPCLib = {
 			var p = document.getElementById(this.canvasId);
 			var t = document.getElementById(this.pageTitle);
 			var c = document.getElementById(WPCLib.context.id);	
+			var f = document.getElementById(WPCLib.folio.folioId);
 			// See if a selection is performed and narrow search to selection
 			WPCLib.util.registerEvent(p,'mouseup',this.textclick);							
 			WPCLib.util.registerEvent(el,'keydown',this.keyhandler);	
@@ -542,13 +543,22 @@ var WPCLib = {
 			if ('ontouchstart' in document.documentElement) {
 				// Make sure the teaxtare contents are scrollable on mobile devices
 				el.addEventListener('touchstart',function(e){
-					// Attach the swipe actions to canvas					
-					WPCLib.ui.swipe.init(WPCLib.context.switchview,WPCLib.ui.menuSwitch,e);					
+					// Attach the swipe actions to canvas	
+					var cb = (WPCLib.ui.menuCurrPos != 0) ? null : WPCLib.context.switchview;			
+					WPCLib.ui.swipe.init(cb,WPCLib.ui.menuSwitch,e);					
 				}, false);	
 				c.addEventListener('touchstart',function(e){
-					// Attach the swipe actions to canvas					
+					// Attach the swipe actions to context					
 					WPCLib.ui.swipe.init(null,WPCLib.context.switchview,e);					
 				}, false);	
+				f.addEventListener('touchstart',function(e){
+					// Attach the swipe actions to context					
+					WPCLib.ui.swipe.init(WPCLib.ui.menuHide,null,e);					
+				}, false);	
+				f.addEventListener('touchstart',function(e){
+					// Open menu when somebody touches the grea sidebar on the left on tablets etc					
+					if (WPCLib.ui.menuCurrPos == 0) WPCLib.ui.menuSwitch();				
+				}, false);				
 				// Make UI more stable with event listeners			
 				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);
 
@@ -1107,7 +1117,7 @@ var WPCLib = {
                     success: function(data) {
                         WPCLib.context.storeresults(data.results);
                         WPCLib.context.renderresults();		             
-                        document.getElementById(that.statusId).innerHTML = 'Ready for more?';
+                        document.getElementById(that.statusId).innerHTML = 'Ready for more.';
                     }
                 });				
 			} else {
@@ -1185,14 +1195,14 @@ var WPCLib = {
 				var del = document.createElement('a');
 				del.className = 'delete action';
 				del.setAttribute('href','#');
-				if (l) del.setAttribute('title','Delete');				
+				if (l) del.setAttribute('title','Delete (do not show this link again for this document)');				
 				del.setAttribute('onclick','WPCLib.context.blacklistLink(this); return false;');	
 				e.appendChild(del);	
 
 				var st = document.createElement('a');
 				st.className = 'stick action';
 				st.setAttribute('href','#');
-				if (l) st.setAttribute('title','Pin');				
+				if (l) st.setAttribute('title','Pin (save link with document)');				
 				st.setAttribute('onclick','WPCLib.context.makesticky(this); return false;');					
 				e.appendChild(st);							
 			}	
@@ -1201,7 +1211,7 @@ var WPCLib = {
 				var us = document.createElement('a');
 				us.className = 'unstick action';
 				us.setAttribute('href','#');
-				if (l) us.setAttribute('title','Unpin');					
+				if (l) us.setAttribute('title','Unpin (stop saving this link with this document)');					
 				us.setAttribute('onclick','WPCLib.context.unstick(this); return false;');				
 				e.appendChild(us);												
 			}						
@@ -2256,8 +2266,8 @@ var WPCLib = {
 			callback_left: null,
 			callback_right: null, 
 
-			init: function(left,right,e) {	
-				if (WPCLib.ui.menuCurrPos!=0) return;			
+			init: function(left,right,e) {
+				if (WPCLib.ui.menuCurrPos > 0 && WPCLib.ui.menuCurrPos < 200) return;		
 	    		if (e.touches.length == 1) {
 	    			var that = WPCLib.ui.swipe, el = e.target;
 	    			that.callback_left = left;	
@@ -2273,8 +2283,7 @@ var WPCLib = {
 	    				that.cancel(el);
 	    			},100);
 	    		}
-			}
-,
+			},
 			move: function(e) {
 				var that = WPCLib.ui.swipe;
 	    		if (that.active) {   			

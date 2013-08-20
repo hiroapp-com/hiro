@@ -478,6 +478,7 @@ a.wpcbutton:hover {
   z-index: 2100;
   min-height: 150px;
   padding-bottom: 50px;
+  resize: none;
 }
 
 .canvas.full .page .content textarea {
