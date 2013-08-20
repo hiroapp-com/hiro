@@ -156,6 +156,10 @@ a.wpcbutton:hover {
   width: 450px;
 }
 
+.menu:hover {
+  background-color: #333;
+}
+
 .menu .menuheader {
   padding-top: 0.6em;
   padding-left: 0.5em;
@@ -530,7 +534,7 @@ a.wpcbutton:hover {
     top: 10px;
     left: 0;
     right: 0;
-    margin-left: 51px;
+    margin-left: 47px;
     margin-right: 50px;    
     margin-bottom: 0;
     font-family: "urbana",sans-serif;
@@ -1598,6 +1602,11 @@ body#settingsPage input#cc_number {
   padding: 5px 40px 2px 5px;
 }
 
+#s_settings .header b {
+  font-weight: normal;
+  color: #666;
+}
+
 #s_settings .header a {
   padding: 5px 10px;
   border-radius: 3px;
@@ -1734,11 +1743,10 @@ body#settingsPage input#cc_number {
 }
 
 #s_about .aboutsection .claim {
-  font-size: 18px;
   display: block;
   padding-bottom: 20px;
   font-size: 28px;
-  line-height: 31px;
+  line-height: 32px;
   color: #888;
 }
 

@@ -216,8 +216,9 @@ var WPCLib = {
 						a.className = 'archive';
 						if (active) {
 							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,true);});	
+							if (lvl==1) a.title = "Archive";
 						} else {
-							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,false);});					
+							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,false);});												
 						}								
 						d.appendChild(a);
 					}
@@ -253,7 +254,7 @@ var WPCLib = {
 					return;
 				}
 				if (this.active && WPCLib.sys.user.level == 1 && this.active.length >= 10) {
-					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade now for unlimited documents &amp; much more.');
+					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade now for <b>unlimited documents</b> &amp; much more.');
 					return;					
 				}
 
@@ -396,7 +397,7 @@ var WPCLib = {
 			archive: function(e,toarchive) {
 				// Move a current document to the archive, first abort if user has no account with archive
 				if (WPCLib.sys.user.level <= 1) {
-					WPCLib.sys.user.upgrade(2,'','Upgrade now to unlock the archive &amp; much more.');
+					WPCLib.sys.user.upgrade(2,'','Upgrade now to <b>unlock the archive</b> &amp; much more.');
 					return;
 				}	
 
@@ -441,7 +442,7 @@ var WPCLib = {
 				// Archive link
 				// Show signup screen if user has no appropriate tier
 				if (WPCLib.sys.user.level < 2) {
-					WPCLib.sys.user.upgrade(2,'','Upgrade now to unlock the archive &amp; much more.');
+					WPCLib.sys.user.upgrade(2,'','Upgrade now to <b>unlock the archive</b> &amp; much more.');
 					return;					
 				};	
 
@@ -1562,7 +1563,7 @@ var WPCLib = {
                 // Suggest upgrade after initial registration or just hide dialog
                 if (user.tier==1&&type=='register') {
                 	WPCLib.ui.statusflash('green','Welcome, great to have you!');
-                	this.forceupgrade(2,'Unlock more features right away?');
+                	this.forceupgrade(2,'Unlock <b>more features</b> right away?');
                 } else {
                 	WPCLib.ui.hideDialog();	
                 }
