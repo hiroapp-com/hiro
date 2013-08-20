@@ -1117,6 +1117,8 @@ var WPCLib = {
 
 		search: function(string) {
 			// Chunk extraction and search in one step in the backend
+			// Sometimes we get null from backend
+			if (string=='null' || string==null) return;
 			document.getElementById(this.statusId).innerHTML = 'Saving & Searching...';			
 			var payload = {text: string};
 			var that = this;						
@@ -2104,6 +2106,24 @@ var WPCLib = {
 					boxes[2].getElementsByClassName('grey')[0].style.display = 'block';
 					break;
 			}
+		},
+
+		facebookshare: function() {
+			if (!FB) return;
+	        var obj = {
+	            method: 'feed',
+	            link: 'https://www.hiroapp.com',
+	            name: 'Hiro. Never Lose Your Best Ideas.',
+	            caption: 'https://www.hiroapp.com',
+	            description: "Hiro is a notetaking app that makes it easy to write down your ideas. It's extremely fast, beautifully designed and works on all your devices.",
+	            actions: {
+	                name: 'Start writing',
+	                link: 'https://www.hiroapp.com/connect/facebook',
+	            }
+	        };
+	        FB.ui(obj,function(response) {
+	        	if (response && analytics) window.parent.analytics.track('Shares App',{channel:'Facebook'});
+	        });
 		},
 
 		fillcheckout: function(plan) {

@@ -1396,6 +1396,11 @@ body#settingsPage input.pseudobutton {
   top: -100px;
 }
 
+body#settingsPage input#cc_number {
+  background: url(../img/payment.png) right 12px no-repeat;
+  background-color: #fff;
+}
+
 #s_login, .accountdetails {
   text-align: center;
 }
@@ -1408,6 +1413,13 @@ body#settingsPage input.pseudobutton {
 #s_settings .accountdetails, #s_settings .checkoutdetails {
   margin: 85px auto 0 auto;
   width: 400px;
+}
+
+#s_about .aboutsection {
+  margin: 60px auto 0 auto;
+  width: 530px;
+  color: #666;
+  line-height: 22px;
 }
 
 #s_login a.fb {
@@ -1530,6 +1542,12 @@ body#settingsPage input.pseudobutton {
   display: block;
   color: red;
   margin: -5px 0 5px 1px;
+}
+
+.checkoutdetails .pbstripe {
+  padding-top: 3px;
+  font-size: 14px;
+  color: #bbb;
 }
 
 .accountdetails a.wpcbutton.share {
@@ -1702,8 +1720,34 @@ body#settingsPage input.pseudobutton {
   margin-right: 0;
 }
 
-@media (max-width: 480px) {
+#s_about .aboutsection .contact {
+  color: #333;
+}
 
+#s_about .aboutsection .contact a, #s_about .aboutsection .contact a:visited {
+  color: #336699;
+  text-decoration: none;
+}
+
+#s_about .aboutsection .contact a:hover {
+  color: #996633;
+}
+
+#s_about .aboutsection .claim {
+  font-size: 18px;
+  display: block;
+  padding-bottom: 20px;
+  font-size: 28px;
+  line-height: 31px;
+  color: #888;
+}
+
+#s_about .aboutsection .claim em {
+  font-style: normal;
+  color: #333;
+}
+
+@media (max-width: 480px) {
   #dialogWrapper {
     width: 85%;
     height: 90%;
@@ -1716,6 +1760,10 @@ body#settingsPage input.pseudobutton {
     color: transparent;
     padding-right: 0;
   }
+
+  body#settingsPage input#cc_number {
+    background: url(../img/payment.png) right -28px no-repeat;
+  }  
 
   #s_settings .header em {
     display: none;
@@ -1754,6 +1802,10 @@ body#settingsPage input.pseudobutton {
   #s_settings form .ioption {
     color: transparent;
   }   
+
+  #s_settings form .ioption a.facebook {
+    display: none;
+  }  
 
   #s_account form .ioption:last-child {
     position: absolute;
@@ -1885,6 +1937,27 @@ body#settingsPage input.pseudobutton {
     width: 85%;
   }
 
+  #s_about .aboutsection {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-x: hidden; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
+    margin: 0;    
+    padding: 12px 18px 12px 18px;
+    width: auto;
+    line-height: 22px;
+  }  
+
+  #s_about .aboutsection .claim {
+    padding-bottom: 16px;
+    font-size: 18px;
+    line-height: 22px;
+  }    
+
 }
 
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
@@ -1985,5 +2058,17 @@ body#settingsPage input.pseudobutton {
   #s_plan .box a.wpcbutton {
     width: 134px;
     padding: 3px 4px 2px 4px;
+  } 
+
+  #s_about .aboutsection {
+    margin: 12px 18px 0 18px;
+    width: auto;
+    line-height: 20px;
   }  
+
+  #s_about .aboutsection .claim {
+    padding-bottom: 16px;
+    font-size: 25px;
+    line-height: 28px;
+  }    
 }  
