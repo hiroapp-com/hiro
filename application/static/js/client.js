@@ -658,7 +658,9 @@ var WPCLib = {
 				success: function(data) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
-					WPCLib.canvas.lastUpdated = data.updated;			
+					WPCLib.canvas.lastUpdated = data.updated;	
+
+					// Change null value to '' if document header is empty		
 
 					// Show data on canvas
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
@@ -672,9 +674,9 @@ var WPCLib = {
 					}	
 					that._setposition(data.cursor);
 
-					// Set internal values
+					// Set internal values, do not store 'null' as title string as it fucks up search
 					that.text = data.text;
-					that.title = data.title;	
+					that.title = (data.title) ? data.title : '';	
 					that.preloaded = false;
 
 					// If body is empty show a quote
@@ -752,7 +754,7 @@ var WPCLib = {
 			WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);			
 			this.quoteShown = true;
 
-			document.getElementById(WPCLib.context.resultsId).innerHTML = '';
+			WPCLib.context.clearresults();
 			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready to inspire';
 			this.created = WPCLib.util.now();
 
@@ -988,7 +990,16 @@ var WPCLib = {
 
 		_setposition: function(pos) {
 			// Set the cursor to a specified position	
-			if (!pos) var pos = 0;
+			if (!pos) pos = [0,0];
+
+			// Check of we do have a proper array, otherwise fall pack to scalar
+			if (Object.prototype.toString.call(pos) == '[object Array]') {
+				var pos1 = pos[0], pos2 = pos[1];				
+			} else {
+				var pos1 = pos2 = pos;				
+			}	
+
+
 			var el = document.getElementById(this.contentId);	
 
 			// Abort if focus is already on textarea
@@ -1009,18 +1020,18 @@ var WPCLib = {
 					setTimeout( function(){
 						if (WPCLib.ui.menuCurrPos!=0) return;
 						el.focus();							
-						el.setSelectionRange(pos,pos);	
+						el.setSelectionRange(pos1,pos2);	
 						WPCLib.canvas.safariinit = false;										
 					},1000);								
 				} else {	
 					el.focus();							
-					el.setSelectionRange(pos,pos);															
+					el.setSelectionRange(pos1,pos2);															
 				}     									
     		} else if (el.createTextRange) {
         		var range = el.createTextRange();
         		range.collapse(true);
-        		range.moveEnd('character', pos);
-        		range.moveStart('character', pos);
+        		range.moveEnd('character', pos1);
+        		range.moveStart('character', pos2);
         		range.select();
     		} else {
     			el.focus();
@@ -1037,8 +1048,13 @@ var WPCLib = {
 		show: true,
 		id: 'context',
 		resultsId: 'results',
+		wwwresultsId: 'wwwresults',
+		synresultsId: 'synresults',
 		statusId: 'status',
 		signupButtonId: 'signupButton', 
+		synKey: 'c80cda88ad86ccd854a68090a4dfba7c',
+		replacementrange: [],
+		replacementword: '',
 
 		switchview: function() {
 			// show / hide searchbar
@@ -1083,11 +1099,11 @@ var WPCLib = {
 			$.post('/analyze', {content: string}, 
 			function(data){	
 				console.log(data);
-	            WPCLib.context.chuncksearch(data,chunktype);
+	            WPCLib.context.chunksearch(data,chunktype);
 	        });
 		},		
 
-		chuncksearch: function(data,chunktype) {
+		chunksearch: function(data,chunktype) {
 			// Search with specific chunks returned from analyzer above
 			document.getElementById(this.statusId).innerHTML = 'Searching...';			
 			var data = data.chunktype || data.textrank_chunks;
@@ -1128,20 +1144,58 @@ var WPCLib = {
 
 		search: function(string) {
 			// Chunk extraction and search in one step in the backend
-			// Sometimes we get null from backend
+			// Sometimes we somewhere get null from backend TODO: Find out why
 			if (string=='null' || string==null) return;
 			document.getElementById(this.statusId).innerHTML = 'Saving & Searching...';			
 			var payload = {text: string};
-			var that = this;						
+			var that = this;
+
+			// Handle short strings for synonym search, first find out how many words we have and clean up string
+			var ss = string.replace(/\r?\n/g," "); 
+			ss = ss.replace(/\t/g," ");
+			ss = ss.replace(/,/g," ");			
+			ss = ss.replace(/\s{2,}/g," ");
+			ss = ss.trim();
+			if (ss.length > 0 && ss.split(' ').length == 1) {
+				console.l
+				// Search synonyms for single words
+				$.ajax({
+				    url: 'http://words.bighugelabs.com/api/2/' + that.synKey + '/' + ss + '/json',
+				    type: 'GET',
+				    dataType: "jsonp",
+				    success: function(data) {
+				    	WPCLib.context.rendersynonyms(data,ss);				    	
+				    }
+				});
+				// Set the range of the documents to be replace to selection, or full document if it's only one word
+				var sel = WPCLib.canvas._getposition();
+				this.replacementrange = (sel[0] == sel[1]) ? [0,WPCLib.canvas.text.length,WPCLib.canvas.text] : sel;
+				this.replacementword = ss;
+			} else {
+				this.replacementrange = [];
+				document.getElementById(this.synresultsId).innerHTML = '';
+			}
+
+			// Find context links from Yahoo BOSS						
             $.ajax({
                 url: "/relevant",
                 type: "POST",
                 contentType: "application/json; charset=UTF-8",
                 data: JSON.stringify(payload),
+                error: function(data) {
+                	switch (data.status) {
+                		case 402: 
+                			console.log('payup, yee');
+                			break;
+                		default:
+                			WPCLib.sys.errorHandler();	
+                	}
+                },           
                 success: function(data) {
+                	console.log(data);
                     WPCLib.context.storeresults(data.results);
                     WPCLib.context.renderresults();		             
-                    document.getElementById(that.statusId).innerHTML = 'Ready for more?';
+                    document.getElementById(that.statusId).innerHTML = 'Ready for more.';
                 }
             });				
 		},
@@ -1169,9 +1223,83 @@ var WPCLib = {
 			}
 		},
 
+		rendersynonyms: function(data) {
+			// render the synonym resultlist if we got one from the API
+			var results = document.getElementById(this.synresultsId);
+			var newresults = results.cloneNode();
+			console.log(data);
+
+			for (var synonyms in data) {
+				// create a generic element holding all data and add header	
+				var obj = data[synonyms];
+				var group = document.createElement('div');			   
+				group.className = 'group';
+
+				var header = document.createElement('div');
+				header.className = 'header';
+				header.innerHTML = this.replacementword + ' <em>' + synonyms + '</em>';
+				group.appendChild(header);
+
+				var words = document.createElement('div');
+				words.className = 'words';
+				for (var subgroup in obj) {
+					// Get various subgroups of API (synonyms, antonyms, etc)
+					if(obj.hasOwnProperty(subgroup)) {	
+						if (subgroup == 'sim' || subgroup == 'rel') continue;
+
+						var sg = document.createElement('div');
+						sg.className = 'subgroup';					
+						sg.innerHTML = (subgroup == 'syn') ? '' : 'Antonym: '; 
+
+						var wordlist = obj[subgroup], i = 0;
+						for (var word in wordlist) {
+							var l = document.createElement('a');							
+							l.innerHTML = wordlist[word];
+							l.setAttribute('href','#');	
+							var s = (wordlist.length-1 == i) ? document.createTextNode('.') : document.createTextNode(', ');						
+							sg.appendChild(l);
+							sg.appendChild(s)	
+							i++;						
+						}
+
+						words.appendChild(sg);
+					}
+			   }
+			   group.appendChild(words);
+
+			   newresults.appendChild(group);
+			}
+			results.parentNode.replaceChild(newresults, results);
+		},
+
+		replacewithsynonym: function(event) {
+			event.preventDefault();
+			var source = WPCLib.canvas.text;
+			var oldpos = this.replacementrange;
+			var oldword = this.replacementword;
+			var newword = event.srcElement.innerHTML;
+
+			// replace internal and visual selection with new string
+			WPCLib.canvas.text = document.getElementById(WPCLib.canvas.contentId).value = source.slice(0,oldpos[0]) + oldpos[2].replace(oldword,newword) + source.slice(oldpos[1]);
+			
+			// update the replacementrange values		
+			this.replacementrange[1] = oldpos[1] + (newword.length - oldword.length);
+			this.replacementrange[2] = oldpos[2].replace(oldword,newword);
+
+			// Update selection
+			var newselection = [oldpos[0],this.replacementrange[1]];
+			WPCLib.canvas._setposition(newselection);
+
+			// update inetrnal value to new word
+			this.replacementword = newword;
+
+			// Save updated document
+			WPCLib.canvas.savedoc(true);			
+		},
+
 		renderresults: function() {
 			// Show results in DOM		
-			var results = document.getElementById(this.resultsId);
+			var results = document.getElementById(this.wwwresultsId);
 			var newresults = results.cloneNode();
 			var sticky = this.sticky;
 			if (sticky) {
@@ -1184,6 +1312,12 @@ var WPCLib = {
 				newresults.appendChild(this._buildresult(links[i], false));
 			}				
 			results.parentNode.replaceChild(newresults, results);			    
+		},
+
+		clearresults: function() {
+			//empty all result lists
+			document.getElementById(this.wwwresultsId).innerHTML = '';
+			document.getElementById(this.synresultsId).innerHTML = '';
 		},
 
 		_buildresult: function(data, sticky) {
@@ -1305,7 +1439,7 @@ var WPCLib = {
 		}
 	},
 
-	// External libraries
+	// External libraries & extensions
 	lib: {
 		inited: false,
 
@@ -1322,6 +1456,13 @@ var WPCLib = {
 			 js.src = "https://connect.facebook.net/en_US/all.js";
 			 fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));	
+
+			// Add trim to prototype
+			if (!String.prototype.trim) {
+			  String.prototype.trim = function () {
+			    return this.replace(/^\s+|\s+$/g, '');
+			  };
+			}			
 
 			this.inited = true;
 		}

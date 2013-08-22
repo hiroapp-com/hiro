@@ -32,7 +32,7 @@
 
 		<div class="menu" onmouseover="WPCLib.ui.menuSlide(1);" id="folio">
 			<div class="menuheader">
-				<a href="#" class="newdoc" onclick="WPCLib.folio.docs.newdoc();"><b>+</b>&nbsp;New Document</a>
+				<a href="#" class="newdoc" onclick="WPCLib.folio.docs.newdoc();"><b>+</b>&nbsp;New Note</a>
 			</div>
 			<div class="documents" id="doclist">
 				<span class="loading">Loading...</span>				
@@ -74,7 +74,9 @@
 		
 		<div class="context" id="context">
 			<div id="status" title="Tip: Select a word or paragraph to limit your search">&nbsp;</div>
-			<div class="results" id="results">																				
+			<div class="results" id="results">	
+				<div id="synresults" onclick="WPCLib.context.replacewithsynonym(event);"></div>				
+				<div id="wwwresults"></div>																		
 			</div>
 			<div class="upgrade" id="signupButton">
 				<small>Unlock more links and features:</small>

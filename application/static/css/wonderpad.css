@@ -156,10 +156,6 @@ a.wpcbutton:hover {
   width: 450px;
 }
 
-.menu:hover {
-  background-color: #333;
-}
-
 .menu .menuheader {
   padding-top: 0.6em;
   padding-left: 0.5em;
@@ -748,7 +744,7 @@ a.wpcbutton:hover {
     -webkit-border-radius: 4px;
 }
 
-.context .results .result, .context .results .result.touch:hover {
+#wwwresults .result, #wwwresults .result.touch:hover, #synresults .group {
   margin-left: 100px;
   display: block;
   position: relative;
@@ -760,19 +756,23 @@ a.wpcbutton:hover {
   -o-transition: background-color 750ms ease-out; 
 }
 
-.context .results .result.touch:hover {
+#synresults .group {
+  height: auto;
+  color: #999;
+}
+
+#wwwresults .result.touch:hover {
   border-bottom: 1px solid #c5c5c5; 
   margin-left: 50px;   
   padding-left: 63px;   
 }
 
 
-
-.context .results .result:first-child {
+#wwwresults .result:first-child, #synresults .group:first-child {
   margin-top: 1px;    
 }
 
-.context .results .result:hover {
+#wwwresults .result:hover, #synresults .group:hover {
   margin-left: 50px;
   border-left: 1px solid #c5c5c5;
   margin-top: -1px;
@@ -785,71 +785,77 @@ a.wpcbutton:hover {
   -o-transition: background-color 0ms ease-in;     
 }
 
-.context .results .result.sticky, .context .results .result.sticky.touch:hover {
+#synresults .group:hover {
+  padding-left: 14px;
+  margin-left: 99px;
+  color: #000;  
+}
+
+#wwwresults .result.sticky, #wwwresults .result.sticky.touch:hover {
   height: 37px;
   margin-left: 50px; 
   padding-left: 64px;  
 }
 
-.context .results .result.sticky.touch:hover {
+#wwwresults .result.sticky.touch:hover {
   padding-left: 63px;  
 }
 
-.context .results .result.sticky:hover {
+#wwwresults .result.sticky:hover {
   height: 92px;
   padding-left: 63px;   
 }
 
-.context .results .result.sticky a.link .blurb, .context .results .result.sticky.touch:hover a.link .blurb {
+#wwwresults .result.sticky a.link .blurb, #wwwresults .result.sticky.touch:hover a.link .blurb {
   display: none;
 }
 
-.context .results .result.sticky:hover a.link .blurb {
+#wwwresults .result.sticky:hover a.link .blurb {
   display: block;
 }
 
-.context .results .result:first-child:hover {
+#wwwresults .result:first-child:hover, #synresults .group:first-child:hover {
   margin-top: 0px;    
 }
 
-.context .results .result a {
+#wwwresults .result a {
   text-decoration: none;
 }
 
-.context .results .result a.action {
+#wwwresults .result a.action {
   width: 32px;
   height: 32px;
   border-radius: 3px;
   display: none;
 }
 
-.context .results .result:hover a.action {
+#wwwresults .result:hover a.action {
   display: block;
   background-color: #ccc;
 }
 
-.context .results .result:hover a.action:hover {
+#wwwresults .result:hover a.action:hover {
   background-color: #bbb;
 }
 
-.context .results .result a.action {
+#wwwresults .result a.action {
   background-repeat: no-repeat;
   background-position: 8px 8px;
   background-size: 17px 17px;  
 }
 
-.context .results .result a.stick {
+#wwwresults .result a.stick {
   background-image: url(../img/stick-white-semi.png);  
   position: absolute;
   top: 10px;
   left: 10px;
 }
 
-.context .results .result a.stick:hover {
+#wwwresults .result a.stick:hover {
   background-image: url(../img/stick.png);  
 }
 
-.context .results .result a.unstick {
+#wwwresults .result a.unstick {
   background-image: url(../img/stick.png);  
   position: absolute;
   display: block;
@@ -859,7 +865,7 @@ a.wpcbutton:hover {
   opacity: 0.6;
 }
 
-.context .results .result:hover a.unstick {
+#wwwresults .result:hover a.unstick {
   background-image: url(../img/unstick-white-semi.png);  
   background-color: #ccc;  
   top: 10px;
@@ -867,32 +873,32 @@ a.wpcbutton:hover {
   opacity: 1;
 }
 
-.context .results .result:hover a.unstick:hover {
+#wwwresults .result:hover a.unstick:hover {
   background-image: url(../img/unstick.png);  
   background-color: #bbb;  
   top: 10px;
   left: 10px;  
 }
 
-.context .results .result a.delete {
+#wwwresults .result a.delete {
   background-image: url(../img/hide-white-semi.png);  
   position: absolute;
   top: 49px;
   left: 10px;
 }
 
-.context .results .result a.delete:hover {
+#wwwresults .result a.delete:hover {
   background-image: url(../img/hide.png);  
 }
 
-.context .results .result a.link {
+#wwwresults .result a.link {
 }
 
-.context .results .result:hover a.link {
+#wwwresults .result:hover a.link {
 
 }
 
-.context .results .result a.link .title {
+#wwwresults .result a.link .title {
   color: #666;
   font-size: 18px;
   font-weight: 400;
@@ -903,15 +909,15 @@ a.wpcbutton:hover {
   text-overflow: ellipsis;
 }
 
-.context .results .result a.link .title b {
+#wwwresults .result a.link .title b {
   font-weight: 400;
 }
 
-.context .results .result a.link:hover .title {
+#wwwresults .result a.link:hover .title {
   color: #000;
 }
 
-.context .results .result a.link .blurb {
+#wwwresults .result a.link .blurb {
   font-size: 0.9em;
   color: #888;
   width: 100%;
@@ -921,16 +927,16 @@ a.wpcbutton:hover {
   text-overflow: ellipsis;   
 }
 
-.context .results .result a.link .blurb b {
+#wwwresults .result a.link .blurb b {
   font-weight: normal;
   color: #777;  
 }
 
-.context .results .result a.link:hover .blurb, .context .results .result a.link:hover .blurb b {
+#wwwresults .result a.link:hover .blurb, #wwwresults .result a.link:hover .blurb b {
   color: #333;
 }
 
-.context .results .result a.link .url {
+#wwwresults .result a.link .url {
   color: #999;
   display: block;
   padding: 0 0 0.5em 0;
@@ -943,9 +949,36 @@ a.wpcbutton:hover {
   text-overflow: ellipsis;  
 }
 
-.context .results .result a.link:hover .url {
+#wwwresults .result a.link:hover .url {
   color: #666;
   text-decoration: underline;
+}
+
+#synresults .group .header em {
+  color: #666;
+  font-style: normal;
+  text-transform: capitalize;
+}
+
+#synresults .group:hover .header em {
+  color: #000;
+}
+
+#synresults .group .words {
+  display: none;
+}
+
+#synresults .group:hover .words {
+  display: block;
+}
+
+#synresults .group .words a, #synresults .group .words a:visited {
+  color: #336699;
+  text-decoration: none;
+}
+
+#synresults .group .words a:hover {
+  color: #996633;
 }
 
 .context .upgrade {
@@ -990,38 +1023,38 @@ text-align: center;
     top: 48px;
   }
 
-  .context .results .result.sticky, .context .results .result.sticky.touch:hover {
+  #wwwresults .result.sticky, #wwwresults .result.sticky.touch:hover {
     background-color: #f0f0ed;  
     margin-left: 51px;
     padding-left: 63px;    
   }  
 
-  .context .results .result.sticky:hover {
+  #wwwresults .result.sticky:hover {
     background-color: #e1e1dd;
   }
 
-  .context .results .result.touch:hover {
+  #wwwresults .result.touch:hover {
     border-bottom: 1px solid #c5c5c5; 
     margin-left: 100px;   
     padding-left: 14px;   
   }  
 
-  .context .results .result.sticky:first-child, .context .results .result.sticky.touch:first-child:hover {
+  #wwwresults .result.sticky:first-child, #wwwresults .result.sticky.touch:first-child:hover {
     border-top: 1px dotted #d6d6d6;  
     margin-top: 0; 
   }  
 
-  .context .results .result.sticky:first-child:hover {
+  #wwwresults .result.sticky:first-child:hover {
     border-top: 1px solid #c5c5c5;
   } 
 
-  .context .results .result:hover {
+  #wwwresults .result:hover {
     margin-left: 51px;
     border-left: none;
     padding-left: 63px;        
   }  
 
-  .context .results .result a.action, .context .results .result.touch:hover a.action {
+  #wwwresults .result a.action, #wwwresults .result.touch:hover a.action {
     width: 32px;
     height: 32px;
     border-radius: 3px;
@@ -1030,18 +1063,18 @@ text-align: center;
     background-color: rgba(230,230,230,0.9);    
   }
 
-  .context .results .result a.unstick {
+  #wwwresults .result a.unstick {
     margin-left: -2px !important;
     background-color: transparent;     
   }     
 
-  .context .results .result:hover a.action {
+  #wwwresults .result:hover a.action {
     margin-left: -2px;
     display: block;
     background-color: #ccc;
   }
 
-  .context .results .result:hover a.action:hover {
+  #wwwresults .result:hover a.action:hover {
     background-color: #bbb;
   }  
 
@@ -1404,6 +1437,10 @@ body#settingsPage input.pseudobutton {
 body#settingsPage input#cc_number {
   background: url(../img/payment.png) right 12px no-repeat;
   background-color: #fff;
+}
+
+body#settingsPage input#cc_number.error {
+  background: #fff;
 }
 
 #s_login, .accountdetails {
