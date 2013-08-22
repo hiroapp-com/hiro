@@ -693,7 +693,8 @@ var WPCLib = {
 					}
 						
 					// Load links
-					WPCLib.context.wipe();
+					WPCLib.context.wipe();	
+					WPCLib.context.clearresults();
 					WPCLib.context.sticky = data.links.sticky || [];
 					WPCLib.context.links = data.links.normal || [];
 					WPCLib.context.blacklist = data.links.blacklist || [];	
@@ -755,13 +756,14 @@ var WPCLib = {
 			this.quoteShown = true;
 
 			WPCLib.context.clearresults();
-			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready to inspire';
+			document.getElementById(WPCLib.context.statusId).innerHTML = 'Brand new start.';
 			this.created = WPCLib.util.now();
 
 			// Empty the link lists & internal values
 			this.title = '';
 			this.text = '';
 			WPCLib.context.wipe();	
+			WPCLib.context.clearresults();
 
 			WPCLib.util.registerEvent(content,'keydown',this._cleanwelcome);
 			// If the landing page is loaded, don't pull the focus from it, bit expensive here, maybve add callback to newdoc later
