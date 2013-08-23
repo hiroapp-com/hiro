@@ -68,16 +68,9 @@ body {
   color: #eee;
 }
 
-.button.dark span {
-  background-position: 1px 1px;
+.button.dark span, .panel.dark span {
   background-repeat: no-repeat;
-  background-size: 15px 15px;  
-}
-
-.panel.dark span {
-  background-position: 1px 1px;
-  background-repeat: no-repeat;
-  background-size: 15px 15px;  
+  background-size: 108px auto;  
 }
 
 .button.dark:hover, .panel.dark:hover {
@@ -235,9 +228,8 @@ a.wpcbutton:hover {
   position: absolute;
   top: 0;
   left: 10px;
-  background-image: url(../img/to_archive.png);
-  background-size: 18px 18px;
-  background-position: 7px 6px;
+  background-image: url(../img/icons.png);
+  background-size: 108px auto;
   opacity: 0.5;
   cursor: pointer;
   display: none;
@@ -245,11 +237,11 @@ a.wpcbutton:hover {
 }
 
 #doclist .document .archive {
-  background-image: url(../img/to_archive.png);
+  background-position: -36px -122px;
 }
 
 #archivelist .document .archive {
-  background-image: url(../img/unarchive.png);
+  background-position: -78px -122px;
 }
 
 .menu .documents .document:hover .archive {
@@ -301,12 +293,16 @@ a.wpcbutton:hover {
   display: block;
 }
 
+.menu .menufooter a span {
+  background-image: url(../img/icons.png);
+}
+
 .menu .menufooter .logio.login a span {
-  background-image: url(../img/icon-login.png);
+  background-position: 0 -85px;
 }
 
 .menu .menufooter .logio.logout a span {
-  background-image: url(../img/icon-logout.png);
+  background-position: 0 -128px;  
 }
 
 .menu .menufooter .archive {
@@ -323,7 +319,7 @@ a.wpcbutton:hover {
 }
 
 .menu .menufooter a.settings span {
-  background-image: url(../img/settings.png); 
+  background-position: -43px -84px;  
 }
 
 .menu .menufooter a.archbutton {
@@ -333,7 +329,7 @@ a.wpcbutton:hover {
 }
 
 .menu .menufooter a.archbutton span {
-  background-image: url(../img/archive.png);
+  background-position: -85px -85px;  
   padding-left: 28px; 
 }
 
@@ -424,8 +420,9 @@ a.wpcbutton:hover {
 
 .icon.showmenu {
   position: fixed;
-  background: url(../img/icon-menu.png) no-repeat 0.65em 0.65em;
-  background-size: 0.9em 0.9em;
+  background: url(../img/icons.png) no-repeat;
+  background-size: 108px auto;
+  background-position: -35px -161px;
   left: 8px;
   top: 9px;  
   z-index: 2200;
@@ -512,8 +509,7 @@ a.wpcbutton:hover {
   }
   .icon.showmenu {
     position: fixed;
-    background: url(../img/icon-menu-black.png) no-repeat 18px 19px;
-    background-size: 0.9em 0.9em;
+    background-position: 14px -152px;
     cursor: pointer;
     left: 0px;
     top: 0px;
@@ -608,8 +604,7 @@ a.wpcbutton:hover {
 
   .icon.showmenu {
     position: fixed;
-    background: url(../img/icon-menu.png) no-repeat 18px 19px;
-    background-size: 0.9em 0.9em;
+    background-position: -27px -152px;;
     cursor: pointer;
     left: 0px;
     top: 0px;
@@ -823,6 +818,7 @@ a.wpcbutton:hover {
 }
 
 #wwwresults .result a.action {
+  background-image: url(../img/icons.png);   
   width: 32px;
   height: 32px;
   border-radius: 3px;
@@ -840,23 +836,22 @@ a.wpcbutton:hover {
 
 #wwwresults .result a.action {
   background-repeat: no-repeat;
-  background-position: 8px 8px;
-  background-size: 17px 17px;  
+  background-size: 102px auto;  
 }
 
-#wwwresults .result a.stick {
-  background-image: url(../img/stick-white-semi.png);  
+#wwwresults .result a.stick { 
+  background-position: 8px 8px;  
   position: absolute;
   top: 10px;
   left: 10px;
 }
 
-#wwwresults .result a.stick:hover {
-  background-image: url(../img/stick.png);  
+#wwwresults .result a.stick:hover { 
+  background-position: 8px -32px;  
 }
 
-#wwwresults .result a.unstick {
-  background-image: url(../img/stick.png);  
+#wwwresults .result a.unstick { 
+  background-position: 8px -32px;  
   position: absolute;
   display: block;
   background-color: none;
@@ -865,30 +860,29 @@ a.wpcbutton:hover {
   opacity: 0.6;
 }
 
-#wwwresults .result:hover a.unstick {
-  background-image: url(../img/unstick-white-semi.png);  
-  background-color: #ccc;  
+#wwwresults .result:hover a.unstick { 
+  background-position: -72px 8px;   
   top: 10px;
   left: 10px;  
   opacity: 1;
 }
 
-#wwwresults .result:hover a.unstick:hover {
-  background-image: url(../img/unstick.png);  
+#wwwresults .result:hover a.unstick:hover { 
+  background-position: -72px -32px;  
   background-color: #bbb;  
   top: 10px;
   left: 10px;  
 }
 
 #wwwresults .result a.delete {
-  background-image: url(../img/hide-white-semi.png);  
+  background-position: -32px 8px;  
   position: absolute;
   top: 49px;
   left: 10px;
 }
 
-#wwwresults .result a.delete:hover {
-  background-image: url(../img/hide.png);  
+#wwwresults .result a.delete:hover { 
+  background-position: -32px -32px;   
 }
 
 #wwwresults .result a.link {
@@ -1408,11 +1402,12 @@ body#settingsPage {
 }
 
 body#settingsPage a.close {
-  background: url(../img/hide.png) no-repeat top right; 
-  background-size: 17px 17px; 
+  background: url(../img/icons.png) no-repeat; 
+  background-size: 102px auto; 
+  background-position: -12px -39px;
   position: absolute;
   display: block;
-  padding-right: 30px;
+  padding-right: 20px;
   top: 21px;
   right: 22px;
   color: #fff;
@@ -1810,6 +1805,7 @@ body#settingsPage input#cc_number.error {
   body#settingsPage a.close {
     color: transparent;
     padding-right: 0;
+    background-position: -26px -39px;
   }
 
   body#settingsPage input#cc_number {
@@ -1820,6 +1816,10 @@ body#settingsPage input#cc_number.error {
   #s_settings .header em {
     display: none;
   }  
+
+  #s_settings .header .reason {
+    text-transform: capitalize;
+  }
 
   #s_settings .header .active, #s_settings .header a  {
     margin-right: 10px;
@@ -1935,7 +1935,7 @@ body#settingsPage input#cc_number.error {
   #s_plan .box .head {
     display: block;
     font-size: 18px;
-    color: #666;
+    color: #999;
     padding-top: 10px;
     width: 90%;
     margin: auto;
@@ -2029,6 +2029,7 @@ body#settingsPage input#cc_number.error {
   body#settingsPage a.close {
     color: transparent;
     padding-right: 0;
+    background-position: -34px -39px;
   }
 
   #s_settings .header .active, #s_settings .header a  {

@@ -254,7 +254,7 @@ var WPCLib = {
 					return;
 				}
 				if (this.active && WPCLib.sys.user.level == 1 && this.active.length >= 10) {
-					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade now for <b>unlimited documents</b> &amp; much more.');
+					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
 					return;					
 				}
 
@@ -397,7 +397,7 @@ var WPCLib = {
 			archive: function(e,toarchive) {
 				// Move a current document to the archive, first abort if user has no account with archive
 				if (WPCLib.sys.user.level <= 1) {
-					WPCLib.sys.user.upgrade(2,'','Upgrade now to <b>unlock the archive</b> &amp; much more.');
+					WPCLib.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
 					return;
 				}	
 
@@ -442,7 +442,7 @@ var WPCLib = {
 				// Archive link
 				// Show signup screen if user has no appropriate tier
 				if (WPCLib.sys.user.level < 2) {
-					WPCLib.sys.user.upgrade(2,'','Upgrade now to <b>unlock the archive</b> &amp; much more.');
+					WPCLib.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
 					return;					
 				};	
 
@@ -1716,7 +1716,7 @@ var WPCLib = {
                 // Suggest upgrade after initial registration or just hide dialog
                 if (user.tier==1&&type=='register') {
                 	WPCLib.ui.statusflash('green','Welcome, great to have you!');
-                	this.forceupgrade(2,'Unlock <b>more features</b> right away?');
+                	this.forceupgrade(2,'Unlock <b>more features</b><em> right away</em>?');
                 } else {
                 	WPCLib.ui.hideDialog();	
                 }
