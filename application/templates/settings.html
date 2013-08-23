@@ -165,7 +165,7 @@
 						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('starter');return false;">Upgrade !</a>	
 					</div>
 					<div class="box 3" onclick="_wpc.ui.upgradeboxclick(this);">
-						<div class="head">Pro</div>
+						<div class="head">Pro (coming soon)</div>
 						<div class="price">29</div>		
 						<div class="curr">USD / MONTH</div>	
 						<ul>
@@ -175,7 +175,7 @@
 							<li>One-click publishing	
 						</ul>
 						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
-						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('pro');return false;">Upgrade !</a>	
+						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('pro');return false;">Preorder !</a>	
 					</div>
 				</div>	
 				<div id="s_planfooter" class="footer">
@@ -191,7 +191,7 @@
 					<a href="#" onmousedown="_wpc.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="_wpc.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
 				</div>
 				<div class="checkoutdetails">	
-					{% if current_user.is_authenticated() and current_user.active_cc %}
+					{% if current_user.active_cc %}
 						<form id="checkoutform">
 							<input type="text" value="Starter Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 							<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
@@ -200,7 +200,7 @@
 							<div class="small" id="checkout_error"></div>			
 							<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">
 							Upgrade</a>	
-							<div class="pbstripe">Secure payment powered by</div>
+							<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payment powered by <b>stripe</b></div>
 							<input type="submit" value="foo" onclick="_wpc.sys.user.checkout(); return false;" class="pseudobutton"></input>
 						</form>						
 						<script type="text/javascript">
@@ -245,7 +245,7 @@
 						<div class="small" id="checkout_error"></div>			
 						<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="_wpc.sys.user.checkout(); return false;">
 						Upgrade</a>	
-						<div class="pbstripe">Secure payments powered by <b>stripe</b></div>						
+						<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by <b>stripe</b></div>						
 						<input type="submit" value="foo" onclick="_wpc.sys.user.checkout(); return false;" class="pseudobutton"></input>
 					</form>						
 					{% endif %}
@@ -261,9 +261,9 @@
 
 				<div class="aboutsection">
 					<div class="claim"><em>Hiro is for people with big ideas</em><br />
-					but insufficient tools to organize them.</div>
+					who want a better tool to organize them.</div>
 
-					Like many others we where wondering: Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services. Something you open when a thought you don't want to lose crosses your mind, without having to go through 3 menus before.<br /><br />
+					Like many others we where wondering: Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services or 3 menus before you can do something. Something you open when a thought you don't want to lose crosses your mind.<br /><br />
 
 					<span class="contact">We hope you like Hiro as much as we do. We're always there at <a href="mailto:hello@hiroapp.com" target="_blank">hello@hiroapp.com</a> and share the best tricks of how people manage their ideas on <a href="https://www.facebook.com/hiroapp" target="_new">facebook.com/hiroapp</a>.</span>
 				</div>	

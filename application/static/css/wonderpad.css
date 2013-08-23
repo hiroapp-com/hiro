@@ -1592,6 +1592,11 @@ body#settingsPage input#cc_number.error {
   color: #bbb;
 }
 
+.checkoutdetails .pbstripe .right {
+  padding-right: 2px;
+  float: right;
+}
+
 .accountdetails a.wpcbutton.share {
   width: 100px;
   display: inline-block;
@@ -1808,7 +1813,8 @@ body#settingsPage input#cc_number.error {
   }
 
   body#settingsPage input#cc_number {
-    background: url(../img/payment.png) right -28px no-repeat;
+    background: url(../img/payment.png) right -16px no-repeat;
+    background-size: 163px 75px;
   }  
 
   #s_settings .header em {
@@ -1866,6 +1872,11 @@ body#settingsPage input#cc_number.error {
     right: 0; 
     z-index: 99000;  
   }
+
+  .checkoutdetails .pbstripe .right {
+    float: none;
+    display: block;
+  }  
 
   #s_settings form .ioption.error {
     width: 110px;
@@ -2036,7 +2047,7 @@ body#settingsPage input#cc_number.error {
   }
 
   #s_settings .checkoutdetails form {
-    margin-top: 67px;
+    margin-top: 62px;
   } 
 
   #s_settings .footer {

@@ -2283,17 +2283,22 @@ var WPCLib = {
 		fillcheckout: function(plan) {
 			// Get the checkout form ready for checkout and switch view
 			var frame = document.getElementById('dialog').contentDocument;
-			var startdesc = "Starter Plan: USD 9";
-			var prodesc = "Pro Plan: USD 29";
+			var checkoutbutton = frame.getElementById('checkoutbutton');
+			var startdesc = "Starter Plan: $ 9";
+			var prodesc = (document.body.offsetWidth>480) ? "Pro Plan: $ 29 ($ 9 Starter until it's available)" : "Pro Plan: $ 29";
 			var cc_num = frame.getElementById('cc_number'); 
 			// Not optimal, as this dependend on the HTML not changing
 			var forced = (frame.getElementById('s_checkout').getElementsByClassName('header')[1].style.display=="none") ? true : false;
 			WPCLib.sys.user.upgradeto = plan;			
 			if (plan == 'starter') {
 				frame.getElementById('cc_desc').value = startdesc;
+				frame.getElementById('cc_desc').setAttribute('title','');				
+				checkoutbutton.innerHTML = 'Upgrade';
 			}
 			if (plan == 'pro') {
 				frame.getElementById('cc_desc').value = prodesc;
+				frame.getElementById('cc_desc').setAttribute('title','Be among the very first to be switched over, automatically!');				
+				checkoutbutton.innerHTML = 'Preorder';				
 			}							
 			this.switchView(frame.getElementById('s_checkout'));
 			if (cc_num.value.length==0) {
