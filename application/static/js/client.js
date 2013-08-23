@@ -1162,7 +1162,7 @@ var WPCLib = {
 				console.l
 				// Search synonyms for single words
 				$.ajax({
-				    url: 'http://words.bighugelabs.com/api/2/' + that.synKey + '/' + ss + '/json',
+				    url: 'https://words.bighugelabs.com/api/2/' + that.synKey + '/' + ss + '/json',
 				    type: 'GET',
 				    dataType: "jsonp",
 				    success: function(data) {
