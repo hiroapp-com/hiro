@@ -181,7 +181,6 @@ var WPCLib = {
 				var item = (type=='active') ? this.active : this.archived;
 				var lvl = WPCLib.sys.user.level;
 				var docid = item[i].id;
-				var title = item[i].title || 'Untitled';
 				var active = (type == 'active') ? true : false;
 
 				var d = document.createElement('div');
@@ -194,7 +193,7 @@ var WPCLib = {
 
 				var t = document.createElement('span');
 				t.className = 'doctitle';
-				t.innerHTML = title;
+				t.innerHTML = item[i].title || 'Untitled Note';
 
 				var stats = document.createElement('small');
 				if (item[i].updated) {
@@ -228,7 +227,9 @@ var WPCLib = {
 					document.getElementById(WPCLib.folio.docs.doclistId).appendChild(d);		
 				} else {				
 					document.getElementById(WPCLib.folio.docs.archiveId).appendChild(d);					
-				}				
+				}	
+
+				var title = item[i].title || 'Untitled';			
 				WPCLib.folio.docs._events(docid,title,active);				
 			},
 
@@ -280,7 +281,7 @@ var WPCLib = {
 				ph.setAttribute('onclick','return false;');	
 				var pht = document.createElement('span');
 				pht.className = 'doctitle';
-				pht.innerHTML = 'Creating new document...';	
+				pht.innerHTML = 'Creating new note...';	
 				var phs = document.createElement('small');
 				phs.appendChild(document.createTextNode("Right now"))
 				ph.appendChild(pht);
@@ -305,7 +306,7 @@ var WPCLib = {
 					WPCLib.folio.docs.active[0].id = 'localdoc';
 
 					// Save document & cleanup
-					doc.firstChild.firstChild.innerHTML = 'New Document';
+					doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 					doc.id = 'doc_localdoc';
 				} else {
 					// Request new document id
@@ -329,7 +330,7 @@ var WPCLib = {
 							WPCLib.canvas.docid = data;
 
 							// Save document & cleanup
-							doc.firstChild.firstChild.innerHTML = 'New Document';
+							doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 							doc.id = 'doc_'+data;
 							WPCLib.folio.docs.active[0].id = data;		
 
@@ -756,7 +757,7 @@ var WPCLib = {
 			this.quoteShown = true;
 
 			WPCLib.context.clearresults();
-			document.getElementById(WPCLib.context.statusId).innerHTML = 'Brand new start.';
+			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready to inspire.';
 			this.created = WPCLib.util.now();
 
 			// Empty the link lists & internal values
@@ -857,8 +858,18 @@ var WPCLib = {
 			// on copy and paste actions					
 	        window.setTimeout(WPCLib.canvas._resize, 0);
 
-	        // Save Document
-	        WPCLib.canvas.savedoc();
+	        window.setTimeout(function(){
+	        	// Some browser fire c&p events with delay, without this we would copy the old values
+	        	var that = WPCLib.canvas;
+		        // Set internal variables
+		        that.text = document.getElementById(that.contentId).value;
+		        that.title = document.getElementById(that.pageTitle).value;
+				that.caretPosition = that._getposition()[1];		        
+
+		        // Save Document
+				WPCLib.context.search(that.title + ', ' + that.text);	        
+		        that.savedoc();
+	        }, 100);
 		},
 
 		keyhandler: function(e) {
@@ -2267,9 +2278,9 @@ var WPCLib = {
 	        var obj = {
 	            method: 'feed',
 	            link: 'https://www.hiroapp.com',
-	            name: 'Hiro. Never Lose Your Best Ideas.',
+	            name: 'Hiro.',
 	            caption: 'https://www.hiroapp.com',
-	            description: "Hiro is a notetaking app that makes it easy to write down your ideas. It's extremely fast, beautifully designed and works on all your devices.",
+	            description: "Hiro is a notetaking app that makes it easy to keep your big ideas. It's extremely fast, beautifully designed and works on all your devices.",
 	            actions: {
 	                name: 'Start writing',
 	                link: 'https://www.hiroapp.com/connect/facebook',

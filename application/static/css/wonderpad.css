@@ -298,11 +298,11 @@ a.wpcbutton:hover {
 }
 
 .menu .menufooter .logio.login a span {
-  background-position: 0 -85px;
+  background-position: -1px -85px;
 }
 
 .menu .menufooter .logio.logout a span {
-  background-position: 0 -128px;  
+  background-position: 0 -127px;  
 }
 
 .menu .menufooter .archive {
@@ -339,8 +339,8 @@ a.wpcbutton:hover {
   }
 
   .menu .documents {
-    max-width: 290px;
-    right: 60px;
+    max-width: 295px;
+    right: 55px;
     width: auto;
   }
 
@@ -422,7 +422,7 @@ a.wpcbutton:hover {
   position: fixed;
   background: url(../img/icons.png) no-repeat;
   background-size: 108px auto;
-  background-position: -35px -161px;
+  background-position: -35px -160px;
   left: 8px;
   top: 9px;  
   z-index: 2200;
@@ -604,7 +604,7 @@ a.wpcbutton:hover {
 
   .icon.showmenu {
     position: fixed;
-    background-position: -27px -152px;;
+    background-position: -27px -151px;;
     cursor: pointer;
     left: 0px;
     top: 0px;
@@ -1637,7 +1637,7 @@ body#settingsPage input#cc_number.error {
 
 #s_settings .header span {
   display: block;
-  padding: 5px 40px 2px 5px;
+  padding: 7px 40px 3px 5px;
 }
 
 #s_settings .header b {
