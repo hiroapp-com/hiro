@@ -74,7 +74,7 @@ var WPCLib = {
 					latest = (data.archived[0].updated > data.active[0].updated) ? data.archived[0] : data.active[0];
 					latestlocal = (local.archived[0].updated > local.active[0].updated) ? local.archived[0] : local.active[0];
 				} else {
-					latest = data.active[0];
+					if (data.active) latest = data.active[0];
 					latestlocal = local.active[0];
 				}			
 
