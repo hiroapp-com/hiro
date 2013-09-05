@@ -604,6 +604,7 @@ var WPCLib = {
 			// Save the currently open document
 			// For now we only say a doc is updated once it's saved
 			var status = document.getElementById('status');
+			if (WPCLib.context.overquota) force = true;
 			if (force) status.innerHTML = 'Saving...';
 			this.lastUpdated = WPCLib.util.now();
 			var file = this.builddoc();		
@@ -702,7 +703,7 @@ var WPCLib = {
 					if (data.links.normal.length!=0) {
 						WPCLib.context.renderresults();
 					} else {
-						WPCLib.context.search(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
+						WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);
 					}
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'All loaded, keep going.';						
 				}
@@ -867,7 +868,7 @@ var WPCLib = {
 				that.caretPosition = that._getposition()[1];		        
 
 		        // Save Document
-				WPCLib.context.search(that.title + ', ' + that.text);	        
+				WPCLib.context.search(that.title,that.text);	        
 		        that.savedoc();
 	        }, 100);
 		},
@@ -944,7 +945,7 @@ var WPCLib = {
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {
 				WPCLib.canvas.savedoc();
-				WPCLib.context.search(WPCLib.canvas.title + ', ' + WPCLib.canvas.text);					
+				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
 			},1000);
 		},	
@@ -965,7 +966,7 @@ var WPCLib = {
 		textclick: function() {
 			// when text is clicked
 			var sel = WPCLib.canvas._getposition();
-			if (sel[0] != sel[1]) WPCLib.context.search(sel[2]);
+			if (sel[0] != sel[1]) WPCLib.context.search(WPCLib.canvas.title,sel[2],true);
 		},
 
 		_getposition: function() {
@@ -1063,11 +1064,13 @@ var WPCLib = {
 		resultsId: 'results',
 		wwwresultsId: 'wwwresults',
 		synresultsId: 'synresults',
+		msgresultsId: 'msgresults',		
 		statusId: 'status',
 		signupButtonId: 'signupButton', 
 		synKey: 'c80cda88ad86ccd854a68090a4dfba7c',
 		replacementrange: [],
 		replacementword: '',
+		overquota: false,
 
 		switchview: function() {
 			// show / hide searchbar
@@ -1103,6 +1106,19 @@ var WPCLib = {
 			this.sticky.length = 0;
 			this.blacklist.length = 0;
 
+		},
+
+		quotareached: function() {
+			this.overquota = true;
+			var msg = document.getElementById(this.msgresultsId);
+			if (msg.innerHTML == '') {
+                document.getElementById(this.statusId).innerHTML = 'Saved, but search quota reached.';				
+				document.getElementById(this.wwwresultsId).innerHTML = document.getElementById(this.synresultsId).innerHTML = '';
+				var txt = (WPCLib.sys.user.level == 1) ?
+					'<a href="#" class="msg" onclick="WPCLib.sys.user.forceupgrade(2,\'<em>Upgrade now to enjoy </em><b>unlimited searches</b><em> and much more.</em>\'); return false;"><em>Upgrade now</em> for unlimited searches & more!</a>' :
+					'<a href="#" class="msg" onclick="WPCLib.sys.user.upgrade(1); return false;"><em>Sign up now</em> for more searches.</a>';
+				document.getElementById(this.msgresultsId).innerHTML = txt;
+			}
 		},
 
 		analyze: function(string, chunktype) {
@@ -1155,11 +1171,16 @@ var WPCLib = {
 		},
 
 
-		search: function(string) {
+		search: function(title,text,textonly) {
 			// Chunk extraction and search in one step in the backend
-			// Sometimes we somewhere get null from backend TODO: Find out why
-			if (string=='null' || string==null) return;
-			document.getElementById(this.statusId).innerHTML = 'Saving & Searching...';			
+			if (this.overquota) {
+				// Clean up all results exit
+				this.quotareached();
+				return;
+			}	
+			if (title=='null' || title==null) title = '';			
+			var string = (textonly) ? text : title + ' ' + text;
+			document.getElementById(this.statusId).innerHTML = (!WPCLib.canvas.saved) ? 'Saving & Searching...' : 'Searching...';			
 			var payload = {text: string};
 			var that = this;
 
@@ -1170,14 +1191,13 @@ var WPCLib = {
 			ss = ss.replace(/\s{2,}/g," ");
 			ss = ss.trim();
 			if (ss.length > 0 && ss.split(' ').length == 1) {
-				console.l
 				// Search synonyms for single words
 				$.ajax({
 				    url: 'https://words.bighugelabs.com/api/2/' + that.synKey + '/' + ss + '/json',
 				    type: 'GET',
 				    dataType: "jsonp",
 				    success: function(data) {
-				    	WPCLib.context.rendersynonyms(data,ss);				    	
+				    	if (!WPCLib.context.overquota) WPCLib.context.rendersynonyms(data,ss);				    	
 				    }
 				});
 				// Set the range of the documents to be replace to selection, or full document if it's only one word
@@ -1198,10 +1218,10 @@ var WPCLib = {
                 error: function(data) {
                 	switch (data.status) {
                 		case 402: 
-                			console.log('payup, yee');
+                			WPCLib.context.quotareached();
                 			break;
                 		default:
-                			WPCLib.sys.errorHandler();	
+                			WPCLib.sys.error();	
                 	}
                 },           
                 success: function(data) {
@@ -1286,6 +1306,7 @@ var WPCLib = {
 		},
 
 		replacewithsynonym: function(event) {
+			// This replaces the current (or last) text selection on the canvas with the respective synonym
 			event.preventDefault();
 			var source = WPCLib.canvas.text;
 			var oldpos = this.replacementrange;
@@ -1587,6 +1608,10 @@ var WPCLib = {
 			}
 		},
 
+		error: function() {
+			console.log('Dang, something went wrong');
+		},
+
 		user: {
 			id: '',
 			// levels: 0 = anon, 1 = free, 2 = paid
@@ -1867,7 +1892,7 @@ var WPCLib = {
 					Stripe.createToken(form, function(status,response) {					
 						if (response.error) {
 							// Our IDs are named alongside the stripe naming conventions
-							frame.getElementById('cc_'+response.error.param).className += " error";
+							if (response.error.param) frame.getElementById('cc_'+response.error.param).className += " error";
 							if (response.error.param == 'number') {
 								var el = frame.getElementById('cc_'+response.error.param).nextSibling;
 								el.innerHTML = response.error.message;	

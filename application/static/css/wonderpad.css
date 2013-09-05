@@ -739,7 +739,7 @@ a.wpcbutton:hover {
     -webkit-border-radius: 4px;
 }
 
-#wwwresults .result, #wwwresults .result.touch:hover, #synresults .group {
+#wwwresults .result, #wwwresults .result.touch:hover, #synresults .group, #msgresults a.msg {
   margin-left: 100px;
   display: block;
   position: relative;
@@ -756,6 +756,19 @@ a.wpcbutton:hover {
   color: #999;
 }
 
+#msgresults a.msg {
+  height: auto;
+  color: #999;
+  text-decoration: none;
+}
+
+
+
+#msgresults a.msg em {
+  color: #333;
+  font-style: normal;
+}
+
 #wwwresults .result.touch:hover {
   border-bottom: 1px solid #c5c5c5; 
   margin-left: 50px;   
@@ -763,11 +776,11 @@ a.wpcbutton:hover {
 }
 
 
-#wwwresults .result:first-child, #synresults .group:first-child {
+#wwwresults .result:first-child, #synresults .group:first-child, #msgresults a.msg:first-child  {
   margin-top: 1px;    
 }
 
-#wwwresults .result:hover, #synresults .group:hover {
+#wwwresults .result:hover, #synresults .group:hover, #msgresults a.msg:hover {
   margin-left: 50px;
   border-left: 1px solid #c5c5c5;
   margin-top: -1px;
@@ -780,7 +793,7 @@ a.wpcbutton:hover {
   -o-transition: background-color 0ms ease-in;     
 }
 
-#synresults .group:hover {
+#synresults .group:hover, #msgresults a.msg:hover {
   padding-left: 14px;
   margin-left: 99px;
   color: #000;  
@@ -809,7 +822,7 @@ a.wpcbutton:hover {
   display: block;
 }
 
-#wwwresults .result:first-child:hover, #synresults .group:first-child:hover {
+#wwwresults .result:first-child:hover, #synresults .group:first-child:hover, #msgresults a.msg:first-child:hover {
   margin-top: 0px;    
 }
 
