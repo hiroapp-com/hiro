@@ -55,6 +55,10 @@ var WPCLib = {
 			$.getJSON('/docs/?group_by=status', function(data) {
 				// Find the current doc in the returned data
 				var docs = data.active;
+
+				//Abort if we don't have any document yet (eg right after signup)
+				if (!data.active && !data.archived) return;
+
 				for (var key in docs) {
 					if (docs.hasOwnProperty(key)) {
 						if (docs[key].id == current) currentremote = docs[key];
@@ -72,7 +76,7 @@ var WPCLib = {
 					}					
 					// check if an active or archived doc is the latest edited
 					latest = (data.archived[0].updated > data.active[0].updated) ? data.archived[0] : data.active[0];
-					latestlocal = (local.archived[0].updated > local.active[0].updated) ? local.archived[0] : local.active[0];
+					latestlocal = (local.archived[0] && local.archived[0].updated > local.active[0].updated) ? local.archived[0] : local.active[0];
 				} else {
 					if (data.active) latest = data.active[0];
 					latestlocal = local.active[0];
@@ -1115,7 +1119,7 @@ var WPCLib = {
                 document.getElementById(this.statusId).innerHTML = 'Saved, but search quota reached.';				
 				document.getElementById(this.wwwresultsId).innerHTML = document.getElementById(this.synresultsId).innerHTML = '';
 				var txt = (WPCLib.sys.user.level == 1) ?
-					'<a href="#" class="msg" onclick="WPCLib.sys.user.forceupgrade(2,\'<em>Upgrade now to enjoy </em><b>unlimited searches</b><em> and much more.</em>\'); return false;"><em>Upgrade now</em> for unlimited searches & more!</a>' :
+					'<a href="#" class="msg" onclick="WPCLib.sys.user.forceupgrade(2,\'<em>Upgrade now to enjoy </em><b>unlimited searches</b><em> and much more.</em>\'); return false;"><em>Upgrade now</em> for unlimited searches & more.</a>' :
 					'<a href="#" class="msg" onclick="WPCLib.sys.user.upgrade(1); return false;"><em>Sign up now</em> for more searches.</a>';
 				document.getElementById(this.msgresultsId).innerHTML = txt;
 			}
