@@ -55,7 +55,7 @@ var WPCLib = {
 			$.getJSON('/docs/?group_by=status', function(data) {
 				//Abort if we don't have any document yet (eg right after signup)
 				if (!data || !data.active && !data.archived) return;
-				
+
 				// Find the current doc in the returned data
 				var docs = data.active;
 
@@ -1024,7 +1024,7 @@ var WPCLib = {
 			if (el.id == document.activeElement.id) return;  			
 
     		// Abort if device is mobile (body or landscape) and menu not fully closed yet or text length is larger than visible area   		
-    		if ('ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480) {
+    		if ('ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
     			if (WPCLib.ui.menuCurrPos!=0 || el.value.length > 150) return;   			
     		};   		
 
