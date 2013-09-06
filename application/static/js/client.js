@@ -53,11 +53,11 @@ var WPCLib = {
 
 			// Get latest doc
 			$.getJSON('/docs/?group_by=status', function(data) {
+				//Abort if we don't have any document yet (eg right after signup)
+				if (!data || !data.active && !data.archived) return;
+				
 				// Find the current doc in the returned data
 				var docs = data.active;
-
-				//Abort if we don't have any document yet (eg right after signup)
-				if (!data.active && !data.archived) return;
 
 				for (var key in docs) {
 					if (docs.hasOwnProperty(key)) {
@@ -1023,8 +1023,8 @@ var WPCLib = {
 			// Abort if focus is already on textarea
 			if (el.id == document.activeElement.id) return;  			
 
-    		// Abort if device is mobile and menu not fully closed yet or text length is larger than visible area   		
-    		if ('ontouchstart' in document.documentElement && document.body.offsetWidth<=480) {
+    		// Abort if device is mobile (body or landscape) and menu not fully closed yet or text length is larger than visible area   		
+    		if ('ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480) {
     			if (WPCLib.ui.menuCurrPos!=0 || el.value.length > 150) return;   			
     		};   		
 
@@ -1312,6 +1312,8 @@ var WPCLib = {
 		replacewithsynonym: function(event) {
 			// This replaces the current (or last) text selection on the canvas with the respective synonym
 			event.preventDefault();
+			// Abort if user clicks anywhere else but a link
+			if (!event.srcElement || event.srcElement.nodeName != 'A') return;
 			var source = WPCLib.canvas.text;
 			var oldpos = this.replacementrange;
 			var oldword = this.replacementword;
@@ -2483,11 +2485,11 @@ var WPCLib = {
 		    			that.cancel(e.target);
 		    			if (Math.abs(dy) > Math.abs(dx*0.5)) return;
 		    			if(dx > 0) {
-		    				that.callback_left();
+		    				if (that.callback_left) that.callback_left();
 		    				e.preventDefault();
 		    			}
 		    			else {
-		    				that.callback_right();
+		    				if (that.callback_right) that.callback_right();
 		    				e.preventDefault();		    				
 		    			}
 		    		}
