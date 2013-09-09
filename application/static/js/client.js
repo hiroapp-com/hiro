@@ -92,7 +92,7 @@ var WPCLib = {
 				}					
 
 				// There is a more recent document in the collection, but we only update the folio then				
-				if (latest.updated > latestlocal.updated) {
+				if (latestlocal && latest.updated > latestlocal.updated) {
 					WPCLib.folio.docs.loaddocs(true);					
 				}				
 			});
@@ -1846,6 +1846,7 @@ var WPCLib = {
 				if (this.level==0) {
 					// If user is not loggedin yet we show the regsitration first
 					// TODO Refactor dialog & login flow to enable callback without going spaghetti
+					if (!event) event = null;
 					this.signinCallback = callback;
 					WPCLib.ui.showDialog(event,'','s_signup','signup_mail');
 					return;
@@ -1853,7 +1854,7 @@ var WPCLib = {
 				if (this.level<level) this.forceupgrade(level,reason);
 			},
 
-			forceupgrade: function(level,reason) {
+			forceupgrade: function(level,reason,event) {
 				// Show an upgrade to paid dialog and do callback
 
 				// Change default header to reason for upgrade				
@@ -1864,6 +1865,7 @@ var WPCLib = {
 				plan[1].style.display = checkout[1].style.display = 'none';
 
 				// Make sure the parent node is set to block, bit redundant but working fine
+				if (!event) event = null;				
 				WPCLib.ui.showDialog(event,'','s_settings');	
 				WPCLib.ui.showDialog(event,'','s_plan');
 
@@ -2151,7 +2153,7 @@ var WPCLib = {
 			var s = document.getElementById(this.modalShieldId);
 			var d = document.getElementById(this.dialogWrapperId);
 			var frame = document.getElementById('dialog').contentDocument;			
-			WPCLib.util.stopEvent(event);
+			if (event) WPCLib.util.stopEvent(event);
 
 			// Close menu if left open
 			if (this.menuCurrPos!=0) this.menuHide();			
