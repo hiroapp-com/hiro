@@ -1627,6 +1627,7 @@ var WPCLib = {
 			upgradeCallback: null,
 			justloggedin: false,
 			authactive: false,
+			doccount: 0,
 
 			register: function() { 
 				// Register a new user (or log in if credentials are from know user)
@@ -1634,7 +1635,7 @@ var WPCLib = {
 				var val = document.getElementById('dialog').contentDocument.getElementById('signupform').getElementsByTagName('input');
 				var error = document.getElementById('dialog').contentDocument.getElementById('signuperror');
 				var payload = {
-					email: val[0].value.toLowerCase(),
+					email: val[0].value.toLowerCase().trim(),
 					password: val[1].value
 				};
 
@@ -1684,7 +1685,7 @@ var WPCLib = {
 				var val = document.getElementById('dialog').contentDocument.getElementById('loginform').getElementsByTagName('input');
 				var error = document.getElementById('dialog').contentDocument.getElementById('loginerror');
 				var payload = {
-					email: val[0].value.toLowerCase(),
+					email: val[0].value.toLowerCase().trim(),
 					password: val[1].value
 				};
 
@@ -2558,6 +2559,8 @@ var WPCLib = {
 		documentcounter: function() {
 			// Updates the field in the settings with the current plan & document count
 			var val, level = WPCLib.sys.user.level, target = document.getElementById('dialog').contentDocument.getElementById('s_account'), upgradelink;
+			var doccount = WPCLib.sys.user.doccount = (WPCLib.folio.docs.archived.length > 0) ? WPCLib.folio.docs.archived.length + WPCLib.folio.docs.active.length : WPCLib.folio.docs.active.length;
+			
 			if (!target) {
 				// If the settings dialog is not loaded yet try again later 
 				setTimeout(function(){
@@ -2584,7 +2587,7 @@ var WPCLib = {
 						break;		
 				}
 				val = val + ' plan: ';
-				if (WPCLib.folio.docs.active) val = val + WPCLib.folio.docs.active.length;
+				if (WPCLib.folio.docs.active) val = val + doccount;
 
 				// See if we have plan limits or mobile device
 				if (level < 2) val = val + ' of 10'

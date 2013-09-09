@@ -89,7 +89,7 @@
 				                data: JSON.stringify(response.authResponse),
 								success: function(data) {
 				                    // All that needs to be done at this point
-				                    _wpc.sys.user.authed('register',data);									                    
+				                    _wpc.sys.user.authed('login',data);									                    
 								}
 							});
 					   } else {
@@ -285,9 +285,11 @@
 			    created: {{ current_user.signup_at_ts }} 
 			};
 			if (window.navigator.standalone) _wpcsiou.mobileappinstalled = true;
-			if ('ontouchstart' in document.documentElement) _wpcsiou.touchdevice = true;		
+			if ('ontouchstart' in document.documentElement) _wpcsiou.touchdevice = true;
+			if (_wpc.sys.user.doccount > 0) _wpcsiou.doccount = _wpc.sys.user.doccount;		
 	  		// init segment io
 			analytics.identify('{{ current_user.token }}', _wpcsiou);  
+			_wpc.sys.user.id = '{{ current_user.token }}';
 		{% endif %}			
 	</script>
 </body>
