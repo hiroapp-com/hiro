@@ -1764,14 +1764,22 @@ var WPCLib = {
                 	WPCLib.ui.hideDialog();	
                 }
 
-                // Track signup (only on register, we also only pass the mathod variable then)
+                // Track signup (only on register, we also only pass the method variable then)
                 if (analytics) {
+                	if (type=='register') {
+                		// Submit the referring url of the registration session 
+                		// (hackish timeout to make sure we get proper user token from settings template, but works fine atm)
+                		var logreferrer = setTimeout(function(){
+                			analytics.identify(WPCLib.sys.user.id, {referrer:document.referrer});
+                		},1000);
+                	}
 	                if (type=='register' && method) {
 	                	analytics.track('Registers',{method:method});
 	                } else if (type == 'login') {
 	                	analytics.track('Logs back in');
 	                }	                	
                 }
+
 
 
                 // Housekeeping, switch authactive off
