@@ -635,7 +635,7 @@ var WPCLib = {
 			}	
 			// Update last edited counter in folio
 			var docs = WPCLib.folio.docs;
-			var bucket = (WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];	
+			var bucket = (docs.archived[0] && WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];	
 
 			// Check if user didn't navigate away from archive and set last updated
 			if (file.id == bucket.id) bucket.updated = WPCLib.util.now();
@@ -808,10 +808,12 @@ var WPCLib = {
 			var bucket = (WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];
 			bucket.title = this.value;
 
-			// Visual updates
-			var el = document.getElementById('doc_'+WPCLib.canvas.docid);			
-			WPCLib.canvas.title = el.firstChild.innerHTML = document.title = this.value;
+			// Visual updates			
+			WPCLib.canvas.title = document.title = this.value;
 			if (!this.value) document.title = 'Untitled';
+			// Sometimes wo do not have a proper id yet
+			var el = document.getElementById('doc_'+WPCLib.canvas.docid);			
+			if (el) el.firstChild.innerHTML = this.value;			
 
 			// Initiate save & search
 			WPCLib.canvas._settypingtimer();
