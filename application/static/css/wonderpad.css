@@ -1231,7 +1231,7 @@ body#landingPage .teaser {
 }
 
 body#landingPage .teaser .screen {
-  background: url(../img/site/landing.png) no-repeat;
+  background: url(../img/site/screen.png) no-repeat;
   background-size: 100% auto;
   background-position:center top;  
   position: absolute;
@@ -1240,6 +1240,7 @@ body#landingPage .teaser .screen {
   top: 0px;
   bottom: 0px;
   z-index: 98000;
+  cursor: pointer;
 }
 
 body#landingPage .teaser .screen .manage {
@@ -1283,10 +1284,15 @@ body#landingPage .teaser .screen .research .desc {
   width: 120px !important;  
 }
 
+body#landingPage .teaser .screen .blurb {
+}
+
+
 body#landingPage .teaser .screen .blurb .header {
   padding-bottom: 3px;
   border-bottom: 1px solid rgba(125,125,125,0.5);
-  color: #333;  
+  color: #333; 
+  cursor: default;    
 }
 
 body#landingPage .teaser .screen  .blurb .desc {
@@ -1295,6 +1301,7 @@ body#landingPage .teaser .screen  .blurb .desc {
   padding-top: 5px;
   width: 120px;
   color: #666;
+  cursor: default;   
 }
 
 body#landingPage .teaser .screen  .blurb .desc em {
@@ -1325,7 +1332,7 @@ body#landingPage .teaser .screen  .blurb .desc em {
   }  
 
   body#landingPage .teaser .screen {
-    background: url(../img/site/landing.png) no-repeat;
+    background: url(../img/site/screen.png) no-repeat;
     background-size: 80% auto;
     background-position: center top;  
     position: absolute;
