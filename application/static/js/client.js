@@ -1064,34 +1064,198 @@ var WPCLib = {
 	publish: {
 		// Publishing functionality
 		id: 'publish',
+		actionsId: 'pactions',
 		initTimeout: null,
+		actions: {
+			mail: {
+				name: 'Email',
+				level: 0,
+				charlimit: 0
+			},
+			twitter: {
+				name: 'Twitter',
+				level: 0,
+				charlimit: 0
+			},
+			gdrive: {
+				name: 'Google Drive',
+				level: 1,
+				charlimit: 0,
+				token: 'AIzaSyCVQSaEEnjvDmmr9gvXjNaeGDHr98IVf60',
+				client_id: '212935062645.apps.googleusercontent.com',
+				scope: 'https://www.googleapis.com/auth/drive',
+				authed: false,
+				callback: null,
+			}
+		},
+
+		auth: {
+			// Authorize external API calls
+			gdrive: function() {
+				// Authorize Google Drive
+				var def = WPCLib.publish.actions.gdrive;
+				if (def.authed) return;
+		        gapi.auth.authorize({'client_id': def.client_id, 'scope': def.scope, 'immediate': false},WPCLib.lib.collectResponse.google);				
+			}
+		},
 
 		init: function() {
 			// if we hover over the publish icon, the event handlers are attached via canvas init
 			// show list of actions after n msec
-			this.initTimeout = setTimeout(WPCLib.publish.show,1000);	
-			console.log(lala);
-		},
+			var icon = document.getElementById(this.id).getElementsByTagName('div')[0];
+			if ('ontouchstart' in document.documentElement) {
+				WPCLib.util.registerEvent(icon,'touchstart',WPCLib.publish.list);
+			} else {
+				WPCLib.util.registerEvent(icon,'mouseover',WPCLib.publish.list);				
+			}
 
-		show: function() {
-			console.log('woohoo');
+			// Show tooltip for early users
+			if (WPCLib.sys.user.level < 2) icon.setAttribute('title','Publish to Cloud: Choose a service below.\nTip: Select some text to only publish that part.');
+		
+			// List services
+			this.list();
 		},
 
 		list: function() {
+			// Create a list of available actions
+			var actions = WPCLib.publish.actions;
+			var container = document.getElementById(WPCLib.publish.actionsId);
+			var level = WPCLib.sys.user.level;
 
+			// Empty current list
+			container.innerHTML = '';
+			for (var action in actions) {
+			   if (actions.hasOwnProperty(action)) {
+			   		// Create link for each action
+					var a = document.createElement('a');
+					a.className = 'action '+action;
+					a.innerHTML = actions[action].name;
+
+					// Check necessary level and attach corresponding action	
+					if (level >= actions[action].level) {
+						a.setAttribute('onclick',"WPCLib.publish.execute(event,'"+action+"');");
+					} else {
+						if (level == 0) {
+							a.setAttribute('title','Upgrade');								
+							a.setAttribute('onclick',"WPCLib.sys.user.upgrade(1);");														
+						} else {
+							a.setAttribute('title','Sign Up Now');
+							a.setAttribute('onclick',"WPCLib.sys.user.forceupgrade(2,'<em>Upgrade now to </em><b>use this action</b>.');");					
+						}
+					}
+
+					// Handle mail edge case here as we can't do it onclick
+					if (action == 'mail') {
+						a.setAttribute('onclick',"");
+						var sel = WPCLib.canvas._getposition();
+						var text = (sel[2].length > 0) ? sel[2] : WPCLib.canvas.text;
+						text = text.trim();						
+						a.setAttribute('href','mailto:?subject='+encodeURIComponent(WPCLib.canvas.title)+'&body='+encodeURIComponent(text));
+					}
+
+					// Add to container
+					container.appendChild(a);
+			   }
+			}
 		},
 
-		hide: function() {
-			// if the user leaves the area again			
-			// clearTimeout(WPCLib.publish.initTimeout);
-			// this.initTimeout = null;
-			console.log('and out');
+		open: function() {
+			if ((event.relatedTarget || event.toElement) == this.parentNode) clearinfo();
 		},
 
-		do: function(type) {
-			event.preventDefault();
-			console.log(event,type);
-			window.open('mailto:?subject='+encodeURIComponent(WPCLib.canvas.title)+'&body='+encodeURIComponent(WPCLib.canvas.text), '_blank')
+		execute: function(event,type) {
+			// Click on a publishing action
+			// Prevent the selection from losing focus
+			if (event) {
+				event.preventDefault();
+				WPCLib.util.stopEvent(event);
+			}
+
+			// Collect title and text, see if we have an active selection
+			var title = WPCLib.canvas.title;
+			var sel = WPCLib.canvas._getposition();
+			var text = (sel[2].length > 0) ? sel[2] : WPCLib.canvas.text;
+			text = text.trim();
+
+			// Execute publishing depending on selected type
+			switch(type) {
+				case 'mail':
+					var s = 'mailto:?subject='+encodeURIComponent(title)+'&body='+encodeURIComponent(text);
+					window.open(s, '_blank')
+					break;
+				case 'twitter':
+					var s = 'https://twitter.com/intent/tweet?text=';
+					// Choose either title or (selected) text
+					text = (text.length == 0) ? title : text;
+					s = s + text;
+					// Open twitter window
+					window.open(s,'twitter','height=282,width=600');
+					break;
+				case 'gdrive':
+					// If we're not authed do so now
+					if (!this.actions.gdrive.authed) {
+						this.auth.gdrive();
+						return;
+					}	
+					// Create a new document first
+					title = (title) ? title : 'Untitled';
+				    gapi.client.load('drive', 'v2', function() {
+				        var request = gapi.client.request({
+				            'path': '/drive/v2/files',
+				            'method': 'POST',
+				            'body':{
+				                "title" : title+".txt",
+				                "editable" : true,
+				                "convert" : true,
+				                "description" : "Published from Hiro.",
+				                'mimeType': 'text/html'
+				            }
+				        });
+				        request.execute(function(resp) { 
+				        	// Hurray, GDrive responded
+				        	if (resp && resp.id) {
+				        		// Build and upload file accordding to GDrive API
+				        		// https://developers.google.com/drive/v2/reference/files
+							    const boundary = '-------314159265358979323846';
+							    const delimiter = "\r\n--" + boundary + "\r\n";
+							    const close_delim = "\r\n--" + boundary + "--";
+
+							    var gdocid = resp.id;
+							    var contentType = "text/html";
+							    var metadata = {
+							    	'mimeType': contentType,
+							    	'convert': true
+							    };
+
+							    var multipartRequestBody =
+							        delimiter +  'Content-Type: application/json\r\n\r\n' +
+							        JSON.stringify(metadata) +
+							        delimiter + 'Content-Type: ' + contentType + '\r\n' + '\r\n' +
+							        text +
+							        close_delim;
+
+							    var callback = function(file) { 
+							    	WPCLib.ui.statusflash('green','Published on your Google Drive.'); 
+							    	window.open('https://docs.google.com/a/hiroapp.com/file/d/0B2KiP_HonhG4X3lkM0ZyaGxvdTA/edit', '_blank')							    	
+							    	console.log(file);
+								}; 
+
+							    gapi.client.request({
+							        'path': '/upload/drive/v2/files/'+gdocid+'&uploadType=multipart',
+							        'method': 'PUT',
+							        'params': {'fileId': gdocid, 'uploadType': 'multipart'},
+							        'headers': {'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'},
+							        'body': multipartRequestBody,
+							        callback:callback,
+							    });
+				        	} else {
+							    WPCLib.ui.statusflash('green','Hm, please try again.'); 				        		
+				        		console.log('GDrive responded with an error: ',resp)
+				        	}
+				        });
+				    });					
+					break;		
+			}
 		}
 	},
 
@@ -1519,6 +1683,26 @@ var WPCLib = {
 	// External libraries & extensions
 	lib: {
 		inited: false,
+		// Stash list of auth responses here
+		googleResponse: null,
+		facebookResponse: null,
+
+		collectResponse: {
+			google: function(response) {
+				// Didn't figure out how to do callbacks with initial response
+				WPCLib.lib.googleResponse = response;
+
+				// Let publishing actions know where good to go
+				if (response && !response.error) {
+					var gd = WPCLib.publish.actions.gdrive;
+					gd.authed = true;
+					// See if we have any callback waiting
+					if (gd.callback) gd.callback();
+					// Manually fire the upload, TODO Bruno: Switch that to proper callbacks
+					WPCLib.publish.execute(null,'gdrive');
+				}
+			}
+		},
 
 		init: function() {
 			if (this.inited) return;
@@ -1533,6 +1717,13 @@ var WPCLib = {
 			 js.src = "https://connect.facebook.net/en_US/all.js";
 			 fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));	
+
+			// Init Google APIs
+			  (function() {
+			    var gd = document.createElement('script'); gd.type = 'text/javascript'; gd.async = true;
+			    gd.src = 'https://apis.google.com/js/client.js?onload=handleClientLoad';
+			    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(gd, s);
+			  })();			
 
 			// Add trim to prototype
 			if (!String.prototype.trim) {
@@ -1595,7 +1786,9 @@ var WPCLib = {
 			// Add keyboard shortcuts
 			WPCLib.util.registerEvent(document,'keydown', WPCLib.ui.keyboardshortcut);
 
+			// Init remaining parts
 			WPCLib.folio.init();
+			WPCLib.publish.init();
 			this.initCalled=true;
 		},
 

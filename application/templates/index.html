@@ -59,12 +59,8 @@
 		<div class="icon showmenu" title="Show Menu" onclick="WPCLib.ui.menuSwitch();" ontouchstart="WPCLib.ui.menuSwitch();return false;">Show Menu</div>			
 		<div class="canvas" id="canvas">
 			<div id="publish">
-				<div class="header" title="Publish to Cloud: Choose a service below.&#013;Tip: Select some text to only publish that part."></div>
-				<div class="actions" id="pactions">
-					<div class="action mail" onclick="WPCLib.publish.do('mail');">Mail</div>				
-					<div class="action twitter" onclick="WPCLib.publish.do('tweet');">Tweet</div>
-					<div class="action twitter" onclick="WPCLib.publish.do('facebook');">Facebook</div>				
-				</div>	
+				<div class="header"></div>
+				<div class="actions" id="pactions"></div>	
 			</div>			
 			<div class="page" id="page">	
 				{% with doc = current_user.latest_doc %}										

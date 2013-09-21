@@ -1,167 +1,117 @@
-<!DOCTYPE html>
-<html style="overflow: hidden !important;">
-	<head>				
-		<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
-		<script type="text/javascript">try{Typekit.load();}catch(e){}</script>
-		<style>
-		#x, #y, #action, #dx, #dy, #start_x, #start_y {
-			display: inline-block;
-		}
-		</style>
-	</head>
-	<body style="padding: 20px;height:2000px;">
-		<h1>js etc Testpage</h1>
-		<div>Action: <div id="action"></div></div>		
-		<div>Start x: <div id="start_x"></div>, x: <div id="x"></div>, dx: <div id="dx"></div></div>
-		<div>Start y: <div id="start_y"></div>, y: <div id="y"></div>, dy: <div id="dy"></div></div>
-		<div>Event: <div id="event"></div></div>		
-		<script type="text/javascript">	
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+    <script type="text/javascript">
+      var CLIENT_ID = '212935062645.apps.googleusercontent.com';
+      var SCOPES = 'https://www.googleapis.com/auth/drive';
 
-		/**
-			var swipe = {
-				inited: false,				
-				timeout: false,	
-				timer: null,
-				start_x: 0,
-				start_y: 0,
+      /**
+       * Called when the client library is loaded to start the auth flow.
+       */
+      function handleClientLoad() {
+        window.setTimeout(checkAuth, 1);
+      }
 
-				init: function(e) {
-					window.addEventListener('touchend', swipe.end, false);
-					this.start_x = e.pageX;
-					this.start_y = e.pageY;
-					this.timer = setTimeout(function(){swipe.timeout=true;},100);					
-					this.inited = true;
-				},
+      /**
+       * Check if the current user has authorized the application.
+       */
+      function checkAuth() {
+        gapi.auth.authorize(
+            {'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': true},
+            handleAuthResult);
+      }
 
-				move: function(left,right,e) {
-					wpc_logevent(e);				
-					var dx, dy;
-					if (swipe.timeout) return;		
-					if (!swipe.inited) swipe.init(e);
-					dx = document.getElementById('dx').innerHTML = swipe.start_x - e.pageX;
-					dy = document.getElementById('dy').innerHTML = swipe.start_y - e.pageY;	
-					if (typeof right === 'function' && Math.abs(dy*2) < (dx*-1) && dx < (-80 * window.devicePixelRatio)) {
-						swipe.reset();
-						right();
-						e.preventDefault();						
-					}	
-					if (typeof left === 'function'  && Math.abs(dy*2) < dx && dx > (80 * window.devicePixelRatio)) {
-						swipe.reset();						
-						left();
-						e.preventDefault();						
-					}	
-				},
+      /**
+       * Called when authorization server replies.
+       *
+       * @param {Object} authResult Authorization result.
+       */
+      function handleAuthResult(authResult) {
+        var authButton = document.getElementById('authorizeButton');
+        var filePicker = document.getElementById('filePicker');
+        authButton.style.display = 'none';
+        filePicker.style.display = 'none';
+        if (authResult && !authResult.error) {
+          // Access token has been successfully retrieved, requests can be sent to the API.
+          filePicker.style.display = 'block';
+          filePicker.onchange = uploadFile;
+        } else {
+          // No access token could be retrieved, show the button to start the authorization flow.
+          authButton.style.display = 'block';
+          authButton.onclick = function() {
+              gapi.auth.authorize(
+                  {'client_id': CLIENT_ID, 'scope': SCOPES, 'immediate': false},
+                  handleAuthResult);
+          };
+        }
+      }
 
-				end: function() {					
-					swipe.reset();					
-				},
+      /**
+       * Start the file upload.
+       *
+       * @param {Object} evt Arguments from the file selector.
+       */
+      function uploadFile(evt) {
+        gapi.client.load('drive', 'v2', function() {
+          var file = evt.target.files[0];
+          insertFile(file);
+        });
+      }
 
-				reset: function() {
-					this.start_x = 0;
-					this.start_y = 0;						
-					window.removeEventListener('touchend', swipe.end, false);
-					clearTimeout(swipe.timer);
-					this.timer = null;	
-					this.timeout = false;								
-					this.inited = false;									
-				}
-			};
+      /**
+       * Insert new file.
+       *
+       * @param {File} fileData File object to read data from.
+       * @param {Function} callback Function to call when the request is complete.
+       */
+      function insertFile(fileData, callback) {
+        const boundary = '-------314159265358979323846';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const close_delim = "\r\n--" + boundary + "--";
 
-			function wpc_click() {
-				console.log('clicked');
-				wpc_logevent(event);
-			}
+        var reader = new FileReader();
+        reader.readAsBinaryString(fileData);
+        reader.onload = function(e) {
+          var contentType = fileData.type || 'application/octet-stream';
+          var metadata = {
+            'title': fileData.name,
+            'mimeType': contentType
+          };
 
-			function wpc_drag() {
-				var x, y, dx, dy, listening;
+          var base64Data = btoa(reader.result);
+          var multipartRequestBody =
+              delimiter +
+              'Content-Type: application/json\r\n\r\n' +
+              JSON.stringify(metadata) +
+              delimiter +
+              'Content-Type: ' + contentType + '\r\n' +
+              'Content-Transfer-Encoding: base64\r\n' +
+              '\r\n' +
+              base64Data +
+              close_delim;
 
-				wpc_logevent(event);
-				event.preventDefault();
-			}	
-
-			**/		
-
-
-			var swipe = {
-				start_x: 0,
-				start_y: 0,
-				active: false,
-
-				start: function(left,right,e) {
-					var el = e.srcElement;
-					try {					
-			    		if (e.touches.length == 1) {
-			    			wpc_logevent(e);		    			
-			    			swipe.start_x = e.touches[0].pageX;
-			    			swipe.start_y = e.touches[0].pageY;
-			    			swipe.active = true;
-							e.srcElement.addEventListener('touchmove', swipe.move, false);
-			    			setTimeout(function(){
-			    				swipe.active = false;
-			    				swipe.cancel(el);			    				
-			    			},50);
-			    		 }
-					} catch(err) {
-						alert('start: ', err);
-					}				    		 
-				},
-
-				move: function(e) {
-					try {					
-			    		if (swipe.active) {
-				    	 	var x = e.touches[0].pageX;
-				    		var y = e.touches[0].pageY;
-				    		var dx = swipe.start_x - x;
-				    		var dy = swipe.start_y - y;
-				    		if (Math.abs(dx) >= (80 * window.devicePixelRatio)) {		    			
-				    			swipe.cancel(e.srcElement);
-				    			if (Math.abs(dy) > Math.abs(dx*0.4)) return;
-				    			if(dx > 0) {
-				    				alert('left');
-				    			}
-				    			else {
-				    				alert('right');
-				    			}
-				    		}
-			    		}
-					} catch(err) {
-						alert('move: ', err);
-					}			    		
-				},
-
-				cancel: function(el) {
-					// alert('cancel: '+ e);
-						try {					
-							el.removeEventListener('touchmove', swipe.move);
-						} catch(err) {
-							alert('cancel: ' + err + el);
-						}	
-						swipe.start_x = null;
-						swipe.active = false;											
-				}
-			}				
-
-
-
-
-			function wpc_logevent(event) {
-				var event_str = '';
-				if (event) {
-				    for (var p in event) {
-				        if (event.hasOwnProperty(p)) {
-				            event_str += p + '::' + event[p] + '<br />';
-				        }
-				    }
-				}
-				// document.getElementById('x').innerHTML = event.pageX;
-				// document.getElementById('y').innerHTML = event.pageY;				
-				document.getElementById('event').innerHTML = event_str;
-			}
-
-			// window.addEventListener('click', wpc_click, false);
-			document.body.addEventListener('touchstart', function(e){swipe.start(alert,alert,e)}, false);	
-
-			console.log('rdy');				
-		</script>
-	</body>
+          var request = gapi.client.request({
+              'path': '/upload/drive/v2/files',
+              'method': 'POST',
+              'params': {'uploadType': 'multipart'},
+              'headers': {
+                'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'
+              },
+              'body': multipartRequestBody});
+          if (!callback) {
+            callback = function(file) {
+              console.log(file)
+            };
+          }
+          request.execute(callback);
+        }
+      }
+    </script>
+    <script type="text/javascript" src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
+  </head>
+  <body>
+    <!--Add a file picker for the user to start the upload process -->
+    <input type="file" id="filePicker" style="display: none" />
+    <input type="button" id="authorizeButton" style="display: none" value="Authorize" />
+  </body>
 </html>

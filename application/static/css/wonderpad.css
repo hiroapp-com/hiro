@@ -707,7 +707,7 @@ a.wpcbutton:hover {
 }
 
 #publish:hover .header {
-  opacity: 0.3; 
+  opacity: 0.4; 
 }
 
 #publish .actions {
@@ -722,10 +722,10 @@ a.wpcbutton:hover {
   display: block;
 }
 
-#publish .actions .action {
+#publish .actions a.action {
   text-align: right;
   display: block;
-  opacity: 0.3;
+  opacity: 0.4;
   margin: 0 13px 0 20px;
   border-bottom: 1px dotted #666;
   cursor: pointer;
@@ -735,13 +735,15 @@ a.wpcbutton:hover {
   background-size: 40px auto; 
   background-position: right -82px;  
   color: #000;
+  white-space: nowrap;
+  text-decoration: none;
 }
 
-#publish .actions .action:last-child {
+#publish .actions a.action:last-child {
   border-bottom: none;
 }
 
-#publish .actions .action:hover {
+#publish .actions a.action:hover {
   opacity: 0.9; 
 }
 
@@ -762,13 +764,13 @@ a.wpcbutton:hover {
     background-size: 30px auto;  
     background-position: right 2px;
   }      
-  #publish .actions .action {
+  #publish .actions a.action {
     background-size: 30px auto; 
     background-position: right -57px;    
   }  
   #publish .actions {
     top: 37px;
-    right: -4px;    
+    right: -3px;    
   }  
 }
 
