@@ -446,7 +446,7 @@ a.wpcbutton:hover {
   border: 1px solid #fff; 
   font-size: 1.9em;
   font-weight: 600;
-  width: 100%;
+  width: 90%;
   color: #333;
 }
 
@@ -680,6 +680,97 @@ a.wpcbutton:hover {
   }   
 }
 
+
+/*-------- Publishing --------*/
+#publish {
+  position: absolute;
+  top: 50px;
+  right: 100px;
+  display: block;
+  z-index: 2900;
+}
+
+.canvas.full #publish {
+  top: 56px;
+}
+
+#publish .header {
+  display: block;
+  text-align: right;
+  width: 40px;
+  height: 50px;
+  background-image: url(../img/publish.png);
+  background-repeat: no-repeat;
+  background-size: 40px auto; 
+  opacity: 0.1; 
+  background-position: right 2px;
+}
+
+#publish:hover .header {
+  opacity: 0.3; 
+}
+
+#publish .actions {
+  display: none;
+  background: rgba(255,255,255,0.95);
+  position: absolute;
+  top: 50px;
+  right: 0;
+}
+
+#publish:hover .actions {
+  display: block;
+}
+
+#publish .actions .action {
+  text-align: right;
+  display: block;
+  opacity: 0.3;
+  margin: 0 13px 0 20px;
+  border-bottom: 1px dotted #666;
+  cursor: pointer;
+  padding: 10px 20px 8px 0; 
+  background-image: url(../img/publish.png);
+  background-repeat: no-repeat;
+  background-size: 40px auto; 
+  background-position: right -82px;  
+  color: #000;
+}
+
+#publish .actions .action:last-child {
+  border-bottom: none;
+}
+
+#publish .actions .action:hover {
+  opacity: 0.9; 
+}
+
+@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+  .canvas.full #publish, #publish {
+    top: 32px;
+    right: 62px;
+  }
+}
+
+@media (max-width: 480px) {
+  #publish, .canvas.full #publish {
+    top: 41px;
+    right: 12px; 
+    position: fixed;
+  }
+  #publish .header {
+    background-size: 30px auto;  
+    background-position: right 2px;
+  }      
+  #publish .actions .action {
+    background-size: 30px auto; 
+    background-position: right -57px;    
+  }  
+  #publish .actions {
+    top: 37px;
+    right: -4px;    
+  }  
+}
 
 /* ------ Context Bar ------*/
 
@@ -1283,10 +1374,6 @@ body#landingPage .teaser .screen .research .desc {
   float: right;
   width: 120px !important;  
 }
-
-body#landingPage .teaser .screen .blurb {
-}
-
 
 body#landingPage .teaser .screen .blurb .header {
   padding-bottom: 3px;

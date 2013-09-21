@@ -540,13 +540,14 @@ var WPCLib = {
 			WPCLib.util.registerEvent(t,'mouseout', this._hidetitletip);
 			WPCLib.util.registerEvent(t,'focus', this._clicktitletip);			
 			WPCLib.util.registerEvent(t,'select', this._clicktitletip);	
-			WPCLib.util.registerEvent(t,'click', this._clicktitletip);				
+			WPCLib.util.registerEvent(t,'click', this._clicktitletip);		
+
 			// We save the new title in the folio array but need to update the clickhandler without duplicating them
 			WPCLib.util.registerEvent(t,'blur', WPCLib.folio.docs.update);	
-			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);	
+			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);			
 
 			if ('ontouchstart' in document.documentElement) {
-				// Make sure the teaxtare contents are scrollable on mobile devices
+				// Make sure the teaxtarea contents are scrollable on mobile devices
 				el.addEventListener('touchstart',function(e){
 					// Attach the swipe actions to canvas	
 					var cb = (WPCLib.ui.menuCurrPos != 0) ? null : WPCLib.context.switchview;			
@@ -1059,6 +1060,40 @@ var WPCLib = {
 		}
 
 	},	
+
+	publish: {
+		// Publishing functionality
+		id: 'publish',
+		initTimeout: null,
+
+		init: function() {
+			// if we hover over the publish icon, the event handlers are attached via canvas init
+			// show list of actions after n msec
+			this.initTimeout = setTimeout(WPCLib.publish.show,1000);	
+			console.log(lala);
+		},
+
+		show: function() {
+			console.log('woohoo');
+		},
+
+		list: function() {
+
+		},
+
+		hide: function() {
+			// if the user leaves the area again			
+			// clearTimeout(WPCLib.publish.initTimeout);
+			// this.initTimeout = null;
+			console.log('and out');
+		},
+
+		do: function(type) {
+			event.preventDefault();
+			console.log(event,type);
+			window.open('mailto:?subject='+encodeURIComponent(WPCLib.canvas.title)+'&body='+encodeURIComponent(WPCLib.canvas.text), '_blank')
+		}
+	},
 
 	// Context is the link bar on the right
 	context: {
