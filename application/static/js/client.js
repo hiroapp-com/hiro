@@ -139,7 +139,6 @@ var WPCLib = {
 
 			loadlocal: function(localdoc) {	
 				// Load locally saved document
-				console.log(localdoc);
 				var ld = JSON.parse(localdoc);					
 				console.log('Localstorage doc found, loading ', ld);						
 				document.getElementById('landing').style.display = 'none';
@@ -782,14 +781,22 @@ var WPCLib = {
 			} 							
 		},
 
-		_showtitletip: function() {									
-			var title = document.getElementById(WPCLib.canvas.pageTitle);	
-			var tip = WPCLib.canvas.titleTip;
-			WPCLib.canvas.tempTitle = title.value;			
-			if (!title.value || title.value.length == 0 || title.value == "Untitled" || title.value == WPCLib.canvas.defaultTitle) title.value = tip;					
+
+		_titletiptimer: null,
+		_showtitletip: function() {	
+			// Show an encouraging title and indicitae that title can be changed here
+			WPCLib.canvas._titletiptimer = setTimeout(function(){
+				var title = document.getElementById(WPCLib.canvas.pageTitle);	
+				var tip = WPCLib.canvas.titleTip;
+				WPCLib.canvas.tempTitle = title.value;			
+				if (!title.value || title.value.length == 0 || title.value == "Untitled" || title.value == WPCLib.canvas.defaultTitle) title.value = tip;					
+			},200);								
 		},
 
 		_hidetitletip: function() {
+			// Revert title back to previous state
+			clearInterval(WPCLib.canvas._titletiptimer);
+			WPCLib.canvas._titletiptimer = null;
 			var title = document.getElementById(WPCLib.canvas.pageTitle);	
 			var tip = WPCLib.canvas.titleTip;	
 			if (title.value==tip) {
@@ -1066,6 +1073,8 @@ var WPCLib = {
 		id: 'publish',
 		actionsId: 'pactions',
 		initTimeout: null,
+		listvisible: false,
+		showListTimeout: null,
 		actions: {
 			mail: {
 				name: 'Email',
@@ -1086,6 +1095,7 @@ var WPCLib = {
 				scope: 'https://www.googleapis.com/auth/drive',
 				authed: false,
 				callback: null,
+				publishing: false
 			}
 		},
 
@@ -1159,7 +1169,7 @@ var WPCLib = {
 			}
 		},
 
-		open: function() {
+		show: function() {
 			if ((event.relatedTarget || event.toElement) == this.parentNode) clearinfo();
 		},
 
@@ -1180,10 +1190,12 @@ var WPCLib = {
 			// Execute publishing depending on selected type
 			switch(type) {
 				case 'mail':
+					if (event) event.srcElement.className = 'action done';
 					var s = 'mailto:?subject='+encodeURIComponent(title)+'&body='+encodeURIComponent(text);
 					window.open(s, '_blank')
 					break;
 				case 'twitter':
+					if (event) event.srcElement.className = 'action done';				
 					var s = 'https://twitter.com/intent/tweet?text=';
 					// Choose either title or (selected) text
 					text = (text.length == 0) ? title : text;
@@ -1192,11 +1204,21 @@ var WPCLib = {
 					window.open(s,'twitter','height=282,width=600');
 					break;
 				case 'gdrive':
-					// If we're not authed do so now
+					// Find the right element where the click happened, show whats going on
+					// TODO Bruno: Do not hardcode el here 
+					var el = (event) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[2];
+					el.className = 'action doing';
+					el.innerHTML = 'Publishing';
+
+					// If we're not authed do so now				
 					if (!this.actions.gdrive.authed) {
 						this.auth.gdrive();
 						return;
 					}	
+
+					// Prevent double clicks etc
+					WPCLib.publish.actions.gdrive.publishing = true;
+
 					// Create a new document first
 					title = (title) ? title : 'Untitled';
 				    gapi.client.load('drive', 'v2', function() {
@@ -1236,8 +1258,11 @@ var WPCLib = {
 
 							    var callback = function(file) { 
 							    	WPCLib.ui.statusflash('green','Published on your Google Drive.'); 
-							    	window.open('https://docs.google.com/a/hiroapp.com/file/d/0B2KiP_HonhG4X3lkM0ZyaGxvdTA/edit', '_blank')							    	
-							    	console.log(file);
+							    	window.open('https://docs.google.com/a/hiroapp.com/file/d/0B2KiP_HonhG4X3lkM0ZyaGxvdTA/edit', '_blank');							    	
+									WPCLib.publish.actions.gdrive.publishing = true;
+									var el = (event && event.srcElement) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[2];	
+									el.className = 'action done';		
+									el.innerHTML = 'Google Drive';														
 								}; 
 
 							    gapi.client.request({
@@ -1249,6 +1274,10 @@ var WPCLib = {
 							        callback:callback,
 							    });
 				        	} else {
+								WPCLib.publish.actions.gdrive.publishing = false;	
+								var el = (event && event.srcElement) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[2];	
+								el.className = 'action';
+								el.innerHTML = 'Google Drive';											        		
 							    WPCLib.ui.statusflash('green','Hm, please try again.'); 				        		
 				        		console.log('GDrive responded with an error: ',resp)
 				        	}
@@ -1332,7 +1361,6 @@ var WPCLib = {
 			document.getElementById(this.statusId).innerHTML = 'Saving & Analyzing...';
 			$.post('/analyze', {content: string}, 
 			function(data){	
-				console.log(data);
 	            WPCLib.context.chunksearch(data,chunktype);
 	        });
 		},		
@@ -1357,7 +1385,6 @@ var WPCLib = {
 			// Post data if we have a proper terms
 			if (terms.length > 0) {
 				var postData = {terms: terms, use_shortening: true};
-				console.log('searching for: ',postData);
 				var that = this;						
                 $.ajax({
                     url: "/relevant",
@@ -1430,7 +1457,6 @@ var WPCLib = {
                 	}
                 },           
                 success: function(data) {
-                	console.log(data);
                     WPCLib.context.storeresults(data.results);
                     WPCLib.context.renderresults();		             
                     document.getElementById(that.statusId).innerHTML = 'Ready for more.';
@@ -2041,6 +2067,7 @@ var WPCLib = {
 				var results = document.getElementById(WPCLib.context.resultsId);
 				var signupButton = document.getElementById(WPCLib.context.signupButtonId);
 				var logio = document.getElementById(WPCLib.folio.logioId);
+				var publish = document.getElementById(WPCLib.publish.id);
 				switch(level) {
 					case 0:
 						signupButton.style.display = 'block';	
@@ -2067,10 +2094,11 @@ var WPCLib = {
 						results.style.marginRight = '1px';
 						results.style.paddingRight = '2px';						
 						signupButton.style.display = 'none';
+						if (publish) publish.getElementsByTagName('div')[0].style.display = 'block';
 						logio.className = 'logio logout';
 						logio.getElementsByTagName('a')[0].title = 'Logout';
 						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
-						WPCLib.canvas.preloaded = false;
+						WPCLib.canvas.preloaded = false;						
 
 						// Kick of consitency checker 
 						WPCLib.folio.checkconsistency();				
@@ -2552,7 +2580,7 @@ var WPCLib = {
 	            link: 'https://www.hiroapp.com',
 	            name: 'Hiro.',
 	            caption: 'https://www.hiroapp.com',
-	            description: "Hiro is a notetaking app that makes it easy to keep your big ideas. It's extremely fast, beautifully designed and works on all your devices.",
+	            description: "Hiro makes it easier to capture your best ideas: It's extremely fast, beautifully designed and works on all your devices.",
 	            actions: {
 	                name: 'Start writing',
 	                link: 'https://www.hiroapp.com/connect/facebook',
@@ -2613,7 +2641,8 @@ var WPCLib = {
 			var canvas = document.getElementById('canvas');
 			var context = document.getElementById('context');
 			var switcher = document.getElementById('switchview');		
-			var title = document.getElementById('pageTitle');					
+			var title = document.getElementById('pageTitle');		
+			var publish = document.getElementById(WPCLib.publish.id);			
 			var screenwidth = document.body.offsetWidth;
 			var distance = ((screenwidth-50)<this.menuSlideSpan) ? (screenwidth-50) : this.menuSlideSpan;
 			
@@ -2647,7 +2676,8 @@ var WPCLib = {
 				if (screenwidth<480) {
 					context.style.left=v+'px';						
 					title.style.left=v+'px';	
-					title.style.right=(v*-1)+'px';														
+					title.style.right=(v*-1)+'px';
+					publish.style.right=(v*-1)+'px';																			
 				} else {
 					context.style.left='auto';					
 				}	

@@ -685,7 +685,8 @@ a.wpcbutton:hover {
 #publish {
   position: absolute;
   top: 50px;
-  right: 100px;
+  right: 0;
+  margin-right: 100px;
   display: block;
   z-index: 2900;
 }
@@ -695,11 +696,11 @@ a.wpcbutton:hover {
 }
 
 #publish .header {
-  display: block;
+  display: none;
   text-align: right;
-  width: 40px;
+  width: 60px;
   height: 50px;
-  background-image: url(../img/publish.png);
+  background-image: url(../img/publish.2.png);
   background-repeat: no-repeat;
   background-size: 40px auto; 
   opacity: 0.1; 
@@ -730,34 +731,48 @@ a.wpcbutton:hover {
   border-bottom: 1px dotted #666;
   cursor: pointer;
   padding: 10px 20px 8px 0; 
-  background-image: url(../img/publish.png);
+  background-image: url(../img/publish.2.png);
   background-repeat: no-repeat;
   background-size: 40px auto; 
-  background-position: right -82px;  
+  background-position: right -81px;  
   color: #000;
   white-space: nowrap;
   text-decoration: none;
+  font-size: 18px;
 }
 
-#publish .actions a.action:last-child {
+#publish .actions a.action.doing {
+  background-size: 20px auto; 
+  background-position: right -112px;  
+  color: #666;
+}
+
+#publish .actions a.action.done {
+  background-size: 20px auto; 
+  background-position: right -70px;  
+  color: #055a0b;
+}
+
+#publish .actions a.action:last-child, #publish .actions a.action:hover:last-child {
   border-bottom: none;
 }
 
 #publish .actions a.action:hover {
   opacity: 0.9; 
+  border-bottom: 1px dotted #aaa;
 }
 
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
   .canvas.full #publish, #publish {
     top: 32px;
-    right: 62px;
+    margin-right: 62px;
   }
 }
 
 @media (max-width: 480px) {
   #publish, .canvas.full #publish {
     top: 41px;
-    right: 12px; 
+    margin-right: 12px; 
     position: fixed;
   }
   #publish .header {
