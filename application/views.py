@@ -13,6 +13,8 @@ import time
 import string
 import random
 import uuid
+
+from hashlib import sha512
 from collections import defaultdict
 from datetime import datetime
 
@@ -28,9 +30,10 @@ from google.appengine.api import memcache
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
 from application import app
 
-from .models import User, Document, Link
+from .models import User, Document, Link, PasswordToken
 from .forms import LoginForm, SignupForm
-from .decorators import limit_free_plans
+from .decorators import limit_free_plans, root_required
+
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 def search_yahoo(terms, num_results=20):
@@ -162,13 +165,38 @@ def register():
         resp.status = "401"
         return resp
 
+def reset_password(token):
+    if request.method == 'GET':
+        return render_template('reset_password.html')
+    elif request.method == 'POST':
+        payload = request.json or {}
+        if not payload.get('password'):
+            return jsonify_err(400, 'password required')
+        token = PasswordToken.get_by_id(sha512(token).hexdigest())
+        if not token:
+            return jsonify_err(404, 'Token not found')
+        user = token.user.get()
+        user.password = User.hash_password(payload['password'])
+        user.put()
+        token.key.delete()
+        if login_user(user):
+            return jsonify(user.to_dict())
+        else:
+            return "Could not login. Maybe account was suspended?", 401
+
+@root_required
+def create_token(user_id):
+    user = User.get_by_id(int(user_id))
+    token = PasswordToken.create_for(user)
+    return " - ".join([user_id, str(user), token])
+
+
 @login_required
 def change_plan():
     payload = request.json or {}
     plan, token = payload.get('plan'), payload.get('stripeToken')
     if not plan: 
         return jsonify_err(400, 'plan field required')
-
     ok, err = current_user.change_plan(plan, token)
     if not ok:
         return jsonify_err(400, err)

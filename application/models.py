@@ -1,6 +1,8 @@
 import os
+import uuid
 import time
 import calendar
+from hashlib import sha512
 from datetime import datetime
 
 import stripe
@@ -248,5 +250,25 @@ class Document(ndb.Model):
 class StripeToken(ndb.Model):
     used_by = ndb.KeyProperty(kind=User)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
+
+class PasswordToken(ndb.Model):
+    user = ndb.KeyProperty(kind=User)
+    created_at = ndb.DateTimeProperty(auto_now_add=True)
+    #hash = ndb.StringProperty()
+
+    @classmethod
+    def create_for(cls, user):
+        # since we only store a hash of the token, we cannot
+        # reuse tokens. thus, clean up old ones before creating 
+        # a new one
+        PasswordToken.query(PasswordToken.user == user.key).map(lambda e: e.key.delete())
+        token = uuid.uuid4().hex
+        key = sha512(token).hexdigest()
+        obj = cls(id=key, user=user.key)
+        obj.put()
+        return token
+
+
+
 
     
