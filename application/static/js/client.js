@@ -1168,10 +1168,12 @@ var WPCLib = {
 
 					// Handle mail edge case here as we can't do it onclick
 					if (action == 'mail') {
-						// On mobile devices we keep the onclick action:
+						// We reset the clickactions in this case:
 						if (!('ontouchstart' in document.documentElement)) {
 							a.setAttribute('onclick',"");
-						} 
+						} else {
+							a.setAttribute('ontouchstart','');
+						}
 						var sel = WPCLib.canvas._getposition();
 						var text = (sel[2].length > 0) ? sel[2] : document.getElementById(WPCLib.canvas.contentId).value;
 						text = text.trim();					
@@ -1208,6 +1210,7 @@ var WPCLib = {
 				case 'mail':
 					// This is only used on touch devices ( see mail exception in list() above)
 					if (event) event.srcElement.className = 'action done';
+					alert();
 					var s = 'mailto:?subject='+encodeURIComponent(title)+'&body='+encodeURIComponent(text);
 					window.location.href = s;
 					break;
@@ -1254,15 +1257,15 @@ var WPCLib = {
 				var frame = document.getElementById('dialog').contentDocument;
 				if (frame) {
 					frame.body.innerHTML = '';
-					WPCLib.ui.showDialog();	
-					if (document.body.offsetWidth<=480) {
-						WPCLib.publish.fpuihack(frame);
-					}				
+					WPCLib.ui.showDialog();					
 				}				
 				var payload = {openTo: WPCLib.publish.actions[service].fpservicename};
 				payload.services = ['DROPBOX','GOOGLE_DRIVE','BOX','SKYDRIVE','EVERNOTE'];	
 				payload.suggestedFilename = title;
-				payload.container = 'dialog';						
+				payload.container = 'dialog';
+				if (document.body.offsetWidth<=480) {
+					payload.mobile = true;
+				}										
 				filepicker.exportFile(data.url,payload,function(data){
 			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].fpservicename+'.'); 
 					WPCLib.publish.actions[service].publishing = false;
@@ -1279,23 +1282,6 @@ var WPCLib = {
 				WPCLib.publish.actions[service].publishing = false;						
 				WPCLib.sys.error(data);	
 			});				
-		},
-
-		fpuihackcounter: 0,
-		fpuihack: function(frame) {
-			// Filepicker doesn't work on Standalone mobile apps yet (no popup, duh)
-			// Se we open into iframe and remove unnecessary parts		
-			var pane = frame.getElementById('servicePane');
-			var spacer = frame.getElementById('servicePaneSpacer');			
-			if (pane && spacer) {
-				pane.style.display = 'none';
-				spacer.style.display = 'none';
-			} else {
-				var counter = WPCLib.publish.fpuihackcounter;
-				if (counter >= 1000) return;
-				window.setTimeout(WPCLib.publish.fpuihack(frame),10);
-				counter++;
-			}
 		}
 	},
 
@@ -1323,7 +1309,7 @@ var WPCLib = {
 			var can = document.getElementById(WPCLib.canvas.canvasId);
 			var sw = document.getElementById('switchview');
 			var mobile = (document.body.offsetWidth<=480);
-			var midi = (document.body.offsetWidth<=900);p
+			var midi = (document.body.offsetWidth<=900);
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
 			if (mobile) document.activeElement.blur();

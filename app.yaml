@@ -28,11 +28,13 @@ handlers:
 - url: /favicon.ico
   static_files: application/static/img/favicon.ico
   upload: application/static/img/favicon.ico
+  expiration: "1d"   
   secure: always  
 
 - url: /apple-touch-icon-precomposed.png
   static_files: application/static/img/apple-touch-icon-precomposed.png
   upload: application/static/img/apple-touch-icon-precomposed.png  
+  expiration: "1d"   
   secure: always  
 
 - url: /robots.txt
