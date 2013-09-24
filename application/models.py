@@ -174,7 +174,7 @@ class Anonymous(AnonymousUser):
     name = u"Anonymous"
     has_paid_plan = False
     latest_doc = None
-    usage_quota = 20
+    usage_quota = 10
 
     def _get_usage_ctr(self):
         return session.get('usage-relevant', 0)
