@@ -1104,7 +1104,8 @@ var WPCLib = {
 			gdrive: function() {
 				// Authorize Google Drive
 				var def = WPCLib.publish.actions.gdrive;
-				if (def.authed) return;
+				if (def.authed) return;	
+				// TODO: This callback triggers a non-click-event-stack popup -> Not seen the first		
 		        gapi.auth.authorize({'client_id': def.client_id, 'scope': def.scope, 'immediate': false},WPCLib.lib.collectResponse.google);				
 			}
 		},
@@ -1121,9 +1122,6 @@ var WPCLib = {
 
 			// Show tooltip for early users
 			if (WPCLib.sys.user.level < 2) icon.setAttribute('title','Publish to Cloud: Choose a service below.\nTip: Select some text to only publish that part.');
-		
-			// List services
-			this.list();
 		},
 
 		list: function() {
@@ -1143,7 +1141,11 @@ var WPCLib = {
 
 					// Check necessary level and attach corresponding action	
 					if (level >= actions[action].level) {
-						a.setAttribute('onclick',"WPCLib.publish.execute(event,'"+action+"');");
+						if (!('ontouchstart' in document.documentElement)) {
+							a.setAttribute('ontouchstart',"WPCLib.publish.execute(event,'"+action+"');");
+						} else {
+							a.setAttribute('onclick',"WPCLib.publish.execute(event,'"+action+"');");
+						}
 					} else {
 						if (level == 0) {
 							a.setAttribute('title','Upgrade');								
@@ -1156,11 +1158,14 @@ var WPCLib = {
 
 					// Handle mail edge case here as we can't do it onclick
 					if (action == 'mail') {
-						a.setAttribute('onclick',"");
+						// On mobile devices we keep the onclick action:
+						if ('ontouchstart' in document.documentElement) {
+							a.setAttribute('onclick',"");
+						} 
 						var sel = WPCLib.canvas._getposition();
-						var text = (sel[2].length > 0) ? sel[2] : WPCLib.canvas.text;
-						text = text.trim();						
-						a.setAttribute('href','mailto:?subject='+encodeURIComponent(WPCLib.canvas.title)+'&body='+encodeURIComponent(text));
+						var text = (sel[2].length > 0) ? sel[2] : document.getElementById(WPCLib.canvas.contentId).value;
+						text = text.trim();					
+						a.setAttribute('href','mailto:?subject='+encodeURIComponent(document.getElementById(WPCLib.canvas.pageTitle).value)+'&body='+encodeURIComponent(text));
 					}
 
 					// Add to container
@@ -1178,6 +1183,7 @@ var WPCLib = {
 			// Prevent the selection from losing focus
 			if (event) {
 				event.preventDefault();
+				event.stopPropagation();
 				WPCLib.util.stopEvent(event);
 			}
 
@@ -1190,9 +1196,10 @@ var WPCLib = {
 			// Execute publishing depending on selected type
 			switch(type) {
 				case 'mail':
+					// This is only used on touch devices ( see mail exception in list() above)
 					if (event) event.srcElement.className = 'action done';
 					var s = 'mailto:?subject='+encodeURIComponent(title)+'&body='+encodeURIComponent(text);
-					window.open(s, '_blank')
+					window.location.href = s;
 					break;
 				case 'twitter':
 					if (event) event.srcElement.className = 'action done';				
@@ -1200,21 +1207,25 @@ var WPCLib = {
 					// Choose either title or (selected) text
 					text = (text.length == 0) ? title : text;
 					s = s + text;
-					// Open twitter window
-					window.open(s,'twitter','height=282,width=600');
+					// Open twitter window or redirect to twitter
+					if (window.navigator.standalone) {
+						window.location.href = s;
+					} else {
+						window.open(s,'twitter','height=282,width=600');
+					} 
 					break;
 				case 'gdrive':
+					// If we're not authed do so now				
+					if (!this.actions.gdrive.authed) {
+						this.auth.gdrive();						
+						return;
+					}	
+
 					// Find the right element where the click happened, show whats going on
 					// TODO Bruno: Do not hardcode el here 
 					var el = (event) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[2];
 					el.className = 'action doing';
-					el.innerHTML = 'Publishing';
-
-					// If we're not authed do so now				
-					if (!this.actions.gdrive.authed) {
-						this.auth.gdrive();
-						return;
-					}	
+					el.innerHTML = 'Publishing';					
 
 					// Prevent double clicks etc
 					WPCLib.publish.actions.gdrive.publishing = true;
@@ -1716,8 +1727,7 @@ var WPCLib = {
 		collectResponse: {
 			google: function(response) {
 				// Didn't figure out how to do callbacks with initial response
-				WPCLib.lib.googleResponse = response;
-
+				WPCLib.lib.googleResponse = response;	
 				// Let publishing actions know where good to go
 				if (response && !response.error) {
 					var gd = WPCLib.publish.actions.gdrive;
