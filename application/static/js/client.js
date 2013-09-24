@@ -1077,16 +1077,25 @@ var WPCLib = {
 		showListTimeout: null,
 		actions: {
 			mail: {
+				id: 1,
 				name: 'Email',
 				level: 0,
 				charlimit: 0
 			},
 			twitter: {
+				id: 2,
 				name: 'Twitter',
 				level: 0,
 				charlimit: 0
 			},
+			dbox: {
+				id: 3,
+				name: 'Dropbox',
+				level: 1,
+				fpservicename: 'DROPBOX'
+			},			
 			gdrive: {
+				id: 4,
 				name: 'Google Drive',
 				level: 1,
 				charlimit: 0,
@@ -1095,9 +1104,10 @@ var WPCLib = {
 				scope: 'https://www.googleapis.com/auth/drive',
 				authed: false,
 				callback: null,
-				publishing: false
+				publishing: false,
+				fpservicename: 'GOOGLE_DRIVE'
 			}
-		},
+		}, 
 
 		auth: {
 			// Authorize external API calls
@@ -1141,7 +1151,7 @@ var WPCLib = {
 
 					// Check necessary level and attach corresponding action	
 					if (level >= actions[action].level) {
-						if (!('ontouchstart' in document.documentElement)) {
+						if ('ontouchstart' in document.documentElement) {
 							a.setAttribute('ontouchstart',"WPCLib.publish.execute(event,'"+action+"');");
 						} else {
 							a.setAttribute('onclick',"WPCLib.publish.execute(event,'"+action+"');");
@@ -1159,7 +1169,7 @@ var WPCLib = {
 					// Handle mail edge case here as we can't do it onclick
 					if (action == 'mail') {
 						// On mobile devices we keep the onclick action:
-						if ('ontouchstart' in document.documentElement) {
+						if (!('ontouchstart' in document.documentElement)) {
 							a.setAttribute('onclick',"");
 						} 
 						var sel = WPCLib.canvas._getposition();
@@ -1188,9 +1198,9 @@ var WPCLib = {
 			}
 
 			// Collect title and text, see if we have an active selection
-			var title = WPCLib.canvas.title;
+			var title = document.getElementById(WPCLib.canvas.pageTitle).value;
 			var sel = WPCLib.canvas._getposition();
-			var text = (sel[2].length > 0) ? sel[2] : WPCLib.canvas.text;
+			var text = (sel[2].length > 0) ? sel[2] : document.getElementById(WPCLib.canvas.contentId).value;
 			text = text.trim();
 
 			// Execute publishing depending on selected type
@@ -1215,86 +1225,76 @@ var WPCLib = {
 					} 
 					break;
 				case 'gdrive':
-					// If we're not authed do so now				
-					if (!this.actions.gdrive.authed) {
-						this.auth.gdrive();						
-						return;
-					}	
+					this.filepickerupload(type,title,text);				
+					break;
+				case 'dbox':
+					this.filepickerupload(type,title,text);				
+					break;								
+			}
+		},
 
-					// Find the right element where the click happened, show whats going on
-					// TODO Bruno: Do not hardcode el here 
-					var el = (event) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[2];
-					el.className = 'action doing';
-					el.innerHTML = 'Publishing';					
+		filepickerupload: function(service,title,text) {
+			// Push the text onto filepicker
 
-					// Prevent double clicks etc
-					WPCLib.publish.actions.gdrive.publishing = true;
+			// Find the right element where the click happened, show whats going on
+			var pos = WPCLib.publish.actions[service].id - 1;
+			var el = (event) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];
+			el.className = 'action doing';
+			el.innerHTML = 'Publishing';					
 
-					// Create a new document first
-					title = (title) ? title : 'Untitled';
-				    gapi.client.load('drive', 'v2', function() {
-				        var request = gapi.client.request({
-				            'path': '/drive/v2/files',
-				            'method': 'POST',
-				            'body':{
-				                "title" : title+".txt",
-				                "editable" : true,
-				                "convert" : true,
-				                "description" : "Published from Hiro.",
-				                'mimeType': 'text/html'
-				            }
-				        });
-				        request.execute(function(resp) { 
-				        	// Hurray, GDrive responded
-				        	if (resp && resp.id) {
-				        		// Build and upload file accordding to GDrive API
-				        		// https://developers.google.com/drive/v2/reference/files
-							    const boundary = '-------314159265358979323846';
-							    const delimiter = "\r\n--" + boundary + "\r\n";
-							    const close_delim = "\r\n--" + boundary + "--";
+			// Prevent double clicks etc
+			WPCLib.publish.actions[service].publishing = true;
 
-							    var gdocid = resp.id;
-							    var contentType = "text/html";
-							    var metadata = {
-							    	'mimeType': contentType,
-							    	'convert': true
-							    };
+			// Filepicker.io flow									
+			var options = {filename: title+'.txt',mimetype: 'text/plain'};			
+			title = (title) ? title : 'Untitled';					
+			filepicker.store(text,options,function(data){
+				// We succesfully stored the file, next upload it to various services
+				// Clear and load dialog into frame
+				var frame = document.getElementById('dialog').contentDocument;
+				if (frame) {
+					frame.body.innerHTML = '';
+					WPCLib.ui.showDialog();	
+					if (document.body.offsetWidth<=480) {
+						WPCLib.publish.fpuihack(frame);
+					}				
+				}				
+				var payload = {openTo: WPCLib.publish.actions[service].fpservicename};
+				payload.services = ['DROPBOX','GOOGLE_DRIVE','BOX','SKYDRIVE','EVERNOTE'];	
+				payload.suggestedFilename = title;
+				payload.container = 'dialog';						
+				filepicker.exportFile(data.url,payload,function(data){
+			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].fpservicename+'.'); 
+					WPCLib.publish.actions[service].publishing = false;
+					var el = (event && event.srcElement) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];	
+					el.className = 'action done';		
+					el.innerHTML = WPCLib.publish.actions[service].name;	
+				},function(data){
+					// Some error occured while creating the file
+					WPCLib.publish.actions[service].publishing = false;						
+					// WPCLib.sys.error(data);	
+				});						
+			},function(data){
+				// Some error occured while creating the file
+				WPCLib.publish.actions[service].publishing = false;						
+				WPCLib.sys.error(data);	
+			});				
+		},
 
-							    var multipartRequestBody =
-							        delimiter +  'Content-Type: application/json\r\n\r\n' +
-							        JSON.stringify(metadata) +
-							        delimiter + 'Content-Type: ' + contentType + '\r\n' + '\r\n' +
-							        text +
-							        close_delim;
-
-							    var callback = function(file) { 
-							    	WPCLib.ui.statusflash('green','Published on your Google Drive.'); 
-							    	window.open('https://docs.google.com/a/hiroapp.com/file/d/0B2KiP_HonhG4X3lkM0ZyaGxvdTA/edit', '_blank');							    	
-									WPCLib.publish.actions.gdrive.publishing = true;
-									var el = (event && event.srcElement) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[2];	
-									el.className = 'action done';		
-									el.innerHTML = 'Google Drive';														
-								}; 
-
-							    gapi.client.request({
-							        'path': '/upload/drive/v2/files/'+gdocid+'&uploadType=multipart',
-							        'method': 'PUT',
-							        'params': {'fileId': gdocid, 'uploadType': 'multipart'},
-							        'headers': {'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'},
-							        'body': multipartRequestBody,
-							        callback:callback,
-							    });
-				        	} else {
-								WPCLib.publish.actions.gdrive.publishing = false;	
-								var el = (event && event.srcElement) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[2];	
-								el.className = 'action';
-								el.innerHTML = 'Google Drive';											        		
-							    WPCLib.ui.statusflash('green','Hm, please try again.'); 				        		
-				        		console.log('GDrive responded with an error: ',resp)
-				        	}
-				        });
-				    });					
-					break;		
+		fpuihackcounter: 0,
+		fpuihack: function(frame) {
+			// Filepicker doesn't work on Standalone mobile apps yet (no popup, duh)
+			// Se we open into iframe and remove unnecessary parts		
+			var pane = frame.getElementById('servicePane');
+			var spacer = frame.getElementById('servicePaneSpacer');			
+			if (pane && spacer) {
+				pane.style.display = 'none';
+				spacer.style.display = 'none';
+			} else {
+				var counter = WPCLib.publish.fpuihackcounter;
+				if (counter >= 1000) return;
+				window.setTimeout(WPCLib.publish.fpuihack(frame),10);
+				counter++;
 			}
 		}
 	},
@@ -1323,7 +1323,7 @@ var WPCLib = {
 			var can = document.getElementById(WPCLib.canvas.canvasId);
 			var sw = document.getElementById('switchview');
 			var mobile = (document.body.offsetWidth<=480);
-			var midi = (document.body.offsetWidth<=900);
+			var midi = (document.body.offsetWidth<=900);p
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
 			if (mobile) document.activeElement.blur();
@@ -1371,7 +1371,7 @@ var WPCLib = {
 			string = string || (WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
 			document.getElementById(this.statusId).innerHTML = 'Saving & Analyzing...';
 			$.post('/analyze', {content: string}, 
-			function(data){	
+			function(data){
 	            WPCLib.context.chunksearch(data,chunktype);
 	        });
 		},		
@@ -1723,6 +1723,8 @@ var WPCLib = {
 		// Stash list of auth responses here
 		googleResponse: null,
 		facebookResponse: null,
+		// API Keys
+		filepickerKey: 'AET013tWeSnujBckVPeLqz',		
 
 		collectResponse: {
 			google: function(response) {
@@ -1759,7 +1761,11 @@ var WPCLib = {
 			    var gd = document.createElement('script'); gd.type = 'text/javascript'; gd.async = true;
 			    gd.src = 'https://apis.google.com/js/client.js?onload=handleClientLoad';
 			    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(gd, s);
-			  })();			
+			  })();		
+
+			// Load filepicker.io
+			(function(a){if(window.filepicker){return}var b=a.createElement("script");b.type="text/javascript";b.async=!0;b.src=("https:"===a.location.protocol?"https:":"http:")+"//api.filepicker.io/v1/filepicker.js";var c=a.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c);var d={};d._queue=[];var e="pick,pickMultiple,pickAndStore,read,write,writeUrl,export,convert,store,storeUrl,remove,stat,setKey,constructWidget,makeDropPane".split(",");var f=function(a,b){return function(){b.push([a,arguments])}};for(var g=0;g<e.length;g++){d[e[g]]=f(e[g],d._queue)}window.filepicker=d})(document); 
+			filepicker.setKey(this.filepickerKey);
 
 			// Add trim to prototype
 			if (!String.prototype.trim) {
@@ -1880,8 +1886,8 @@ var WPCLib = {
 			}
 		},
 
-		error: function() {
-			console.log('Dang, something went wrong');
+		error: function(data) {
+			console.log('Dang, something went wrong: ',data);
 		},
 
 		user: {
@@ -2466,7 +2472,7 @@ var WPCLib = {
 			WPCLib.util.registerEvent(window, 'resize', this._centerDialog);
 			if(!('ontouchstart' in document.documentElement)) this.dialogTimer = window.setInterval(this._centerDialog, 200);
 
-			// Attach clean error styling (red border) on all input
+			// Attach clean error styling (red border) on all inputs, only if we load settings
 			var inputs = frame.getElementsByTagName('input');
 			for (i=0,l=inputs.length;i<l;i++) {
 				WPCLib.util.registerEvent(inputs[i], 'keydown', this.cleanerror);
@@ -2490,13 +2496,32 @@ var WPCLib = {
 			if (this.dialogTimer) {
 				window.clearInterval(this.dialogTimer);
 				this.dialogTimer=null;
-				WPCLib.util.releaseEvent(window, 'resize', this._centerDialog);
-				var inputs = document.getElementById(frame.id).contentDocument.getElementsByTagName('input');
-				for (i=0,l=inputs.length;i<l;i++) {
-					WPCLib.util.releaseEvent(inputs[i], 'keydown', this.cleanerror);
-					WPCLib.util.releaseEvent(inputs[i], 'keydown', this.autoconfirm);					
-				}				
+				WPCLib.util.releaseEvent(window, 'resize', this._centerDialog);				
 			}
+
+			// Hide shield & dialog
+			if ('ontouchstart' in document.documentElement) {
+				document.activeElement.blur();
+			}			
+			s.style.display = 'none';
+			d.style.display = 'none';
+
+
+			// Put focus back on document 
+			if (!('ontouchstart' in document.documentElement)) WPCLib.canvas._setposition();
+
+			// If we do not have the settings dialog, load this one back in and abort ebfore doing settings specific stuff
+			if (!document.getElementById('dialog').contentDocument || document.getElementById('dialog').contentDocument.location.href.split('/')[3] != 'settings') {
+				frame.src = '/settings/';
+				return;
+			}		
+
+			// Remove input field handlers
+			var inputs = document.getElementById(frame.id).contentDocument.getElementsByTagName('input');
+			for (i=0,l=inputs.length;i<l;i++) {
+				WPCLib.util.releaseEvent(inputs[i], 'keydown', this.cleanerror);
+				WPCLib.util.releaseEvent(inputs[i], 'keydown', this.autoconfirm);					
+			}			
 
 			// reset the frame
 			if (WPCLib.sys.user.justloggedin) {
@@ -2523,17 +2548,6 @@ var WPCLib = {
 					head[1].style.display = checkout[1].style.display = 'block';
 				}
 			}
-
-			// Hide shield & dialog
-			if ('ontouchstart' in document.documentElement) {
-				document.activeElement.blur();
-			}			
-			s.style.display = 'none';
-			d.style.display = 'none';
-
-
-			// Put focus back on document 
-			if (!('ontouchstart' in document.documentElement)) WPCLib.canvas._setposition();
 		},
 
 		upgradeboxclick: function(obj) {
