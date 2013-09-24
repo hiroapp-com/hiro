@@ -18,3 +18,13 @@ def limit_free_plans(func):
         else:
             return '', 402
     return decorated_view
+
+def root_required(func):
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if not current_user.has_root:
+            return 'you shall not pass', 403
+        else:
+            return func(*args, **kwargs)
+    return decorated_view
+

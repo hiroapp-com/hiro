@@ -37,7 +37,7 @@ class User(UserMixin, ndb.Model):
     facebook_uid = ndb.StringProperty()
     stripe_cust_id = ndb.StringProperty()
     relevant_counter = ndb.IntegerProperty(default=0)
-
+    has_root = ndb.BooleanProperty(default=False)
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
     latest_doc = property(lambda self: Document.query(Document.owner == self.key).order(-Document.updated_at).get())
@@ -175,6 +175,7 @@ class Anonymous(AnonymousUser):
     has_paid_plan = False
     latest_doc = None
     usage_quota = 10
+    has_root = False
 
     def _get_usage_ctr(self):
         return session.get('usage-relevant', 0)
