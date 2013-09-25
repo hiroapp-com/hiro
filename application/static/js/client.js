@@ -1228,15 +1228,15 @@ var WPCLib = {
 					} 
 					break;
 				case 'gdrive':
-					this.filepickerupload(type,title,text);				
+					this.filepickerupload(event,type,title,text);				
 					break;
 				case 'dbox':
-					this.filepickerupload(type,title,text);				
+					this.filepickerupload(event,type,title,text);				
 					break;								
 			}
 		},
 
-		filepickerupload: function(service,title,text) {
+		filepickerupload: function(event,service,title,text) {
 			// Push the text onto filepicker
 
 			// Find the right element where the click happened, show whats going on
