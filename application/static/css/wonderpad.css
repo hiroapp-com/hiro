@@ -1571,6 +1571,11 @@ body#settingsPage input#cc_number.error {
   width: 400px;
 }
 
+#s_reset {
+  margin: 170px auto 0 auto;
+  width: 400px;
+}
+
 #s_settings .accountdetails, #s_settings .checkoutdetails {
   margin: 85px auto 0 auto;
   width: 400px;
@@ -1608,7 +1613,7 @@ body#settingsPage input#cc_number.error {
   color: #333;
 }
 
-#s_signin div.error, #s_signup div.error {
+#s_signin div.error, #s_signup div.error, #s_reset div.error {
   float: right;
   display: inline-block;
   font-size: 14px;
@@ -1642,7 +1647,7 @@ body#settingsPage input#cc_number.error {
   font-weight: 600;
 }
 
-#signuperror, #loginerror {
+#signuperror, #loginerror, #reseterror {
   float: left;
   display: inline-block;
   color: red;
@@ -1949,7 +1954,7 @@ body#settingsPage input#cc_number.error {
     margin-right: 10px;
   }  
 
-  #s_signin, #s_signup {
+  #s_signin, #s_signup, #s_reset {
     width: 90%;
     margin-top: 58px;    
   }
@@ -2009,7 +2014,7 @@ body#settingsPage input#cc_number.error {
     margin-top: -43px;
   }  
 
-  #s_signin div.error, #s_signup div.error {
+  #s_signin div.error, #s_signup div.error, #s_reset div.error {
     text-align: right;
   }
 
@@ -2164,6 +2169,11 @@ body#settingsPage input#cc_number.error {
     width: 320px;
     margin-top: 72px;    
   } 
+
+  #s_reset {
+    width: 320px;
+    margin-top: 125px;    
+  }   
 
   #s_settings .accountdetails, #s_settings .checkoutdetails {
     width: 380px;

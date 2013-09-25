@@ -1811,6 +1811,15 @@ var WPCLib = {
 				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);  										  							
 			});		
 
+			// Check for any hashed parameters
+			var string = window.location.hash.substring(1);
+			if (string.length > 1) {
+				var p = string.split(/=|&/);
+				if (p.indexOf('reset') > -1) {
+					WPCLib.sys.user.showreset(p[p.indexOf('reset') + 1]);
+				}
+			} 
+
 			// Add keyboard shortcuts
 			WPCLib.util.registerEvent(document,'keydown', WPCLib.ui.keyboardshortcut);
 
@@ -2029,11 +2038,11 @@ var WPCLib = {
                 		// (hackish timeout to make sure we get proper user token from settings template, but works fine atm)
                 		var logreferrer = setTimeout(function(){
                 			analytics.identify(WPCLib.sys.user.id, {referrer:document.referrer});
-                		},1000);
+                		},2000);
                 	}
 	                if (type=='register' && method) {
 	                	analytics.track('Registers',{method:method});
-	                } else if (type == 'login') {
+	                } else if (type == 'login' || type == 'reset') {
 	                	analytics.track('Logs back in');
 	                }	                	
                 }
@@ -2043,6 +2052,120 @@ var WPCLib = {
                 // Housekeeping, switch authactive off
                 WPCLib.sys.user.authactive = false;
 			},	
+
+
+			requestreset: function() {
+				// Checks if there is a valid mail address and sends a password request for it
+				var email = document.getElementById('dialog').contentDocument.getElementById('loginform').getElementsByTagName('input')[0];
+				var error = document.getElementById('dialog').contentDocument.getElementById('loginerror');
+
+				// Check if there's any input at all
+				if (email.value.length<=5) {
+					email.className += ' error';
+					email.focus();
+					error.innerHTML = 'Please enter your email address and click "Lost Password?" again.';
+					return;
+				}
+
+				// Prepare posting
+				error.innerHTML = '';
+				var payload = { email: email.value.toLowerCase().trim() };
+
+				// Send request to backend
+				$.ajax({
+					url: "/xxx",
+	                type: "POST",
+	                contentType: "application/x-www-form-urlencoded",
+	                data: payload,
+					success: function() {
+						error.innerHTML = 'Reset instructions sent, please check your email inbox.';	                    
+					},
+					error: function(xhr) {				
+						if (xhr.status==500) {
+							error.innerHTML = "Something went wrong, please try again.";
+							return;
+						}
+						email.className += ' error';
+						error.innerHTML = JSON.parse(xhr.responseText);	              		                    						                    
+					}										
+				});				
+			},
+
+			showreset: function(hash) {
+				// Perform basic checks and open reset menu
+				if (this.level != 0) {
+			    	WPCLib.ui.statusflash('green','Please log out to reset your password.'); 	
+			    	return;				
+				}
+
+				// Store token
+				this.resetToken = hash;
+
+				// Perform iframe actions
+				var frame = document.getElementById('dialog');
+				frame.onload = function() {
+					var landing = document.getElementById('landing');
+					if (landing) WPCLib.ui.fade(landing,-1,150);					
+					WPCLib.ui.showDialog(null,'','s_reset','new_password');
+				}
+			},			
+
+			redoTokenRequest: false,
+			resetToken: '',
+			resetpwd: function() {
+				// Perform basic checks and submit request
+				var frame = document.getElementById('dialog').contentDocument;
+				var inputs = frame.getElementById('resetform').getElementsByTagName('input');
+				var button = frame.getElementById('resetbutton');
+				var error = frame.getElementById('reseterror');
+				var pwd1 = inputs[0]; 
+				var pwd2 = inputs[1];
+
+				if (this.redoTokenRequest) {
+					// If previous token submit got an error, switch view to requesting new token via mail and abort
+					WPCLib.ui.switchView(frame.getElementById('s_signin'));
+					frame.getElementById('signup_mail').focus();					
+					return;
+				}
+
+				if (pwd1.value.length == 0) {
+					// Check if password is provided
+					pwd1.className += ' error';
+					pwd1.nextSibling.innerHTML = 'Please enter a new password';
+					return;
+				}				
+
+				if (pwd1.value != pwd2.value) {
+					// Check if passwords match and abort otherwise
+					pwd2.className += ' error';
+					pwd2.nextSibling.innerHTML = 'Passwords do not match';
+					pwd2.value = '';
+					return;
+				}
+
+				// Post to backend
+				button.innerHTML = 'Resetting...';
+				var payload = { password: pwd1.value };
+				var url = '/reset/'+this.resetToken;
+				$.ajax({
+					url: url,
+	                type: "POST",
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(payload),
+					success: function(data) {
+						WPCLib.sys.user.authed('reset',data);	                    
+					},
+					error: function(data) {               		                    
+						if (data.status = 404) {
+							WPCLib.sys.user.redoTokenRequest = true;
+							button.innerHTML = 'Request New Reset';
+							pwd1.disabled = true;
+							pwd2.disabled = true;
+							error.innerHTML = 'Your reset link expired, please request a new one.';
+						}	                  	  
+					}										
+				});				
+			},
 
 			logio: function() {
 				if (this.level==0) WPCLib.folio.showSettings('s_signin','signin_mail');				

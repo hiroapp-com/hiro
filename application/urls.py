@@ -21,9 +21,12 @@ app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan, m
 app.add_url_rule('/register', 'register', view_func=views.register, methods=['POST'])
 app.add_url_rule('/login', 'login', view_func=views.login, methods=['POST'])
 app.add_url_rule('/logout', 'logout', view_func=views.logout, methods=['GET', 'POST'])
+app.add_url_rule('/reset/<token>', 'reset_password', view_func=views.reset_password, methods=['GET', 'POST'])
 app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect, methods=['GET'])
 app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, methods=['GET', 'POST'])
 
+# super-user only realm, AAA pass required.
+app.add_url_rule('/aaa/create_token/<user_id>', 'create_token', view_func=views.create_token, methods=['GET'])
 
 # document store
 app.add_url_rule('/docs/', 'list_documents', view_func=views.list_documents, methods=['GET'])

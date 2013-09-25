@@ -10,7 +10,7 @@
 	<div>
         {% if not current_user.is_authenticated() %}
 		<div id="s_login">
-			<div id="s_signup">
+			<div id="s_signup" style="display:none;">
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';facebooklogin();return false;">Sign-In With&nbsp;<b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform">
@@ -32,8 +32,18 @@
 				</form>		
 				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</a>	
 				<div id="loginerror"></div>				
-				<a href="#" class="small" onclick="return false;">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>
+				<a href="#" class="small" onclick="_wpc.sys.user.requestreset();return false;">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>
 			</div>	
+			<div id="s_reset" style="display:none;">
+				<form id="resetform">
+					<input type="password" placeholder="New password" onkeydown="this.nextSibling.innerHTML='';" id="new_password"></input><div class="error"></div>
+					<input type="password" placeholder="Repeat password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
+					<input type="submit" value="foo" onclick="_wpc.sys.user.resetpwd(); return false;" class="pseudobutton"></input>
+				</form>		
+				<a href="" class="wpcbutton green" id="resetbutton" onclick="_wpc.sys.user.resetpwd(); return false;">Reset Password</a>	
+				<div id="reseterror"></div>	
+				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin')); return false;">Login with old password.</a>								
+			</div>			
 		</div>	
 
 		<script type="text/javascript">
@@ -102,7 +112,6 @@
 			});
 		}
 		</script>
-
         {% endif %}
 
 		<div id="s_settings" {% if not current_user.is_authenticated() %}style="display:none;"{% endif %}>

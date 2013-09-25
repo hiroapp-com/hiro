@@ -1,6 +1,8 @@
 import os
+import uuid
 import time
 import calendar
+from hashlib import sha512
 from datetime import datetime
 
 import stripe
@@ -37,7 +39,7 @@ class User(UserMixin, ndb.Model):
     facebook_uid = ndb.StringProperty()
     stripe_cust_id = ndb.StringProperty()
     relevant_counter = ndb.IntegerProperty(default=0)
-
+    has_root = ndb.BooleanProperty(default=False)
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
     latest_doc = property(lambda self: Document.query(Document.owner == self.key).order(-Document.updated_at).get())
@@ -174,7 +176,8 @@ class Anonymous(AnonymousUser):
     name = u"Anonymous"
     has_paid_plan = False
     latest_doc = None
-    usage_quota = 20
+    usage_quota = 10
+    has_root = False
 
     def _get_usage_ctr(self):
         return session.get('usage-relevant', 0)
@@ -247,5 +250,25 @@ class Document(ndb.Model):
 class StripeToken(ndb.Model):
     used_by = ndb.KeyProperty(kind=User)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
+
+class PasswordToken(ndb.Model):
+    user = ndb.KeyProperty(kind=User)
+    created_at = ndb.DateTimeProperty(auto_now_add=True)
+    #hash = ndb.StringProperty()
+
+    @classmethod
+    def create_for(cls, user):
+        # since we only store a hash of the token, we cannot
+        # reuse tokens. thus, clean up old ones before creating 
+        # a new one
+        PasswordToken.query(PasswordToken.user == user.key).map(lambda e: e.key.delete())
+        token = uuid.uuid4().hex
+        key = sha512(token).hexdigest()
+        obj = cls(id=key, user=user.key)
+        obj.put()
+        return token
+
+
+
 
     
