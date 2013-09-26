@@ -1209,13 +1209,15 @@ var WPCLib = {
 			switch(type) {
 				case 'mail':
 					// This is only used on touch devices ( see mail exception in list() above)
-					if (event) event.srcElement.className = 'action done';
+					var target = event.target || event.srcElement;
+					if (target) target.className = 'action done';
 					alert();
 					var s = 'mailto:?subject='+encodeURIComponent(title)+'&body='+encodeURIComponent(text);
 					window.location.href = s;
 					break;
 				case 'twitter':
-					if (event) event.srcElement.className = 'action done';				
+					var target = event.target || event.srcElement;				
+					if (target) target.className = 'action done';				
 					var s = 'https://twitter.com/intent/tweet?text=';
 					// Choose either title or (selected) text
 					text = (text.length == 0) ? title : text;
@@ -1241,7 +1243,8 @@ var WPCLib = {
 
 			// Find the right element where the click happened, show whats going on
 			var pos = WPCLib.publish.actions[service].id - 1;
-			var el = (event) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];
+			var target = event.target || event.srcElement;
+			var el = (target) ? target : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];
 			el.className = 'action doing';
 			el.innerHTML = 'Publishing';					
 
@@ -1271,7 +1274,7 @@ var WPCLib = {
 					WPCLib.ui.hideDialog();
 			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].name+'.'); 
 					WPCLib.publish.actions[service].publishing = false;
-					var el = (event && event.srcElement) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];	
+					var el = (target) ? target : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];	
 					el.className = 'action done';		
 					el.innerHTML = WPCLib.publish.actions[service].name;	
 				},function(data){
@@ -1539,11 +1542,12 @@ var WPCLib = {
 			// This replaces the current (or last) text selection on the canvas with the respective synonym
 			event.preventDefault();
 			// Abort if user clicks anywhere else but a link
-			if (!event.srcElement || event.srcElement.nodeName != 'A') return;
+			var target = event.target || event.srcElement;
+			if (!target || target.nodeName != 'A') return;
 			var source = WPCLib.canvas.text;
 			var oldpos = this.replacementrange;
 			var oldword = this.replacementword;
-			var newword = event.srcElement.innerHTML;
+			var newword = target.innerHTML;
 
 			// replace internal and visual selection with new string
 			WPCLib.canvas.text = document.getElementById(WPCLib.canvas.contentId).value = source.slice(0,oldpos[0]) + oldpos[2].replace(oldword,newword) + source.slice(oldpos[1]);
