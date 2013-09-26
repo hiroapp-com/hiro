@@ -1219,7 +1219,7 @@ var WPCLib = {
 					var s = 'https://twitter.com/intent/tweet?text=';
 					// Choose either title or (selected) text
 					text = (text.length == 0) ? title : text;
-					s = s + text;
+					s = s + encodeURIComponent(text.substring(0,1000));
 					// Open twitter window or redirect to twitter
 					if (window.navigator.standalone) {
 						window.location.href = s;
@@ -1267,7 +1267,9 @@ var WPCLib = {
 					payload.mobile = true;
 				}										
 				filepicker.exportFile(data.url,payload,function(data){
-			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].fpservicename+'.'); 
+					// Yay, completed & successful
+					WPCLib.ui.hideDialog();
+			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].name+'.'); 
 					WPCLib.publish.actions[service].publishing = false;
 					var el = (event && event.srcElement) ? event.srcElement : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];	
 					el.className = 'action done';		
@@ -1567,14 +1569,22 @@ var WPCLib = {
 			var newresults = results.cloneNode();
 			var sticky = this.sticky;
 			if (sticky) {
+				// Add sticky links to DOM object
 				for (var i=0,l=sticky.length;i<l;i++) {											
 					newresults.appendChild(this._buildresult(sticky[i], true));
 				}
 			}
 			var links = this.links;			
-			for (var i=0,l=links.length;i<l;i++) {						
+			for (var i=0,l=links.length;i<l;i++) {	
+				// Add normal links to DOM object
 				newresults.appendChild(this._buildresult(links[i], false));
-			}				
+			}	
+			if (this.links.length == 0 && WPCLib.sys.user.level <= 1) {
+				var tip = document.createElement('div');
+				tip.className = 'tip';
+				tip.innerHTML = 'Tip: Select a single word or just a part of your text to narrow your search.';
+				newresults.appendChild(tip);
+			}			
 			results.parentNode.replaceChild(newresults, results);			    
 		},
 

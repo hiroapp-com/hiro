@@ -877,6 +877,11 @@ a.wpcbutton:hover {
   font-style: normal;
 }
 
+#wwwresults .tip {
+  margin: 10px 10px 0 115px;
+  color: #999;
+}
+
 #wwwresults .result.touch:hover {
   border-bottom: 1px solid #c5c5c5; 
   margin-left: 50px;   
@@ -1965,7 +1970,7 @@ body#settingsPage input#cc_number.error {
     padding-bottom: 8px;
   }  
 
-  #s_settings .accountdetails, #s_settings .checkoutdetails {
+  #s_settings .checkoutdetails {
     width: 90%;
     margin-top: 17px;   
     position: relative; 
@@ -1990,8 +1995,8 @@ body#settingsPage input#cc_number.error {
 
   #s_account form .ioption:last-child {
     position: absolute;
-    top: 147px;
-    right: 0; 
+    top: 166px;
+    right: 17px; 
     z-index: 99000;
   }
 
@@ -2016,6 +2021,21 @@ body#settingsPage input#cc_number.error {
 
   #s_signin div.error, #s_signup div.error, #s_reset div.error {
     text-align: right;
+  }
+
+  #s_settings .accountdetails {
+    position: absolute;
+    width: auto;
+    margin: 0;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-x: hidden; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
+    border-bottom: none;
+    padding: 19px 16px 15px 16px;    
   }
 
   .accountdetails .divider {
