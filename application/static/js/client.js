@@ -98,7 +98,7 @@ var WPCLib = {
 				// 5 seconds should be sufficient between initializing save and the save arriving in the backend
 				if (currentremote.id == WPCLib.canvas.docid && (currentremote.updated - WPCLib.canvas.lastUpdated) > 5 ) {
 					// If there's a newer version of the current document
-					console.log('Newer version on server detected, loading now');
+					WPCLib.sys.log('Newer version on server detected, loading now');
 					WPCLib.canvas.loaddoc(latest.id,latest.title);					
 					WPCLib.folio.docs.loaddocs(true);
 				}					
@@ -152,7 +152,7 @@ var WPCLib = {
 			loadlocal: function(localdoc) {	
 				// Load locally saved document
 				var ld = JSON.parse(localdoc);					
-				console.log('Localstorage doc found, loading ', ld);						
+				WPCLib.sys.log('Localstorage doc found, loading ', ld);						
 				document.getElementById('landing').style.display = 'none';
 
 				// Render doc in folio
@@ -175,7 +175,8 @@ var WPCLib = {
 				var archive = document.getElementById(that.archiveId);					
 
 				// Reset all contents and handlers
-				docs.innerHTML = archive.innerHTML = '';	
+				if (docs) docs.innerHTML = '';
+				if (archive) archive.innerHTML = '';	
 
 				// Render all links
 				for (i=0,l=act.length;i<l;i++) {		
@@ -314,7 +315,7 @@ var WPCLib = {
 				if ( WPCLib.sys.user.level==0) {
 					// Anon user doc gets stored locally
 					var doc = document.getElementById('doc_creating');
-					console.log('unknown user, setting up localstore ');
+					WPCLib.sys.log('unknown user, setting up localstore ');
 
 					// Set params for local doc
 					WPCLib.canvas.docid = 'localdoc';
@@ -326,7 +327,7 @@ var WPCLib = {
 				} else {
 					// Request new document id
 					var doc = document.getElementById('doc_creating');
-					console.log('known user, setting up remote store ');
+					WPCLib.sys.log('known user, setting up remote store ');
 
 					// Submit timestamp for new doc id
 					var file = {};				
@@ -339,7 +340,7 @@ var WPCLib = {
 		                contentType: "application/json; charset=UTF-8",
 		                data: JSON.stringify(file),
 						success: function(data) {
-		                    console.log("backend issued doc id ", data);
+		                    WPCLib.sys.log("backend issued doc id ", data);
 
 							// Set params for local doc
 							WPCLib.canvas.docid = data;
@@ -373,7 +374,7 @@ var WPCLib = {
 		                contentType: "application/json; charset=UTF-8",
 		                data: JSON.stringify(file),
 						success: function(data) {
-		                    console.log("move local to backend with new id ", data);
+		                    WPCLib.sys.log("move local to backend with new id ", data);
 		                    // Delete local item
 		                    localStorage.removeItem('WPCdoc')
 
@@ -627,7 +628,7 @@ var WPCLib = {
 
 			// backend saving, locally or remote
 			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
-				console.log('saving remotely: ', file);				
+				WPCLib.sys.log('saving remotely: ', file);				
 				$.ajax({
 					url: "/docs/"+this.docid,
 	                type: "PATCH",
@@ -640,8 +641,13 @@ var WPCLib = {
 					}
 				});
 			} else {
-				console.log('saving locally: ', file);					
-				localStorage.setItem("WPCdoc", JSON.stringify(file));
+				WPCLib.sys.log('saving locally: ', file);	
+			    try { 
+					localStorage.setItem("WPCdoc", JSON.stringify(file));
+				} catch(e) {
+			        alert('Please sign up to safely store long documents.');
+			        WPCLib.sys.user.upgrade(1);
+			    }				
 				WPCLib.canvas.saved = true;	
 				if (force) status.innerHTML = 'Saved!';								
 			}	
@@ -657,7 +663,7 @@ var WPCLib = {
 		loaddoc: function(docid, title) {
 			// Load a specific document to the canvas
 			if (!this.saved) this.savedoc();			
-			console.log('loading doc id: ', docid);
+			WPCLib.sys.log('loading doc id: ', docid);
 			var mobile = (document.body.offsetWidth<=900);			
 
 			// If we already know the title, we shorten the waiting time
@@ -937,7 +943,7 @@ var WPCLib = {
 			// count chars and execute on n char changes
 			this.newChars++;
 			if (this.newChars>=this.newCharThreshhold) {
-				console.log(this.newChars + ' new chars typed');
+				WPCLib.sys.log('new chars typed: ',this.newChars);
 				// WPCLib.sys.savetext(this.text);
 				this.newChars = 0;
 			};
@@ -960,7 +966,7 @@ var WPCLib = {
 			var cw = t.split(' ').length-1;
 			if (cw != this.wordcount) this.newWords++;
 			if (this.newWords>=this.newWordThreshhold) {
-				console.log('new words');
+				WPCLib.sys.log('new words');
 				this.newWords = 0;	
 			} 
 			this.wordcount = cw;
@@ -986,7 +992,7 @@ var WPCLib = {
 			// Debug logging of text, position etc
 			var log = document.getElementById('log');
 			var pos = this.caretPosition;
-			console.log('Words: ' + this.wordcount + " Lines: " + this.linecount + " Pos: " + pos);			
+			WPCLib.sys.log('Words: ' + this.wordcount + " Lines: " + this.linecount + " Pos: " + pos);			
 		},
 
 		textclick: function() {
@@ -1040,10 +1046,10 @@ var WPCLib = {
 			}	
 
 
-			var el = document.getElementById(this.contentId);	
+			var el = document.getElementById(WPCLib.canvas.contentId);	
 
 			// Abort if focus is already on textarea
-			if (el.id == document.activeElement.id) return;  			
+			if (el && el.id == document.activeElement.id) return;  			
 
     		// Abort if device is mobile (body or landscape) and menu not fully closed yet or text length is larger than visible area   		
     		if ('ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
@@ -1507,7 +1513,8 @@ var WPCLib = {
 			// render the synonym resultlist if we got one from the API
 			var results = document.getElementById(this.synresultsId);
 			var newresults = results.cloneNode();
-			console.log(data);
+			newresults.innerHTML = '';
+			WPCLib.sys.log('Synonyms: ',data);
 
 			for (var synonyms in data) {
 				// create a generic element holding all data and add header	
@@ -1911,7 +1918,13 @@ var WPCLib = {
 		},
 
 		error: function(data) {
-			console.log('Dang, something went wrong: ',data);
+			WPCLib.sys.log('Dang, something went wrong: ',data);
+		},
+
+		log: function(msg,payload) {
+			if (window.location.href.indexOf('hiroapp') == -1) {
+				console.log(msg,payload);
+			}
 		},
 
 		user: {
@@ -2464,7 +2477,7 @@ var WPCLib = {
 	   				obj.detachEvent('on'+eventType.toLowerCase(), handler);
 				}
 				catch(e) {
-					console.log(e);
+					WPCLib.sys.log('',e);
 				}
 			}
 			else {
@@ -2791,7 +2804,7 @@ var WPCLib = {
 			var mp = WPCLib.ui.menuCurrPos;
 			// On touch devices we also remove the keyboard
 			if ('ontouchstart' in document.documentElement) {
-				if (document.activeElement.id==WPCLib.canvas.contentId&&mp==0) document.activeElement.blur();
+				if (document.activeElement.id == WPCLib.canvas.contentId && mp==0) document.activeElement.blur();
 			}			
 			if (mp==0) WPCLib.ui.menuSlide(1);
 			if (mp!=0) WPCLib.ui.menuSlide(-1);
@@ -2801,7 +2814,6 @@ var WPCLib = {
 		menuSlide: function(direction, callback, delayed) {
 			if (delayed && !this.delayedtimeout && this.menuCurrPos == 0 ) {
 				// Add a slight delay
-				console.log('kick it');
 				this.delayedtimeout = setTimeout(function(){					
 					var that = WPCLib.ui;
 					that.delayedtimeout = null;
@@ -2888,7 +2900,7 @@ var WPCLib = {
 			}	
 			if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos != 0) {
 				// Prevent delayed dragging of menu or setting focus
-				event.preventDefault();
+				if (event) event.preventDefault();
 			}			
 			if (this.menuHideTimer) {
 				clearTimeout(this.menuHideTimer);				
@@ -3002,7 +3014,8 @@ var WPCLib = {
 
 		documentcounter: function() {
 			// Updates the field in the settings with the current plan & document count
-			var val, level = WPCLib.sys.user.level, target = document.getElementById('dialog').contentDocument.getElementById('s_account'), upgradelink;
+			var val, level = WPCLib.sys.user.level, upgradelink; 
+			var target = (document.getElementById('dialog').contentDocument) ? document.getElementById('dialog').contentDocument.getElementById('s_account') : null;
 			var doccount = WPCLib.sys.user.doccount = (WPCLib.folio.docs.archived.length > 0) ? WPCLib.folio.docs.archived.length + WPCLib.folio.docs.active.length : WPCLib.folio.docs.active.length;
 			
 			if (!target) {
