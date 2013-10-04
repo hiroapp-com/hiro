@@ -696,14 +696,14 @@ a.wpcbutton:hover {
 }
 
 #publish .header {
-  display: none;
+  display: block;
   text-align: right;
   width: 60px;
   height: 50px;
   background-image: url(../img/publish.2.png);
   background-repeat: no-repeat;
   background-size: 40px auto; 
-  opacity: 0.1; 
+  opacity: 0.07; 
   background-position: right 2px;
 }
 
@@ -1591,6 +1591,11 @@ body#settingsPage input#cc_number.error {
   width: 530px;
   color: #666;
   line-height: 22px;
+}
+
+#s_about .aboutsection em {
+  font-style: normal;
+  color: #1a1a1a;
 }
 
 #s_login a.fb {

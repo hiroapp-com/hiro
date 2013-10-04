@@ -27,7 +27,19 @@ var WPCLib = {
 			// Register "close folio" events to rest of the page
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
 			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'touchstart', WPCLib.ui.menuHide);			
-			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);		
+			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);	
+
+			// Register event that cancels the delayed opening of the menu if cursor leaves browser
+			WPCLib.util.registerEvent(document,'mouseout', function(e) {
+			    e = e ? e : window.event;
+			    var from = e.relatedTarget || e.toElement;
+			    if (!from || from.nodeName == "HTML") {
+			    	if (WPCLib.ui.delayedtimeout) {
+			    		clearTimeout(WPCLib.ui.delayedtimeout);
+			    		WPCLib.ui.delayedtimeout = null;
+			    	}
+			    }			
+			});				
 		},
 
 		checkconsistency: function() {
@@ -709,7 +721,7 @@ var WPCLib = {
 					} else {
 						WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);
 					}
-					document.getElementById(WPCLib.context.statusId).innerHTML = 'All loaded, keep going.';						
+					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';						
 				}
 			});						
 		},	
@@ -1079,25 +1091,25 @@ var WPCLib = {
 			mail: {
 				id: 1,
 				name: 'Email',
-				level: 0,
+				level: 1,
 				charlimit: 0
 			},
 			twitter: {
 				id: 2,
 				name: 'Twitter',
-				level: 0,
-				charlimit: 0
+				level: 1,
+				charlimit: 400
 			},
 			dbox: {
 				id: 3,
 				name: 'Dropbox',
-				level: 1,
+				level: 2,
 				fpservicename: 'DROPBOX'
 			},			
 			gdrive: {
 				id: 4,
 				name: 'Google Drive',
-				level: 1,
+				level: 2,
 				charlimit: 0,
 				token: 'AIzaSyCVQSaEEnjvDmmr9gvXjNaeGDHr98IVf60',
 				client_id: '212935062645.apps.googleusercontent.com',
@@ -1158,18 +1170,18 @@ var WPCLib = {
 						}
 					} else {
 						if (level == 0) {
-							a.setAttribute('title','Upgrade');								
-							a.setAttribute('onclick',"WPCLib.sys.user.upgrade(1);");														
+							a.setAttribute('title','Signup to publish');								
+							a.setAttribute('onclick',"WPCLib.sys.user.upgrade(1);return false;");														
 						} else {
-							a.setAttribute('title','Sign Up Now');
-							a.setAttribute('onclick',"WPCLib.sys.user.forceupgrade(2,'<em>Upgrade now to </em><b>use this action</b>.');");					
+							a.setAttribute('title','Upgrade');
+							a.setAttribute('onclick',"WPCLib.sys.user.forceupgrade(2,'<em>Upgrade now for </em><b>basic publishing</b>.');");					
 						}
 					}
 
 					// Handle mail edge case here as we can't do it onclick
 					if (action == 'mail') {
 						// We reset the clickactions in this case:
-						if (!('ontouchstart' in document.documentElement)) {
+						if (!('ontouchstart' in document.documentElement) && level != 0) {
 							a.setAttribute('onclick',"");
 						} else {
 							a.setAttribute('ontouchstart','');
@@ -1221,7 +1233,7 @@ var WPCLib = {
 					var s = 'https://twitter.com/intent/tweet?text=';
 					// Choose either title or (selected) text
 					text = (text.length == 0) ? title : text;
-					s = s + encodeURIComponent(text.substring(0,1000));
+					s = s + encodeURIComponent(text.substring(0,400));
 					// Open twitter window or redirect to twitter
 					if (window.navigator.standalone) {
 						window.location.href = s;
@@ -1396,7 +1408,7 @@ var WPCLib = {
                     success: function(data) {
                         WPCLib.context.storeresults(data.results);
                         WPCLib.context.renderresults();		             
-                        document.getElementById(that.statusId).innerHTML = 'Ready for more.';
+                        document.getElementById(that.statusId).innerHTML = 'Ready.';
                     }
                 });				
 			} else {
@@ -1413,10 +1425,12 @@ var WPCLib = {
 				return;
 			}	
 			if (title=='null' || title==null) title = '';			
-			var string = (textonly) ? text : title + ' ' + text;
-			document.getElementById(this.statusId).innerHTML = (!WPCLib.canvas.saved) ? 'Saving & Searching...' : 'Searching...';			
+			var string = (textonly) ? text : title + ' ' + text;		
 			var payload = {text: string};
 			var that = this;
+			var saved = WPCLib.canvas.saved;
+			var level = WPCLib.sys.user.level;
+			document.getElementById(this.statusId).innerHTML = (!saved || level == 0) ? 'Saving & Searching...' : 'Searching...';				
 
 			// Handle short strings for synonym search, first find out how many words we have and clean up string
 			var ss = string.replace(/\r?\n/g," "); 
@@ -1461,7 +1475,7 @@ var WPCLib = {
                 success: function(data) {
                     WPCLib.context.storeresults(data.results);
                     WPCLib.context.renderresults();		             
-                    document.getElementById(that.statusId).innerHTML = 'Ready for more.';
+                    document.getElementById(that.statusId).innerHTML = (saved && level > 0) ? 'Ready.' : 'Saved.';                   
                 }
             });				
 		},
@@ -1572,6 +1586,7 @@ var WPCLib = {
 			var results = document.getElementById(this.wwwresultsId);
 			var newresults = results.cloneNode();
 			var sticky = this.sticky;
+			newresults.innerHTML = '';
 			if (sticky) {
 				// Add sticky links to DOM object
 				for (var i=0,l=sticky.length;i<l;i++) {											
@@ -1588,7 +1603,7 @@ var WPCLib = {
 				tip.className = 'tip';
 				tip.innerHTML = 'Tip: Select a single word or just a part of your text to narrow your search.';
 				newresults.appendChild(tip);
-			}			
+			}		
 			results.parentNode.replaceChild(newresults, results);			    
 		},
 
@@ -2209,7 +2224,7 @@ var WPCLib = {
 				var publish = document.getElementById(WPCLib.publish.id);
 				switch(level) {
 					case 0:
-						signupButton.style.display = 'block';	
+						signupButton.style.display = 'block';					
 						this.level = 0;					
 						break;
 					case 1:		
@@ -2233,7 +2248,6 @@ var WPCLib = {
 						results.style.marginRight = '1px';
 						results.style.paddingRight = '2px';						
 						signupButton.style.display = 'none';
-						if (publish) publish.getElementsByTagName('div')[0].style.display = 'block';
 						logio.className = 'logio logout';
 						logio.getElementsByTagName('a')[0].title = 'Logout';
 						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
@@ -2783,7 +2797,18 @@ var WPCLib = {
 			if (mp!=0) WPCLib.ui.menuSlide(-1);
 		},
 
-		menuSlide: function(direction, callback) {
+		delayedtimeout: null,
+		menuSlide: function(direction, callback, delayed) {
+			if (delayed && !this.delayedtimeout && this.menuCurrPos == 0 ) {
+				// Add a slight delay
+				console.log('kick it');
+				this.delayedtimeout = setTimeout(function(){					
+					var that = WPCLib.ui;
+					that.delayedtimeout = null;
+					that.menuSlide(direction,'',false);					
+				},55);
+				return;
+			}
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
 			var context = document.getElementById('context');
@@ -2856,6 +2881,11 @@ var WPCLib = {
 		},
 
 		menuHide: function() {
+			var that = WPCLib.ui;			
+			if (that.delayedtimeout) {
+				clearInterval(that.delayedtimeout);
+				that.delayedtimeout = null;
+			}	
 			if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos != 0) {
 				// Prevent delayed dragging of menu or setting focus
 				event.preventDefault();
@@ -2863,7 +2893,6 @@ var WPCLib = {
 			if (this.menuHideTimer) {
 				clearTimeout(this.menuHideTimer);				
 			}
-			var that = WPCLib.ui;
 			this.menuHideTimer = setTimeout(function(){that.menuSlide(-1);},1);			
 		},
 
