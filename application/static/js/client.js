@@ -1106,14 +1106,20 @@ var WPCLib = {
 				level: 1,
 				charlimit: 400
 			},
-			dbox: {
+			tumblr: {
 				id: 3,
+				name: 'Tumblr',
+				level: 1,
+				charlimit: 2000
+			},			
+			dbox: {
+				id: 4,
 				name: 'Dropbox',
 				level: 2,
 				fpservicename: 'DROPBOX'
 			},			
 			gdrive: {
-				id: 4,
+				id: 5,
 				name: 'Google Drive',
 				level: 2,
 				charlimit: 0,
@@ -1215,7 +1221,8 @@ var WPCLib = {
 				event.preventDefault();
 				event.stopPropagation();
 				WPCLib.util.stopEvent(event);
-			}
+				var target = event.target || event.srcElement;				
+			}			
 
 			// Collect title and text, see if we have an active selection
 			var title = document.getElementById(WPCLib.canvas.pageTitle).value;
@@ -1227,15 +1234,12 @@ var WPCLib = {
 			switch(type) {
 				case 'mail':
 					// This is only used on touch devices ( see mail exception in list() above)
-					var target = event.target || event.srcElement;
 					if (target) target.className = 'action done';
-					alert();
 					var s = 'mailto:?subject='+encodeURIComponent(title)+'&body='+encodeURIComponent(text);
 					window.location.href = s;
 					break;
-				case 'twitter':
-					var target = event.target || event.srcElement;				
-					if (target) target.className = 'action done';				
+				case 'twitter':			
+					if (event && target) target.className = 'action done';				
 					var s = 'https://twitter.com/intent/tweet?text=';
 					// Choose either title or (selected) text
 					text = (text.length == 0) ? title : text;
@@ -1247,6 +1251,19 @@ var WPCLib = {
 						window.open(s,'twitter','height=282,width=600');
 					} 
 					break;
+				case 'tumblr':			
+					if (event && target) target.className = 'action done';				
+					var s = 'http://www.tumblr.com/share/quote?quote=';
+					// Choose either title or (selected) text
+					text = (text.length == 0) ? title : text;
+					s = s + encodeURIComponent(text.substring(0,1900));
+					// Open twitter window or redirect to twitter
+					if (window.navigator.standalone) {
+						window.location.href = s;
+					} else {
+						window.open(s,'tumblr','height=550,width=550');
+					} 
+					break;						
 				case 'gdrive':
 					this.filepickerupload(event,type,title,text);				
 					break;
