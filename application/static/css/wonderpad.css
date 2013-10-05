@@ -1293,7 +1293,7 @@ body#landingPage {
 
 body#landingPage h1 {
   position: absolute;
-  margin: 55px auto 0 auto;
+  margin: 45px auto 0 auto;
   left: 0;
   right: 0;
   font-family: "urbana",sans-serif;
@@ -1306,6 +1306,12 @@ body#landingPage h1 {
 body#landingPage h1 em {
   font-style: normal; 
   color: #333;
+}
+
+body#landingPage h1 .sub {
+  display: block;
+  font-size: 18px;
+  color: #999;
 }
 
 body#landingPage .cto {
@@ -1419,18 +1425,30 @@ body#landingPage .teaser .screen  .blurb .desc em {
 }
 
 @media (max-width: 480px) {
-  body#landingPage h1 em {
-    font-size: 40px; 
-    display: block;
-    color: #333;
-  }
-
   body#landingPage h1 {
+    text-align: center;
     margin: 10% auto 0 auto;    
     font-size: 16px; 
     line-height: 25px;  
     color: #666;  
   }
+
+  body#landingPage h1 em {
+    font-size: 40px; 
+    display: block;
+    color: #333;
+  }  
+
+  body#landingPage h1 .claim {
+    display: none;
+  }   
+
+  body#landingPage h1 .sub {
+    color: #666; 
+    font-size: 16px; 
+    line-height: 18px;
+    margin: 8px 15% 0 15%;   
+  } 
 
   body#landingPage .teaser {
     position: absolute;
@@ -1504,17 +1522,25 @@ body#landingPage .teaser .screen  .blurb .desc em {
 }
 
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+  body#landingPage h1 {
+    margin: 10% auto 0 auto;    
+    font-size: 18px; 
+    line-height: 28px;  
+    color: #666;  
+  }
+
   body#landingPage h1 em {
     font-size: 40px; 
     display: block;
     color: #333;
   }
 
-  body#landingPage h1 {
-    margin: 8% auto 0 auto;    
-    font-size: 18px; 
-    line-height: 28px;  
-    color: #666;  
+  body#landingPage h1 .claim {
+    display: none;  
+  }  
+
+  body#landingPage h1 .sub {
+    color: #666;
   }
 }
 
