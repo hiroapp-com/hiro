@@ -131,8 +131,8 @@
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="_wpc.ui.facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
-					<a href="https://twitter.com/intent/tweet?text=Never%20lose%20your%20best%20world%20domination%20plans%2C%20again%20%23hiro%20%23notetaking%20%23app%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="wpcbutton share tw">via&nbsp;<b>Twitter</b></a>	
-					<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Good%20way%20to%20write%20%26%20manage%20texts%3A%20www.hiroapp.com" class="wpcbutton share mail green" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'Mail'});" target="_blank">via&nbsp;<b>Mail</b></a>	
+					<a href="https://twitter.com/intent/tweet?text=A%20safe%20place%20for%20your%20ideas%20%23hiro%20%23notetaking%20%23app%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="wpcbutton share tw">via&nbsp;<b>Twitter</b></a>	
+					<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20little%20app%20for%20daily%20note-taking%3A%20www.hiroapp.com" class="wpcbutton share mail green" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'Mail'});" target="_blank">via&nbsp;<b>Mail</b></a>	
 					<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'SMS'});" class="wpcbutton share sms">via&nbsp;<b>SMS</b></a>
 				</div>	
 				{% endif %}					
@@ -151,10 +151,10 @@
 						<div class="price">Free!</div>
 						<div class="curr">&nbsp;</div>	
 						<ul>
+							<li>Fine for daily usage
+							<li>Encrypted like all plans							
 							<li>Up to 10 notes
 							<li>100 context searches	
-							<li>
-							<li>
 						</ul>
 						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
 						<a href="#" class="wpcbutton red" onclick="_wpc.sys.user.downgrade('free');return false;">Downgrade</a>	
@@ -180,8 +180,8 @@
 						<ul>
 							<li>All Starter features
 							<li>Speciality data sources
+							<li>Advanced publishing								
 							<li>Chrome research plugin							
-							<li>Advanced publishing	
 						</ul>
 						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
 						<a href="#" class="wpcbutton green" onclick="_wpc.ui.fillcheckout('pro');return false;">Preorder !</a>	

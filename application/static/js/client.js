@@ -1115,13 +1115,13 @@ var WPCLib = {
 			dbox: {
 				id: 4,
 				name: 'Dropbox',
-				level: 2,
+				level: 1,
 				fpservicename: 'DROPBOX'
 			},			
 			gdrive: {
 				id: 5,
 				name: 'Google Drive',
-				level: 2,
+				level: 1,
 				charlimit: 0,
 				token: 'AIzaSyCVQSaEEnjvDmmr9gvXjNaeGDHr98IVf60',
 				client_id: '212935062645.apps.googleusercontent.com',
@@ -1130,7 +1130,13 @@ var WPCLib = {
 				callback: null,
 				publishing: false,
 				fpservicename: 'GOOGLE_DRIVE'
-			}
+			},
+			evernote: {
+				id: 6,
+				name: 'Evernote',
+				level: 1,
+				fpservicename: 'EVERNOTE'
+			}				
 		}, 
 
 		auth: {
@@ -1265,11 +1271,10 @@ var WPCLib = {
 					} 
 					break;						
 				case 'gdrive':
-					this.filepickerupload(event,type,title,text);				
-					break;
 				case 'dbox':
+				case 'evernote':
 					this.filepickerupload(event,type,title,text);				
-					break;								
+					break;												
 			}
 		},
 
@@ -2776,7 +2781,7 @@ var WPCLib = {
 	            link: 'https://www.hiroapp.com',
 	            name: 'Hiro.',
 	            caption: 'https://www.hiroapp.com',
-	            description: "Hiro makes it easier to capture your best ideas: It's extremely fast, beautifully designed and works on all your devices.",
+	            description: "Hiro is a safe place to write down your ideas: It's extremely fast, beautifully designed and works on all your devices.",
 	            actions: {
 	                name: 'Start writing',
 	                link: 'https://www.hiroapp.com/connect/facebook',
