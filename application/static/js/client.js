@@ -2128,11 +2128,11 @@ var WPCLib = {
 
 				// Prepare posting
 				error.innerHTML = '';
-				var payload = { email: email.value.toLowerCase().trim(), password: 'foo' };
+				var payload = { email: email.value.toLowerCase().trim() };
 
 				// Send request to backend
 				$.ajax({
-					url: "/login",
+					url: "/reset_password",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
@@ -2144,11 +2144,13 @@ var WPCLib = {
 							error.innerHTML = "Something went wrong, please try again.";
 							return;
 						}
-						var et = JSON.parse(xhr.responseText); 
-	                    if (et.password) {
-							error.innerHTML = "Old account, please <a href='mailto:hello@hiroapp.com?subject=Lost%20Password&body=Please%20send%20me%20a%20link%20to%20reset%20it.' target='_blank'>request a reset</a>.";						 
-							if (Raven) Raven.captureMessage('Tried to reset password');
-	                    }	              		                    						                    
+						if (xhr.status==404) {
+							email.className += ' error';							
+							email.nextSibling.innerHTML = xhr.responseText;
+							return;
+						}
+						error.innerHTML = "Old account, please <a href='mailto:hello@hiroapp.com?subject=Lost%20Password&body=Please%20send%20me%20a%20link%20to%20reset%20it.' target='_blank'>request a reset</a>.";						 
+						if (Raven) Raven.captureMessage('Password reset gone wrong');	              		                    						                    
 					}										
 				});				
 			},
