@@ -9,6 +9,7 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
   must be passed *username* as the argument.
 
 """
+import os
 import time
 import string
 import random
@@ -24,7 +25,7 @@ from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
-from google.appengine.api import memcache
+from google.appengine.api import memcache, mail
 
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
@@ -33,6 +34,8 @@ from application import app
 from .models import User, Document, Link, PasswordToken
 from .forms import LoginForm, SignupForm
 from .decorators import limit_free_plans, root_required
+
+base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
 
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
@@ -166,29 +169,35 @@ def register():
         return resp
 
 def reset_password(token):
-    if request.method == 'GET':
-        return render_template('reset_password.html')
-    elif request.method == 'POST':
-        payload = request.json or {}
-        if not payload.get('password'):
-            return jsonify_err(400, 'password required')
-        token = PasswordToken.get_by_id(sha512(token).hexdigest())
-        if not token:
-            return jsonify_err(404, 'Token not found')
-        user = token.user.get()
-        user.password = User.hash_password(payload['password'])
-        user.put()
-        token.key.delete()
-        if login_user(user):
-            return jsonify(user.to_dict())
-        else:
-            return "Could not login. Maybe account was suspended?", 401
+    payload = request.json or {}
+    if not payload.get('password'):
+        return jsonify_err(400, 'password required')
+    token = PasswordToken.get_by_id(sha512(token).hexdigest())
+    if not token:
+        return jsonify_err(404, 'Token not found')
+    user = token.user.get()
+    user.password = User.hash_password(payload['password'])
+    user.put()
+    token.key.delete()
+    if login_user(user):
+        return jsonify(user.to_dict())
+    else:
+        return "Could not login. Maybe account was suspended?", 401
 
-@root_required
-def create_token(user_id):
-    user = User.get_by_id(int(user_id))
+#@root_required
+def create_token():
+    email = request.form.get('email')
+    if not email:
+        return "email required", 400
+    user = User.query(User.email == email).get()
+    if not user:
+        return 'Email not registered', 404
     token = PasswordToken.create_for(user)
-    return " - ".join([user_id, str(user), token])
+    mail.send_mail(sender="Team Hiro <hello@hiroapp.com>", 
+                   to=user.email,
+                   subject="Resetting your Hiro password",
+                   body="FFFOOO {url}#reset={token}".format(url=base_url, token=token))
+    return "Reset-Link sent."
 
 
 @login_required
