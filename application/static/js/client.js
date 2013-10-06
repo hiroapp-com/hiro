@@ -2774,7 +2774,7 @@ var WPCLib = {
 	            link: 'https://www.hiroapp.com',
 	            name: 'Hiro.',
 	            caption: 'https://www.hiroapp.com',
-	            description: "Hiro is the best way to write down your ideas. It is extremely fast, beautifully designed and works on all your devices.",
+	            description: "Hiro makes it easier to capture your best ideas: It's extremely fast, beautifully designed and works on all your devices.",
 	            actions: {
 	                name: 'Start writing',
 	                link: 'https://www.hiroapp.com/connect/facebook',
