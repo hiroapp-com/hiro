@@ -684,9 +684,9 @@ a.wpcbutton:hover {
 /*-------- Sharing --------*/
 #sharing {
   position: absolute;
-  top: 50px;
+  top: 49px;
   right: 0;
-  margin-right: 145px;
+  margin-right: 95px;
   display: block;
   z-index: 2950;
 }
@@ -698,7 +698,7 @@ a.wpcbutton:hover {
 #sharing .header {
   display: block;
   text-align: right;
-  width: 60px;
+  width: 45px;
   height: 50px;
   background-image: url(../img/publish.3.png);
   background-repeat: no-repeat;
@@ -742,6 +742,10 @@ a.wpcbutton:hover {
 #s_actions input.hiro {
   margin: 10px 10px 10px 20px;
   width: 250px;
+}
+
+#s_actions input.ninja {
+  display: none;
 }
 
 #s_actions .error {
@@ -793,26 +797,28 @@ a.wpcbutton:hover {
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
 .canvas.full #sharing, #sharing {
     top: 32px;
-    margin-right: 108px;
+    margin-right: 62px;
   }
 }
 
 @media (max-width: 480px) {
   #sharing, .canvas.full #sharing {
-    top: 82px;
+    top: 47px;
     margin-right: 0; 
     position: fixed;
-    z-index: 2850;
+    z-index: 2950;
   }
 
   #sharing .header {
     background-size: 35px auto;
     background-position: 16px -288px;
+    height: 35px;
+    width: 60px;    
   } 
 
   #sharing .actions {
     position: fixed;
-    top: 70px;
+    top: 35px;
     left: 0;
     right: 0;
     z-index: 2799;
@@ -855,7 +861,7 @@ a.wpcbutton:hover {
   position: absolute;
   top: 50px;
   right: 0;
-  margin-right: 100px;
+  margin-right: 155px;
   display: block;
   z-index: 2900;
 }
@@ -951,21 +957,25 @@ a.wpcbutton:hover {
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
   .canvas.full #publish, #publish {
     top: 32px;
-    margin-right: 62px;
+    margin-right: 114px;
   }
 }
 
 @media (max-width: 480px) {
   #publish, .canvas.full #publish {
-    top: 41px;
+    top: 80px;
     margin-right: 0; 
     position: fixed;
   }
   #publish .header {
     background-size: 30px auto;  
     background-position: 18px 2px;
-    height: 35px;
+    height: 45px;
     width: 60px;
+    position: absolute;
+    top: 0;
+    right: 0;  
+    z-index: 2900;   
   }      
   #publish .actions a.action {
     background-size: 30px auto; 
@@ -973,9 +983,12 @@ a.wpcbutton:hover {
     margin-right: 25px;  
   }  
   #publish .actions {
-    top: 35px;
-    right: -3px;    
+    right: -3px; 
+    top: 8px; 
   }  
+  #publish .actions .footer {
+    margin-right: 26px;
+  } 
 }
 
 /* ------ Context Bar ------*/

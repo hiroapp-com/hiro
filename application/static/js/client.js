@@ -1137,7 +1137,7 @@ var WPCLib = {
 			var widget = document.getElementById('s_actions').parentNode;
 			widget.style.display = 'block';
 			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];			
-			email.focus();				
+			if (email) email.focus();				
 		},
 		close: function(event) {
 			// Close the sharing widget
@@ -1153,11 +1153,15 @@ var WPCLib = {
 			that.visible = false;
 			widget.style.display = 'none';			
 		},
-		submit: function() {
+		submit: function(event) {
 			// Submit form
 			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];
 			var button = document.getElementById(WPCLib.sharing.id).getElementsByTagName('a')[1];
-			if (WPCLib.sys.user.level > 1) {
+			if (event) {
+				event.preventDefault();
+				event.stopPropagation();
+			}			
+			if (WPCLib.sys.user.level < 1) {
 				WPCLib.sys.user.upgrade(1);
 				return;			
 			}
@@ -1169,7 +1173,7 @@ var WPCLib = {
 				return;
 			}
 			email.parentNode.parentNode.innerHTML ="<div class='title light'>Sorry, at the moment this feature is only available to a few users. We'll notify you as soon as it's ready. Sorry again & won't be long!</div>"
-			if (analytics && WPCLib.sys.user.level > 0) analytics.identify('653698cd73f34a0b946b3db32f705fb8', {sharingNotes:'true'});
+			if (analytics && WPCLib.sys.user.level > 0) analytics.identify(WPCLib.sys.user.id, {sharingNotes:'true'});
 			var msg = ('Wants to invite: ' +  email.value);
 			if (Raven) Raven.captureMessage (msg);
 		}
@@ -2941,7 +2945,8 @@ var WPCLib = {
 			var context = document.getElementById('context');
 			var switcher = document.getElementById('switchview');		
 			var title = document.getElementById('pageTitle');		
-			var publish = document.getElementById(WPCLib.publish.id);			
+			var publish = document.getElementById(WPCLib.publish.id);	
+			var sharing = document.getElementById(WPCLib.sharing.id);					
 			var screenwidth = document.body.offsetWidth;
 			var distance = ((screenwidth-50)<this.menuSlideSpan) ? (screenwidth-50) : this.menuSlideSpan;
 			
@@ -2976,7 +2981,8 @@ var WPCLib = {
 					context.style.left=v+'px';						
 					title.style.left=v+'px';	
 					title.style.right=(v*-1)+'px';
-					publish.style.right=(v*-1)+'px';																			
+					publish.style.right=(v*-1)+'px';
+					sharing.style.right=(v*-1)+'px';																													
 				} else {
 					context.style.left='auto';					
 				}	
