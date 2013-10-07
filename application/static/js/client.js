@@ -585,7 +585,9 @@ var WPCLib = {
 
 			} else {
 				// click on the page puts focus on textarea
-				WPCLib.util.registerEvent(p,'click',function(){document.getElementById(WPCLib.canvas.contentId).focus()});
+				WPCLib.util.registerEvent(p,'click',function(){
+					if (!WPCLib.sharing.visible) document.getElementById(WPCLib.canvas.contentId).focus();
+				});
 			}				
 
 			// Always set context sidebar icon to open on mobiles
@@ -1086,10 +1088,98 @@ var WPCLib = {
 
 	},	
 
+	sharing: {
+		id: 'sharing',
+		visible: false,
+		openTimeout: null,
+
+		init: function() {
+			// Bind basic events
+			if ('ontouchstart' in document.documentElement) {
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'touchstart', WPCLib.sharing.open);
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'touchstart', WPCLib.sharing.close);				
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'touchstart', WPCLib.sharing.submit);				
+			} else {
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'mouseover', WPCLib.sharing.open);
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'click', WPCLib.sharing.close);			
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'click', WPCLib.sharing.submit);
+				// Register event that cancels the delayed opening of the options
+				WPCLib.util.registerEvent(document.getElementById(this.id),'mouseout', function() {
+					var that = WPCLib.sharing;
+				    if (that.openTimeout && !that.visible) {
+					    clearTimeout(that.openTimeout);
+						that.openTimeout = null;
+				    }		
+				});	
+			}						
+		},
+		open: function(event) {
+			// Open the sharing snippet with a delayed timeout		
+			var that = WPCLib.sharing;			
+			if (event) {
+				event.preventDefault();
+				event.stopPropagation();
+			}	
+			if (that.visible) return;
+
+			// Kick off timeout 
+			if (!that.openTimeout) {
+				// Add a slight delay
+				that.openTimeout = setTimeout(function(){								
+					var that = WPCLib.sharing;
+					that.open();										
+					that.openTimeout = null;
+					clearTimeout(that.openTimeout);															
+				},150);
+				return;
+			}
+			that.visible = true;				
+			var widget = document.getElementById('s_actions').parentNode;
+			widget.style.display = 'block';
+			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];			
+			email.focus();				
+		},
+		close: function(event) {
+			// Close the sharing widget
+			var that = WPCLib.sharing;
+			// Check if we have a timeout and remove & abort if so 
+			if (!that.visible) return;
+			if (event) {
+				event.preventDefault();
+				event.stopPropagation();
+			}				
+			
+			var widget = document.getElementById('s_actions').parentNode;
+			that.visible = false;
+			widget.style.display = 'none';			
+		},
+		submit: function() {
+			// Submit form
+			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];
+			var button = document.getElementById(WPCLib.sharing.id).getElementsByTagName('a')[1];
+			if (WPCLib.sys.user.level > 1) {
+				WPCLib.sys.user.upgrade(1);
+				return;			
+			}
+			if (email.value.length < 5) {
+				email.focus();
+				email.nextSibling.innerHTML = "Please enter an address.";
+				email.style.border = '1px solid rgba(209, 11, 11, 0.7)';
+				button.innerHTML = "Try again";
+				return;
+			}
+			email.parentNode.parentNode.innerHTML ="<div class='title light'>Sorry, at the moment this feature is only available to a few users. We'll notify you as soon as it's ready. Sorry again & won't be long!</div>"
+			if (analytics && WPCLib.sys.user.level > 0) analytics.identify('653698cd73f34a0b946b3db32f705fb8', {sharingNotes:'true'});
+			var msg = ('Wants to invite: ' +  email.value);
+			if (Raven) Raven.captureMessage (msg);
+		}
+
+	},
+
 	publish: {
 		// Publishing functionality
 		id: 'publish',
-		actionsId: 'pactions',
+		actionsId: 'p_actions',
 		initTimeout: null,
 		listvisible: false,
 		showListTimeout: null,
@@ -1159,9 +1249,6 @@ var WPCLib = {
 			} else {
 				WPCLib.util.registerEvent(icon,'mouseover',WPCLib.publish.list);				
 			}
-
-			// Show tooltip for early users
-			if (WPCLib.sys.user.level < 2) icon.setAttribute('title','Publish to Cloud: Choose a service below.\nTip: Select some text to only publish that part.');
 		},
 
 		list: function() {
@@ -1884,6 +1971,7 @@ var WPCLib = {
 			// Init remaining parts
 			WPCLib.folio.init();
 			WPCLib.publish.init();
+			WPCLib.sharing.init();
 			this.initCalled=true;
 		},
 
@@ -2796,8 +2884,8 @@ var WPCLib = {
 			// Get the checkout form ready for checkout and switch view
 			var frame = document.getElementById('dialog').contentDocument;
 			var checkoutbutton = frame.getElementById('checkoutbutton');
-			var startdesc = "Starter Plan: $ 9";
-			var prodesc = (document.body.offsetWidth>480) ? "Pro Plan: $ 29 ($ 9 Starter until it's available)" : "Pro Plan: $ 29";
+			var startdesc = "Advanced Plan: $ 9";
+			var prodesc = (document.body.offsetWidth>480) ? "Pro Plan: $ 29 ($ 9 Advance until it's available)" : "Pro Plan: $ 29";
 			var cc_num = frame.getElementById('cc_number'); 
 			// Not optimal, as this dependend on the HTML not changing
 			var forced = (frame.getElementById('s_checkout').getElementsByClassName('header')[1].style.display=="none") ? true : false;
@@ -3058,11 +3146,11 @@ var WPCLib = {
 				switch (level) {
 					case 0:
 					case 1:
-						val = 'Free';
+						val = 'Basic';
 						upgradelink.style.display = 'block';
 						break;
 					case 2:
-						val = 'Starter';
+						val = 'Advanced';
 						upgradelink.style.display = 'block';					
 						break;
 					case 3:

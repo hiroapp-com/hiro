@@ -446,8 +446,9 @@ a.wpcbutton:hover {
   border: 1px solid #fff; 
   font-size: 1.9em;
   font-weight: 600;
-  width: 90%;
+  width: 87%;
   color: #333;
+  text-overflow: ellipsis;  
 }
 
 .canvas.full .page input.title {
@@ -631,7 +632,7 @@ a.wpcbutton:hover {
     left: 0;
     right: 0;
     margin-left: 70px;
-    margin-right: 50px;  
+    margin-right: 166px;  
     margin-top: 30px;  
     margin-bottom: 0;
     font-family: "urbana",sans-serif;
@@ -680,6 +681,174 @@ a.wpcbutton:hover {
   }   
 }
 
+/*-------- Sharing --------*/
+#sharing {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  margin-right: 145px;
+  display: block;
+  z-index: 2950;
+}
+
+.canvas.full #sharing {
+  top: 56px;
+}
+
+#sharing .header {
+  display: block;
+  text-align: right;
+  width: 60px;
+  height: 50px;
+  background-image: url(../img/publish.3.png);
+  background-repeat: no-repeat;
+  background-size: 50px auto; 
+  opacity: 0.08; 
+  background-position: right -408px;
+}
+
+#sharing:hover .header {
+  opacity: 0.41;
+}
+
+#sharing .actions .cancel {
+  background: url(../img/icons.png) no-repeat;
+  background-size: 102px auto;
+  background-position: -12px -39px;
+  position: absolute;
+  display: block;
+  padding-right: 20px;
+  top: 0;
+  right: 65px;
+  color: #fff;
+  opacity: .3;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#sharing .actions .cancel:hover {
+  opacity: 1;
+}
+
+#sharing .actions {
+  display: none;
+  background: rgba(255,255,255,0.95);
+  position: absolute;
+  top: 50px;
+  right: -52px;
+  padding-right: 60px;  
+}
+
+#s_actions input.hiro {
+  margin: 10px 10px 10px 20px;
+  width: 250px;
+}
+
+#s_actions .error {
+  float: right;
+  display: inline-block;
+  font-size: 14px;
+  color: red;
+  margin-top: -38px;
+  margin-right: 20px;
+}
+
+#s_actions a.wpcbutton {
+  margin: 0 10px 0 20px;
+  padding: 8px 10px;
+}
+
+#sharing .users .user {
+  display: block;
+  padding: 5px 0 0 45px;
+  font-size: 18px;
+  color: #333;
+  background-image: url(../img/publish.3.png);
+  background-repeat: no-repeat;
+  background-size: 30px auto; 
+  background-position: 14px -363px;
+}
+
+#sharing .actions .title {
+  font-size: 18px;
+  color: #333;
+  margin: 0 0 4px 20px;
+}
+
+#sharing .actions .title.light {
+  color: #666;
+  margin-right: 10px;
+  width: 270px;
+}
+
+
+#sharing .actions .footer {
+  color: #999;
+  display: block;
+  font-size: 0.8em;
+  white-space: nowrap;
+  margin: 10px 14px 10px 20px;
+}
+
+@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+.canvas.full #sharing, #sharing {
+    top: 32px;
+    margin-right: 108px;
+  }
+}
+
+@media (max-width: 480px) {
+  #sharing, .canvas.full #sharing {
+    top: 82px;
+    margin-right: 0; 
+    position: fixed;
+    z-index: 2850;
+  }
+
+  #sharing .header {
+    background-size: 35px auto;
+    background-position: 16px -288px;
+  } 
+
+  #sharing .actions {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    z-index: 2799;
+    padding-top: 13px;
+    padding-right: 0;    
+  }
+
+  #sharing .actions .cancel {
+    right: 14px;
+    top: 13px;    
+  } 
+
+  #sharing .actions .title.light {
+    width: auto;
+  }   
+
+  #s_actions form {
+    margin: 0 20px 0 13px;    
+  }
+
+  #s_actions input.hiro {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 10px 0 10px 0;    
+  }  
+
+  #s_actions a.wpcbutton {
+    margin-right: 20px;   
+  } 
+
+  #s_actions a.wpcbutton, #sharing .actions .title, #sharing .actions .footer {
+    margin-left: 13px;    
+  }    
+
+}
+
 
 /*-------- Publishing --------*/
 #publish {
@@ -698,9 +867,9 @@ a.wpcbutton:hover {
 #publish .header {
   display: block;
   text-align: right;
-  width: 60px;
+  width: 45px;
   height: 50px;
-  background-image: url(../img/publish.2.png);
+  background-image: url(../img/publish.3.png);
   background-repeat: no-repeat;
   background-size: 40px auto; 
   opacity: 0.07; 
@@ -723,15 +892,28 @@ a.wpcbutton:hover {
   display: block;
 }
 
+#publish .actions .title {
+  font-size: 18px;
+  color: #333;
+  margin: 0 0 4px 20px;
+}
+
+#publish .actions .footer {
+  color: #999;
+  display: block;
+  font-size: 0.8em;
+  white-space: nowrap;
+  margin: 10px 14px 10px 20px;
+}
+
 #publish .actions a.action {
   text-align: right;
   display: block;
   opacity: 0.4;
   margin: 0 13px 0 20px;
-  border-bottom: 1px dotted #666;
   cursor: pointer;
   padding: 10px 20px 8px 0; 
-  background-image: url(../img/publish.2.png);
+  background-image: url(../img/publish.3.png);
   background-repeat: no-repeat;
   background-size: 40px auto; 
   background-position: right -81px;  
@@ -739,6 +921,15 @@ a.wpcbutton:hover {
   white-space: nowrap;
   text-decoration: none;
   font-size: 18px;
+  border-bottom: 1px dotted #999;
+}
+
+#publish .actions a.action:last-child, #publish .actions a.action:last-child:hover {
+  border-bottom: none;
+}
+
+#publish .actions a.action:hover {
+  border-bottom: 1px dotted #bbb;
 }
 
 #publish .actions a.action.doing {
@@ -753,13 +944,8 @@ a.wpcbutton:hover {
   color: #055a0b;
 }
 
-#publish .actions a.action:last-child, #publish .actions a.action:hover:last-child {
-  border-bottom: none;
-}
-
 #publish .actions a.action:hover {
   opacity: 0.9; 
-  border-bottom: 1px dotted #aaa;
 }
 
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
@@ -772,19 +958,22 @@ a.wpcbutton:hover {
 @media (max-width: 480px) {
   #publish, .canvas.full #publish {
     top: 41px;
-    margin-right: 12px; 
+    margin-right: 0; 
     position: fixed;
   }
   #publish .header {
     background-size: 30px auto;  
-    background-position: right 2px;
+    background-position: 18px 2px;
+    height: 35px;
+    width: 60px;
   }      
   #publish .actions a.action {
     background-size: 30px auto; 
-    background-position: right -55px;    
+    background-position: right -55px;  
+    margin-right: 25px;  
   }  
   #publish .actions {
-    top: 37px;
+    top: 35px;
     right: -3px;    
   }  
 }
@@ -1452,7 +1641,7 @@ body#landingPage .teaser .screen  .blurb .desc em {
 
   body#landingPage .teaser {
     position: absolute;
-    top: 21%;
+    top: 24%;
     bottom: 90px;
     border-bottom: none;
     overflow: hidden;   
@@ -1534,6 +1723,10 @@ body#landingPage .teaser .screen  .blurb .desc em {
     display: block;
     color: #333;
   }
+
+  body#landingPage .teaser {
+    top: 25%;
+  }  
 
   body#landingPage h1 .claim {
     display: none;  
@@ -1713,7 +1906,7 @@ body#settingsPage input#cc_number.error {
   margin-top: 100px;
 }
 
-#s_login form input, .accountdetails form input, .checkoutdetails form input {
+#s_login form input, .accountdetails form input, .checkoutdetails form input, input.hiro {
   font-family: "urbana",sans-serif;
   font-size: 18px;
   padding: 8px 10px 8px 10px;  

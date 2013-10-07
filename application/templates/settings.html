@@ -127,7 +127,7 @@
 					<form>
 						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
 						<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-						<input type="text" value="{% if current_user.tier==1 %}Free{% elif current_user.tier==2 %}Starter{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
+						<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="_wpc.ui.facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
@@ -160,13 +160,13 @@
 						<a href="#" class="wpcbutton red" onclick="_wpc.sys.user.downgrade('free');return false;">Downgrade</a>	
 					</div>
 					<div class="box 2" onclick="_wpc.ui.upgradeboxclick(this);">
-						<div class="head">Starter</div>
+						<div class="head">Advanced</div>
 						<div class="price">9</div>	
 						<div class="curr">USD / MONTH</div>	
 						<ul>
 							<li>Unlimited notes
 							<li>Unlimited searches
-							<li>Basic publishing	
+							<li>Advanced publishing	
 							<li>Archive	
 						</ul>
 						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
@@ -178,9 +178,9 @@
 						<div class="price">29</div>		
 						<div class="curr">USD / MONTH</div>	
 						<ul>
-							<li>All Starter features
+							<li>All Advanced features
 							<li>Speciality data sources
-							<li>Advanced publishing								
+							<li>Pro publishing								
 							<li>Chrome research plugin							
 						</ul>
 						<a href="#" class="wpcbutton grey" onclick="_wpc.ui.hideDialog();return false;">Your Current Plan</a>		
@@ -202,7 +202,7 @@
 				<div class="checkoutdetails">	
 					{% if current_user.active_cc %}
 						<form id="checkoutform">
-							<input type="text" value="Starter Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+							<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 							<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
 							<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>&nbsp;/&nbsp;<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 							<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
@@ -246,7 +246,7 @@
 						</script>
 					{% else %}	
 					<form id="checkoutform">
-						<input type="text" value="Starter Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+						<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 						<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
 						<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
 						<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
