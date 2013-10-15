@@ -621,7 +621,7 @@ var WPCLib = {
 		savedoc: function(force) {
 			// force: Boolean if status indicator should be shown
 			// Save the currently open document
-			// For now we only say a doc is updated once it's saved
+			// For now we only say a doc is updated once it's saved		
 			var status = document.getElementById('status');
 			if (WPCLib.context.overquota) force = true;
 			if (force) status.innerHTML = 'Saving...';
@@ -630,18 +630,45 @@ var WPCLib = {
 
 			// backend saving, locally or remote
 			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
-				WPCLib.sys.log('saving remotely: ', file);				
-				$.ajax({
-					url: "/docs/"+this.docid,
-	                type: "PATCH",
-	                contentType: "application/json; charset=UTF-8",
-	                data: JSON.stringify(file),
-					success: function(data) {
-	                    window.console.log("Saved!");
-						WPCLib.canvas.saved = true;	 
-						if (force) status.innerHTML = 'Saved!';                   
-					}
-				});
+				WPCLib.sys.log('saving remotely: ', file);	
+				var u = "/docs/"+this.docid, ct = "application/json; charset=UTF-8";
+				// Jquery doesn't support patch requests in plenty of mobile browsers, TODO findout which ones exactly
+				if ( false && navigator.appVersion.indexOf('BB10') == -1 ) {
+					$.ajax({					
+						url: u,
+		                type: "PATCH",
+		                contentType: ct,
+		                data: JSON.stringify(file),
+						success: function(data) {
+		                    WPCLib.sys.log('Saved! ',data);
+							WPCLib.canvas.saved = true;	 
+							if (force) status.innerHTML = 'Saved!';
+						},
+						error: function(xhr) {
+							WPCLib.sys.error(xhr);						
+						}
+					});
+				} else if ($.ajax) {
+					$.ajax({					
+						url: "/docs/",
+		                type: "POST",
+		                contentType: ct,
+		                data: JSON.stringify(file),
+						success: function(data) {
+		                    WPCLib.sys.log('Saved! ',data);
+							WPCLib.canvas.saved = true;	 
+							if (force) status.innerHTML = 'Saved!';
+						},
+						error: function(xhr) {
+							WPCLib.sys.error(xhr);						
+						}
+					});					
+				} else {
+					var x = new XMLHttpRequest();
+					x.open("PATCH", u);
+					x.setRequestHeader("Content-type",ct);
+					x.send(JSON.stringify(file));
+				}											
 			} else {
 				WPCLib.sys.log('saving locally: ', file);	
 			    try { 
@@ -867,7 +894,7 @@ var WPCLib = {
 		},
 
 		update: function(event) {
-			// Abort if keypress is F1-12 key
+			// Abort if keypress is F1-12 key			
 			var kc = event.keyCode;
 			if (kc > 111 && kc < 124) return;		
 			// Return if shift key is pressed
@@ -977,7 +1004,7 @@ var WPCLib = {
 		_settypingtimer: function() {
 			// set & clear timers for saving and context if user pauses
 			if (this.typingTimer) clearTimeout(this.typingTimer);
-			this.typingTimer = setTimeout(function() {
+			this.typingTimer = setTimeout(function() {				
 				WPCLib.canvas.savedoc();
 				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
@@ -2052,7 +2079,7 @@ var WPCLib = {
 			authactive: false,
 			doccount: 0,
 
-			register: function() { 
+			register: function(event) { 
 				// Register a new user (or log in if credentials are from know user)
 				var button = document.getElementById('dialog').contentDocument.getElementById('signupbutton');
 				var val = document.getElementById('dialog').contentDocument.getElementById('signupform').getElementsByTagName('input');
@@ -2061,6 +2088,9 @@ var WPCLib = {
 					email: val[0].value.toLowerCase().trim(),
 					password: val[1].value
 				};
+
+				// Prevent default event if we have one
+				if (event) event.preventDefault();				
 
 				// Preparation
 				if (this.authactive) return;
@@ -2086,6 +2116,7 @@ var WPCLib = {
 	                    WPCLib.sys.user.authactive = false;						
 						if (xhr.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
+							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
 							return;
 						}
 						var et = JSON.parse(xhr.responseText); 
@@ -2096,13 +2127,13 @@ var WPCLib = {
 	                    if (et.password) {
 	                    	val[1].className += ' error';	                    	
 	                    	val[1].nextSibling.innerHTML = et.password;  
-	                    }	                 		                    
-						                    
+	                    }	                 		                    						                    
 					}										
 				});	
+				return false;
 			},
 
-			login: function() { 
+			login: function(event) { 
 				// Register a new user (or log in if credentials are from know user)
 				var button = document.getElementById('dialog').contentDocument.getElementById('loginbutton');
 				var val = document.getElementById('dialog').contentDocument.getElementById('loginform').getElementsByTagName('input');
@@ -2112,30 +2143,33 @@ var WPCLib = {
 					password: val[1].value
 				};
 
+				// prevent default submission event if we have one
+				if (event) event.preventDefault();
+
 				// Preparing everything
-				if (this.authactive) return;
-				this.authactive = true;				
+				if (WPCLib.sys.user.authactive) return;
+				WPCLib.sys.user.authactive = true;				
 				button.innerHTML ="Logging in...";
 
 				// Clear any old error messages
 				val[0].nextSibling.innerHTML = '';
 				val[1].nextSibling.innerHTML = '';				
-				error.innerHTML = '';
-
-				// Send request to backend
+				error.innerHTML = '';					
+				// Send request to backend		
 				$.ajax({
 					url: "/login",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
 	                data: payload,
 					success: function(data) {
-						WPCLib.sys.user.authed('login',data);	                    
+						WPCLib.sys.user.authed('login',data);						                    
 					},
-					error: function(xhr) {
+					error: function(xhr) { 												
 	                    button.innerHTML = "Log-In";
 	                    WPCLib.sys.user.authactive = false;						
 						if (xhr.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
+							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
 							return;
 						}
 						var et = JSON.parse(xhr.responseText); 
@@ -2146,17 +2180,17 @@ var WPCLib = {
 	                    if (et.password) {
 	                    	val[1].className += ' error';	                    	
 	                    	val[1].nextSibling.innerHTML = et.password;  
-	                    }	               		                    
-						                    
+	                    }	               		                                    
 					}										
 				});	
+				return false;
 			},
 
 			authed: function(type, user, method) {
 				// On successfull backend auth the returned user-data 
 				// from the various endpoints and finishes up auth process
             	WPCLib.sys.user.setStage(user.tier);
-            	this.justloggedin = true;
+            	this.justloggedin = true;           	
 
             	if (WPCLib.canvas.docid=='localdoc' && !localStorage.getItem('WPCdoc')) {
             		// Remove empty document if user signs up / in right away            		
@@ -2203,14 +2237,12 @@ var WPCLib = {
 	                }	                	
                 }
 
-
-
                 // Housekeeping, switch authactive off
                 WPCLib.sys.user.authactive = false;
 			},	
 
 
-			requestreset: function() {
+			requestreset: function(event) {
 				// Checks if there is a valid mail address and sends a password request for it
 				var email = document.getElementById('dialog').contentDocument.getElementById('loginform').getElementsByTagName('input')[0];
 				var error = document.getElementById('dialog').contentDocument.getElementById('loginerror');
@@ -2222,6 +2254,9 @@ var WPCLib = {
 					error.innerHTML = 'Please enter your email address and click "Lost Password?" again.';
 					return;
 				}
+
+				// Prevent event from firing
+				if (event) event.preventDefault();
 
 				// Prepare posting
 				error.innerHTML = '';
@@ -2249,7 +2284,8 @@ var WPCLib = {
 						error.innerHTML = "Old account, please <a href='mailto:hello@hiroapp.com?subject=Lost%20Password&body=Please%20send%20me%20a%20link%20to%20reset%20it.' target='_blank'>request a reset</a>.";						 
 						if (Raven) Raven.captureMessage('Password reset gone wrong');	              		                    						                    
 					}										
-				});				
+				});	
+				return false;
 			},
 
 			showreset: function(hash) {
@@ -2461,7 +2497,8 @@ var WPCLib = {
 								frame.getElementById('checkout_error').innerHTML = response.error.message;
 							}
 							WPCLib.sys.user.checkoutActive = false;
-							checkoutbutton.innerHTML = "Try again"
+							checkoutbutton.innerHTML = "Try again";
+							if (Raven) Raven.captureMessage ('CC check gone wrong: '+JSON.stringify(response));							
 							return;
 						} else {
 							// add new stripe data to subscription object
@@ -2490,7 +2527,10 @@ var WPCLib = {
 						document.activeElement.blur();
 	                    WPCLib.ui.hideDialog();				                    
 	                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!');						                    
-					}
+					},
+	                error: function(data) {
+						if (Raven) Raven.captureMessage ('Checkout gone wrong: '+JSON.stringify(data));		                	
+	                }					
 				});					
 			},
 

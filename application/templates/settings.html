@@ -13,26 +13,26 @@
 			<div id="s_signup" style="display:none;">
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';facebooklogin();return false;">Sign-In With&nbsp;<b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
-				<form id="signupform">
+				<form id="signupform" action="javascript:void(0);">
 					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signin_mail').value=this.value;" id="signup_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>					
 					<input type="password" placeholder="Choose a password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>	
-					<input type="submit" value="foo" onclick="_wpc.sys.user.register(); return false;" class="pseudobutton"></input>
+					<input type="submit" value="foo" onclick="_wpc.sys.user.register(event); return false;" class="pseudobutton"></input>
 				</form>		
-				<a href="#" class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(); return false;">Create Account</a>	
+				<a class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(event);">Create Account</a>	
 				<div id="signuperror"></div>
-				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin')); return false;">Already have an account?</a>			
+				<a class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin'));">Already have an account?</a>			
 			</div>	
 			<div id="s_signin" style="display:none;">
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing In...';facebooklogin();return false;">Log-In With&nbsp;<b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
-				<form id="loginform">
+				<form id="loginform" action="javascript:void(0);">
 					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signup_mail').value=this.value;" id="signin_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
 					<input type="password" placeholder="Password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
-					<input type="submit" value="foo" onclick="_wpc.sys.user.login(); return false;" class="pseudobutton"></input>
+					<input type="submit" value="foo" onclick="_wpc.sys.user.login(event);" class="pseudobutton"></input>
 				</form>		
-				<a href="" class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(); return false;">Log-In</a>	
+				<a class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(event);">Log-In</a>	
 				<div id="loginerror"></div>				
-				<a href="#" class="small" onclick="_wpc.sys.user.requestreset();return false;">Lost password?</a> &nbsp; <a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup')); return false;">Create an account</a>
+				<a class="small" onclick="_wpc.sys.user.requestreset();">Lost password?</a> &nbsp; <a hclass="small" onclick="_wpc.ui.switchView(document.getElementById('s_signup'));">Create an account</a>
 			</div>	
 			<div id="s_reset" style="display:none;">
 				<form id="resetform">

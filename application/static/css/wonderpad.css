@@ -96,6 +96,10 @@ body {
   margin-left: 8px;
 }
 
+a {
+  cursor: pointer;
+}
+
 a.wpcbutton {
   text-decoration: none;
   font-weight: normal;
@@ -703,7 +707,7 @@ a.wpcbutton:hover {
   background-image: url(../img/publish.3.png);
   background-repeat: no-repeat;
   background-size: 50px auto; 
-  opacity: 0.08; 
+  opacity: 0.1; 
   background-position: right -408px;
 }
 
@@ -759,7 +763,7 @@ a.wpcbutton:hover {
 
 #s_actions a.wpcbutton {
   margin: 0 10px 0 20px;
-  padding: 8px 10px;
+  padding: 9px 10px 8px 10px;
 }
 
 #sharing .users .user {
@@ -821,6 +825,7 @@ a.wpcbutton:hover {
     top: 35px;
     left: 0;
     right: 0;
+    bottom: 0;
     z-index: 2799;
     padding-top: 13px;
     padding-right: 0;    
