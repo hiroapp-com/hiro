@@ -633,7 +633,7 @@ var WPCLib = {
 				WPCLib.sys.log('saving remotely: ', file);	
 				var u = "/docs/"+this.docid, ct = "application/json; charset=UTF-8";
 				// Jquery doesn't support patch requests in plenty of mobile browsers, TODO findout which ones exactly
-				if ( false && navigator.appVersion.indexOf('BB10') == -1 ) {
+				if ( navigator.appVersion.indexOf('BB10') == -1 ) {
 					$.ajax({					
 						url: u,
 		                type: "PATCH",
@@ -731,6 +731,9 @@ var WPCLib = {
 					that.text = data.text;
 					that.title = (data.title) ? data.title : '';	
 					that.preloaded = false;
+
+					// Initiate syncing of file
+					WPCLib.canvas.sync.begin();
 
 					// If body is empty show a quote
 					if (!data.text || data.text.length == 0) {
@@ -1008,6 +1011,7 @@ var WPCLib = {
 				WPCLib.canvas.savedoc();
 				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
+				WPCLib.canvas.sync.addedit();
 			},1000);
 		},	
 
@@ -1111,6 +1115,82 @@ var WPCLib = {
     		} else {
     			el.focus();
     		}
+		},
+		sync: {
+			shadow: '',
+			edits: [],
+			localversion: 1,
+			remoteversion: 0,
+			enabled: false,
+
+			init: function() {
+				// Abort if we're on the production system
+				if (window.location.hostname.indexOf('hiroapp.com') >= 0) {
+					return;
+				}
+
+				// Create new instance once all js is loaded, retry of not
+				if (!this.dmp && typeof diff_match_patch != 'function') {
+					setTimeout(function(){
+						WPCLib.canvas.sync.init();
+					},100);
+					return;
+				}
+				this.dmp = new diff_match_patch();	
+				this.enabled = true;			
+			},
+
+			begin: function() {
+				// Load values from new doc and initiate websocket
+				this.shadow = WPCLib.canvas.text;
+			},
+
+			addedit: function() {
+				// Add an edit to the edits array
+				var current = WPCLib.canvas.text, edit = {};
+				if (!this.enabled) return;
+
+				edit.diff = this.diff(this.shadow,current);
+				edit.clientversion = this.localversion++;
+				edit.serverversion = this.remoteversion;
+
+				// Add edit to edits array
+				this.edits.push(edit);
+
+				WPCLib.sys.log('Diffs: ',this.edits);
+				this.shadow = current;
+			},
+
+			sendedits: function() {
+				// Post current edits stack to backend and clear stack on success
+			},
+
+			reset: function() {
+				// Reset sync state
+				this.shadow = '';
+				this.edits = [];
+				this.localversion = 1;
+				this.remoteversion = 0;
+			},
+
+			patch: function() {
+				// Receive a patch from the websocket, check consistency and apply
+			},
+
+			diff: function(o,n) {
+				// Compare two versions and return standard diff format
+				this.dmp.Diff_Timeout = 1;
+				this.dmp.Diff_EditCost = 4;
+
+				var ms_start = (new Date()).getTime();
+				var d = this.dmp.diff_main(o, n);
+				var ms_end = (new Date()).getTime();
+
+				this.dmp.diff_cleanupEfficiency(d)				
+
+				return this.dmp.diff_toDelta(d);
+			}
+
 		}
 
 	},	
@@ -1907,7 +1987,8 @@ var WPCLib = {
 		init: function() {
 			if (this.inited) return;
 			// kick off segment.io sequence, only on our domain 
-			if (window.location.hostname.indexOf('hiroapp.com')>=0) analytics.load("64nqb1cgw1");
+			var production = (window.location.hostname.indexOf('hiroapp.com')>=0);
+			if (production) analytics.load("64nqb1cgw1");
 
 			// Mount & init facebook
 			(function(d, s, id){
@@ -1934,7 +2015,18 @@ var WPCLib = {
 			  String.prototype.trim = function () {
 			    return this.replace(/^\s+|\s+$/g, '');
 			  };
-			}			
+			}	
+
+			// Load Googles Diff Match Patch
+			if (!production) {
+				(function(d, s, id){
+					var js, fjs = d.getElementsByTagName(s)[0];
+					if (d.getElementById(id)) {return;}
+					js = d.createElement(s); js.id = id;
+					js.src = "/static/js/diff_match_patch.js";
+					fjs.parentNode.insertBefore(js, fjs);
+				}(document, 'script', 'diff_match_patch'));	
+			}					
 
 			this.inited = true;
 		}
@@ -2003,6 +2095,7 @@ var WPCLib = {
 			WPCLib.folio.init();
 			WPCLib.publish.init();
 			WPCLib.sharing.init();
+			WPCLib.canvas.sync.init();
 			this.initCalled=true;
 		},
 
@@ -2059,6 +2152,7 @@ var WPCLib = {
 		},
 
 		error: function(data) {
+			if (Raven) Raven.captureMessage('General Error: '+ data);
 			WPCLib.sys.log('Dang, something went wrong: ',data);
 		},
 
