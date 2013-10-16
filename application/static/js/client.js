@@ -591,7 +591,10 @@ var WPCLib = {
 			}				
 
 			// Always set context sidebar icon to open on mobiles
-			if (document.body.offsetWidth<=900) document.getElementById('switchview').innerHTML = '&#171;';				
+			if (document.body.offsetWidth<=900) document.getElementById('switchview').innerHTML = '&#171;';	
+
+			// Init sync capabilities
+			this.sync.init();						
 		},	
 
 		preload: function(title,text) {
@@ -1141,7 +1144,8 @@ var WPCLib = {
 			},
 
 			begin: function() {
-				// Load values from new doc and initiate websocket
+				// Reset state, load values from new doc and initiate websocket
+				this.reset();
 				this.shadow = WPCLib.canvas.text;
 			},
 
@@ -1150,11 +1154,14 @@ var WPCLib = {
 				var current = WPCLib.canvas.text, edit = {};
 				if (!this.enabled) return;
 
-				edit.diff = this.diff(this.shadow,current);
+				// Build edit object, right now including Patch and simple diff string format, TODO Choose one
+				var d = this.diff(this.shadow,current);
+				edit.patch = d[0];				
+				edit.diff = d[1];
 				edit.clientversion = this.localversion++;
 				edit.serverversion = this.remoteversion;
 
-				// Add edit to edits array
+				// Add edit to edits stack
 				this.edits.push(edit);
 
 				WPCLib.sys.log('Diffs: ',this.edits);
@@ -1179,16 +1186,19 @@ var WPCLib = {
 
 			diff: function(o,n) {
 				// Compare two versions and return standard diff format
+				// Cleanup settings
 				this.dmp.Diff_Timeout = 1;
 				this.dmp.Diff_EditCost = 4;
 
-				var ms_start = (new Date()).getTime();
+				// Basic diff, cleanup and return standard delta string format
 				var d = this.dmp.diff_main(o, n);
-				var ms_end = (new Date()).getTime();
+				if (d.length > 2) {
+				    this.dmp.diff_cleanupSemantic(d);
+					this.dmp.diff_cleanupEfficiency(d);				    
+				}				
 
-				this.dmp.diff_cleanupEfficiency(d)				
-
-				return this.dmp.diff_toDelta(d);
+				// Return patch and simple string format
+				return [this.dmp.patch_toText(this.dmp.patch_make(o, n, d)),this.dmp.diff_toDelta(d)];
 			}
 
 		}
@@ -2095,7 +2105,6 @@ var WPCLib = {
 			WPCLib.folio.init();
 			WPCLib.publish.init();
 			WPCLib.sharing.init();
-			WPCLib.canvas.sync.init();
 			this.initCalled=true;
 		},
 
