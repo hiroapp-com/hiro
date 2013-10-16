@@ -968,7 +968,7 @@ a.wpcbutton:hover {
 
 @media (max-width: 480px) {
   #publish, .canvas.full #publish {
-    top: 80px;
+    top: 40px;
     margin-right: 0; 
     position: fixed;
   }
@@ -978,7 +978,7 @@ a.wpcbutton:hover {
     height: 45px;
     width: 60px;
     position: absolute;
-    top: 0;
+    top: 39px;
     right: 0;  
     z-index: 2900;   
   }      
@@ -990,6 +990,7 @@ a.wpcbutton:hover {
   #publish .actions {
     right: -3px; 
     top: 8px; 
+    padding-top: 39px;
   }  
   #publish .actions .footer {
     margin-right: 26px;
@@ -2178,6 +2179,12 @@ body#settingsPage input#cc_number.error {
 }
 
 @media (max-width: 440px) {
+
+  body#settingsPage {
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; 
+  }
+
   body#settingsPage a.close {
     color: transparent;
     padding-right: 0;

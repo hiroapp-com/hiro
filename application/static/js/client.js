@@ -536,7 +536,12 @@ var WPCLib = {
 			// See if a selection is performed and narrow search to selection
 			WPCLib.util.registerEvent(p,'mouseup',this.textclick);							
 			WPCLib.util.registerEvent(el,'keydown',this.keyhandler);	
-			WPCLib.util.registerEvent(el,'keyup',this.update);			
+			WPCLib.util.registerEvent(el,'keyup',this.update);	
+
+			// Remember last caret position on blur
+			WPCLib.util.registerEvent(el,'blur',function(){
+				WPCLib.canvas.caretPosition = WPCLib.canvas._getposition()[0];
+			});					
 
 			// Resizing of textarea
 			WPCLib.util.registerEvent(el,'keyup',this._resize);
@@ -653,7 +658,7 @@ var WPCLib = {
 					});
 				} else if ($.ajax) {
 					$.ajax({					
-						url: "/docs/",
+						url: u,
 		                type: "POST",
 		                contentType: ct,
 		                data: JSON.stringify(file),
@@ -903,8 +908,8 @@ var WPCLib = {
 			// Abort if keypress is F1-12 key			
 			var kc = event.keyCode;
 			if (kc > 111 && kc < 124) return;		
-			// Return if shift key is pressed
-			if (event.ctrlKey || kc == 17 ) return;
+			// Return if only the shift key is pressed		
+			if (kc == 17) return;
 			// update function bound to page textarea, return to local canvas scope
 			WPCLib.canvas.evaluate();			
 		},		
@@ -1072,7 +1077,7 @@ var WPCLib = {
 
 		_setposition: function(pos) {
 			// Set the cursor to a specified position	
-			if (!pos) pos = [0,0];
+			if (!pos) pos = (this.caretPosition < this.text.length) ? this.caretPosition : 0;
 
 			// Check of we do have a proper array, otherwise fall pack to scalar
 			if (Object.prototype.toString.call(pos) == '[object Array]') {
@@ -1080,7 +1085,6 @@ var WPCLib = {
 			} else {
 				var pos1 = pos2 = pos;				
 			}	
-
 
 			var el = document.getElementById(WPCLib.canvas.contentId);	
 
@@ -1095,6 +1099,8 @@ var WPCLib = {
     		// Unfocus any existing elements
     		document.activeElement.blur();
     		this._resize();
+
+    		// Set the position
     		if (el.setSelectionRange) {
 				if (window.navigator.standalone&&this.safariinit) {		
 					// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
@@ -1151,11 +1157,13 @@ var WPCLib = {
 
 			addedit: function() {
 				// Add an edit to the edits array
-				var current = WPCLib.canvas.text, edit = {};
-				if (!this.enabled) return;
+				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
+
+				// Abort if the string stayed the same or syncing is disabled
+				if (!this.enabled || c == s ) return;
 
 				// Build edit object, right now including Patch and simple diff string format, TODO Choose one
-				var d = this.diff(this.shadow,current);
+				var d = this.diff(s,c);
 				edit.patch = d[0];				
 				edit.diff = d[1];
 				edit.clientversion = this.localversion++;
@@ -1165,7 +1173,7 @@ var WPCLib = {
 				this.edits.push(edit);
 
 				WPCLib.sys.log('Diffs: ',this.edits);
-				this.shadow = current;
+				this.shadow = c;
 			},
 
 			sendedits: function() {
@@ -1268,7 +1276,8 @@ var WPCLib = {
 			
 			var widget = document.getElementById('s_actions').parentNode;
 			that.visible = false;
-			widget.style.display = 'none';			
+			widget.style.display = 'none';
+			WPCLib.canvas._setposition();			
 		},
 		submit: function(event) {
 			// Submit form

@@ -32,7 +32,7 @@ app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, me
 app.add_url_rule('/docs/', 'list_documents', view_func=views.list_documents, methods=['GET'])
 app.add_url_rule('/docs/', 'create_document', view_func=views.create_document, methods=['POST'])
 app.add_url_rule('/docs/<doc_id>', 'get_document', view_func=views.get_document, methods=['GET'])
-app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_document, methods=['PATCH'])
+app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_document, methods=['PATCH', 'POST'])
 
 
 # textanalysis & semantic search
