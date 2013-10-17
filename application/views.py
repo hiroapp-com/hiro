@@ -196,15 +196,7 @@ def create_token():
     mail.send_mail(sender="Team Hiro <hello@hiroapp.com>", 
                    to=user.email,
                    subject="Resetting your Hiro password",
-                   body="""Hi, 
-
-                   just visit {url}#reset={token} to reset your password.
-
-                   Please let us know if there is anything else we can do,
-
-                   keep capturing the good stuff.
-
-                   Team Hiro""".format(url=base_url, token=token))
+                   body="Hi,\n\njust visit {url}#reset={token} to reset your password.\n\nPlease let us know if there is anything else we can do,\n\nkeep capturing the good stuff.\n\nThe Hiro Team".format(url=base_url, token=token))
     return "Reset-Link sent."
 
 

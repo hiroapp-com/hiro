@@ -127,21 +127,27 @@ var WPCLib = {
 				$.getJSON('/docs/?group_by=status', function(data) {
 
 					// See if we have any docs and load to internal model, otherwise create a new one
-					if (!data.active && !data.archived) f.newdoc();
+					if (!data.active && !data.archived) {
+						f.newdoc();
+						return;
+					}	
 					if (data.active) f.active = data.active;
 					if (data.archived) f.archived = data.archived;						
 					f.update();
 
 					// load top doc if not already on canvas, currently this should only be the 
 					// case if a user logs in when sitting in front of an empty document
-					if (!folioonly && data.active && data.active[0].id != WPCLib.canvas.docid) {
-						WPCLib.canvas.loaddoc(data.active[0].id,data.active[0].title);
+					var doc = data.active[0];
+					if (doc.updated < data.archived[0].updated) doc = data.archived[0];
+					if (!folioonly && data.active && doc.id != WPCLib.canvas.docid) {
+						console.log('do this');
+						WPCLib.canvas.loaddoc(doc.id,doc.title);
 					}
 
 					// Update the document counter
 				    if (WPCLib.sys.user.level > 0) WPCLib.ui.documentcounter();	
 
-				    // 
+				    // Portfolio archive counter
 				    if (data.archived) {
 				    	var ac = WPCLib.folio.docs.a_count = data.archived.length;
 				    	a.innerHTML = 'Archive (' + ac + ')';
@@ -495,7 +501,7 @@ var WPCLib = {
 
 	// Canvas is the text page itself and all related functions
 	canvas: {
-
+		// DOM properties & visual stugg
 		contentId: 'pageContent',	
 		pageId: 'page',	
 		pageTitle: 'pageTitle',
@@ -504,12 +510,14 @@ var WPCLib = {
 		canvasId: 'canvas',
 		quoteId: 'nicequote',
 		quoteShown: false,
+		welcomeText: 'Just write',		
+
+		// Internal doc values
 		text: '',
 		title: '',
 		tempTitle: '',
 		wordcount: 0,
 		linecount: 0,
-		welcomeText: 'Just write',
 		typing: false,
 		typingTimer: null,
 		newChars: 0,
@@ -637,7 +645,7 @@ var WPCLib = {
 			var file = this.builddoc();		
 
 			// backend saving, locally or remote
-			if (this.docid!='localdoc' && WPCLib.sys.user.level > 0) {
+			if (this.docid != 'localdoc' && WPCLib.sys.user.level > 0) {
 				WPCLib.sys.log('saving remotely: ', file);	
 				var u = "/docs/"+this.docid, ct = "application/json; charset=UTF-8";
 				// Jquery doesn't support patch requests in plenty of mobile browsers, TODO findout which ones exactly
@@ -870,25 +878,35 @@ var WPCLib = {
 
 		evaluatetitle: function(event) {
 			// When the title changes we update the folio and initiate save
-			var docs = WPCLib.folio.docs;
-			var bucket = (WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];
-			bucket.title = this.value;
+			// If user presses enter or cursor-down automatically move to body	
+			var k = event.keyCode;
+		    if ( k == 13 || k == 40 ) {
+				event.preventDefault();
+		        WPCLib.canvas._setposition(0);
+		    }
 
-			// Visual updates			
-			WPCLib.canvas.title = document.title = this.value;
+			// Do not proceed to save if the shift,alt,strg or a navigational key is pressed	
+			var keys = [16,17,18,33,34,35,36,37,38,39,40];	
+			if (keys.indexOf(k) > -1) return;	
+
+			// Create lookup object to be able to update internal folio doclist
+			var docs = WPCLib.folio.docs.active.concat(WPCLib.folio.docs.archived);
+			var lookup = {};
+			for (var i = 0, l = docs.length; i < l; i++) {
+			    lookup[docs[i].id] = docs[i];			    
+			}
+
+			// Update internal values and Browser title			
+			WPCLib.canvas.title = lookup[WPCLib.canvas.docid].title = document.title = this.value;
 			if (!this.value) document.title = 'Untitled';
-			// Sometimes wo do not have a proper id yet
+
+			// Visually update name in portfolio right away
 			var el = document.getElementById('doc_'+WPCLib.canvas.docid);			
-			if (el) el.firstChild.innerHTML = this.value;			
+			if (el) el.firstChild.firstChild.innerHTML = this.value;			
 
 			// Initiate save & search
 			WPCLib.canvas._settypingtimer();
 
-			// If user presses enter automatically move to body	
-		    if (event.keyCode == 13) {
-				event.preventDefault();
-		        WPCLib.canvas._setposition(0);
-		    }			
 		},
 
 		_cleanwelcome: function() {
@@ -905,11 +923,14 @@ var WPCLib = {
 		},
 
 		update: function(event) {
-			// Abort if keypress is F1-12 key			
-			var kc = event.keyCode;
-			if (kc > 111 && kc < 124) return;		
-			// Return if only the shift key is pressed		
-			if (kc == 17) return;
+			// Do nothing if keypress is F1-12 key			
+			var k = event.keyCode;
+			if (k > 111 && k < 124) return;
+
+			// Return if only the shift,alt,strg or a navigational key is pressed	
+			var keys = [16,17,18,33,34,35,36,37,38,39,40];	
+			if (keys.indexOf(k) > -1) return;
+
 			// update function bound to page textarea, return to local canvas scope
 			WPCLib.canvas.evaluate();			
 		},		
@@ -948,6 +969,7 @@ var WPCLib = {
 		keyhandler: function(e) {
 			// Various actions when keys are pressed
 			var k = e.keyCode;
+
 			// Tab key insert 5 whitespaces
 			if (k==9) WPCLib.canvas._replacekey(e,'tab');
 
@@ -956,6 +978,14 @@ var WPCLib = {
 				WPCLib.canvas._wordcount();	
 				// WPCLib.canvas._logcontent();	
 			}
+
+			// See if user uses arrow-up and jump to title if cursor is at position 0
+			if (k == 38) {
+				var p = WPCLib.canvas._getposition();
+				if (p[0] == p[1] && p[0] == 0) {
+					document.getElementById(WPCLib.canvas.pageTitle).focus();
+				}
+			}			
 		},
 
 		_replacekey: function(e,key) {
@@ -1201,12 +1231,13 @@ var WPCLib = {
 				// Basic diff, cleanup and return standard delta string format
 				var d = this.dmp.diff_main(o, n);
 				if (d.length > 2) {
-				    this.dmp.diff_cleanupSemantic(d);
+					// Cleanup semantics makes it more human readable
+				    // this.dmp.diff_cleanupSemantic(d);
 					this.dmp.diff_cleanupEfficiency(d);				    
 				}				
 
 				// Return patch and simple string format
-				return [this.dmp.patch_toText(this.dmp.patch_make(o, n, d)),this.dmp.diff_toDelta(d)];
+				return [this.dmp.patch_toText(this.dmp.patch_make(o, d)),this.dmp.diff_toDelta(d)];
 			}
 
 		}
@@ -1291,7 +1322,10 @@ var WPCLib = {
 				WPCLib.sys.user.upgrade(1);
 				return;			
 			}
-			if (email.value.length < 5) {
+
+			// Check for proper email
+			var regex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+			if (!regex.test(email)) {
 				email.focus();
 				email.nextSibling.innerHTML = "Please enter an address.";
 				email.style.border = '1px solid rgba(209, 11, 11, 0.7)';
@@ -2170,7 +2204,7 @@ var WPCLib = {
 		},
 
 		error: function(data) {
-			if (Raven) Raven.captureMessage('General Error: '+ data);
+			if (Raven) Raven.captureMessage('General Error: '+ JSON.stringify(data));
 			WPCLib.sys.log('Dang, something went wrong: ',data);
 		},
 
@@ -2827,22 +2861,27 @@ var WPCLib = {
 		dialogDefaultWidth: 750,
 		dialogDefaultHeight: 480,
 		dialogTimer: null,
+		dialogOpen: false,
 		windowfocused: true,
 
 		keyboardshortcut: function(e) {
-			// Simple event listener for keyboard shortcuts			
+			// Simple event listener for keyboard shortcuts	
+			var k = e.keyCode,that = WPCLib.ui;		
 			if (e.ctrlKey) {
-				if (e.keyCode == 83) {
+				if (k == 83) {
 					// Ctrl+s
 					WPCLib.canvas.savedoc(true);
 		    		e.preventDefault();											
 				}
-				if (e.keyCode == 78) {
+				if (k == 78) {
 					// Ctrl + N, this doesn't work in Chrome as chrome does not allow access to ctrl+n 
 					WPCLib.folio.docs.newdoc();	
 		    		e.preventDefault();									
 				}					
 		    }
+
+		    // Close dialog on escape
+		    if (k == 27 && that.dialogOpen) that.hideDialog();
 		},
 
 		loadDialog: function(url) {
@@ -2899,6 +2938,9 @@ var WPCLib = {
 				WPCLib.util.registerEvent(inputs[i], 'keydown', this.cleanerror);
 				WPCLib.util.registerEvent(inputs[i], 'keydown', this.autoconfirm);				
 			}
+
+			// Set internal value
+			this.dialogOpen = true;
 		},
 
 		autoconfirm: function(event) {
@@ -2969,6 +3011,9 @@ var WPCLib = {
 					head[1].style.display = checkout[1].style.display = 'block';
 				}
 			}
+
+			// Set internal value
+			this.dialogOpen = false;			
 		},
 
 		upgradeboxclick: function(obj) {
