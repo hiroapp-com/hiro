@@ -1309,6 +1309,7 @@ var WPCLib = {
 			widget.style.display = 'none';
 			WPCLib.canvas._setposition();			
 		},
+
 		submit: function(event) {
 			// Submit form
 			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];
@@ -2040,7 +2041,51 @@ var WPCLib = {
 			if (this.inited) return;
 			// kick off segment.io sequence, only on our domain 
 			var production = (window.location.hostname.indexOf('hiroapp.com')>=0);
-			if (production) analytics.load("64nqb1cgw1");
+			if (production) {
+				analytics.load("64nqb1cgw1");
+
+				// Add raven ignore options so that our sentry error logger is not swamped with broken plugins
+				window.ravenOptions = {
+				    ignoreErrors: [
+				      // Random plugins/extensions
+				      'top.GLOBALS',
+				      // See: http://blog.errorception.com/2012/03/tale-of-unfindable-js-error. html
+				      'originalCreateNotification',
+				      'canvas.contentDocument',
+				      'MyApp_RemoveAllHighlights',
+				      'http://tt.epicplay.com',
+				      'Can\'t find variable: ZiteReader',
+				      'jigsaw is not defined',
+				      'ComboSearch is not defined',
+				      'http://loading.retry.widdit.com/',
+				      'atomicFindClose',
+				      // Facebook borked
+				      'fb_xd_fragment',
+				      // ISP "optimizing" proxy - `Cache-Control: no-transform` seems to reduce this. (thanks @acdha)
+				      // See http://stackoverflow.com/questions/4113268/how-to-stop-javascript-injection-from-vodafone-proxy
+				      'bmi_SafeAddOnload',
+				      'EBCallBackMessageReceived',
+				      // See http://toolbar.conduit.com/Developer/HtmlAndGadget/Methods/JSInjection.aspx
+				      'conduitPage'
+				    ],
+				    ignoreUrls: [
+				      // Facebook flakiness
+				      /graph\.facebook\.com/i,
+				      // Facebook blocked
+				      /connect\.facebook\.net\/en_US\/all\.js/i,
+				      // Woopra flakiness
+				      /eatdifferent\.com\.woopra-ns\.com/i,
+				      /static\.woopra\.com\/js\/woopra\.js/i,
+				      // Chrome extensions
+				      /extensions\//i,
+				      /^chrome:\/\//i,
+				      // Other plugins
+				      /127\.0\.0\.1:4001\/isrunning/i,  // Cacaoweb
+				      /webappstoolbarba\.texthelp\.com\//i,
+				      /metrics\.itunes\.apple\.com\.edgesuite\.net\//i
+				    ]
+				};				
+			}	
 
 			// Mount & init facebook
 			(function(d, s, id){
@@ -2865,8 +2910,8 @@ var WPCLib = {
 
 		keyboardshortcut: function(e) {
 			// Simple event listener for keyboard shortcuts	
-			var k = e.keyCode,that = WPCLib.ui;		
-			if (e.ctrlKey) {
+			var k = e.keyCode, that = WPCLib.ui;		
+			if ( e.ctrlKey || e.metaKey ) {
 				if (k == 83) {
 					// Ctrl+s
 					WPCLib.canvas.savedoc(true);
