@@ -14,7 +14,7 @@
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';facebooklogin();return false;">Sign-In With&nbsp;<b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform" action="javascript:void(0);">
-					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signin_mail').value=this.value;" id="signup_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>					
+					<input type="email" placeholder="E-Mail" onblur="document.getElementById('signin_mail').value=this.value;" id="signup_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>					
 					<input type="password" placeholder="Choose a password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>	
 					<input type="submit" value="foo" onclick="_wpc.sys.user.register(event); return false;" class="pseudobutton"></input>
 				</form>		
@@ -26,7 +26,7 @@
 				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing In...';facebooklogin();return false;">Log-In With&nbsp;<b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="loginform" action="javascript:void(0);">
-					<input type="text" placeholder="E-Mail" onblur="document.getElementById('signup_mail').value=this.value;" id="signin_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
+					<input type="email" placeholder="E-Mail" onblur="document.getElementById('signup_mail').value=this.value;" id="signin_mail" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
 					<input type="password" placeholder="Password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
 					<input type="submit" value="foo" onclick="_wpc.sys.user.login(event);" class="pseudobutton"></input>
 				</form>		

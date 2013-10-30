@@ -138,9 +138,8 @@ var WPCLib = {
 					// load top doc if not already on canvas, currently this should only be the 
 					// case if a user logs in when sitting in front of an empty document
 					var doc = data.active[0];
-					if (doc.updated < data.archived[0].updated) doc = data.archived[0];
+					if (data.archived && doc.updated < data.archived[0].updated) doc = data.archived[0];
 					if (!folioonly && data.active && doc.id != WPCLib.canvas.docid) {
-						console.log('do this');
 						WPCLib.canvas.loaddoc(doc.id,doc.title);
 					}
 
@@ -690,7 +689,7 @@ var WPCLib = {
 			    try { 
 					localStorage.setItem("WPCdoc", JSON.stringify(file));
 				} catch(e) {
-			        alert('Please sign up to safely store long documents.');
+			        alert('Please sign up to safely store long notes.');
 			        WPCLib.sys.user.upgrade(1);
 			    }				
 				WPCLib.canvas.saved = true;	
@@ -1325,9 +1324,9 @@ var WPCLib = {
 
 			// Check for proper email
 			var regex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-			if (!regex.test(email)) {
+			if (!regex.test(email.value)) {
 				email.focus();
-				email.nextSibling.innerHTML = "Please enter an address.";
+				email.nextSibling.innerHTML = "Invalid address";
 				email.style.border = '1px solid rgba(209, 11, 11, 0.7)';
 				button.innerHTML = "Try again";
 				return;
@@ -2204,7 +2203,7 @@ var WPCLib = {
 		},
 
 		error: function(data) {
-			if (Raven) Raven.captureMessage('General Error: '+ JSON.stringify(data));
+			if (Raven) Raven.captureMessage('General Error: ' + JSON.stringify(data) + arguments.callee.caller.toString());
 			WPCLib.sys.log('Dang, something went wrong: ',data);
 		},
 
@@ -2920,11 +2919,12 @@ var WPCLib = {
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
 					document.activeElement.blur();
-					// On some mobiel browser the input field is frozen if we don't focus the iframe first				 
-					if ('ontouchstart' in document.documentElement) document.getElementById('dialog').contentWindow.focus();								
+					// On some mobile browser the input field is frozen if we don't focus the iframe first	
+					// iOS 7 input fields freeze if they are autofocused & then touched, thus no autofocus on touch devices for now 			 
+					// if ('ontouchstart' in document.documentElement) document.getElementById('dialog').contentWindow.focus();								
 					if (typeof field == 'boolean') el = el.getElementsByTagName('input')[0];													
 					if (typeof field == 'string') el = frame.getElementById(field);
-					if (el) el.focus();																
+					if (el && !('ontouchstart' in document.documentElement)) el.focus();																
 				}					
 			}	
 
@@ -3361,14 +3361,13 @@ var WPCLib = {
 						upgradelink.style.display = 'none';					
 						break;		
 				}
-				val = val + ' plan: ';
+				val = val + ((document.body.offsetWidth>480) ? ' plan: ' : ': ');				
 				if (WPCLib.folio.docs.active) val = val + doccount;
 
 				// See if we have plan limits or mobile device
-				if (level < 2) val = val + ' of 10'
-				val = val + ((document.body.offsetWidth>480) ? ' documents' : ' docs');
+				if (level < 2) val = val + ' of 10';
 				
-				target.getElementsByTagName('input')[2].value = val;
+				target.getElementsByTagName('input')[2].value = val + ' notes';
 			}
 		},
 
