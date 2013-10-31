@@ -110,6 +110,31 @@ var WPCLib = {
 			});
 		},
 
+		newremotedocs: function(num) {
+			// Placeholder for proper function that is called if /docs returns any unseen updates
+			var bubble = document.getElementById('updatebubble');
+			bubble.innerHTML = num;
+			bubble.style.display = 'block';
+
+			var dummy = {
+				created: 1383246229,
+				id: "fooooooooo",
+				status: "active",
+				title: "Shared Dummy Doc",
+				updated: (WPCLib.util.now() + 100),
+				unseen: true,
+				shared: true,
+				lastEditor: 'Foobear'
+			}
+
+			for (i=0; i<num; i++) {
+				this.docs.active.push(dummy);
+			}
+
+			this.docs.unseenupdates = num;			
+			this.docs.update();
+		},
+
 		docs: {
 			// All Document List interactions in seperate namespace
 			doclistId: 'doclist',
@@ -119,6 +144,9 @@ var WPCLib = {
 			a_count: 0,
 			archiveId: 'archivelist',
 			archiveOpen: false,
+			// Generic lookup object to easily change object properties in active/archive arrays
+			lookup: {},
+			unseenupdates: 0,
 
 			loaddocs: function(folioonly) {
 				// Get the list of documents from the server
@@ -177,7 +205,10 @@ var WPCLib = {
 				var act = that.active;
 				var docs = document.getElementById(that.doclistId);				
 				var arc = that.archived;
-				var archive = document.getElementById(that.archiveId);					
+				var archive = document.getElementById(that.archiveId);		
+
+				// Update our lookup object
+				that.updatelookup();
 
 				// Reset all contents and handlers
 				if (docs) docs.innerHTML = '';
@@ -185,11 +216,11 @@ var WPCLib = {
 
 				// Render all links
 				for (i=0,l=act.length;i<l;i++) {		
-					that.renderlink(i,'active');						    
+					that.renderlink(i,'active',act[i]);						    
 				}
 				if (arc) {
 					for (i=0,l=arc.length;i<l;i++) {		
-						that.renderlink(i,'archive');						    
+						that.renderlink(i,'archive',arc[i]);						    
 					}					
 				}
 
@@ -197,7 +228,32 @@ var WPCLib = {
 				setTimeout(WPCLib.folio.docs.update,60000);
 			},
 
-			renderlink: function(i,type) {
+			updatelookup: function() {
+				// Takes the two document arrays (active/archive) and creates a simple lookup reference object
+				// Usage: WPCLib.folio.docs.lookup['79asjdkl3'].title = 'Foo'
+				var docs = this.active.concat(this.archived);
+				this.lookup = {};
+				for (var i = 0, l = docs.length; i < l; i++) {
+				    this.lookup[docs[i].id] = docs[i];			    
+				}
+			},
+
+			updateunseen: function(increment) {
+				// Updates the small visible counter (red bubble next to showmenu icon) and internal values
+				// A negative value substracts one from the counter, a positive resets counter to value
+				var i = this.unseenupdates = (increment < 0) ? this.unseenupdates + increment : increment;
+				var b = document.getElementById('updatebubble');
+				if (i = 0) {
+					b.style.display = 'none';
+					return;
+				}
+				if (i > 1) {
+					b.innerHTML = i;
+					b.style.display = 'block';
+				}
+			},
+
+			renderlink: function(i,type,data) {
 				// Render active and archived document link
 				var item = (type=='active') ? this.active : this.archived;
 				var lvl = WPCLib.sys.user.level;
@@ -205,7 +261,7 @@ var WPCLib = {
 				var active = (type == 'active') ? true : false;
 
 				var d = document.createElement('div');
-				d.className = 'document';
+				d.className = 'document shared';
 				d.setAttribute('id','doc_'+docid);
 
 				var link = document.createElement('a');
@@ -218,13 +274,34 @@ var WPCLib = {
 
 				var stats = document.createElement('small');
 				if (item[i].updated) {
-					stats.appendChild(document.createTextNode(WPCLib.util.humanizeTimestamp(item[i].updated) + " ago"))
+					var statline = WPCLib.util.humanizeTimestamp(item[i].updated) + " ago";
+					if (data.lastEditor) statline = statline + ' by ' + data.lastEditor;
+					stats.appendChild(document.createTextNode(statline));
 				} else {
 					stats.appendChild(document.createTextNode('Not saved yet'))							
 				}			
 
 				link.appendChild(t);
 				link.appendChild(stats);
+
+				if (data.shared) {
+					// Add sharing icon to document
+					var s = document.createElement('div');
+					s.className = 'sharing';
+					var tooltip = 'Shared with others';	
+					if (data.unseen) {
+						// Show that document has unseen updates
+						var sn = document.createElement('div');
+						sn.className = "bubble red";
+						sn.innerHTML = '*';
+						s.appendChild(sn);
+						tooltip = tooltip + ', just updated';					
+					}			
+					s.setAttribute('title',tooltip);	
+					link.appendChild(s);
+				}
+
+
 				d.appendChild(link);	
 
 				if (('ontouchstart' in document.documentElement)&&l >= 1) {
@@ -715,7 +792,7 @@ var WPCLib = {
 			// Load a specific document to the canvas
 			if (!this.saved) this.savedoc();			
 			WPCLib.sys.log('loading doc id: ', docid);
-			var mobile = (document.body.offsetWidth<=900);			
+			var mobile = (document.body.offsetWidth<=900);	
 
 			// If we already know the title, we shorten the waiting time
 			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
@@ -734,6 +811,17 @@ var WPCLib = {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
 					WPCLib.canvas.lastUpdated = data.updated;	
+
+					// Check if the document had unseen updates		
+					if (WPCLib.folio.docs.lookup[docid] && WPCLib.folio.docs.lookup[docid].unseen == true) {
+						var el = document.getElementById('doc_' + docid);
+						if (el) {
+							var bubble = el.getElementsByClassName('bubble')[0];
+							if (bubble) bubble.style.display = 'none';
+						}
+						WPCLib.folio.docs.lookup[docid].unseen = false;
+						WPCLib.folio.docs.updateunseen(-1);
+					}					
 
 					// Update document list
 					WPCLib.folio.docs.update();					
@@ -862,7 +950,7 @@ var WPCLib = {
 			// Show an encouraging title and indicitae that title can be changed here
 			WPCLib.canvas._titletiptimer = setTimeout(function(){
 				var title = document.getElementById(WPCLib.canvas.pageTitle);	
-				var tip = WPCLib.canvas.titleTip;
+				var tip = ('ontouchstart' in document.documentElement) ? '' : WPCLib.canvas.titleTip;
 				WPCLib.canvas.tempTitle = title.value;			
 				if (!title.value || title.value.length == 0 || title.value == "Untitled" || title.value == WPCLib.canvas.defaultTitle) title.value = tip;					
 			},200);								
@@ -898,15 +986,8 @@ var WPCLib = {
 			var keys = [16,17,18,33,34,35,36,37,38,39,40];	
 			if (keys.indexOf(k) > -1) return;	
 
-			// Create lookup object to be able to update internal folio doclist
-			var docs = WPCLib.folio.docs.active.concat(WPCLib.folio.docs.archived);
-			var lookup = {};
-			for (var i = 0, l = docs.length; i < l; i++) {
-			    lookup[docs[i].id] = docs[i];			    
-			}
-
 			// Update internal values and Browser title			
-			WPCLib.canvas.title = lookup[WPCLib.canvas.docid].title = document.title = this.value;
+			WPCLib.canvas.title = WPCLib.folio.docs.lookup[WPCLib.canvas.docid].title = document.title = this.value;
 			if (!this.value) document.title = 'Untitled';
 
 			// Visually update name in portfolio right away
@@ -1301,7 +1382,9 @@ var WPCLib = {
 			that.visible = true;				
 			var widget = document.getElementById('s_actions').parentNode;
 			widget.style.display = 'block';
-			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];			
+
+			// Set focus to input field
+			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];		
 			if (email) email.focus();				
 		},
 		close: function(event) {
