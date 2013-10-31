@@ -59,6 +59,9 @@
 					success: function(data) {
 	                    // All that needs to be done at this point
 	                    _wpc.sys.user.authed('login',data);									                    
+					},
+					error: function(data) {
+						_wpc.sys.error(data);									
 					}
 				});				    
 			  } else if (response.status === 'not_authorized') {
@@ -76,11 +79,15 @@
 								success: function(data) {
 				                    // All that needs to be done at this point
 				                    _wpc.sys.user.authed('register',data,'Facebook');									                    
+								},
+								error: function(data) {
+									_wpc.sys.error(data);									
 								}
 							});
 					   } else {
 					   	 // FB auth process aborted by user
 					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
+						_wpc.sys.error('Aborted FB login (Logged into Facebook)');					     
 					   }
 					},{scope: 'email'});
 				}	
@@ -100,11 +107,15 @@
 								success: function(data) {
 				                    // All that needs to be done at this point
 				                    _wpc.sys.user.authed('login',data);									                    
+								},
+								error: function(data) {
+									_wpc.sys.error(data);									
 								}
 							});
 					   } else {
 					   	 // FB auth process aborted by user
 					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
+						_wpc.sys.error('Aborted FB login (Not logged into Facebook)');						     
 					   }
 					},{scope: 'email'});
 				}			

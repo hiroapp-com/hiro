@@ -244,10 +244,18 @@ var WPCLib = {
 					}
 				}
 
+
 				if (active) {
-					document.getElementById(WPCLib.folio.docs.doclistId).appendChild(d);		
-				} else {				
-					document.getElementById(WPCLib.folio.docs.archiveId).appendChild(d);					
+					// Add folio item to DOM, insert current document in beginning
+					var list = document.getElementById(WPCLib.folio.docs.doclistId);
+					if (docid == WPCLib.canvas.docid && list.firstChild) {
+						list.insertBefore(d, list.firstChild);
+					} else { list.appendChild(d); };		
+				} else {	
+					var list = document.getElementById(WPCLib.folio.docs.archiveId);			
+					if (docid == WPCLib.canvas.docid && list.firstChild) {
+						list.insertBefore(d, list.firstChild);
+					} else { list.appendChild(d); };					
 				}	
 
 				var title = item[i].title || 'Untitled';			
@@ -257,8 +265,8 @@ var WPCLib = {
 			_events: function(docid,title,active) {
 				// Attach events to doc links
 				WPCLib.util.registerEvent(document.getElementById('doc_'+docid).firstChild,'click', function() {
-					WPCLib.canvas.loaddoc(docid, title);
 					WPCLib.folio.docs.moveup(docid,active);
+					WPCLib.canvas.loaddoc(docid, title);											
 				});				
 			},
 
@@ -412,8 +420,7 @@ var WPCLib = {
 				bucket.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
 
 				// Insert item at top of array and redraw list
-				bucket.unshift(obj);
-				WPCLib.folio.docs.update();				
+				bucket.unshift(obj);			
 			},
 
 			archive: function(e,toarchive) {
@@ -728,6 +735,9 @@ var WPCLib = {
 					WPCLib.canvas.created = data.created;
 					WPCLib.canvas.lastUpdated = data.updated;	
 
+					// Update document list
+					WPCLib.folio.docs.update();					
+
 					// Change null value to '' if document header is empty		
 
 					// Show data on canvas
@@ -774,7 +784,7 @@ var WPCLib = {
 					} else {
 						WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);
 					}
-					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';						
+					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';		
 				}
 			});						
 		},	
@@ -1748,7 +1758,7 @@ var WPCLib = {
                 			WPCLib.context.quotareached();
                 			break;
                 		default:
-                			WPCLib.sys.error();	
+                			WPCLib.sys.error(data);	
                 	}
                 },           
                 success: function(data) {
@@ -2042,8 +2052,6 @@ var WPCLib = {
 			// kick off segment.io sequence, only on our domain 
 			var production = (window.location.hostname.indexOf('hiroapp.com')>=0);
 			if (production) {
-				analytics.load("64nqb1cgw1");
-
 				// Add raven ignore options so that our sentry error logger is not swamped with broken plugins
 				window.ravenOptions = {
 				    ignoreErrors: [
@@ -2060,19 +2068,21 @@ var WPCLib = {
 				      'http://loading.retry.widdit.com/',
 				      'atomicFindClose',
 				      // Facebook borked
-				      'fb_xd_fragment',
+				      // 'fb_xd_fragment',
 				      // ISP "optimizing" proxy - `Cache-Control: no-transform` seems to reduce this. (thanks @acdha)
 				      // See http://stackoverflow.com/questions/4113268/how-to-stop-javascript-injection-from-vodafone-proxy
 				      'bmi_SafeAddOnload',
 				      'EBCallBackMessageReceived',
 				      // See http://toolbar.conduit.com/Developer/HtmlAndGadget/Methods/JSInjection.aspx
-				      'conduitPage'
+				      'conduitPage',
+				      // Trashy zoom plugin
+				      'nonjdcjchghhkdoolnlbekcfllmednbl'
 				    ],
 				    ignoreUrls: [
 				      // Facebook flakiness
-				      /graph\.facebook\.com/i,
+				      // /graph\.facebook\.com/i,
 				      // Facebook blocked
-				      /connect\.facebook\.net\/en_US\/all\.js/i,
+				      // /connect\.facebook\.net\/en_US\/all\.js/i,
 				      // Woopra flakiness
 				      /eatdifferent\.com\.woopra-ns\.com/i,
 				      /static\.woopra\.com\/js\/woopra\.js/i,
@@ -2084,7 +2094,10 @@ var WPCLib = {
 				      /webappstoolbarba\.texthelp\.com\//i,
 				      /metrics\.itunes\.apple\.com\.edgesuite\.net\//i
 				    ]
-				};				
+				};	
+
+				// Load all libs handeled by segment.io (Intercom, Google Analytics, Sentry)	
+				analytics.load("64nqb1cgw1");
 			}	
 
 			// Mount & init facebook
@@ -2248,11 +2261,13 @@ var WPCLib = {
 		},
 
 		error: function(data) {
-			if (Raven) Raven.captureMessage('General Error: ' + JSON.stringify(data) + arguments.callee.caller.toString());
+			// Pipe errors into Sentry
+			if (Raven) Raven.captureMessage('General Error: ' + JSON.stringify(data) + ', ' + arguments.callee.caller.toString());
 			WPCLib.sys.log('Dang, something went wrong: ',data);
 		},
 
 		log: function(msg,payload) {
+			// Log console if we're not on a production system
 			if (window.location.href.indexOf('hiroapp') == -1) {
 				console.log(msg,payload);
 			}
@@ -2417,7 +2432,7 @@ var WPCLib = {
                 		// Submit the referring url of the registration session 
                 		// (hackish timeout to make sure we get proper user token from settings template, but works fine atm)
                 		var logreferrer = setTimeout(function(){
-                			analytics.identify(WPCLib.sys.user.id, {referrer:document.referrer});
+                			analytics.identify(WPCLib.sys.user.id, {referrer: document.referrer});
                 		},2000);
                 	}
 	                if (type=='register' && method) {
@@ -2426,6 +2441,9 @@ var WPCLib = {
 	                	analytics.track('Logs back in');
 	                }	                	
                 }
+
+                // Update document counter
+				WPCLib.ui.documentcounter();                
 
                 // Housekeeping, switch authactive off
                 WPCLib.sys.user.authactive = false;
@@ -2899,7 +2917,7 @@ var WPCLib = {
 		menuCurrPos: 0,
 		menuSlideCurrDirection: 0,
 		menuSlideTimer: 0,
-		menuHideTimer: 0,
+		menuHideTimer: 0,	
 		modalShieldId: 'modalShield',
 		dialogWrapperId: 'dialogWrapper',
 		dialogDefaultWidth: 750,
@@ -3163,12 +3181,22 @@ var WPCLib = {
 		menuSwitch: function() {	
 			// Handler for elements acting as open and close trigger
 			var mp = WPCLib.ui.menuCurrPos;
+
 			// On touch devices we also remove the keyboard
 			if ('ontouchstart' in document.documentElement) {
-				if (document.activeElement.id == WPCLib.canvas.contentId && mp==0) document.activeElement.blur();
-			}			
-			if (mp==0) WPCLib.ui.menuSlide(1);
-			if (mp!=0) WPCLib.ui.menuSlide(-1);
+				if (document.activeElement.id == WPCLib.canvas.contentId && mp == 0) document.activeElement.blur();
+			}
+
+			if (mp==0) {
+				// Open left folio menu
+				WPCLib.ui.menuSlide(1);
+				// Hide sharing dialog on mobile devices
+				if (WPCLib.sharing.visible && (document.body.offsetWidth<480)) WPCLib.sharing.close();
+			}	
+			if (mp!=0) {
+				// Close left folio menu
+				WPCLib.ui.menuSlide(-1);
+			}	
 		},
 
 		delayedtimeout: null,

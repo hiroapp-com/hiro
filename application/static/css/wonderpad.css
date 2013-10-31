@@ -541,7 +541,7 @@ a.wpcbutton:hover {
     font-size: 1.7em;
     font-weight: 600;
     color: #333;
-    z-index: 2110;
+    z-index: 3010;
     background-color: transparent;
   }
 
@@ -822,18 +822,18 @@ a.wpcbutton:hover {
 
   #sharing .actions {
     position: fixed;
-    top: 35px;
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 2799;
-    padding-top: 13px;
-    padding-right: 0;    
+    padding-top: 48px;
+    padding-right: 0;  
   }
 
   #sharing .actions .cancel {
     right: 14px;
-    top: 13px;    
+    top: 48px;    
   } 
 
   #sharing .actions .title.light {
@@ -1771,13 +1771,15 @@ body#settingsPage {
 body#settingsPage a.close {
   background: url(../img/icons.png) no-repeat; 
   background-size: 102px auto; 
-  background-position: -12px -39px;
+  background-position: -12px -29px;
   position: absolute;
   display: block;
-  padding-right: 20px;
-  top: 21px;
-  right: 22px;
+  padding-right: 10px;
+  top: 11px;
+  right: 12px;
   color: #fff;
+  height: 40px;
+  width: 50px;
   opacity: 0.3;
 }
 
@@ -2188,7 +2190,7 @@ body#settingsPage input#cc_number.error {
   body#settingsPage a.close {
     color: transparent;
     padding-right: 0;
-    background-position: -26px -39px;
+    background-position: -16px -29px;
   }
 
   body#settingsPage input#cc_number {
@@ -2427,7 +2429,7 @@ body#settingsPage input#cc_number.error {
   body#settingsPage a.close {
     color: transparent;
     padding-right: 0;
-    background-position: -34px -39px;
+    background-position: -24px -29px;
   }
 
   #s_settings .header .active, #s_settings .header a  {
