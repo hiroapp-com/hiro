@@ -44,11 +44,6 @@ var WPCLib = {
 
 		checkconsistency: function() {
 			// Pings the doc API and checks if current document is latest and no newer version on the server
-			var latest = {};
-			var latestlocal = {};
-			var current = WPCLib.canvas.docid;
-			var currentremote = {};
-			var local = WPCLib.folio.docs;
 			if (!WPCLib.ui.windowfocused) {
 				// If the window is not focused break recursive check and resume as soon as window is focused again
 				WPCLib.util._focuscallback = WPCLib.folio.checkconsistency;
@@ -61,64 +56,11 @@ var WPCLib = {
 			},this.consistencychecktimer);
 
 			// If we didn't get the doclist yet, wait until next cycle
+			var local = WPCLib.folio.docs;
 			if (!local.active[0] && !local.archived[0]) return;
 
-			// Get latest doc
-			$.ajax({
-			    dataType: "json",
-			    url: '/docs/?group_by=status',
-			    success: function(data) {
-					//Abort if we don't have any document yet (eg right after signup)
-					if (!data || !data.active && !data.archived) return;
-
-					// Find the current doc in the returned data
-					var docs = data.active;
-
-					for (var key in docs) {
-						if (docs.hasOwnProperty(key)) {
-							if (docs[key].id == current) currentremote = docs[key];
-						}
-					}	
-
-					// Prepare all other data for comparison
-					if (WPCLib.sys.user.level > 1 && data.archived) {
-						// Make sure the current document is not in the archive
-						var docs = data.archived;
-						for (var key in docs) {
-							if (docs.hasOwnProperty(key)) {
-								if (docs[key].id == current) currentremote = docs[key];
-							}
-						}					
-						// check if an active or archived doc is the latest edited
-						latest = (data.archived[0].updated > data.active[0].updated) ? data.archived[0] : data.active[0];
-						latestlocal = (local.archived[0] && local.archived[0].updated > local.active[0].updated) ? local.archived[0] : local.active[0];
-					} else {
-						if (data.active) latest = data.active[0];
-						latestlocal = local.active[0];
-					}			
-
-					// This is very hackish as we set the last_updated var in the frontend and backen seperately
-					// 5 seconds should be sufficient between initializing save and the save arriving in the backend
-					if (currentremote.id == WPCLib.canvas.docid && (currentremote.updated - WPCLib.canvas.lastUpdated) > 5 ) {
-						// If there's a newer version of the current document
-						WPCLib.sys.log('Newer version on server detected, loading now');
-						WPCLib.canvas.loaddoc(latest.id,latest.title);					
-						WPCLib.folio.docs.loaddocs(true);
-					}					
-
-					// There is a more recent document in the collection, but we only update the folio then				
-					if (latestlocal && latest.updated > latestlocal.updated) {
-						WPCLib.folio.docs.loaddocs(true);					
-					}
-
-					// Check if we were offline and switch back on
-					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();					
-			    },
-				error: function(xhr,textStatus) {
-					WPCLib.sys.error(xhr);	
-					if (textStatus == 'timeout') WPCLib.sys.goneoffline();					
-				}
-			});					
+			// Get latest docs
+			WPCLib.folio.docs.loaddocs(true);					
 		},
 
 		newremotedocs: function(num) {
@@ -167,6 +109,7 @@ var WPCLib = {
 				$.ajax({
 				    dataType: "json",
 				    url: '/docs/?group_by=status',
+				    timeout: 5000,
 				    success: function(data) {
 						// See if we have any docs and load to internal model, otherwise create a new one
 						if (!data.active && !data.archived) {
@@ -193,6 +136,16 @@ var WPCLib = {
 					    	var ac = WPCLib.folio.docs.a_count = data.archived.length;
 					    	a.innerHTML = 'Archive (' + ac + ')';
 					    }	
+
+					    // If there's a newer version of the current Note then load it onto canvas
+					    // Note: this is pretty hackish as the local value is set via js and remote via python, thus we have to
+					    // account for some potential difference
+						if (folioonly && WPCLib.canvas.lastUpdated > 0 
+							&& WPCLib.canvas.lastUpdated < (WPCLib.folio.docs.lookup[WPCLib.canvas.docid].updated - 5)) {
+							WPCLib.sys.log('Newer version on server detected, loading now');
+							WPCLib.canvas.loaddoc(WPCLib.canvas.docid,WPCLib.canvas.title);					
+							WPCLib.folio.docs.loaddocs(true);
+						}					    
 
 					    // Check of were offline and switch back to normal state
 					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
@@ -751,8 +704,12 @@ var WPCLib = {
 
 			// backend saving, locally or remote
 			if (this.docid != 'localdoc' && WPCLib.sys.user.level > 0) {
+				// Save remotely, immediately indicate if this fails because we're offline
+				if ('onLine' in navigator && !navigator.onLine) WPCLib.sys.goneoffline();
 				WPCLib.sys.log('saving remotely: ', file);	
 				var u = "/docs/"+this.docid, ct = "application/json; charset=UTF-8";
+
+
 				// Jquery doesn't support patch requests in plenty of mobile browsers, TODO findout which ones exactly
 				if ( navigator.appVersion.indexOf('BB10') == -1 ) {
 					$.ajax({					

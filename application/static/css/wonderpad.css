@@ -479,6 +479,7 @@ a.wpcbutton:hover {
 }
 
 #switchview.error {
+  padding-right: 14px;
   color: rgba(209,11,11,1);
 }
 
@@ -660,6 +661,10 @@ a.wpcbutton:hover {
     padding-right: 20px;
     padding-top: 15px;
   }
+
+  #switchview.error {
+    padding-right: 22px;
+  }  
 
   #switchview.open {
     margin-right: 0;
@@ -1084,9 +1089,7 @@ a.wpcbutton:hover {
 }
 
 .context #errorstatus {
-  display: none;
-  padding: 11px 5px 7px 14px;
-  border-bottom: 1px dotted #dcdcdc; 
+  display: none; 
   color: rgba(209,11,11,1);
 }
 
@@ -1415,7 +1418,7 @@ text-align: center;
     width: auto;
   }
 
-  .context #status {
+  .context #status, .context #errorstatus {
     padding: 17px 5px 12px 14px    
   }
 
