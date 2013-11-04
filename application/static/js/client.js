@@ -64,50 +64,61 @@ var WPCLib = {
 			if (!local.active[0] && !local.archived[0]) return;
 
 			// Get latest doc
-			$.getJSON('/docs/?group_by=status', function(data) {
-				//Abort if we don't have any document yet (eg right after signup)
-				if (!data || !data.active && !data.archived) return;
+			$.ajax({
+			    dataType: "json",
+			    url: '/docs/?group_by=status',
+			    success: function(data) {
+					//Abort if we don't have any document yet (eg right after signup)
+					if (!data || !data.active && !data.archived) return;
 
-				// Find the current doc in the returned data
-				var docs = data.active;
+					// Find the current doc in the returned data
+					var docs = data.active;
 
-				for (var key in docs) {
-					if (docs.hasOwnProperty(key)) {
-						if (docs[key].id == current) currentremote = docs[key];
-					}
-				}	
-
-				// Prepare all other data for comparison
-				if (WPCLib.sys.user.level > 1 && data.archived) {
-					// Make sure the current document is not in the archive
-					var docs = data.archived;
 					for (var key in docs) {
 						if (docs.hasOwnProperty(key)) {
 							if (docs[key].id == current) currentremote = docs[key];
 						}
+					}	
+
+					// Prepare all other data for comparison
+					if (WPCLib.sys.user.level > 1 && data.archived) {
+						// Make sure the current document is not in the archive
+						var docs = data.archived;
+						for (var key in docs) {
+							if (docs.hasOwnProperty(key)) {
+								if (docs[key].id == current) currentremote = docs[key];
+							}
+						}					
+						// check if an active or archived doc is the latest edited
+						latest = (data.archived[0].updated > data.active[0].updated) ? data.archived[0] : data.active[0];
+						latestlocal = (local.archived[0] && local.archived[0].updated > local.active[0].updated) ? local.archived[0] : local.active[0];
+					} else {
+						if (data.active) latest = data.active[0];
+						latestlocal = local.active[0];
+					}			
+
+					// This is very hackish as we set the last_updated var in the frontend and backen seperately
+					// 5 seconds should be sufficient between initializing save and the save arriving in the backend
+					if (currentremote.id == WPCLib.canvas.docid && (currentremote.updated - WPCLib.canvas.lastUpdated) > 5 ) {
+						// If there's a newer version of the current document
+						WPCLib.sys.log('Newer version on server detected, loading now');
+						WPCLib.canvas.loaddoc(latest.id,latest.title);					
+						WPCLib.folio.docs.loaddocs(true);
 					}					
-					// check if an active or archived doc is the latest edited
-					latest = (data.archived[0].updated > data.active[0].updated) ? data.archived[0] : data.active[0];
-					latestlocal = (local.archived[0] && local.archived[0].updated > local.active[0].updated) ? local.archived[0] : local.active[0];
-				} else {
-					if (data.active) latest = data.active[0];
-					latestlocal = local.active[0];
-				}			
 
-				// This is very hackish as we set the last_updated var in the frontend and backen seperately
-				// 5 seconds should be sufficient between initializing save and the save arriving in the backend
-				if (currentremote.id == WPCLib.canvas.docid && (currentremote.updated - WPCLib.canvas.lastUpdated) > 5 ) {
-					// If there's a newer version of the current document
-					WPCLib.sys.log('Newer version on server detected, loading now');
-					WPCLib.canvas.loaddoc(latest.id,latest.title);					
-					WPCLib.folio.docs.loaddocs(true);
-				}					
+					// There is a more recent document in the collection, but we only update the folio then				
+					if (latestlocal && latest.updated > latestlocal.updated) {
+						WPCLib.folio.docs.loaddocs(true);					
+					}
 
-				// There is a more recent document in the collection, but we only update the folio then				
-				if (latestlocal && latest.updated > latestlocal.updated) {
-					WPCLib.folio.docs.loaddocs(true);					
-				}				
-			});
+					// Check if we were offline and switch back on
+					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();					
+			    },
+				error: function(xhr,textStatus) {
+					WPCLib.sys.error(xhr);	
+					if (textStatus == 'timeout') WPCLib.sys.goneoffline();					
+				}
+			});					
 		},
 
 		newremotedocs: function(num) {
@@ -151,35 +162,46 @@ var WPCLib = {
 			loaddocs: function(folioonly) {
 				// Get the list of documents from the server
 				var f = WPCLib.folio.docs;	
-				var a = document.getElementById(this.a_counterId);			
-				$.getJSON('/docs/?group_by=status', function(data) {
+				var a = document.getElementById(this.a_counterId);	
 
-					// See if we have any docs and load to internal model, otherwise create a new one
-					if (!data.active && !data.archived) {
-						f.newdoc();
-						return;
-					}	
-					if (data.active) f.active = data.active;
-					if (data.archived) f.archived = data.archived;						
-					f.update();
+				$.ajax({
+				    dataType: "json",
+				    url: '/docs/?group_by=status',
+				    success: function(data) {
+						// See if we have any docs and load to internal model, otherwise create a new one
+						if (!data.active && !data.archived) {
+							f.newdoc();
+							return;
+						}	
+						if (data.active) f.active = data.active;
+						if (data.archived) f.archived = data.archived;						
+						f.update();
 
-					// load top doc if not already on canvas, currently this should only be the 
-					// case if a user logs in when sitting in front of an empty document
-					var doc = data.active[0];
-					if (data.archived && doc.updated < data.archived[0].updated) doc = data.archived[0];
-					if (!folioonly && data.active && doc.id != WPCLib.canvas.docid) {
-						WPCLib.canvas.loaddoc(doc.id,doc.title);
+						// load top doc if not already on canvas (or on first load when the doc is preloaded and we have no internal values yet) 
+						// also handling egde case: if a user logs in when sitting in front of an empty document
+						var doc = data.active[0];
+						if (data.archived && doc.updated < data.archived[0].updated) doc = data.archived[0];
+						if (!folioonly && data.active && doc.id != WPCLib.canvas.docid) {
+							WPCLib.canvas.loaddoc(doc.id,doc.title);
+						}
+
+						// Update the document counter
+					    if (WPCLib.sys.user.level > 0) WPCLib.ui.documentcounter();	
+
+					    // Portfolio archive counter
+					    if (data.archived) {
+					    	var ac = WPCLib.folio.docs.a_count = data.archived.length;
+					    	a.innerHTML = 'Archive (' + ac + ')';
+					    }	
+
+					    // Check of were offline and switch back to normal state
+					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
+				    },
+					error: function(xhr,textStatus) {
+						WPCLib.sys.error(xhr);	
+						if (textStatus == 'timeout') WPCLib.sys.goneoffline();					
 					}
-
-					// Update the document counter
-				    if (WPCLib.sys.user.level > 0) WPCLib.ui.documentcounter();	
-
-				    // Portfolio archive counter
-				    if (data.archived) {
-				    	var ac = WPCLib.folio.docs.a_count = data.archived.length;
-				    	a.innerHTML = 'Archive (' + ac + ')';
-				    }	
-				});
+				});						
 			},
 
 			loadlocal: function(localdoc) {	
@@ -742,9 +764,11 @@ var WPCLib = {
 		                    WPCLib.sys.log('Saved! ',data);
 							WPCLib.canvas.saved = true;	 
 							if (force) status.innerHTML = 'Saved!';
+							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 						},
-						error: function(xhr) {
-							WPCLib.sys.error(xhr);						
+						error: function(xhr,textStatus) {
+							WPCLib.sys.error(xhr);	
+							if (textStatus == 'timeout') WPCLib.sys.goneoffline();					
 						}
 					});
 				} else if ($.ajax) {
@@ -757,9 +781,11 @@ var WPCLib = {
 		                    WPCLib.sys.log('Saved! ',data);
 							WPCLib.canvas.saved = true;	 
 							if (force) status.innerHTML = 'Saved!';
+							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();							
 						},
-						error: function(xhr) {
-							WPCLib.sys.error(xhr);						
+						error: function(xhr,textStatus) {
+							WPCLib.sys.error(xhr);
+							if (textStatus == 'timeout') WPCLib.sys.goneoffline();													
 						}
 					});					
 				} else {
@@ -872,7 +898,12 @@ var WPCLib = {
 					} else {
 						WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);
 					}
-					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';		
+					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';	
+					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
+				},
+				error: function(xhr,textStatus) {
+					WPCLib.sys.error(xhr);	
+					if (textStatus == 'timeout') WPCLib.sys.goneoffline();						
 				}
 			});						
 		},	
@@ -1222,7 +1253,7 @@ var WPCLib = {
 
     		// Set the position
     		if (el.setSelectionRange) {
-				if (window.navigator.standalone&&this.safariinit) {		
+				if (window.navigator.standalone && this.safariinit) {		
 					// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
 					// TODO Bruno findout why, it's not about something else setting the focus elsewhere						
 					setTimeout( function(){
@@ -1245,7 +1276,9 @@ var WPCLib = {
     			el.focus();
     		}
 		},
+
 		sync: {
+			// Differential syncronisation implementation https://neil.fraser.name/writing/sync/
 			shadow: '',
 			edits: [],
 			localversion: 1,
@@ -1335,6 +1368,7 @@ var WPCLib = {
 	},	
 
 	sharing: {
+		// Share a Note with other
 		id: 'sharing',
 		visible: false,
 		openTimeout: null,
@@ -1429,12 +1463,29 @@ var WPCLib = {
 			if (analytics && WPCLib.sys.user.level > 0) analytics.identify(WPCLib.sys.user.id, {sharingNotes:'true'});
 			var msg = ('Wants to invite: ' +  email.value);
 			if (Raven) Raven.captureMessage (msg);
-		}
+		},
+
+		accesslist: {
+			// Mostly visual functionality for the sharing widget on the current document
+			users: [],
+
+			add: function() {
+				// Add a user to the current editor list
+			},
+
+			remove: function() {
+				// Remove a user from the current editor list
+			},
+
+			update: function() {
+				// Update list of users who currently have access
+			}
+		}		
 
 	},
 
 	publish: {
-		// Publishing functionality
+		// Publishing functionality (publish a Note to an external service)
 		id: 'publish',
 		actionsId: 'p_actions',
 		initTimeout: null,
@@ -1731,8 +1782,8 @@ var WPCLib = {
 		quotareached: function() {
 			this.overquota = true;
 			var msg = document.getElementById(this.msgresultsId);
-			if (msg.innerHTML == '') {
-                document.getElementById(this.statusId).innerHTML = 'Saved, but search quota reached.';				
+            document.getElementById(this.statusId).innerHTML = 'Saved, but search quota reached.';			
+			if (msg.innerHTML == '') {				
 				document.getElementById(this.wwwresultsId).innerHTML = document.getElementById(this.synresultsId).innerHTML = '';
 				var txt = (WPCLib.sys.user.level == 1) ?
 					'<a href="#" class="msg" onclick="WPCLib.sys.user.forceupgrade(2,\'<em>Upgrade now to enjoy </em><b>unlimited searches</b><em> and much more.</em>\'); return false;"><em>Upgrade now</em> for unlimited searches & more.</a>' :
@@ -2167,15 +2218,15 @@ var WPCLib = {
 				      // Facebook blocked
 				      // /connect\.facebook\.net\/en_US\/all\.js/i,
 				      // Woopra flakiness
-				      /eatdifferent\.com\.woopra-ns\.com/i,
-				      /static\.woopra\.com\/js\/woopra\.js/i,
+				      // /eatdifferent\.com\.woopra-ns\.com/i,
+				      // /static\.woopra\.com\/js\/woopra\.js/i,
 				      // Chrome extensions
-				      /extensions\//i,
-				      /^chrome:\/\//i,
+				      // /extensions\//i,
+				      // /^chrome:\/\//i,
 				      // Other plugins
-				      /127\.0\.0\.1:4001\/isrunning/i,  // Cacaoweb
-				      /webappstoolbarba\.texthelp\.com\//i,
-				      /metrics\.itunes\.apple\.com\.edgesuite\.net\//i
+				      // /127\.0\.0\.1:4001\/isrunning/i,  // Cacaoweb
+				      // /webappstoolbarba\.texthelp\.com\//i,
+				      // /metrics\.itunes\.apple\.com\.edgesuite\.net\//i
 				    ]
 				};	
 
@@ -2229,17 +2280,21 @@ var WPCLib = {
 	sys: {
 
 		online: true,
-		status: 'ok',
+		status: 'normal',
 		language: 'en-us',
 		saved: true,
 		settingsUrl: '/settings/',
-		settingsSection: '',			
+		settingsSection: '',
+		statusIcon: document.getElementById('switchview'),
+		normalStatus: document.getElementById('status'),
+		errorStatus: document.getElementById('errorstatus'),			
 
 		// Bootstrapping
 		initCalled: false,
 		setupDone: false,
 		setupTasks: [],
-		setupTimer: null,	
+		setupTimer: null,
+
 		init: function() {
 			// allow this only once			
 			if (this.initCalled) return;
@@ -2343,9 +2398,44 @@ var WPCLib = {
 			}
 		},
 
+		goneoffline: function() {
+			// Triggered if an AJAX requests return textStatus == timeout
+			if ('onLine' in navigator && !navigator.onLine) this.online = false;
+			this.status = 'offline';
+			var reason = (this.online) ? 'Server not available' : 'No internet connection',
+				es = this.errorStatus,
+				si = this.statusIcon;
+
+			// Visual updates
+			this.normalStatus.style.display = 'none';
+			es.style.display = 'block';
+			es.innerHTML = reason;
+			si.className = 'error';
+			si.innerHTML = '!';
+
+			// Log error (to be switched off again, just to see how often this happens)
+			this.error('Gone offline, ' + reason);
+		},
+
+		backonline: function() {
+			// Swicth state back to online and update UI
+			if ('onLine' in navigator && navigator.onLine) this.online = true;			
+			if (this.status == 'normal') return;
+			this.status = 'normal';
+			var mo = WPCLib.context.show,
+				es = this.errorStatus,
+				si = this.statusIcon;			
+
+			// Visual updates
+			this.normalStatus.style.display = 'block';
+			es.style.display = 'none';
+			si.className = (mo) ? 'open' : '';			
+			si.innerHTML = (mo) ? '&#187;' : '&#171;';			
+		},
+
 		error: function(data) {
 			// Pipe errors into Sentry
-			if (Raven) Raven.captureMessage('General Error: ' + JSON.stringify(data) + ', ' + arguments.callee.caller.toString());
+			if ('Raven' in window) Raven.captureMessage('General Error: ' + JSON.stringify(data) + ', ' + arguments.callee.caller.toString());
 			WPCLib.sys.log('Dang, something went wrong: ',data);
 		},
 
