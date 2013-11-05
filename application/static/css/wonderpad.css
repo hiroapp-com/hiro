@@ -1901,14 +1901,26 @@ body#settingsPage input#cc_number.error {
   width: 400px;
 }
 
-#s_about .aboutsection {
+#s_about .aboutsection, #s_upgrade .upgradesection {
   margin: 60px auto 0 auto;
   width: 530px;
   color: #666;
   line-height: 22px;
 }
 
-#s_about .aboutsection em {
+#s_upgrade .upgradesection {
+  margin-top: 130px;
+  width: 400px;
+}
+
+#s_upgrade .upgradesection a {
+  text-align: center;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+
+#s_about .aboutsection em, #s_upgrade .upgradesection em {
   font-style: normal;
   color: #1a1a1a;
 }
@@ -2234,7 +2246,7 @@ body#settingsPage input#cc_number.error {
   color: #996633;
 }
 
-#s_about .aboutsection .claim {
+#s_about .aboutsection .claim, #s_upgrade .upgradesection .claim {
   display: block;
   padding-bottom: 20px;
   font-size: 28px;
@@ -2242,7 +2254,7 @@ body#settingsPage input#cc_number.error {
   color: #888;
 }
 
-#s_about .aboutsection .claim em {
+#s_about .aboutsection .claim em, #s_upgrade .upgradesection .claim em {
   font-style: normal;
   color: #333;
 }
@@ -2469,7 +2481,7 @@ body#settingsPage input#cc_number.error {
     width: 85%;
   }
 
-  #s_about .aboutsection {
+  #s_about .aboutsection, #s_upgrade .upgradesection {
     position: absolute;
     top: 60px;
     left: 0;
@@ -2482,9 +2494,13 @@ body#settingsPage input#cc_number.error {
     padding: 12px 18px 12px 18px;
     width: auto;
     line-height: 22px;
-  }  
+  } 
 
-  #s_about .aboutsection .claim {
+  #s_upgrade .upgradesection {
+    top: 0;
+  }
+
+  #s_about .aboutsection .claim, #s_upgrade .upgradesection .claim {
     padding-bottom: 16px;
     font-size: 18px;
     line-height: 22px;
@@ -2598,13 +2614,17 @@ body#settingsPage input#cc_number.error {
     padding: 3px 4px 2px 4px;
   } 
 
-  #s_about .aboutsection {
+  #s_about .aboutsection, #s_upgrade .upgradesection {
     margin: 12px 18px 0 18px;
     width: auto;
     line-height: 20px;
   }  
 
-  #s_about .aboutsection .claim {
+  #s_upgrade .upgradesection {  
+    margin: 100px 48px 0 48px;    
+  }  
+
+  #s_about .aboutsection .claim, #s_upgrade .upgradesection .claim {
     padding-bottom: 16px;
     font-size: 25px;
     line-height: 28px;

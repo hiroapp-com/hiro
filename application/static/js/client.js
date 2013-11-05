@@ -145,7 +145,11 @@ var WPCLib = {
 							WPCLib.sys.log('Newer version on server detected, loading now');
 							WPCLib.canvas.loaddoc(WPCLib.canvas.docid,WPCLib.canvas.title);					
 							WPCLib.folio.docs.loaddocs(true);
-						}					    
+						}	
+
+						// Check our Hiroversion and initiate upgradepopup if we have a newer one
+						if (!WPCLib.sys.version) { WPCLib.sys.version = data.hiroversion; }
+						else if (WPCLib.sys.version != data.hiroversion) WPCLib.sys.upgradeavailable(data.hiroversion);				    
 
 					    // Check of were offline and switch back to normal state
 					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
@@ -2235,7 +2239,7 @@ var WPCLib = {
 
 	// All system related vars & functions
 	sys: {
-
+		version: '',
 		online: true,
 		status: 'normal',
 		language: 'en-us',
@@ -2401,6 +2405,36 @@ var WPCLib = {
 			if (window.location.href.indexOf('hiroapp') == -1) {
 				console.log(msg,payload);
 			}
+		},
+
+		upgradeavailable: function(newversion) {
+			// This is triggered via loaddocs if the server starts serving a new major version number.
+			// Right now this is only because weekold open tabs are annoying (eg Sentry errorlogging clogged),
+			// but in the future we might break stuff for mroe users if we should switch formats, syntax etc
+			var ov = this.version.split('-');
+			var nv = newversion.split('-');
+
+			// Remove minor version numbers
+			nv.pop(); ov.pop();
+
+			if (nv.toString() != ov.toString()) {
+				// If major version numbers diverge
+				// Check if the user is typing and try again a little later to not freak them out
+				// Also make sure we do this only when everythings OK (eg offline users/servers do not reload with unsaved data)
+				if (WPCLib.canvas.typing || WPCLib.sys.status != 'normal') {
+					setTimeout(function(){WPCLib.sys.upgradeavailable(newversion)},15000);
+					return;
+				}	
+
+				// If the doc isn't saved yet, rather save one time too often
+				if (!WPCLib.canvas.saved) WPCLib.canvas.savedoc(true);
+
+				// Trigger popup with location.reload button
+				WPCLib.ui.showDialog(null,'','s_upgrade');		
+
+				// Log to check how often this is used
+				WPCLib.sys.error('Forced upgrade triggered: ' + ov.toString() + ' to '+ nv.toString());		
+			};
 		},
 
 		user: {

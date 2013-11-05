@@ -242,6 +242,8 @@ def list_documents():
             "created": time.mktime(doc.created_at.timetuple()),
             "updated": time.mktime(doc.updated_at.timetuple())
             })
+    # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks    
+    docs['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
     return jsonify(docs)
 
 
