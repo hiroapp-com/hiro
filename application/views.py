@@ -305,6 +305,34 @@ def get_document(doc_id):
         return "access denied, sorry.", 403
     return jsonify(doc.api_dict())
 
+@login_required
+def get_document_perms(doc_id):
+    # Dummy endpoint, please refactor at will
+    # TBD/TODO: Do we add last_edit, last_access (-1 for never) or boolean accessed 
+    perms = defaultdict(list)
+    perms['users'].append({
+        "id": current_user.token,
+        "email": current_user.email,
+        "current_user": True,
+        "last_edit": 1383616490
+        })
+    perms['users'].append({
+        "id": "hajskhfakjshfkjsdhfkjgsdgf",
+        "email": "foo@bar.com",
+        "owner": True,
+        "last_edit": 1383416490
+        })
+    perms['users'].append({
+         "id": "jieiwruoiquroiuqweioruqwo",
+        "email": "somelongeraddress@example.com",
+        "last_edit": -1       
+        })        
+    return jsonify(perms), 200  
+
+@login_required
+def set_document_perms(doc_id):
+    return 'foo', 200      
+
 def analyze_content():
     tmpdoc = Document(text=request.form.get('content', ''))
     return jsonify(tmpdoc.analyze())

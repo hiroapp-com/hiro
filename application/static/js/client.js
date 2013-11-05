@@ -835,6 +835,9 @@ var WPCLib = {
 					// Initiate syncing of file
 					WPCLib.canvas.sync.begin();
 
+					// If the document is shared then fetch the list of users who have access
+					if (data.shared) WPCLib.sharing.accesslist.fetch();
+
 					// If body is empty show a quote
 					if (!data.text || data.text.length == 0) {
 						WPCLib.ui.fade(document.getElementById(that.quoteId),+1,300);	
@@ -1248,7 +1251,7 @@ var WPCLib = {
 
 			init: function() {
 				// Abort if we're on the production system
-				if (window.location.hostname.indexOf('hiroapp.com') >= 0) {
+				if (WPCLib.sys.production) {
 					return;
 				}
 
@@ -1329,7 +1332,7 @@ var WPCLib = {
 	},	
 
 	sharing: {
-		// Share a Note with other
+		// Share a Note with other users
 		id: 'sharing',
 		visible: false,
 		openTimeout: null,
@@ -1354,6 +1357,7 @@ var WPCLib = {
 				});	
 			}						
 		},
+
 		open: function(event) {
 			// Open the sharing snippet with a delayed timeout		
 			var that = WPCLib.sharing;			
@@ -1372,6 +1376,8 @@ var WPCLib = {
 					that.openTimeout = null;
 					clearTimeout(that.openTimeout);															
 				},150);
+				// Get the latest list of people who have access
+				that.accesslist.fetch();				
 				return;
 			}
 			that.visible = true;				
@@ -1382,6 +1388,7 @@ var WPCLib = {
 			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];		
 			if (email) email.focus();				
 		},
+
 		close: function(event) {
 			// Close the sharing widget
 			var that = WPCLib.sharing;
@@ -1420,26 +1427,141 @@ var WPCLib = {
 				button.innerHTML = "Try again";
 				return;
 			}
-			email.parentNode.parentNode.innerHTML ="<div class='title light'>Sorry, at the moment this feature is only available to a few users. We'll notify you as soon as it's ready. Sorry again & won't be long!</div>"
-			if (analytics && WPCLib.sys.user.level > 0) analytics.identify(WPCLib.sys.user.id, {sharingNotes:'true'});
-			var msg = ('Wants to invite: ' +  email.value);
-			if (Raven) Raven.captureMessage (msg);
+
+			if (WPCLib.sys.production) {
+				email.parentNode.parentNode.innerHTML ="<div class='title light'>Sorry, at the moment this feature is only available to a few users. We'll notify you as soon as it's ready. Sorry again & won't be long!</div>"
+				if (analytics && WPCLib.sys.user.level > 0) analytics.identify(WPCLib.sys.user.id, {sharingNotes:'true'});
+				var msg = ('Wants to invite: ' +  email.value);
+				WPCLib.sys.error(msg);
+			} else {
+				WPCLib.sharing.accesslist.add(email.value);
+			}
 		},
 
 		accesslist: {
 			// Mostly visual functionality for the sharing widget on the current document
 			users: [],
+			el: document.getElementById('accesslist'),
 
-			add: function() {
+			add: function(email) {
 				// Add a user to the current editor list
+				var url = '/docs/' + WPCLib.canvas.docid + '/perms',
+					payload = {'email': email },
+					el = document.getElementById('s_actions'),
+					input = el.getElementsByTagName('input')[0],
+					button = el.getElementsByTagName('a')[0],
+					d = document.createElement('div'),
+					that = this;
+
+				// Visual updates	
+				d.className = 'user';
+				d.innerHTML = 'Inviting ' + email.split('@')[0].substring(0,18) + '...';
+				this.el.insertBefore(d,this.el.firstChild);
+
+                $.ajax({
+                	// Post to backend
+                    url: url,
+                    type: "POST",
+                    contentType: "application/json; charset=UTF-8",
+                    data: JSON.stringify(payload),
+                    success: function(data) {                    	
+                    	input.value = '';
+                    	input.focus();
+                    	button.innerHTML = 'Invite next';
+                    	// that.fetch();
+                    },
+                    error: function(data) {
+                    	input.focus();           
+                    	button.innerHTML = 'Invite';
+                    	WPCLib.sys.error(data);
+                    	input.nextSibling.innerHTML('')
+                    }
+                });				
 			},
 
-			remove: function() {
+			remove: function(event) {
 				// Remove a user from the current editor list
+				var target = event.target || event.srcElement,
+					uid = target.parentNode.id.split('_').pop(),
+					currentuser = (uid == WPCLib.sys.user.id),
+					that = WPCLib.sharing.accesslist,
+					u = that.users;
+
+				for (i=0,l=u.length;i<l;i++) {
+					// Iterate through user list array in remove user object if found
+					if (u[i].id != uid) continue;
+					u.splice(i, 1);
+					that.update();
+					if (currentuser) WPCLib.folio.docs.loaddocs();
+					break;
+				}	
+
+				// TODO Coordinate with flo how to post this to backend, do anew fetch on successfull post
 			},
 
 			update: function() {
 				// Update list of users who currently have access
+				// Empty current DOM element
+				this.el.innerHTML = '';
+
+				for (i=0,l=this.users.length;i<l;i++) {
+					// Create and attach each link to the DOM
+					this.el.appendChild(this.renderuser(this.users[i]));
+				}
+			},
+
+			renderuser: function(user) {
+				// Create a user DOM element and return it
+				var d, r, n,
+					currentuser = (user.id == WPCLib.sys.user.id),
+					lastaccess = (user.last_edit >= 0) ? 'Last seen ' + WPCLib.util.humanizeTimestamp(user.last_edit) + " ago" : 'Invited';
+
+				d = document.createElement('div');
+				d.id = 'user_' + user.id;
+				d.className = 'user';
+				if (!currentuser) d.setAttribute('title', lastaccess);
+
+				if (!user.owner) {
+					// Add remove link if user is not owner					
+					r = document.createElement('a');
+					r.className = 'remove';
+					var rt = (currentuser) ? 'Revoke your own access' : 'Revoke access';
+					r.setAttribute('title',rt);
+
+					// Attach events
+					if ('ontouchstart' in document.documentElement) {
+						r.setAttribute('ontouchstart',"WPCLib.sharing.accesslist.remove(event);");
+					} else {
+						r.setAttribute('onclick',"WPCLib.sharing.accesslist.remove(event);");
+					}
+
+					d.appendChild(r);
+				}
+
+				// Add user name span
+				n = document.createElement('span');
+				n.className = 'name';
+				n.innerHTML = (currentuser) ? 'You' : user.email;
+				d.appendChild(n)
+
+				// Return object
+				return d;
+			},
+
+			fetch: function() {
+				if (WPCLib.sys.production) return;
+				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
+				var url = '/docs/' +  WPCLib.canvas.docid + '/perms';
+				$.ajax({
+                    url: url,
+                    contentType: "json",
+                    success: function(data) {
+                    	// Set internal values and update visual display
+                    	var that = WPCLib.sharing.accesslist;
+                    	that.users = data.users;
+                        that.update();
+                    }
+                });
 			}
 		}		
 
@@ -2145,8 +2267,7 @@ var WPCLib = {
 		init: function() {
 			if (this.inited) return;
 			// kick off segment.io sequence, only on our domain 
-			var production = (window.location.hostname.indexOf('hiroapp.com')>=0);
-			if (production) {
+			if (WPCLib.sys.production) {
 				// Add raven ignore options so that our sentry error logger is not swamped with broken plugins
 				window.ravenOptions = {
 				    ignoreErrors: [
@@ -2223,7 +2344,7 @@ var WPCLib = {
 			}	
 
 			// Load Googles Diff Match Patch
-			if (!production) {
+			if (!WPCLib.sys.production) {
 				(function(d, s, id){
 					var js, fjs = d.getElementsByTagName(s)[0];
 					if (d.getElementById(id)) {return;}
@@ -2242,6 +2363,7 @@ var WPCLib = {
 		version: '',
 		online: true,
 		status: 'normal',
+		production: (window.location.href.indexOf('hiroapp') >= 0),
 		language: 'en-us',
 		saved: true,
 		settingsUrl: '/settings/',
@@ -2402,7 +2524,7 @@ var WPCLib = {
 
 		log: function(msg,payload) {
 			// Log console if we're not on a production system
-			if (window.location.href.indexOf('hiroapp') == -1) {
+			if (!this.production) {
 				console.log(msg,payload);
 			}
 		},

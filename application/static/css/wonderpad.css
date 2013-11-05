@@ -813,9 +813,13 @@ a.wpcbutton:hover {
   padding-right: 60px;  
 }
 
+#s_actions form {
+  padding: 0 10px 0 20px;
+}
+
 #s_actions input.hiro {
-  margin: 10px 10px 10px 20px;
-  width: 250px;
+  box-sizing: border-box;
+  margin: 10px 0 10px 0;
 }
 
 #s_actions input.ninja {
@@ -828,7 +832,7 @@ a.wpcbutton:hover {
   font-size: 14px;
   color: red;
   margin-top: -38px;
-  margin-right: 20px;
+  margin-right: 10px;
 }
 
 #s_actions a.wpcbutton {
@@ -838,13 +842,32 @@ a.wpcbutton:hover {
 
 #sharing .users .user {
   display: block;
-  padding: 5px 0 0 45px;
+  padding: 5px 45px 3px 45px;
   font-size: 18px;
   color: #333;
   background-image: url(../img/publish.4.png);
   background-repeat: no-repeat;
   background-size: 30px auto; 
   background-position: 14px -363px;
+  position: relative;
+  white-space: nowrap;
+}
+
+#sharing .users .user a.remove {
+  display: block;
+  width: 40px;
+  height: 27px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: url(../img/icons.png) no-repeat;
+  background-size: 102px auto;
+  background-position: -25px -33px;
+  opacity: 0.3;
+}
+
+#sharing .users .user a.remove:hover {
+  opacity: 1;
 }
 
 #sharing .actions .title {
@@ -865,7 +888,7 @@ a.wpcbutton:hover {
   display: block;
   font-size: 0.8em;
   white-space: nowrap;
-  margin: 10px 14px 10px 20px;
+  margin: 7px 14px 10px 20px;
 }
 
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
@@ -911,22 +934,32 @@ a.wpcbutton:hover {
   }   
 
   #s_actions form {
-    margin: 0 20px 0 13px;    
+    padding: 0;
+    margin: 0 19px 0 13px;    
   }
 
   #s_actions input.hiro {
-    width: 100%;
-    box-sizing: border-box;
-    margin: 10px 0 10px 0;    
-  }  
+    width: 100%;    
+  } 
+
 
   #s_actions a.wpcbutton {
-    margin-right: 20px;   
+    margin-right: 19px;   
   } 
 
   #s_actions a.wpcbutton, #sharing .actions .title, #sharing .actions .footer {
     margin-left: 13px;    
   }    
+
+  #sharing .users .user a.remove {
+    right: 9px;
+  }  
+
+  #sharing .users .user {
+    padding-right: 40px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
 }
 
