@@ -1,15 +1,16 @@
+import re
 import os
 import uuid
 import time
 import calendar
+import json
 from hashlib import sha512
 from datetime import datetime
-from collections import defaultdict
 
 import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
-from google.appengine.api import memcache
+from google.appengine.api import memcache, channel
 from flask.ext.login import UserMixin, AnonymousUser
 from flask import session
 from textmodels.textrank import get_top_keywords_list
@@ -48,6 +49,11 @@ class User(UserMixin, ndb.Model):
     latest_doc = property(lambda self: Document.query(Document.owner == self.key).order(-Document.updated_at).get())
 
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
+
+    def push_message(self, msg):
+        for sess in EditSession.query(EditSession.user == self.key):
+            channel.send_message(sess.session_id, json.dumps(msg))
+
 
     @property
     def active_cc(self):
@@ -214,6 +220,7 @@ class Document(ndb.Model):
     hidecontext = ndb.BooleanProperty()
     created_at = ndb.DateTimeProperty(auto_now_add=True)
     updated_at = ndb.DateTimeProperty(auto_now=True)
+    shared_with = ndb.KeyProperty(kind=User, repeated=True)
 
     # contextual links
     sticky = ndb.StructuredProperty(Link, repeated=True)
@@ -221,7 +228,7 @@ class Document(ndb.Model):
     cached_ser = ndb.StructuredProperty(Link, repeated=True)
 
     def allow_access(self, user):
-        return user.key == self.owner 
+        return (user.key == self.owner) or (user.key in self.shared_with)
 
     def analyze(self):
         data = (self.title or '') + (self.text or '')
@@ -243,6 +250,7 @@ class Document(ndb.Model):
                 "updated": time.mktime(self.updated_at.timetuple()),
                 "cursor": self.cursor,
                 "hidecontext": self.hidecontext,
+                "shared_with": [u.get().email for u in self.shared_with],
                 "links": {
                     "normal": [c.to_dict() for c in self.cached_ser],
                     "sticky": [c.to_dict() for c in self.sticky],
@@ -320,6 +328,7 @@ class EditSession(ndb.Model):
     @ndb.transactional()
     def apply_edits(self, stack):
         ok = True
+        changed = False
         for edit in stack:
             sv, cv, delta = edit['serverversion'], edit['clientversion'], edit['delta']
 
@@ -347,13 +356,14 @@ class EditSession(ndb.Model):
             else:
                 try:
                     diffs = DMP.diff_fromDelta(self.shadow, delta)
+                    if len(diffs) > 1 or (len(diffs) == 1 and diffs[0][0] != DMP.DIFF_EQUAL):
+                        changed = True
                 except ValueError, e:
                     #request re-sync
                     diffs = None
                     ok = False
                 self.client_version += 1
                 self.apply_diffs(diffs)
-                pass
 
         # render output
         mastertext = self.get_doc().text
@@ -372,9 +382,9 @@ class EditSession(ndb.Model):
                                         delta=mastertext, force=True))
         self.shadow = mastertext
         self.put()
+        return changed
 
-    def notify_viewers(self):
-        pass
+        
 
     def apply_diffs(self, diffs):
         if not diffs:
@@ -389,6 +399,17 @@ class EditSession(ndb.Model):
         patches = DMP.patch_make(self.shadow, diffs)
         doc = self.get_doc()
         master, res = DMP.patch_apply(patches, doc.text)
-        doc.text = master
+        doc.text = re.sub(r"(\r\n|\r|\n)", "\n", master)
         doc.put()
-        
+
+
+    def notify_viewers(self):
+        doc = self.get_doc()
+        users = list(doc.shared_with) + [doc.owner]
+        users.remove(self.user)
+        msg = {"kind": "edit", 
+               "doc_id": doc.key.id(), 
+               "user": self.user.get().email
+               }
+        for u in users:
+            u.get().push_message(msg)

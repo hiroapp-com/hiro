@@ -17,6 +17,12 @@ indexes:
     direction: desc
 
 - kind: Document
+  properties:
+  - name: shared_with
+  - name: updated_at
+    direction: desc
+
+- kind: Document
   ancestor: yes
   properties:
   - name: updated_at

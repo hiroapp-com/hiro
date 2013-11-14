@@ -25,7 +25,8 @@ from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
-from google.appengine.api import memcache, mail
+from google.appengine.api import memcache, mail, channel
+from google.appengine.ext import ndb
 
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
@@ -234,14 +235,18 @@ def list_documents():
         group_key = lambda d: d.get(group_by)
 
     docs = defaultdict(list)
-    for doc in  Document.query(Document.owner == current_user.key).order(-Document.updated_at):
+    for doc in  Document.query(ndb.OR(Document.owner == current_user.key,
+                                      Document.shared_with == current_user.key)).order(-Document.updated_at):
         docs[group_key(doc.to_dict())].append({ 
             "id": doc.key.id(),
             "title": doc.title,
             "status": doc.status,
             "created": time.mktime(doc.created_at.timetuple()),
-            "updated": time.mktime(doc.updated_at.timetuple())
+            "updated": time.mktime(doc.updated_at.timetuple()),
+            "shared": len(doc.shared_with) >0
             })
+    
+
     # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks    
     docs['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
     return jsonify(docs)
@@ -366,7 +371,7 @@ def relevant_links():
         results = search_yahoo(terms)
     return jsonify(results=results)
 
-
+@login_required
 def sync_doc(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
@@ -378,9 +383,31 @@ def sync_doc(doc_id):
     if not sess_id:
         return "session-id required", 400
     sess = EditSession.fetch(doc, sess_id, current_user)
-    sess.apply_edits(request.json.get('deltas', []))
-    sess.notify_viewers()
+    deltas = request.json.get('deltas', [])
+    changed = sess.apply_edits(deltas)
+    if changed:
+        sess.notify_viewers()
     return jsonify(session_id=sess_id, deltas=[e.to_dict() for e in sess.edit_stack])
+
+@login_required
+def channel_token():
+    sess_id = request.json.get('session_id')
+    if not sess_id:
+        return "required parameter `session_id` missing", 400
+    return channel.create_channel(sess_id) 
+
+def share_all(doc_id):
+    doc = Document.get_by_id(doc_id)
+    out = []
+    for u in User.query():
+        out.append("user: {0}".format(u.get_id()))
+        if u.key != current_user.key:
+            out.append("added")
+            doc.shared_with.append(u.key)
+        else:
+            out.append("skipped")
+    doc.put()
+    return "\n".join(out)
 
 
 def warmup():

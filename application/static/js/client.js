@@ -1243,8 +1243,9 @@ var WPCLib = {
 			remoteversion: 0,
 			enabled: false,
 			sessId: undefined,
-			token: '',
 			connected: false,
+			channelToken: undefined,
+			socket: undefined,
 
 			init: function() {
 				// Abort if we're on the production system
@@ -1264,11 +1265,9 @@ var WPCLib = {
 				this.enabled = true;			
                 setTimeout(function(){
                     WPCLib.canvas.sync.sendedits();
-                },1000);
-
-                // Open channel API to continuously get updates
-                this.gettoken();
-			},
+                },500);
+                WPCLib.canvas.sync.connect_channel();
+                },
 
 			begin: function() {
 				// Reset state, load values from new doc and initiate websocket
@@ -1276,12 +1275,12 @@ var WPCLib = {
 				this.shadow = WPCLib.canvas.text;
 			},
 
-			addedit: function() {
+			addedit: function(force) {
 				// Add an edit to the edits array
 				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
 
 				// Abort if the string stayed the same or syncing is disabled
-				if (!this.enabled || c == s ) return;
+				if (!force && (!this.enabled || c == s)) return;
 
 				// Build edit object, right now including Patch and simple diff string format, TODO Choose one
 				edit.delta = this.delta(s,c); 
@@ -1300,7 +1299,7 @@ var WPCLib = {
                     // nothing to do here
                     setTimeout(function(){
                         WPCLib.canvas.sync.sendedits();
-                    },2000);
+                    },500);
                     return;
                 }
                 // Post editstack to backend
@@ -1388,8 +1387,43 @@ var WPCLib = {
                 }
                 setTimeout(function(){
                     WPCLib.canvas.sync.sendedits();
-                },2000);
+                },500);
                 return;
+            },
+
+            connect_channel: function() {
+                $.ajax({
+                    url: "/channeltoken",
+                    type: "POST",
+                    contentType: "application/json; charset=UTF-8",
+                    data: JSON.stringify({session_id: this.sessId}),
+                    success: function(data) {
+                        this.channelToken = data;
+                        var chan = new goog.appengine.Channel(this.channelToken);
+                        WPCLib.canvas.sync.socket = chan.open();
+                        WPCLib.canvas.sync.socket.onopen = function() {
+                            console.log("connected to channel api");
+                        }
+                        WPCLib.canvas.sync.socket.onerror = function() {
+                            this.channelToken = undefined;
+                            console.log("ERROR connecting to channel api");
+                        }
+                        WPCLib.canvas.sync.socket.onclose = function() {
+                            console.log("Channel closed.");
+                            this.channelToken = undefined;
+                        }
+                        WPCLib.canvas.sync.socket.onmessage = function(data) {
+                            WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
+                        }
+
+                    }
+                });
+            },
+
+            on_channel_message: function(msg) {
+                if (msg.doc_id == WPCLib.canvas.docid) {
+                    WPCLib.canvas.sync.addedit(true);
+                }
             },
 
 			reset: function() {
