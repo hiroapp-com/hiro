@@ -1341,6 +1341,7 @@ var WPCLib = {
                         this.remoteversion = edit.serverversion;
                         this.edits = [];
                         WPCLib.canvas.set_text(edit.delta);
+                        continue;
                     }
                     if (edit.clientversion != this.localversion) {
                         console.log("TODO: client version mismatch -- resync");

@@ -274,7 +274,7 @@ class PasswordToken(ndb.Model):
 class Edit(ndb.Model):
     server_version = ndb.IntegerProperty(default=0)
     client_version = ndb.IntegerProperty(default=0)
-    delta = ndb.StringProperty()
+    delta = ndb.TextProperty()
     force = ndb.BooleanProperty(default=False)
 
     def to_dict(self):
