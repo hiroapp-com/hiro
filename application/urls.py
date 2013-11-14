@@ -35,6 +35,7 @@ app.add_url_rule('/docs/<doc_id>', 'get_document', view_func=views.get_document,
 app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_document, methods=['PATCH', 'POST'])
 app.add_url_rule('/docs/<doc_id>/perms', 'get_document_perms', view_func=views.get_document_perms, methods=['GET'])
 app.add_url_rule('/docs/<doc_id>/perms', 'set_document_perms', view_func=views.set_document_perms, methods=['PATCH', 'POST'])
+app.add_url_rule('/docs/<doc_id>/sync', 'sync_doc', view_func=views.sync_doc, methods=['POST'])
 
 # textanalysis & semantic search
 app.add_url_rule('/analyze', 'analyze_content', view_func=views.analyze_content, methods=['POST'])
