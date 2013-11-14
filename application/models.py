@@ -4,6 +4,7 @@ import time
 import calendar
 from hashlib import sha512
 from datetime import datetime
+from collections import defaultdict
 
 import stripe
 from passlib.hash import pbkdf2_sha512
@@ -16,6 +17,8 @@ from settings import STRIPE_SECRET_KEY
 
 from .utils import get_sorted_chunks
 
+from diff_match_patch import diff_match_patch 
+DMP = diff_match_patch()
 
 class PlanChange(ndb.Model):
     created_at = ndb.DateTimeProperty(auto_now_add=True)
@@ -216,7 +219,6 @@ class Document(ndb.Model):
     sticky = ndb.StructuredProperty(Link, repeated=True)
     blacklist = ndb.StructuredProperty(Link, repeated=True)
     cached_ser = ndb.StructuredProperty(Link, repeated=True)
-    
 
     def allow_access(self, user):
         return user.key == self.owner 
@@ -269,6 +271,124 @@ class PasswordToken(ndb.Model):
         return token
 
 
+class Edit(ndb.Model):
+    server_version = ndb.IntegerProperty(default=0)
+    client_version = ndb.IntegerProperty(default=0)
+    delta = ndb.TextProperty()
+    force = ndb.BooleanProperty(default=False)
+
+    def to_dict(self):
+        return {
+            'serverversion': self.server_version,
+            'clientversion': self.client_version,
+            'delta': self.delta,
+            'force': self.force
+            }
 
 
-    
+class EditSession(ndb.Model):
+    session_id = ndb.StringProperty()
+    user = ndb.KeyProperty(kind=User)
+    created_at = ndb.DateTimeProperty(auto_now_add=True)
+    last_used_at = ndb.DateTimeProperty()
+    shadow = ndb.TextProperty()
+    server_version = ndb.IntegerProperty(default=0)
+    client_version = ndb.IntegerProperty(default=0)
+    backup = ndb.TextProperty()
+    backup_version = ndb.IntegerProperty(default=0)
+
+    edit_stack = ndb.StructuredProperty(Edit, repeated=True)
+
+
+    @classmethod
+    @ndb.transactional()
+    def fetch(cls, doc, session_id, user):
+        sess = EditSession.query(EditSession.user == user.key,
+                                 EditSession.session_id == session_id,
+                                 ancestor=doc.key).get()
+        if sess == None:
+            sess = cls(parent=doc.key, session_id=session_id, user=user.key, shadow=doc.text)
+        #TODO cleanup of old sessions
+        sess.last_used_at = datetime.now()
+        sess.put()
+        return sess
+
+    def get_doc(self):
+        return self.key.parent().get()
+
+
+    @ndb.transactional()
+    def apply_edits(self, stack):
+        ok = True
+        for edit in stack:
+            sv, cv, delta = edit['serverversion'], edit['clientversion'], edit['delta']
+
+            # if server-ACK lost, rollback to backup
+            if sv != self.server_version and sv == self.backup_version:
+                self.shadow = self.backup
+                self.server_version = self.backup_version
+                self.edit_stack = []
+
+            # clear client-ACK'd edits from server stack
+            self.edit_stack = [e for e in self.edit_stack if e.server_version > sv]
+
+            # start the delta-fun!
+            if sv != self.server_version:
+                # version mismatch
+                #request re-sync
+                ok = False
+            elif cv > self.client_version:
+                # client in the future?
+                #request re-sync
+                ok = False
+            elif cv < self.client_version:
+                # dupe
+                pass
+            else:
+                try:
+                    diffs = DMP.diff_fromDelta(self.shadow, delta)
+                except ValueError, e:
+                    #request re-sync
+                    diffs = None
+                    ok = False
+                self.client_version += 1
+                self.apply_diffs(diffs)
+                pass
+
+        # render output
+        mastertext = self.get_doc().text
+        if ok:
+            diffs = DMP.diff_main(self.shadow, mastertext)
+            DMP.diff_cleanupEfficiency(diffs)
+            delta = DMP.diff_toDelta(diffs)
+            self.edit_stack.append(Edit(server_version=self.server_version, 
+                                        client_version=self.client_version,
+                                        delta=delta))
+            self.server_version += 1
+        else:
+            self.client_version += 1
+            self.edit_stack.append(Edit(server_version=self.server_version, 
+                                        client_version=self.client_version,
+                                        delta=mastertext, force=True))
+        self.shadow = mastertext
+        self.put()
+
+    def notify_viewers(self):
+        pass
+
+    def apply_diffs(self, diffs):
+        if not diffs:
+            return
+        assert ndb.in_transaction(), "Cannot change common doc without Transaction"
+        # update shadows
+        self.shadow = DMP.diff_text2(diffs)
+        self.backup = self.shadow
+        self.backup_version = self.server_version
+
+        # patch master-doc
+        patches = DMP.patch_make(self.shadow, diffs)
+        doc = self.get_doc()
+        master, res = DMP.patch_apply(patches, doc.text)
+        doc.text = master
+        doc.put()
+        

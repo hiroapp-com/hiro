@@ -137,16 +137,6 @@ var WPCLib = {
 					    	a.innerHTML = 'Archive (' + ac + ')';
 					    }	
 
-					    // If there's a newer version of the current Note then load it onto canvas
-					    // Note: this is pretty hackish as the local value is set via js and remote via python, thus we have to
-					    // account for some potential difference
-						if (folioonly && WPCLib.canvas.lastUpdated > 0 
-							&& WPCLib.canvas.lastUpdated < (WPCLib.folio.docs.lookup[WPCLib.canvas.docid].updated - 5)) {
-							WPCLib.sys.log('Newer version on server detected, loading now');
-							WPCLib.canvas.loaddoc(WPCLib.canvas.docid,WPCLib.canvas.title);					
-							WPCLib.folio.docs.loaddocs(true);
-						}	
-
 						// Check our Hiroversion and initiate upgradepopup if we have a newer one
 						if (!WPCLib.sys.version) { WPCLib.sys.version = data.hiroversion; }
 						else if (WPCLib.sys.version != data.hiroversion) WPCLib.sys.upgradeavailable(data.hiroversion);				    
@@ -672,6 +662,11 @@ var WPCLib = {
 			this.sync.init();						
 		},	
 
+        set_text: function(txt) {
+			WPCLib.canvas.text =  txt;
+            document.getElementById(WPCLib.canvas.contentId).value = txt;
+        },
+
 		preload: function(title,text) {
 			// If flask already gave us the title and text values
 			this.preloaded = true;
@@ -1047,7 +1042,7 @@ var WPCLib = {
 
 		        // Save Document
 				WPCLib.context.search(that.title,that.text);	        
-		        that.savedoc();
+                WPCLib.canvas.sync.addedit();
 	        }, 100);
 		},
 
@@ -1131,7 +1126,6 @@ var WPCLib = {
 			// set & clear timers for saving and context if user pauses
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {				
-				WPCLib.canvas.savedoc();
 				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
 				WPCLib.canvas.sync.addedit();
@@ -1245,15 +1239,19 @@ var WPCLib = {
 			// Differential syncronisation implementation https://neil.fraser.name/writing/sync/
 			shadow: '',
 			edits: [],
-			localversion: 1,
+			localversion: 0,
 			remoteversion: 0,
 			enabled: false,
+			sessId: undefined,
+			token: '',
+			connected: false,
 
 			init: function() {
 				// Abort if we're on the production system
 				if (WPCLib.sys.production) {
 					return;
 				}
+                this.sessId = window.Math.random().toString().slice(2, -1);
 
 				// Create new instance once all js is loaded, retry of not
 				if (!this.dmp && typeof diff_match_patch != 'function') {
@@ -1264,6 +1262,12 @@ var WPCLib = {
 				}
 				this.dmp = new diff_match_patch();	
 				this.enabled = true;			
+                setTimeout(function(){
+                    WPCLib.canvas.sync.sendedits();
+                },1000);
+
+                // Open channel API to continuously get updates
+                this.gettoken();
 			},
 
 			begin: function() {
@@ -1280,28 +1284,119 @@ var WPCLib = {
 				if (!this.enabled || c == s ) return;
 
 				// Build edit object, right now including Patch and simple diff string format, TODO Choose one
-				var d = this.diff(s,c);
-				edit.patch = d[0];				
-				edit.diff = d[1];
+				edit.delta = this.delta(s,c); 
 				edit.clientversion = this.localversion++;
 				edit.serverversion = this.remoteversion;
 
 				// Add edit to edits stack
 				this.edits.push(edit);
-
 				WPCLib.sys.log('Diffs: ',this.edits);
 				this.shadow = c;
 			},
 
 			sendedits: function() {
 				// Post current edits stack to backend and clear stack on success
+                if (this.edits.length == 0) {
+                    // nothing to do here
+                    setTimeout(function(){
+                        WPCLib.canvas.sync.sendedits();
+                    },2000);
+                    return;
+                }
+                // Post editstack to backend
+                $.ajax({
+                    url: "/docs/"+WPCLib.canvas.docid+"/sync",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({"session_id": this.sessId, "deltas": this.edits}),
+                    success: function(data) {
+                        if (data.session_id != WPCLib.canvas.sync.sessId) {
+                            console.log("TODO: session-id mismatch, what to do?");
+                            return;
+                        }
+                        // process the edit-stack received from the server
+                        WPCLib.canvas.sync.process(data.deltas);
+                    },
+                    error: function(data) {
+                        console.log("error");
+                        console.log(data);
+                    }
+                });				
 			},
+            
+            process: function(stack) {
+                var len = stack.length;
+                for (var i=0; i<len; i++) {
+                    var edit = stack[i];
+                    console.log("edit:");
+                    console.log(edit);
+
+                    // clear server-ACK'd edits from client stack
+                    if (this.edits) {
+                        this.edits = $.grep(this.edits, function(x, idx) { x.clientversion > edit.serverversion})
+                    }
+
+                    if (edit.force === true) {
+                        // resync of document enforced by server, complying
+                        // TODO: test encaps needed?
+                        // *untested*
+                        console.log("server enforces resync, complying");
+                        this.shadow = edit.delta;
+                        this.localversion = edit.clientversion;
+                        this.remoteversion = edit.serverversion;
+                        this.edits = [];
+                        WPCLib.canvas.set_text(edit.delta);
+                        continue;
+                    }
+                    if (edit.clientversion != this.localversion) {
+                        console.log("TODO: client version mismatch -- resync");
+                        console.log("cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
+                        continue;
+                    } 
+                    else if (this.remoteversion < edit.serverversion) {
+                        console.log("TODO: server version ahead of client -- resync");
+                        continue;
+                    }
+                    else if (this.remoteversion > edit.serverversion) {
+                        //dupe
+                        console.log("dupe received");
+                        continue;
+                    }
+                    var diffs;
+                    try {
+                        diffs = this.dmp.diff_fromDelta(this.shadow, edit.delta);
+                        this.remoteversion++;
+                        console.log("Diffs applied successfully");
+                        console.log("serverversion(client): " + this.remoteversion);
+                    } catch(ex) {
+                        console.log("TODO: cannot merge received delta into shadow -- resync");
+                        continue;
+                    }
+                    if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) {
+                        var patch = this.dmp.patch_make(this.shadow, diffs);
+                        this.shadow = this.dmp.patch_apply(patch, this.shadow)[0];
+                        var old = WPCLib.canvas.text;
+                        var merged = this.dmp.patch_apply(patch, old);
+                        if (old != merged[0]) {
+                            console.log("patches merged, replacing text");
+                            WPCLib.canvas.set_text(merged[0])
+                        }
+                        else{
+                            console.log("no changes merged, nothing happened");
+                        }
+                    }
+                }
+                setTimeout(function(){
+                    WPCLib.canvas.sync.sendedits();
+                },2000);
+                return;
+            },
 
 			reset: function() {
 				// Reset sync state
 				this.shadow = '';
 				this.edits = [];
-				this.localversion = 1;
+				this.localversion = 0;
 				this.remoteversion = 0;
 			},
 
@@ -1309,7 +1404,7 @@ var WPCLib = {
 				// Receive a patch from the websocket, check consistency and apply
 			},
 
-			diff: function(o,n) {
+			delta: function(o,n) {
 				// Compare two versions and return standard diff format
 				// Cleanup settings
 				this.dmp.Diff_Timeout = 1;
@@ -1324,8 +1419,57 @@ var WPCLib = {
 				}				
 
 				// Return patch and simple string format
-				return [this.dmp.patch_toText(this.dmp.patch_make(o, d)),this.dmp.diff_toDelta(d)];
+				return this.dmp.diff_toDelta(d);
+			},
+
+			gettoken: function() {
+				$.ajax({        
+                    url: "/channeltoken",
+                    type: "GET",                                                                                                   
+                    success: function(data) {
+                        this.token = data;
+                        // Start channel 
+                        this.openchannel(data);
+                    }           
+                }); 
+			},
+
+			openchannel: function(token) {
+				// Get token from flask and open channel
+
+				if (!goog.appengine.Channel) {
+					// Retry if channel API isn't loaded yet
+					setTimeout(function(){
+						WPCLib.canvas.sync.openchannel(token);
+						return;
+					},200);
+				}
+
+				// If we already have a proper connection
+				if (this.connected) return;
+
+
+			    channel = new goog.appengine.Channel(token);
+			    socket = channel.open();
+			    socket.onopen = function() {
+			    	WPCLib.sys.log('Successfully connected to Channel backend with token ' + token);
+			    	this.connected = true;
+			    };
+			    socket.onmessage = function(data) {
+			    	this.process(data);
+			    };	
+			    socket.onerror = function(data) {
+			    	WPCLib.sys.error(data);
+			    };
+			    socket.onclose = this.reconnect(token);				
+			},
+
+			reconnect: function(token) {
+				// If the connection dropped we start a new one
+				this.gettoken();
+				WPCLib.sys.log('Reconnecting to Channel backend');
 			}
+
 
 		}
 
@@ -2071,7 +2215,7 @@ var WPCLib = {
 			var newword = target.innerHTML;
 
 			// replace internal and visual selection with new string
-			WPCLib.canvas.text = document.getElementById(WPCLib.canvas.contentId).value = source.slice(0,oldpos[0]) + oldpos[2].replace(oldword,newword) + source.slice(oldpos[1]);
+			WPCLib.canvas.set_text(source.slice(0,oldpos[0]) + oldpos[2].replace(oldword,newword) + source.slice(oldpos[1]));
 			
 			// update the replacementrange values		
 			this.replacementrange[1] = oldpos[1] + (newword.length - oldword.length);
@@ -2343,7 +2487,7 @@ var WPCLib = {
 			  };
 			}	
 
-			// Load Googles Diff Match Patch
+			// Load Googles Diff Match Patch and Channel API
 			if (!WPCLib.sys.production) {
 				(function(d, s, id){
 					var js, fjs = d.getElementsByTagName(s)[0];
@@ -2352,6 +2496,14 @@ var WPCLib = {
 					js.src = "/static/js/diff_match_patch.js";
 					fjs.parentNode.insertBefore(js, fjs);
 				}(document, 'script', 'diff_match_patch'));	
+
+				(function(d, s, id){
+					var js, fjs = d.getElementsByTagName(s)[0];
+					if (d.getElementById(id)) {return;}
+					js = d.createElement(s); js.id = id;
+					js.src = "/_ah/channel/jsapi";
+					fjs.parentNode.insertBefore(js, fjs);
+				}(document, 'script', 'channel_api'));					
 			}					
 
 			this.inited = true;
@@ -2916,7 +3068,8 @@ var WPCLib = {
 						WPCLib.canvas.preloaded = false;						
 
 						// Kick of consitency checker 
-						WPCLib.folio.checkconsistency();				
+                        // XXX(flo): disabled b/c weird gae-500
+						//WPCLib.folio.checkconsistency();				
 						break;	
 				}	
 

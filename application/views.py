@@ -31,7 +31,7 @@ from google.appengine.api import memcache, mail
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
 from application import app
 
-from .models import User, Document, Link, PasswordToken
+from .models import User, Document, Link, PasswordToken, EditSession
 from .forms import LoginForm, SignupForm
 from .decorators import limit_free_plans, root_required
 
@@ -366,6 +366,21 @@ def relevant_links():
         results = search_yahoo(terms)
     return jsonify(results=results)
 
+
+def sync_doc(doc_id):
+    doc = Document.get_by_id(doc_id)
+    if not doc:
+        return "document not found", 404
+    elif not doc.allow_access(current_user):
+        return "access denied, sorry.", 403
+
+    sess_id = request.json.get('session_id')
+    if not sess_id:
+        return "session-id required", 400
+    sess = EditSession.fetch(doc, sess_id, current_user)
+    sess.apply_edits(request.json.get('deltas', []))
+    sess.notify_viewers()
+    return jsonify(session_id=sess_id, deltas=[e.to_dict() for e in sess.edit_stack])
 
 
 def warmup():
