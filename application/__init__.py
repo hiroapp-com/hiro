@@ -7,7 +7,6 @@ from flask import Flask, Markup
 
 from flask.ext import login
 from werkzeug.debug import DebuggedApplication
-from gae_mini_profiler import profiler, templatetags
 from custom_session import ItsdangerousSessionInterface
 
 from application.models import User, Anonymous
@@ -27,9 +26,9 @@ app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 # Remove whitespaces from output HTML
 app.jinja_env.add_extension('jinja2htmlcompress.HTMLCompress')
 
-@app.context_processor
-def inject_profiler():
-    return dict(profiler_includes=templatetags.profiler_includes())
+#@app.context_processor
+#def inject_profiler():
+#    return dict(profiler_includes=templatetags.profiler_includes())
 
 
 
@@ -64,5 +63,3 @@ login_manager.setup_app(app)
 if app.debug:
     app = DebuggedApplication(app, evalex=True)
 
-# GAE Mini Profiler (only enabled on dev server)
-app = profiler.ProfilerWSGIMiddleware(app)
