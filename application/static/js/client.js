@@ -1309,7 +1309,7 @@ var WPCLib = {
 
                 // Set variable to prevent double sending
                 this.inflight = true;
-                console.log('sending stack now',this.edits);
+                console.log('sending stack now',JSON.stringify(this.edits));
 
                 // Post editstack to backend
                 $.ajax({
@@ -1327,7 +1327,10 @@ var WPCLib = {
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
                         // Trigger sync if we had new edits in the meantime
-                        if (WPCLib.canvas.sync.edits.length > 0) WPCLib.canvas.sync.sendedits();
+                        if (WPCLib.canvas.sync.edits.length > 0) {
+                        	console.log('Flight completed, but more edits found, triggering resend: ', JSON.stringify(WPCLib.canvas.sync.edits));
+                        	WPCLib.canvas.sync.sendedits();
+                        }	
                     },
                     error: function(data) {
                         console.log("error", data);
@@ -1339,14 +1342,19 @@ var WPCLib = {
             
             process: function(stack) {
                 var len = stack.length;
+                console.log('Processing stack: ',stack)
                 for (var i=0; i<len; i++) {
                     var edit = stack[i];
                     console.log("edit: ", edit);
 
+                   	console.log(i,' before: ',this.edits,stack);                    
+
                     // clear server-ACK'd edits from client stack
                     if (this.edits) {
-                        this.edits = $.grep(this.edits, function(x, idx) { x.clientversion > edit.serverversion})
+                        this.edits = $.grep(this.edits, function(x, idx) { return (x.clientversion > edit.serverversion)})
                     }
+
+                   	console.log(i,' after: ',this.edits,stack);                     
 
                     if (edit.force === true) {
                         // resync of document enforced by server, complying
@@ -1360,7 +1368,7 @@ var WPCLib = {
                         WPCLib.canvas.set_text(edit.delta);
                         continue;
                     }
-                    if (edit.clientversion != this.localversion) {
+                    if (edit.clientversion > this.localversion) {
                         console.log("TODO: client version mismatch -- resync");
                         console.log("cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
                         continue;
