@@ -1043,7 +1043,7 @@ var WPCLib = {
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				WPCLib.canvas.sync.addedit();
+				// WPCLib.canvas.sync.addedit();
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
