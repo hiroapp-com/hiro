@@ -1040,10 +1040,10 @@ var WPCLib = {
 			// Tab key insert 5 whitespaces
 			if (k==9) WPCLib.canvas._replacekey(e,'tab');
 
-			// Space and return triggers brief analysis
+			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				// WPCLib.canvas._logcontent();	
+				WPCLib.canvas.sync.addedit();
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
@@ -1052,7 +1052,9 @@ var WPCLib = {
 				if (p[0] == p[1] && p[0] == 0) {
 					document.getElementById(WPCLib.canvas.pageTitle).focus();
 				}
-			}			
+			}	
+
+			//					
 		},
 
 		_replacekey: function(e,key) {
@@ -1115,7 +1117,8 @@ var WPCLib = {
 			this.typingTimer = setTimeout(function() {				
 				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
-				WPCLib.canvas.sync.addedit();
+				// TODO: We send this if the last key wasn't space or return, see if we can avoid redundancy if it was
+				WPCLib.canvas.sync.addedit();				
 			},1000);
 		},	
 
@@ -1285,12 +1288,16 @@ var WPCLib = {
 				this.sendedits();
 			},
 
+			inflight: false,
 			sendedits: function() {
 				// Post current edits stack to backend and clear stack on success
-                if (this.edits.length == 0) {
+                if (this.edits.length == 0 || this.inflight) {
                 	// if we do not have any edits
                     return;
                 }
+
+                // Set variable to prevent double sending
+                this.inflight = true;
 
                 // Post editstack to backend
                 $.ajax({
@@ -1305,9 +1312,15 @@ var WPCLib = {
                         }
                         // process the edit-stack received from the server
                         WPCLib.canvas.sync.process(data.deltas);
+                        // Reset inflight variable
+                        WPCLib.canvas.sync.inflight = false;
+                        // Trigger sync if we had new edits in the meantime
+                        if (WPCLib.canvas.sync.edits.length > 0) WPCLib.canvas.sync.sendedits();
                     },
                     error: function(data) {
                         console.log("error", data);
+                        // Reset inflight variable
+                        WPCLib.canvas.sync.inflight = false;                        
                     }
                 });				
 			},
