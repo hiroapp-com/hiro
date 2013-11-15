@@ -63,31 +63,6 @@ var WPCLib = {
 			WPCLib.folio.docs.loaddocs(true);					
 		},
 
-		newremotedocs: function(num) {
-			// Placeholder for proper function that is called if /docs returns any unseen updates
-			var bubble = document.getElementById('updatebubble');
-			bubble.innerHTML = num;
-			bubble.style.display = 'block';
-
-			var dummy = {
-				created: 1383246229,
-				id: "fooooooooo",
-				status: "active",
-				title: "Shared Dummy Doc",
-				updated: (WPCLib.util.now() + 100),
-				unseen: true,
-				shared: true,
-				lastEditor: 'Foobear'
-			}
-
-			for (i=0; i<num; i++) {
-				this.docs.active.push(dummy);
-			}
-
-			this.docs.unseenupdates = num;			
-			this.docs.update();
-		},
-
 		docs: {
 			// All Document List interactions in seperate namespace
 			doclistId: 'doclist',
@@ -170,27 +145,39 @@ var WPCLib = {
 			update: function() {
 				// update the document list from the active / archive arrays
 				// We use absolute pointers as this can also be called as event handler
-				var that = WPCLib.folio.docs;
-				var act = that.active;
-				var docs = document.getElementById(that.doclistId);				
-				var arc = that.archived;
-				var archive = document.getElementById(that.archiveId);		
+				var that = WPCLib.folio.docs,
+					act = that.active,
+					docs = document.getElementById(that.doclistId),				
+					arc = that.archived,
+					archive = document.getElementById(that.archiveId),
+					bubble = document.getElementById('updatebubble');		
 
 				// Update our lookup object
 				that.updatelookup();
 
 				// Reset all contents and handlers
 				if (docs) docs.innerHTML = '';
-				if (archive) archive.innerHTML = '';	
+				if (archive) archive.innerHTML = '';
+				this.unseenupdates = 0;	
 
 				// Render all links
 				for (i=0,l=act.length;i<l;i++) {		
-					that.renderlink(i,'active',act[i]);						    
+					that.renderlink(i,'active',act[i]);	
+					// iterate unseen doc counter
+					if (act[i].unseen) this.unseenupdates++;					    
 				}
 				if (arc) {
 					for (i=0,l=arc.length;i<l;i++) {		
 						that.renderlink(i,'archive',arc[i]);						    
 					}					
+				}
+
+				// Show bubble if we have unseen updates
+				if (this.unseenupdates > 0) {
+					bubble.innerHTML = this.unseenupdates;
+					bubble.style.display = 'block';
+				} else {
+					bubble.style.display = 'none';
 				}
 
 				// Recursively call this to update the last edit times every minute
@@ -224,10 +211,10 @@ var WPCLib = {
 
 			renderlink: function(i,type,data) {
 				// Render active and archived document link
-				var item = (type=='active') ? this.active : this.archived;
-				var lvl = WPCLib.sys.user.level;
-				var docid = item[i].id;
-				var active = (type == 'active') ? true : false;
+				var item = (type=='active') ? this.active : this.archived,
+					lvl = WPCLib.sys.user.level,
+					docid = item[i].id,
+					active = (type == 'active') ? true : false;
 
 				var d = document.createElement('div');
 				d.className = 'document shared';
@@ -1242,7 +1229,7 @@ var WPCLib = {
 			localversion: 0,
 			remoteversion: 0,
 			enabled: false,
-			sessId: undefined,
+			sessionid: undefined,
 			connected: false,
 			channelToken: undefined,
 			socket: undefined,
@@ -1252,9 +1239,8 @@ var WPCLib = {
 				if (WPCLib.sys.production) {
 					return;
 				}
-                this.sessId = window.Math.random().toString().slice(2, -1);
 
-				// Create new instance once all js is loaded, retry of not
+				// Create new diff_match_patch instance once all js is loaded, retry of not
 				if (!this.dmp && typeof diff_match_patch != 'function') {
 					setTimeout(function(){
 						WPCLib.canvas.sync.init();
@@ -1266,8 +1252,11 @@ var WPCLib = {
                 setTimeout(function(){
                     WPCLib.canvas.sync.sendedits();
                 },500);
-                WPCLib.canvas.sync.connect_channel();
-                },
+
+                // Create session id, get token and kick off syncing
+                this.sessionid = window.Math.random().toString().slice(2, -1);                
+                WPCLib.canvas.sync.gettoken();
+            },
 
 			begin: function() {
 				// Reset state, load values from new doc and initiate websocket
@@ -1291,25 +1280,26 @@ var WPCLib = {
 				this.edits.push(edit);
 				WPCLib.sys.log('Diffs: ',this.edits);
 				this.shadow = c;
+
+				// Initiate sending of stack
+				this.sendedits();
 			},
 
 			sendedits: function() {
 				// Post current edits stack to backend and clear stack on success
                 if (this.edits.length == 0) {
-                    // nothing to do here
-                    setTimeout(function(){
-                        WPCLib.canvas.sync.sendedits();
-                    },500);
+                	// if we do not have any edits
                     return;
                 }
+
                 // Post editstack to backend
                 $.ajax({
                     url: "/docs/"+WPCLib.canvas.docid+"/sync",
                     type: "POST",
                     contentType: "application/json",
-                    data: JSON.stringify({"session_id": this.sessId, "deltas": this.edits}),
+                    data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
                     success: function(data) {
-                        if (data.session_id != WPCLib.canvas.sync.sessId) {
+                        if (data.session_id != WPCLib.canvas.sync.sessionid) {
                             console.log("TODO: session-id mismatch, what to do?");
                             return;
                         }
@@ -1317,8 +1307,7 @@ var WPCLib = {
                         WPCLib.canvas.sync.process(data.deltas);
                     },
                     error: function(data) {
-                        console.log("error");
-                        console.log(data);
+                        console.log("error", data);
                     }
                 });				
 			},
@@ -1327,8 +1316,7 @@ var WPCLib = {
                 var len = stack.length;
                 for (var i=0; i<len; i++) {
                     var edit = stack[i];
-                    console.log("edit:");
-                    console.log(edit);
+                    console.log("edit: ", edit);
 
                     // clear server-ACK'd edits from client stack
                     if (this.edits) {
@@ -1385,45 +1373,6 @@ var WPCLib = {
                         }
                     }
                 }
-                setTimeout(function(){
-                    WPCLib.canvas.sync.sendedits();
-                },500);
-                return;
-            },
-
-            connect_channel: function() {
-                $.ajax({
-                    url: "/channeltoken",
-                    type: "POST",
-                    contentType: "application/json; charset=UTF-8",
-                    data: JSON.stringify({session_id: this.sessId}),
-                    success: function(data) {
-                        this.channelToken = data;
-                        var chan = new goog.appengine.Channel(this.channelToken);
-                        WPCLib.canvas.sync.socket = chan.open();
-                        WPCLib.canvas.sync.socket.onopen = function() {
-                            console.log("connected to channel api");
-                        }
-                        WPCLib.canvas.sync.socket.onerror = function() {
-                            this.channelToken = undefined;
-                            console.log("ERROR connecting to channel api");
-                        }
-                        WPCLib.canvas.sync.socket.onclose = function() {
-                            console.log("Channel closed.");
-                            this.channelToken = undefined;
-                        }
-                        WPCLib.canvas.sync.socket.onmessage = function(data) {
-                            WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
-                        }
-
-                    }
-                });
-            },
-
-            on_channel_message: function(msg) {
-                if (msg.doc_id == WPCLib.canvas.docid) {
-                    WPCLib.canvas.sync.addedit(true);
-                }
             },
 
 			reset: function() {
@@ -1457,20 +1406,23 @@ var WPCLib = {
 			},
 
 			gettoken: function() {
+				// Fetch sessionid and request token from backend
+				var payload = { session_id: this.sessionid }, that = this;
 				$.ajax({        
                     url: "/channeltoken",
-                    type: "GET",                                                                                                   
+                    type: "POST", 
+                    contentType: "application/json; charset=UTF-8",
+                    data: JSON.stringify(payload),                                                                                                                      
                     success: function(data) {
-                        this.token = data;
+                        that.token = data;
                         // Start channel 
-                        this.openchannel(data);
+                        that.openchannel(data);
                     }           
                 }); 
 			},
 
 			openchannel: function(token) {
-				// Get token from flask and open channel
-
+				// Open Appengine Channel
 				if (!goog.appengine.Channel) {
 					// Retry if channel API isn't loaded yet
 					setTimeout(function(){
@@ -1482,31 +1434,50 @@ var WPCLib = {
 				// If we already have a proper connection
 				if (this.connected) return;
 
-
-			    channel = new goog.appengine.Channel(token);
-			    socket = channel.open();
-			    socket.onopen = function() {
-			    	WPCLib.sys.log('Successfully connected to Channel backend with token ' + token);
-			    	this.connected = true;
-			    };
-			    socket.onmessage = function(data) {
-			    	this.process(data);
-			    };	
-			    socket.onerror = function(data) {
-			    	WPCLib.sys.error(data);
-			    };
-			    socket.onclose = this.reconnect(token);				
+				// Create new instance of channel object
+                this.channelToken = token;
+                var channel = new goog.appengine.Channel(this.channelToken),
+                socket = channel.open();
+                socket.onopen = function() {
+                	WPCLib.canvas.sync.addedit(true);
+                    console.log("connected to channel api");
+                }
+                socket.onmessage = function(data) {
+                    WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
+                }                
+                socket.onerror = function() {
+                    WPCLib.canvas.sync.channelToken = undefined;
+                    console.log("ERROR connecting to channel api");
+                }
+                socket.onclose = function() {
+                    console.log("Channel closed.");
+                    WPCLib.canvas.sync.channelToken = undefined;
+                    WPCLib.canvas.sync.reconnect(token);
+                }			
 			},
+
+            on_channel_message: function(data) {
+            	// Receive and process notification of document update
+                if (data.doc_id == WPCLib.canvas.docid) {
+                	// If the update is for the current document
+                    WPCLib.canvas.sync.addedit(true);
+                } else {
+                	// If the update is for a doc in folio thats not currently open
+                	// Update internal values and update display
+                	var el = WPCLib.folio.docs.lookup[data.doc_id];              	
+                	el.updated = WPCLib.util.now();
+                	el.unseen = true;
+                	el.lastEditor = data.user;
+                	WPCLib.folio.docs.update(true);
+                }
+            },			
 
 			reconnect: function(token) {
 				// If the connection dropped we start a new one
 				this.gettoken();
 				WPCLib.sys.log('Reconnecting to Channel backend');
 			}
-
-
 		}
-
 	},	
 
 	sharing: {
