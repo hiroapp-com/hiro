@@ -666,7 +666,7 @@ var WPCLib = {
 			var file = {};
 			file.id = this.docid;
 			file.title = this.title;
-			file.text = this.text;
+			// file.text = this.text;
 			file.created = this.created;
 			file.last_updated = this.lastUpdated;
 			file.cursor = this.caretPosition;
@@ -1043,7 +1043,7 @@ var WPCLib = {
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				WPCLib.canvas.sync.addedit();
+				// WPCLib.canvas.sync.addedit();
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
@@ -1118,7 +1118,9 @@ var WPCLib = {
 				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
 				// TODO: We send this if the last key wasn't space or return, see if we can avoid redundancy if it was
-				WPCLib.canvas.sync.addedit();				
+				WPCLib.canvas.sync.addedit();
+				// Save doc without text (as this is now done by sync)
+				WPCLib.canvas.savedoc();				
 			},1000);
 		},	
 
@@ -1298,6 +1300,7 @@ var WPCLib = {
 
                 // Set variable to prevent double sending
                 this.inflight = true;
+                console.log('sending stack now',this.edits);
 
                 // Post editstack to backend
                 $.ajax({
@@ -1315,7 +1318,7 @@ var WPCLib = {
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
                         // Trigger sync if we had new edits in the meantime
-                        if (WPCLib.canvas.sync.edits.length > 0) WPCLib.canvas.sync.sendedits();
+                        // if (WPCLib.canvas.sync.edits.length > 0) WPCLib.canvas.sync.sendedits();
                     },
                     error: function(data) {
                         console.log("error", data);
@@ -1471,18 +1474,21 @@ var WPCLib = {
 
             on_channel_message: function(data) {
             	// Receive and process notification of document update
+            	var el = WPCLib.folio.docs.lookup[data.doc_id];              	
+            	el.updated = WPCLib.util.now();  
+                el.lastEditor = data.user; 
+
                 if (data.doc_id == WPCLib.canvas.docid) {
                 	// If the update is for the current document
                     WPCLib.canvas.sync.addedit(true);
                 } else {
                 	// If the update is for a doc in folio thats not currently open
                 	// Update internal values and update display
-                	var el = WPCLib.folio.docs.lookup[data.doc_id];              	
-                	el.updated = WPCLib.util.now();
                 	el.unseen = true;
-                	el.lastEditor = data.user;
-                	WPCLib.folio.docs.update(true);
                 }
+
+                // Display the updates in the DOM
+                WPCLib.folio.docs.update(true);                
             },			
 
 			reconnect: function(token) {
