@@ -1241,7 +1241,7 @@ var WPCLib = {
 
 			init: function() {
 				// Abort if we're on the production system
-				if (WPCLib.sys.production) {
+				if (false) {
 					return;
 				}
 
@@ -1740,7 +1740,7 @@ var WPCLib = {
 			},
 
 			fetch: function() {
-				if (WPCLib.sys.production) return;
+				if (false) return;
 				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
 				var url = '/docs/' +  WPCLib.canvas.docid + '/perms';
 				$.ajax({
@@ -2535,7 +2535,7 @@ var WPCLib = {
 			}	
 
 			// Load Googles Diff Match Patch and Channel API
-			if (!WPCLib.sys.production) {
+			if (true) {
 				(function(d, s, id){
 					var js, fjs = d.getElementsByTagName(s)[0];
 					if (d.getElementById(id)) {return;}
@@ -2723,7 +2723,7 @@ var WPCLib = {
 
 		log: function(msg,payload) {
 			// Log console if we're not on a production system
-			if (!this.production) {
+			if (true) {
 				console.log(msg,payload);
 			}
 		},
