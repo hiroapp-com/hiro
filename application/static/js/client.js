@@ -1043,7 +1043,7 @@ var WPCLib = {
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				// WPCLib.canvas.sync.addedit();
+				WPCLib.canvas.sync.addedit();
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
@@ -1273,6 +1273,12 @@ var WPCLib = {
 				// Add an edit to the edits array
 				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
 
+				// If we'Re inflight then wait for callback
+				if (this.inflight) {
+					this.inflightcallback = WPCLib.canvas.sync.addedit;
+					return;
+				}	
+
 				// Abort if the string stayed the same or syncing is disabled
 				if (!force && (!this.enabled || c == s)) return;
 
@@ -1291,6 +1297,7 @@ var WPCLib = {
 			},
 
 			inflight: false,
+			inflightcallback: null,
 			sendedits: function() {
 				// Post current edits stack to backend and clear stack on success
                 if (this.edits.length == 0 || this.inflight) {
@@ -1326,16 +1333,13 @@ var WPCLib = {
                         WPCLib.canvas.sync.process(data.deltas);
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
-                        // Trigger sync if we had new edits in the meantime
-                        if (WPCLib.canvas.sync.edits.length > 0) {
-                        	console.log('Flight completed, but more edits found, triggering resend: ', JSON.stringify(WPCLib.canvas.sync.edits));
-                        	WPCLib.canvas.sync.sendedits();
-                        }	
+                        if (WPCLib.canvas.sync.inflightcallback) WPCLib.canvas.sync.inflightcallback();	
                     },
                     error: function(data) {
                         console.log("error", data);
                         // Reset inflight variable
-                        WPCLib.canvas.sync.inflight = false;                        
+                        WPCLib.canvas.sync.inflight = false;  
+                        if (WPCLib.canvas.sync.inflightcallback) WPCLib.canvas.sync.inflightcallback();                                              
                     }
                 });				
 			},
