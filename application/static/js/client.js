@@ -1043,7 +1043,7 @@ var WPCLib = {
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				// WPCLib.canvas.sync.addedit();
+				WPCLib.canvas.sync.addedit();
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
@@ -1298,6 +1298,15 @@ var WPCLib = {
                     return;
                 }
 
+                if (!WPCLib.canvas.docid) {
+                	// If we don't have a docid yet try again later
+                	setTimeout( function(){
+                		WPCLib.canvas.sync.sendedits();
+
+                	},500);
+                	return;
+                }
+
                 // Set variable to prevent double sending
                 this.inflight = true;
                 console.log('sending stack now',this.edits);
@@ -1318,7 +1327,7 @@ var WPCLib = {
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
                         // Trigger sync if we had new edits in the meantime
-                        // if (WPCLib.canvas.sync.edits.length > 0) WPCLib.canvas.sync.sendedits();
+                        if (WPCLib.canvas.sync.edits.length > 0) WPCLib.canvas.sync.sendedits();
                     },
                     error: function(data) {
                         console.log("error", data);
@@ -1480,6 +1489,8 @@ var WPCLib = {
 
                 if (data.doc_id == WPCLib.canvas.docid) {
                 	// If the update is for the current document
+                	// As we don't have a "send/request blank" yet, we trigger a then blank diff
+                	// TODO: Think of a better way
                     WPCLib.canvas.sync.addedit(true);
                 } else {
                 	// If the update is for a doc in folio thats not currently open
