@@ -776,10 +776,15 @@ var WPCLib = {
 			$.ajax({
 				dataType: "json",
 				url: file,
-				success: function(data) {
+				success: function(data, textStatus, xhr) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
 					WPCLib.canvas.lastUpdated = data.updated;	
+
+                    WPCLib.canvas.sync.shadow = data.text;
+                    WPCLib.canvas.sync.sessId = xhr.getResponseHeader("collab-session-id");
+                    WPCLib.canvas.sync.connect_channel(xhr.getResponseHeader("channel-id"));
+                    WPCLib.canvas.sync.localversion = WPCLib.canvas.sync.remoteversion = 0;
 
 					// Check if the document had unseen updates		
 					if (WPCLib.folio.docs.lookup[docid] && WPCLib.folio.docs.lookup[docid].unseen == true) {
@@ -1257,11 +1262,7 @@ var WPCLib = {
                 setTimeout(function(){
                     WPCLib.canvas.sync.sendedits();
                 },500);
-
-                // Create session id, get token and kick off syncing
-                this.sessionid = window.Math.random().toString().slice(2, -1);                
-                WPCLib.canvas.sync.gettoken();
-            },
+                },
 
 			begin: function() {
 				// Reset state, load values from new doc and initiate websocket
@@ -1409,6 +1410,36 @@ var WPCLib = {
                             console.log("no changes merged, nothing happened");
                         }
                     }
+                }
+                setTimeout(function(){
+                    WPCLib.canvas.sync.sendedits();
+                },500);
+                return;
+            },
+
+            connect_channel: function(chan_id) {
+                this.channelToken = chan_id;
+                var chan = new goog.appengine.Channel(this.channelToken);
+                WPCLib.canvas.sync.socket = chan.open();
+                WPCLib.canvas.sync.socket.onopen = function() {
+                    console.log("connected to channel api");
+                }
+                WPCLib.canvas.sync.socket.onerror = function() {
+                    this.channelToken = undefined;
+                    console.log("ERROR connecting to channel api");
+                }
+                WPCLib.canvas.sync.socket.onclose = function() {
+                    console.log("Channel closed.");
+                    this.channelToken = undefined;
+                }
+                WPCLib.canvas.sync.socket.onmessage = function(data) {
+                    WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
+                }
+            },
+
+            on_channel_message: function(msg) {
+                if (msg.doc_id == WPCLib.canvas.docid) {
+                    WPCLib.canvas.sync.addedit(true);
                 }
             },
 
