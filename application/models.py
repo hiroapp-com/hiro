@@ -46,7 +46,8 @@ class User(UserMixin, ndb.Model):
     has_root = ndb.BooleanProperty(default=False)
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
-    latest_doc = property(lambda self: Document.query(Document.owner == self.key).order(-Document.updated_at).get())
+    latest_doc = property(lambda self: Document.query(ndb.OR(Document.owner == self.key, 
+                                                             Document.shared_with == self.key)).order(-Document.updated_at).get())
 
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
 
