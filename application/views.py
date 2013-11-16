@@ -407,18 +407,12 @@ def channel_token():
         return "required parameter `session_id` missing", 400
     return  
 
-def share_all(doc_id):
+def test_share(doc_id, email):
     doc = Document.get_by_id(doc_id)
-    out = []
-    for u in User.query():
-        out.append("user: {0}".format(u.get_id()))
-        if u.key != current_user.key:
-            out.append("added")
-            doc.shared_with.append(u.key)
-        else:
-            out.append("skipped")
+    user = User.query(User.email == email).get()
+    doc.shared_with.append(user.key)
     doc.put()
-    return "\n".join(out)
+    return "ok"
 
 
 def warmup():
