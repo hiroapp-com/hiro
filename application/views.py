@@ -288,7 +288,7 @@ def edit_document(doc_id):
 
     doc.title = data.get('title', doc.title)
     doc.status = data.get('status', doc.status)
-    doc.text = data.get('text', doc.text)
+    #doc.text = data.get('text', doc.text)
     doc.cursor = data.get('cursor', doc.cursor)
     doc.hidecontext = data.get('hidecontext', doc.hidecontext)
     links = data.get('links', {})
@@ -308,7 +308,13 @@ def get_document(doc_id):
         return "document not found", 404
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
-    return jsonify(doc.api_dict())
+
+    resp = jsonify(doc.api_dict())
+    sess = EditSession(parent=doc.key, user=current_user.key, shadow=doc.text).put()
+    resp.headers['Collab-Session-ID'] = sess.id()
+    resp.headers['Channel-ID'] = channel.create_channel(str(sess.id()))
+    return resp
+
 
 @login_required
 def get_document_perms(doc_id):
@@ -380,9 +386,14 @@ def sync_doc(doc_id):
         return "access denied, sorry.", 403
 
     sess_id = request.json.get('session_id')
-    if not sess_id:
-        return "session-id required", 400
-    sess = EditSession.fetch(doc, sess_id, current_user)
+    if not sess_id or not sess_id.isdigit():
+        return "session-id required and needs to be a numbers", 400
+    sess = EditSession.get_by_id(int(sess_id), parent=doc.key)
+    if not sess:
+        return "collab session not found", 404
+    elif not sess.user == current_user.key:
+        return "not your collab session", 403
+
     deltas = request.json.get('deltas', [])
     changed = sess.apply_edits(deltas)
     if changed:
@@ -394,7 +405,7 @@ def channel_token():
     sess_id = request.json.get('session_id')
     if not sess_id:
         return "required parameter `session_id` missing", 400
-    return channel.create_channel(sess_id) 
+    return  
 
 def share_all(doc_id):
     doc = Document.get_by_id(doc_id)

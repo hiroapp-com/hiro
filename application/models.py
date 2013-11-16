@@ -46,13 +46,14 @@ class User(UserMixin, ndb.Model):
     has_root = ndb.BooleanProperty(default=False)
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
-    latest_doc = property(lambda self: Document.query(Document.owner == self.key).order(-Document.updated_at).get())
+    latest_doc = property(lambda self: Document.query(ndb.OR(Document.owner == self.key, 
+                                                             Document.shared_with == self.key)).order(-Document.updated_at).get())
 
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
 
     def push_message(self, msg):
         for sess in EditSession.query(EditSession.user == self.key):
-            channel.send_message(sess.session_id, json.dumps(msg))
+            channel.send_message(str(sess.key.id()), json.dumps(msg))
 
 
     @property
@@ -295,7 +296,6 @@ class Edit(ndb.Model):
 
 
 class EditSession(ndb.Model):
-    session_id = ndb.StringProperty()
     user = ndb.KeyProperty(kind=User)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
     last_used_at = ndb.DateTimeProperty()
@@ -308,22 +308,8 @@ class EditSession(ndb.Model):
     edit_stack = ndb.StructuredProperty(Edit, repeated=True)
 
 
-    @classmethod
-    @ndb.transactional()
-    def fetch(cls, doc, session_id, user):
-        sess = EditSession.query(EditSession.user == user.key,
-                                 EditSession.session_id == session_id,
-                                 ancestor=doc.key).get()
-        if sess == None:
-            sess = cls(parent=doc.key, session_id=session_id, user=user.key, shadow=doc.text)
-        #TODO cleanup of old sessions
-        sess.last_used_at = datetime.now()
-        sess.put()
-        return sess
-
     def get_doc(self):
         return self.key.parent().get()
-
 
     @ndb.transactional()
     def apply_edits(self, stack):
@@ -345,10 +331,12 @@ class EditSession(ndb.Model):
             if sv != self.server_version:
                 # version mismatch
                 #request re-sync
+                raise Exception("sv mismatch")
                 ok = False
             elif cv > self.client_version:
                 # client in the future?
                 #request re-sync
+                raise Exception("cv mismatch")
                 ok = False
             elif cv < self.client_version:
                 # dupe
@@ -360,6 +348,7 @@ class EditSession(ndb.Model):
                         changed = True
                 except ValueError, e:
                     #request re-sync
+                    raise e
                     diffs = None
                     ok = False
                 self.client_version += 1
