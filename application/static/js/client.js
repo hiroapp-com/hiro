@@ -1337,7 +1337,7 @@ var WPCLib = {
                             return;
                         }
 
-                        console.log('Completed sync request successfully');
+                        console.log('Completed sync request successfully ',JSON.stringify(data.deltas));
 
                         // process the edit-stack received from the server
                         WPCLib.canvas.sync.process(data.deltas);
@@ -1356,7 +1356,6 @@ var WPCLib = {
             
             process: function(stack) {
                 var len = stack.length;
-                console.log('Processing stack: ',stack)
                 for (var i=0; i<len; i++) {
                     var edit = stack[i];
 
@@ -1465,7 +1464,6 @@ var WPCLib = {
                 var channel = new goog.appengine.Channel(this.channelToken),
                 socket = channel.open();
                 socket.onopen = function() {
-                	WPCLib.canvas.sync.addedit(true);
                     console.log("connected to channel api");
                 }
                 socket.onmessage = function(data) {
