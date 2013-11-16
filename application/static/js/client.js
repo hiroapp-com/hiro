@@ -777,10 +777,16 @@ var WPCLib = {
 			$.ajax({
 				dataType: "json",
 				url: file,
-				success: function(data) {
+				success: function(data, textStatus, xhr) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
 					WPCLib.canvas.lastUpdated = data.updated;	
+
+					// Set internal sync values
+                    WPCLib.canvas.sync.shadow = data.text;
+                    WPCLib.canvas.sync.sessionid = xhr.getResponseHeader("collab-session-id");
+                    WPCLib.canvas.sync.openchannel(xhr.getResponseHeader("channel-id"));
+                    WPCLib.canvas.sync.localversion = WPCLib.canvas.sync.remoteversion = 0;					
 
 					// Check if the document had unseen updates		
 					if (WPCLib.folio.docs.lookup[docid] && WPCLib.folio.docs.lookup[docid].unseen == true) {
@@ -1261,10 +1267,6 @@ var WPCLib = {
                     WPCLib.canvas.sync.sendedits();
                 },500);
 
-                // Create session id, get token and kick off syncing
-                this.sessionid = window.Math.random().toString().slice(2, -1);                
-                WPCLib.canvas.sync.gettoken();
-
                 // Set internal value
                 this.inited = true;
             },
@@ -1416,7 +1418,7 @@ var WPCLib = {
                         }
                     }
                 }
-            },
+            },            
 
 			reset: function() {
 				// Reset sync state
@@ -1448,25 +1450,9 @@ var WPCLib = {
 				return this.dmp.diff_toDelta(d);
 			},
 
-			gettoken: function() {
-				// Fetch sessionid and request token from backend
-				var payload = { session_id: this.sessionid }, that = this;
-				$.ajax({        
-                    url: "/channeltoken",
-                    type: "POST", 
-                    contentType: "application/json; charset=UTF-8",
-                    data: JSON.stringify(payload),                                                                                                                      
-                    success: function(data) {
-                        that.token = data;
-                        // Start channel 
-                        that.openchannel(data);
-                    }           
-                }); 
-			},
-
 			openchannel: function(token) {
-				// Open Appengine Channel
-				if (!goog.appengine.Channel) {
+				// Open Appengine Channel or Diff match patch wasn't loaded yet
+				if (!goog.appengine.Channel || !this.dmp) {
 					// Retry if channel API isn't loaded yet
 					setTimeout(function(){
 						WPCLib.canvas.sync.openchannel(token);
@@ -1497,7 +1483,7 @@ var WPCLib = {
                     WPCLib.canvas.sync.channelToken = undefined;
                     WPCLib.canvas.sync.reconnect(token);
                 }			
-			},
+			},		
 
             on_channel_message: function(data) {
             	// Receive and process notification of document update
