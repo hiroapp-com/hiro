@@ -643,10 +643,7 @@ var WPCLib = {
 			}				
 
 			// Always set context sidebar icon to open on mobiles
-			if (document.body.offsetWidth<=900) document.getElementById('switchview').innerHTML = '&#171;';	
-
-			// Init sync capabilities
-			this.sync.init();						
+			if (document.body.offsetWidth<=900) document.getElementById('switchview').innerHTML = '&#171;';						
 		},	
 
         set_text: function(txt) {
@@ -666,7 +663,6 @@ var WPCLib = {
 			var file = {};
 			file.id = this.docid;
 			file.title = this.title;
-			// file.text = this.text;
 			file.created = this.created;
 			file.last_updated = this.lastUpdated;
 			file.cursor = this.caretPosition;
@@ -738,6 +734,11 @@ var WPCLib = {
 					x.send(JSON.stringify(file));
 				}											
 			} else {
+				// Store doc locally 
+				
+				// Add text to file object
+				file.text = WPCLib.canvas.text;
+
 				WPCLib.sys.log('saving locally: ', file);	
 			    try { 
 					localStorage.setItem("WPCdoc", JSON.stringify(file));
@@ -1029,7 +1030,7 @@ var WPCLib = {
 
 		        // Save Document
 				WPCLib.context.search(that.title,that.text);	        
-                WPCLib.canvas.sync.addedit();
+                if (!WPCLib.canvas.sync.inited) { that.savedoc() } else { WPCLib.canvas.sync.addedit(); }
 	        }, 100);
 		},
 
@@ -1043,7 +1044,7 @@ var WPCLib = {
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				WPCLib.canvas.sync.addedit();
+                if (!WPCLib.canvas.sync.inited) { WPCLib.canvas.savedoc() } else { WPCLib.canvas.sync.addedit(); }
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
@@ -1117,8 +1118,9 @@ var WPCLib = {
 			this.typingTimer = setTimeout(function() {				
 				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
-				// TODO: We send this if the last key wasn't space or return, see if we can avoid redundancy if it was
-				WPCLib.canvas.sync.addedit();
+
+				// Add edit if user is logged in
+				if (WPCLib.canvas.sync.inited) WPCLib.canvas.sync.addedit();
 				// Save doc without text (as this is now done by sync)
 				WPCLib.canvas.savedoc();				
 			},1000);
@@ -1238,10 +1240,11 @@ var WPCLib = {
 			connected: false,
 			channelToken: undefined,
 			socket: undefined,
+			inited: false,
 
 			init: function() {
-				// Abort if we're on the production system
-				if (false) {
+				// Abort if we're on the production system or sync was already inited
+				if (false || this.inited) {
 					return;
 				}
 
@@ -1261,6 +1264,9 @@ var WPCLib = {
                 // Create session id, get token and kick off syncing
                 this.sessionid = window.Math.random().toString().slice(2, -1);                
                 WPCLib.canvas.sync.gettoken();
+
+                // Set internal value
+                this.inited = true;
             },
 
 			begin: function() {
@@ -3099,7 +3105,7 @@ var WPCLib = {
 						break;							
 				}
 
-				// generic styles & functions
+				// generic styles & functions for logged in users
 				switch(level) {
 					case 1:
 					case 2:	
@@ -3112,7 +3118,10 @@ var WPCLib = {
 						logio.className = 'logio logout';
 						logio.getElementsByTagName('a')[0].title = 'Logout';
 						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
-						WPCLib.canvas.preloaded = false;						
+						WPCLib.canvas.preloaded = false;
+
+						// Init sync capabilities
+						if (!WPCLib.canvas.sync.inited) WPCLib.canvas.sync.init();	
 
 						// Kick of consitency checker 
                         // XXX(flo): disabled b/c weird gae-500
