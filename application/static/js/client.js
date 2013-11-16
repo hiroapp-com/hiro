@@ -1297,7 +1297,6 @@ var WPCLib = {
 
 				// Add edit to edits stack
 				this.edits.push(edit);
-				WPCLib.sys.log('Diffs: ',this.edits);
 				this.shadow = c;
 
 				// Initiate sending of stack
@@ -1324,7 +1323,7 @@ var WPCLib = {
 
                 // Set variable to prevent double sending
                 this.inflight = true;
-                console.log('sending stack now',JSON.stringify(this.edits));
+                console.log('Starting sync with data: ',JSON.stringify(this.edits));
 
                 // Post editstack to backend
                 $.ajax({
@@ -1337,6 +1336,9 @@ var WPCLib = {
                             console.log("TODO: session-id mismatch, what to do?");
                             return;
                         }
+
+                        console.log('Completed sync request successfully');
+
                         // process the edit-stack received from the server
                         WPCLib.canvas.sync.process(data.deltas);
                         // Reset inflight variable
@@ -1344,7 +1346,7 @@ var WPCLib = {
                         if (WPCLib.canvas.sync.inflightcallback) WPCLib.canvas.sync.inflightcallback();	
                     },
                     error: function(data) {
-                        console.log("error", data);
+                        console.log('Completed sync request with error ',data);
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;  
                         if (WPCLib.canvas.sync.inflightcallback) WPCLib.canvas.sync.inflightcallback();                                              
@@ -1357,16 +1359,11 @@ var WPCLib = {
                 console.log('Processing stack: ',stack)
                 for (var i=0; i<len; i++) {
                     var edit = stack[i];
-                    console.log("edit: ", edit);
-
-                   	console.log(i,' before: ',this.edits,stack);                    
 
                     // clear server-ACK'd edits from client stack
                     if (this.edits) {
                         this.edits = $.grep(this.edits, function(x, idx) { return (x.clientversion > edit.serverversion)})
-                    }
-
-                   	console.log(i,' after: ',this.edits,stack);                     
+                    }                    
 
                     if (edit.force === true) {
                         // resync of document enforced by server, complying
