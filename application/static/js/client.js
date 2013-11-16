@@ -1244,7 +1244,7 @@ var WPCLib = {
 
 			init: function() {
 				// Abort if we're on the production system or sync was already inited
-				if (false || this.inited) {
+				if (WPCLib.sys.production || this.inited) {
 					return;
 				}
 
@@ -2541,7 +2541,7 @@ var WPCLib = {
 			}	
 
 			// Load Googles Diff Match Patch and Channel API
-			if (true) {
+			if (!WPCLib.sys.production) {
 				(function(d, s, id){
 					var js, fjs = d.getElementsByTagName(s)[0];
 					if (d.getElementById(id)) {return;}
@@ -2729,7 +2729,7 @@ var WPCLib = {
 
 		log: function(msg,payload) {
 			// Log console if we're not on a production system
-			if (true) {
+			if (!WPCLib.sys.production) {
 				console.log(msg,payload);
 			}
 		},
