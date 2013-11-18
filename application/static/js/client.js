@@ -785,10 +785,11 @@ var WPCLib = {
 					WPCLib.canvas.lastUpdated = data.updated;	
 
 					// Set internal sync values
-                    WPCLib.canvas.sync.shadow = data.text;
-                    WPCLib.canvas.sync.sessionid = xhr.getResponseHeader("collab-session-id");
-                    WPCLib.canvas.sync.openchannel(xhr.getResponseHeader("channel-id"));
-                    WPCLib.canvas.sync.localversion = WPCLib.canvas.sync.remoteversion = 0;					
+					var sync = WPCLib.canvas.sync,token = xhr.getResponseHeader("channel-id");
+                    sync.shadow = data.text;
+                    sync.sessionid = xhr.getResponseHeader("collab-session-id");
+                    sync.localversion = sync.remoteversion = 0;					
+                    if (sync.connected) { sync.reconnect(token) } else { sync.openchannel(token) };                    
 
 					// Check if the document had unseen updates		
 					if (WPCLib.folio.docs.lookup[docid] && WPCLib.folio.docs.lookup[docid].unseen == true) {
@@ -1472,7 +1473,7 @@ var WPCLib = {
 
 				if (this.connected || forcereconnect) {
 					// If we already have a proper connection then kill it and reset internal values
-					this.reconnect(token,forcereconnect);
+					this.reconnect(token);
 					return;
 				}
 
@@ -1525,17 +1526,18 @@ var WPCLib = {
                 WPCLib.folio.docs.update(true);                
             },			
 
-			reconnect: function(token,forcereconnect) {
+			reconnect: function(token) {
 				// If the connection dropped we start a new one
-				WPCLib.sys.log('Reconnecting to Channel backend');
+				WPCLib.sys.log('Reconnecting to Channel backend with token: ',token);
 
 				// Reset & cleanup before reconnect
-				if (this.channel) this.channel.close();
-				this.channel = null;
+				// if (this.channel) this.channel.close();
+				// TODO: Cant find close() anywhere (neither channel, socket, nor goog.appengine.Socket)
+				this.channel = this.socket = null;
 				this.connected = false;	
 
 				// Create new connection
-				this.openchannel(token,forcereconnect);			
+				this.openchannel(token);			
 			}
 		}
 	},	
