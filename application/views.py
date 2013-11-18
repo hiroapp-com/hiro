@@ -25,7 +25,7 @@ from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
-from google.appengine.api import memcache, mail, channel
+from google.appengine.api import memcache, mail, channel, taskqueue
 from google.appengine.ext import ndb
 
 
@@ -397,8 +397,16 @@ def sync_doc(doc_id):
     deltas = request.json.get('deltas', [])
     changed = sess.apply_edits(deltas)
     if changed:
-        sess.notify_viewers()
+        taskqueue.add(payload="{0}-{1}".format(doc_id, sess_id), url='/_hro/notify_sessions')
     return jsonify(session_id=sess_id, deltas=[e.to_dict() for e in sess.edit_stack])
+
+
+def notify_sessions():
+    doc_id, sess_id = request.data.split('-', 1)
+    sess = EditSession.get_by_id(int(sess_id), parent=ndb.Key(Document, doc_id))
+    sess.notify_viewers()
+    return "ok"
+
 
 @login_required
 def channel_token():

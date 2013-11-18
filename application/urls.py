@@ -25,6 +25,7 @@ app.add_url_rule('/reset_password', 'create_token', view_func=views.create_token
 app.add_url_rule('/reset/<token>', 'reset_password', view_func=views.reset_password, methods=['POST'])
 app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect, methods=['GET'])
 app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, methods=['GET', 'POST'])
+app.add_url_rule('/_hro/notify_sessions', 'notify_sessions', view_func=views.notify_sessions, methods=['POST'])
 
 # super-user only realm, AAA pass required.
 
