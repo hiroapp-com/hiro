@@ -1510,7 +1510,7 @@ var WPCLib = {
 
             on_channel_message: function(data) {
             	// Receive and process notification of document update
-            	var el = WPCLib.folio.docs.lookup[data.doc_id];              	
+            	var el = WPCLib.folio.docs.lookup[data.doc_id], ui = WPCLib.ui;              	
             	el.updated = WPCLib.util.now();  
                 el.lastEditor = data.user; 
 
@@ -1519,15 +1519,21 @@ var WPCLib = {
                 	// As we don't have a "send/request blank" yet, we trigger a then blank diff
                 	// TODO: Think of a better way
                     WPCLib.canvas.sync.addedit(true);
-                    var ui = WPCLib.ui;
                     if (!ui.windowfocused && !ui.audioblurplayed) {
+                    	// Play sound
                     	ui.playaudio('unseen',0.7);
                     	ui.audioblurplayed = true;
+                    	// Add update message to notification function
+                    	var title = WPCLib.canvas.title || 'Untitled';
+                    	ui.tabnotify('Updated!');
                     }
                 } else {
                 	// If the update is for a doc in folio thats not currently open
                 	// Update internal values and update display
                 	el.unseen = true;
+                	// Add message to notification function, sound is only triggered once by folio update
+                    var title = el.title || 'Untitled';                	
+                    if (!ui.windowfocused) ui.tabnotify(el.title + ' updated!');                	
                 }
 
                 // Display the updates in the DOM
@@ -3430,6 +3436,14 @@ var WPCLib = {
 	        	// If the window gets focused
 	        	// Reset values
 	        	WPCLib.ui.audioblurplayed = false;
+
+	        	// Clean up stuff that happens while we where blurred
+	        	WPCLib.ui.tabnotify();
+	        	setTimeout(function(){
+	        		// Some browser erratically block the title setting, so we make sure this happens here
+		        	document.title = ' ';
+					document.title = WPCLib.canvas.title || 'Untitled';	
+	        	},500);        	
 	        } else {
 	        	// If the window blurs
 	        }
@@ -3465,6 +3479,7 @@ var WPCLib = {
 		audiosupport: undefined,
 		audioblurplayed: false,
 		wastebinid: 'wastebin',
+		faviconstate: 'normal',
 		
 		playaudio: function(filename, volume) {
 			// Plays a sound in /static/filename
@@ -3492,6 +3507,61 @@ var WPCLib = {
 				document.getElementById(this.wastebinid).innerHTML = '<embed src="' + url + '" hidden="true" autostart="true" loop="false" />';
 			}
 		}, 	
+
+		tabnotifyOn: false,
+		tabnotifyMessages: [],
+		tabnotifyTimeout: null,
+		tabnotify: function(msg) {
+			// Cycles a que of notifictaions if tab is not focused and changes favicon
+			var ui = WPCLib.ui, pool = ui.tabnotifyMessages;
+			if (ui.windowfocused) {
+				// Cancel all actions and reset state								
+				clearTimeout(ui.tabnotifyTimeout);
+				ui.tabnotifyTimeout = null;
+				document.title = WPCLib.canvas.title || 'Untitled';					
+				ui.setfavicon('normal');	
+				ui.tabnotifyMessages = [];	
+				ui.tabnotifyOn = false;		
+				return;
+			}
+
+			// Turn on internal notify value
+			if (!ui.tabnotifyOn) ui.tabnotifyOn = true;
+
+			if (msg) {
+				// Add another message to the array if we haven't yet
+				if (pool.indexOf(msg) == -1) pool.push(msg);
+			}
+
+			// Do cycling, find out next message first
+			var pos = pool.indexOf(msg),
+				next = (pos + 2 > pool.length) ? pool[0] : pool[pos+1];
+			if (pool.length == 1) {
+				// If we only have one message, we cycle title between doc title and message
+				document.title = (document.title == next) ? WPCLib.canvas.title || 'Untitled' : next;
+			} else {
+				// If we have multiple we cycle between them, and change the single Updated to proper title
+				if (next == 'Updated!') next = WPCLib.canvas.title || 'Untitled' + ' updated!';
+				document.title = next;				
+			}
+			// Switch favicon
+			var state = (this.faviconstate == 'normal') ? 'unseen' : 'normal';
+			ui.setfavicon(state);
+
+			// Repeat cycle
+			ui.tabnotifyTimeout = setTimeout(function(){ 
+				// We send the current msg to the function so it can easily pick the next from the array
+				clearTimeout(ui.tabnotifyTimeout);
+				ui.tabnotifyTimeout = null;				
+				WPCLib.ui.tabnotify(msg);
+			},1000);
+
+		},
+
+		setfavicon: function(state) {
+			// Change the favicon to a certain state
+
+		},
 
 		keyboardshortcut: function(e) {
 			// Simple event listener for keyboard shortcuts	
