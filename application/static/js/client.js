@@ -1275,7 +1275,7 @@ var WPCLib = {
 				// Set internal values
 				this.channelToken = token;
                 this.shadow = text;
-                this.sessionid = session;
+                this.sessionid = sessionid;
 
 
                 if (this.connected) { 
@@ -1283,7 +1283,7 @@ var WPCLib = {
                 	this.socket.close();
                 } else { 
                 	// First time we just open the channel
-                	sync.openchannel(token) 
+                	this.openchannel(token) 
                 };
 			},
 
