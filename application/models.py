@@ -1,3 +1,4 @@
+from pprint import pformat
 import re
 import os
 import uuid
@@ -315,12 +316,15 @@ class EditSession(ndb.Model):
     def apply_edits(self, stack):
         ok = True
         changed = False
+        doc = self.get_doc()
+        mastertext, shadow = doc.text, self.shadow
         for edit in stack:
             sv, cv, delta = edit['serverversion'], edit['clientversion'], edit['delta']
 
             # if server-ACK lost, rollback to backup
             if sv != self.server_version and sv == self.backup_version:
-                self.shadow = self.backup
+                print "SV MISMATCH: RECOVERING FROM BACKUP"
+                shadow = self.backup
                 self.server_version = self.backup_version
                 self.edit_stack = []
 
@@ -343,7 +347,7 @@ class EditSession(ndb.Model):
                 pass
             else:
                 try:
-                    diffs = DMP.diff_fromDelta(self.shadow, delta)
+                    diffs = DMP.diff_fromDelta(shadow, delta)
                     if len(diffs) > 1 or (len(diffs) == 1 and diffs[0][0] != DMP.DIFF_EQUAL):
                         changed = True
                 except ValueError, e:
@@ -352,46 +356,37 @@ class EditSession(ndb.Model):
                     diffs = None
                     ok = False
                 self.client_version += 1
-                self.apply_diffs(diffs)
+                if diffs:
+                    # patch master-doc
+                    patches = DMP.patch_make(shadow, diffs)
+                    shadow = DMP.diff_text2(diffs)
+                    self.backup = shadow
+                    self.backup_version = self.server_version
+                    mastertext, res = DMP.patch_apply(patches, mastertext)
+                    mastertext = re.sub(r"(\r\n|\r|\n)", "\n", mastertext)
 
         # render output
-        mastertext = self.get_doc().text
         if ok:
-            diffs = DMP.diff_main(self.shadow, mastertext)
+            diffs = DMP.diff_main(shadow, mastertext)
             DMP.diff_cleanupEfficiency(diffs)
             delta = DMP.diff_toDelta(diffs)
+            print "delta!", pformat(delta)
             self.edit_stack.append(Edit(server_version=self.server_version, 
                                         client_version=self.client_version,
                                         delta=delta))
             self.server_version += 1
+            doc.text = mastertext
+            self.shadow = mastertext
+            doc.put()
+            self.put()
         else:
             self.client_version += 1
             self.edit_stack.append(Edit(server_version=self.server_version, 
                                         client_version=self.client_version,
                                         delta=mastertext, force=True))
-        self.shadow = mastertext
-        self.put()
         return changed
 
         
-
-    def apply_diffs(self, diffs):
-        if not diffs:
-            return
-        assert ndb.in_transaction(), "Cannot change common doc without Transaction"
-        # update shadows
-        self.shadow = DMP.diff_text2(diffs)
-        self.backup = self.shadow
-        self.backup_version = self.server_version
-
-        # patch master-doc
-        patches = DMP.patch_make(self.shadow, diffs)
-        doc = self.get_doc()
-        master, res = DMP.patch_apply(patches, doc.text)
-        doc.text = re.sub(r"(\r\n|\r|\n)", "\n", master)
-        doc.put()
-
-
     def notify_viewers(self):
         doc = self.get_doc()
         users = list(doc.shared_with) + [doc.owner]

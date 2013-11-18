@@ -25,7 +25,7 @@ from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
-from google.appengine.api import memcache, mail, channel
+from google.appengine.api import memcache, mail, channel, taskqueue
 from google.appengine.ext import ndb
 
 
@@ -272,7 +272,14 @@ def create_document():
     doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
     doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc_id = doc.put()
-    return str(doc_id.id()), 201
+
+    # c&p, TODO: refactor session creation and Reponse-Header handling 
+    resp = jsonify(doc_id=doc_id.id())
+    resp.status = '201'
+    sess = EditSession(parent=doc.key, user=current_user.key, shadow=doc.text).put()
+    resp.headers['Collab-Session-ID'] = sess.id()
+    resp.headers['Channel-ID'] = channel.create_channel(str(sess.id()))
+    return resp
 
 
 @login_required
@@ -397,8 +404,16 @@ def sync_doc(doc_id):
     deltas = request.json.get('deltas', [])
     changed = sess.apply_edits(deltas)
     if changed:
-        sess.notify_viewers()
+        taskqueue.add(payload="{0}-{1}".format(doc_id, sess_id), url='/_hro/notify_sessions')
     return jsonify(session_id=sess_id, deltas=[e.to_dict() for e in sess.edit_stack])
+
+
+def notify_sessions():
+    doc_id, sess_id = request.data.split('-', 1)
+    sess = EditSession.get_by_id(int(sess_id), parent=ndb.Key(Document, doc_id))
+    sess.notify_viewers()
+    return "ok"
+
 
 @login_required
 def channel_token():
@@ -407,18 +422,12 @@ def channel_token():
         return "required parameter `session_id` missing", 400
     return  
 
-def share_all(doc_id):
+def test_share(doc_id, email):
     doc = Document.get_by_id(doc_id)
-    out = []
-    for u in User.query():
-        out.append("user: {0}".format(u.get_id()))
-        if u.key != current_user.key:
-            out.append("added")
-            doc.shared_with.append(u.key)
-        else:
-            out.append("skipped")
+    user = User.query(User.email == email).get()
+    doc.shared_with.append(user.key)
     doc.put()
-    return "\n".join(out)
+    return "ok"
 
 
 def warmup():

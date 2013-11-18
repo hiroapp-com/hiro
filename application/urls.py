@@ -25,6 +25,7 @@ app.add_url_rule('/reset_password', 'create_token', view_func=views.create_token
 app.add_url_rule('/reset/<token>', 'reset_password', view_func=views.reset_password, methods=['POST'])
 app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect, methods=['GET'])
 app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, methods=['GET', 'POST'])
+app.add_url_rule('/_hro/notify_sessions', 'notify_sessions', view_func=views.notify_sessions, methods=['POST'])
 
 # super-user only realm, AAA pass required.
 
@@ -36,7 +37,7 @@ app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_documen
 app.add_url_rule('/docs/<doc_id>/perms', 'get_document_perms', view_func=views.get_document_perms, methods=['GET'])
 app.add_url_rule('/docs/<doc_id>/perms', 'set_document_perms', view_func=views.set_document_perms, methods=['PATCH', 'POST'])
 app.add_url_rule('/docs/<doc_id>/sync', 'sync_doc', view_func=views.sync_doc, methods=['POST'])
-app.add_url_rule('/docs/<doc_id>/_testdo_shareall', 'share_all', view_func=views.share_all, methods=['GET'])
+app.add_url_rule('/docs/<doc_id>/_testdo_share/<email>', 'test_share', view_func=views.test_share, methods=['GET'])
 app.add_url_rule('/channeltoken', 'channel_token', view_func=views.channel_token, methods=['POST'])
 
 # textanalysis & semantic search
