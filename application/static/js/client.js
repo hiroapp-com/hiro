@@ -708,7 +708,7 @@ var WPCLib = {
 							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 						},
 						error: function(xhr,textStatus) {
-							WPCLib.sys.error(xhr);	
+							WPCLib.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(xhr));	
 							if (textStatus == 'timeout') WPCLib.sys.goneoffline();					
 						}
 					});
@@ -725,7 +725,7 @@ var WPCLib = {
 							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();							
 						},
 						error: function(xhr,textStatus) {
-							WPCLib.sys.error(xhr);
+							WPCLib.sys.error('Savedoc POST returned error: ' + JSON.stringify(xhr));
 							if (textStatus == 'timeout') WPCLib.sys.goneoffline();													
 						}
 					});					
@@ -1246,6 +1246,7 @@ var WPCLib = {
 			enabled: false,
 			sessionid: undefined,
 			connected: false,
+			channel: null,
 			channelToken: undefined,
 			socket: undefined,
 			inited: false,
@@ -1323,6 +1324,9 @@ var WPCLib = {
                 	return;
                 }
 
+                // See if we're connected to Channel API and try to recover if not (precaution, case not seen yet)
+                if (!this.connected) this.reconnect(this.channelToken);
+
                 // Set variable to prevent double sending
                 this.inflight = true;
                 console.log('Starting sync with data: ',JSON.stringify(this.edits));
@@ -1364,6 +1368,7 @@ var WPCLib = {
 			},
             
             process: function(stack) {
+            	// Process one or multiple edit responses we get as response from the sync server
                 var len = stack.length;
                 for (var i=0; i<len; i++) {
                     var edit = stack[i];
@@ -1455,37 +1460,47 @@ var WPCLib = {
 				return this.dmp.diff_toDelta(d);
 			},
 
-			openchannel: function(token) {
+			openchannel: function(token,forcereconnect) {
 				// Open Appengine Channel or Diff match patch wasn't loaded yet
 				if (!goog.appengine.Channel || !this.dmp) {
 					// Retry if channel API isn't loaded yet
 					setTimeout(function(){
-						WPCLib.canvas.sync.openchannel(token);
+						WPCLib.canvas.sync.openchannel(token,forcereconnect);
 						return;
 					},200);
 				}
 
-				// If we already have a proper connection
-				if (this.connected) return;
+				if (this.connected || forcereconnect) {
+					// If we already have a proper connection then kill it and reset internal values
+					this.reconnect(token,forcereconnect);
+					return;
+				}
+
+				if (token) {
+					// Store token if we should need it later					
+					this.channelToken = token;
+				} else {
+					// Try to recover with last known token if we don't have one
+					token = this.channelToken;
+					if (!this.channelToken) WPCLib.sys.error('Tried to connect but no channel token available');
+				}
 
 				// Create new instance of channel object
-                this.channelToken = token;
-                var channel = new goog.appengine.Channel(this.channelToken),
-                socket = channel.open();
-                socket.onopen = function() {
+                this.channel = new goog.appengine.Channel(token),
+                this.socket = channel.open();
+                this.socket.onopen = function() {
                     console.log("connected to channel api");
+                    WPCLib.canvas.sync.connected = true;
                 }
-                socket.onmessage = function(data) {
+                this.socket.onmessage = function(data) {
                     WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
                 }                
-                socket.onerror = function() {
-                    WPCLib.canvas.sync.channelToken = undefined;
+                this.socket.onerror = function() {
                     console.log("ERROR connecting to channel api");
                 }
-                socket.onclose = function() {
+                this.socket.onclose = function() {
                     console.log("Channel closed.");
-                    WPCLib.canvas.sync.channelToken = undefined;
-                    WPCLib.canvas.sync.reconnect(token);
+                    WPCLib.canvas.sync.reconnect(token);                  
                 }			
 			},		
 
@@ -1510,10 +1525,17 @@ var WPCLib = {
                 WPCLib.folio.docs.update(true);                
             },			
 
-			reconnect: function(token) {
+			reconnect: function(token,forcereconnect) {
 				// If the connection dropped we start a new one
-				this.gettoken();
 				WPCLib.sys.log('Reconnecting to Channel backend');
+
+				// Reset & cleanup before reconnect
+				if (this.channel) this.channel.close();
+				this.channel = null;
+				this.connected = false;	
+
+				// Create new connection
+				this.openchannel(token,forcereconnect);			
 			}
 		}
 	},	
