@@ -1487,7 +1487,7 @@ var WPCLib = {
 
 				// Create new instance of channel object
                 this.channel = new goog.appengine.Channel(token),
-                this.socket = channel.open();
+                this.socket = this.channel.open();
                 this.socket.onopen = function() {
                     console.log("connected to channel api");
                     WPCLib.canvas.sync.connected = true;
@@ -1662,6 +1662,14 @@ var WPCLib = {
 					d = document.createElement('div'),
 					that = this;
 
+				// Retry later if we don't have a docid yet
+				if (!WPCLib.canvas.docid) {
+					setTimeout(function() {
+						WPCLib.sharing.accesslist.add(email);
+						return;
+					},500);
+				}	
+
 				// Visual updates	
 				d.className = 'user';
 				d.innerHTML = 'Inviting ' + email.split('@')[0].substring(0,18) + '...';
@@ -1758,7 +1766,16 @@ var WPCLib = {
 			},
 
 			fetch: function() {
-				if (false) return;
+				if (WPCLib.sys.production) return;
+
+				// Retry later if we don't have a docid yet
+				if (!WPCLib.canvas.docid) {
+					setTimeout(function() {
+						WPCLib.sharing.accesslist.fetch();
+						return;
+					},500);
+				}
+
 				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
 				var url = '/docs/' +  WPCLib.canvas.docid + '/perms';
 				$.ajax({
