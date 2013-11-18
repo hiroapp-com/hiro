@@ -389,7 +389,7 @@ var WPCLib = {
 		                    WPCLib.sys.log("backend issued doc id ", data);
 
 							// Set params for local doc
-							WPCLib.canvas.docid = data;
+							WPCLib.canvas.docid = data.doc_id;
 
 							// Set folio values
 							doc.firstChild.firstChild.innerHTML = 'Untitled Note';
@@ -435,7 +435,7 @@ var WPCLib = {
 		                    localStorage.removeItem('WPCdoc')
 
 							// Set new id for former local doc
-							WPCLib.canvas.docid = data;
+							WPCLib.canvas.docid = data.doc_id;
 
 							// Get updated file list
 							WPCLib.folio.docs.loaddocs();								                    

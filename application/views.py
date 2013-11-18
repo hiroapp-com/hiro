@@ -272,7 +272,14 @@ def create_document():
     doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
     doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc_id = doc.put()
-    return str(doc_id.id()), 201
+
+    # c&p, TODO: refactor session creation and Reponse-Header handling 
+    resp = jsonify(doc_id=doc_id.id())
+    resp.status = '201'
+    sess = EditSession(parent=doc.key, user=current_user.key, shadow=doc.text).put()
+    resp.headers['Collab-Session-ID'] = sess.id()
+    resp.headers['Channel-ID'] = channel.create_channel(str(sess.id()))
+    return resp
 
 
 @login_required
