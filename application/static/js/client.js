@@ -396,15 +396,8 @@ var WPCLib = {
 							doc.id = 'doc_'+data;
 							WPCLib.folio.docs.active[0].id = data;	
 
-							// Set internal sync values
-							var sync = WPCLib.canvas.sync, token = sync.channelToken = xhr.getResponseHeader("channel-id");
-		                    sync.shadow = '';
-		                    sync.sessionid = xhr.getResponseHeader("collab-session-id");
-		                    sync.localversion = sync.remoteversion = 0;					
-		                    if (sync.connected) { 
-		                    	// This will trigger a reconnect with the new token we set above
-		                    	sync.socket.close();
-		                    } else { sync.openchannel(token) }; 								
+							// Start sync
+							WPCLib.canvas.sync.begin(data.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));                    								
 
 							// Update the document counter
 							WPCLib.ui.documentcounter();														                    
@@ -794,16 +787,6 @@ var WPCLib = {
 					WPCLib.canvas.created = data.created;
 					WPCLib.canvas.lastUpdated = data.updated;	
 
-					// Set internal sync values
-					var sync = WPCLib.canvas.sync, token = sync.channelToken = xhr.getResponseHeader("channel-id");
-                    sync.shadow = data.text;
-                    sync.sessionid = xhr.getResponseHeader("collab-session-id");
-                    sync.localversion = sync.remoteversion = 0;					
-                    if (sync.connected) { 
-                    	// This will trigger a reconnect with the new token we set above
-                    	sync.socket.close();
-                    } else { sync.openchannel(token) };                    
-
 					// Check if the document had unseen updates		
 					if (WPCLib.folio.docs.lookup[docid] && WPCLib.folio.docs.lookup[docid].unseen == true) {
 						var el = document.getElementById('doc_' + docid);
@@ -838,7 +821,7 @@ var WPCLib = {
 					that.preloaded = false;
 
 					// Initiate syncing of file
-					WPCLib.canvas.sync.begin();
+					WPCLib.canvas.sync.begin(data.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));                    
 
 					// If the document is shared then fetch the list of users who have access
 					if (data.shared) WPCLib.sharing.accesslist.fetch();
@@ -1285,6 +1268,33 @@ var WPCLib = {
                 this.inited = true;
             },
 
+			begin: function(text,sessionid,token) {
+				// Reset state, load values from new doc and initiate websocket		
+				this.reset();
+
+				// Set internal values
+				this.channelToken = token;
+                this.shadow = text;
+                this.sessionid = session;
+
+
+                if (this.connected) { 
+                	// This will trigger a reconnect with the new token we set above
+                	this.socket.close();
+                } else { 
+                	// First time we just open the channel
+                	sync.openchannel(token) 
+                };
+			},
+
+			reset: function() {
+				// Reset sync state
+				this.shadow = '';
+				this.edits = [];
+				this.localversion = 0;
+				this.remoteversion = 0;
+			},
+
 			addedit: function(force) {
 				// Add an edit to the edits array
 				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
@@ -1433,14 +1443,6 @@ var WPCLib = {
                     }
                 }
             },            
-
-			reset: function() {
-				// Reset sync state
-				this.shadow = '';
-				this.edits = [];
-				this.localversion = 0;
-				this.remoteversion = 0;
-			},
 
 			delta: function(o,n) {
 				// Compare two versions and return standard diff format
