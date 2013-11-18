@@ -1278,21 +1278,12 @@ var WPCLib = {
 					},100);
 					return;
 				}
-				this.dmp = new diff_match_patch();	
-				this.enabled = true;			
-                setTimeout(function(){
-                    WPCLib.canvas.sync.sendedits();
-                },500);
+				this.dmp = new diff_match_patch();			
 
                 // Set internal value
+				this.enabled = true;	                
                 this.inited = true;
             },
-
-			begin: function() {
-				// Reset state, load values from new doc and initiate websocket
-				this.reset();
-				this.shadow = WPCLib.canvas.text;
-			},
 
 			addedit: function(force) {
 				// Add an edit to the edits array
@@ -1333,7 +1324,6 @@ var WPCLib = {
                 	// If we don't have a docid yet try again later
                 	setTimeout( function(){
                 		WPCLib.canvas.sync.sendedits();
-
                 	},500);
                 	return;
                 }
@@ -1343,7 +1333,7 @@ var WPCLib = {
 
                 // Set variable to prevent double sending
                 this.inflight = true;
-                console.log('Starting sync with data: ',JSON.stringify(this.edits));
+                WPCLib.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
 
                 // Post editstack to backend
                 $.ajax({
@@ -1353,11 +1343,11 @@ var WPCLib = {
                     data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
                     success: function(data) {
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
-                            console.log("TODO: session-id mismatch, what to do?");
+                            WPCLib.sys.log("TODO: session-id mismatch, what to do?");
                             return;
                         }
 
-                        console.log('Completed sync request successfully ',JSON.stringify(data.deltas));
+                        WPCLib.sys.log('Completed sync request successfully ',JSON.stringify(data.deltas));
 
                         // process the edit-stack received from the server
                         WPCLib.canvas.sync.process(data.deltas);
@@ -1369,7 +1359,7 @@ var WPCLib = {
                         }		
                     },
                     error: function(data) {
-                        console.log('Completed sync request with error ',data);
+                        WPCLib.sys.log('Completed sync request with error ',data);
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;  
                         if (WPCLib.canvas.sync.inflightcallback)  {
@@ -1396,7 +1386,7 @@ var WPCLib = {
                         // resync of document enforced by server, complying
                         // TODO: test encaps needed?
                         // *untested*
-                        console.log("server enforces resync, complying");
+                        WPCLib.sys.log("server enforces resync, complying");
                         this.shadow = edit.delta;
                         this.localversion = edit.clientversion;
                         this.remoteversion = edit.serverversion;
@@ -1405,27 +1395,27 @@ var WPCLib = {
                         continue;
                     }
                     if (edit.clientversion > this.localversion) {
-                        console.log("TODO: client version mismatch -- resync");
-                        console.log("cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
+                        WPCLib.sys.log("TODO: client version mismatch -- resync");
+                        WPCLib.sys.log("cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
                         continue;
                     } 
                     else if (this.remoteversion < edit.serverversion) {
-                        console.log("TODO: server version ahead of client -- resync");
+                        WPCLib.sys.log("TODO: server version ahead of client -- resync");
                         continue;
                     }
                     else if (this.remoteversion > edit.serverversion) {
                         //dupe
-                        console.log("dupe received");
+                        WPCLib.sys.log("dupe received");
                         continue;
                     }
                     var diffs;
                     try {
                         diffs = this.dmp.diff_fromDelta(this.shadow, edit.delta);
                         this.remoteversion++;
-                        console.log("Diffs applied successfully");
-                        console.log("serverversion(client): " + this.remoteversion);
+                        WPCLib.sys.log("Diffs applied successfully");
+                        WPCLib.sys.log("serverversion(client): " + this.remoteversion);
                     } catch(ex) {
-                        console.log("TODO: cannot merge received delta into shadow -- resync");
+                        WPCLib.sys.log("TODO: cannot merge received delta into shadow -- resync");
                         continue;
                     }
                     if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) {
@@ -1434,11 +1424,11 @@ var WPCLib = {
                         var old = WPCLib.canvas.text;
                         var merged = this.dmp.patch_apply(patch, old);
                         if (old != merged[0]) {
-                            console.log("patches merged, replacing text");
+                            WPCLib.sys.log("patches merged, replacing text");
                             WPCLib.canvas.set_text(merged[0]);                            
                         }
                         else{
-                            console.log("no changes merged, nothing happened");
+                            WPCLib.sys.log("no changes merged, nothing happened");
                         }
                     }
                 }
@@ -1450,10 +1440,6 @@ var WPCLib = {
 				this.edits = [];
 				this.localversion = 0;
 				this.remoteversion = 0;
-			},
-
-			patch: function() {
-				// Receive a patch from the websocket, check consistency and apply
 			},
 
 			delta: function(o,n) {
@@ -1503,17 +1489,17 @@ var WPCLib = {
                 this.channel = new goog.appengine.Channel(token),
                 this.socket = this.channel.open();
                 this.socket.onopen = function() {
-                    console.log("connected to channel api");
+                    WPCLib.sys.log("connected to channel api");
                     WPCLib.canvas.sync.connected = true;
                 }
                 this.socket.onmessage = function(data) {
                     WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
                 }                
                 this.socket.onerror = function() {
-                    console.log("ERROR connecting to channel api");
+                    WPCLib.sys.log("ERROR connecting to channel api");
                 }
                 this.socket.onclose = function() {
-                    console.log("Channel closed.");
+                    WPCLib.sys.log("Channel closed.");
 					WPCLib.canvas.sync.channel = WPCLib.canvas.sync.socket = null;
 					WPCLib.canvas.sync.connected = false;	                    
                     WPCLib.canvas.sync.reconnect(WPCLib.canvas.sync.channelToken);                  
