@@ -385,16 +385,26 @@ var WPCLib = {
 		                type: "POST",
 		                contentType: "application/json; charset=UTF-8",
 		                data: JSON.stringify(file),
-						success: function(data) {
+						success: function(data, status, xhr) {
 		                    WPCLib.sys.log("backend issued doc id ", data);
 
 							// Set params for local doc
 							WPCLib.canvas.docid = data;
 
-							// Save document & cleanup
+							// Set folio values
 							doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 							doc.id = 'doc_'+data;
-							WPCLib.folio.docs.active[0].id = data;		
+							WPCLib.folio.docs.active[0].id = data;	
+
+							// Set internal sync values
+							var sync = WPCLib.canvas.sync, token = sync.channelToken = xhr.getResponseHeader("channel-id");
+		                    sync.shadow = '';
+		                    sync.sessionid = xhr.getResponseHeader("collab-session-id");
+		                    sync.localversion = sync.remoteversion = 0;					
+		                    if (sync.connected) { 
+		                    	// This will trigger a reconnect with the new token we set above
+		                    	sync.socket.close();
+		                    } else { sync.openchannel(token) }; 								
 
 							// Update the document counter
 							WPCLib.ui.documentcounter();														                    
@@ -785,11 +795,14 @@ var WPCLib = {
 					WPCLib.canvas.lastUpdated = data.updated;	
 
 					// Set internal sync values
-					var sync = WPCLib.canvas.sync,token = xhr.getResponseHeader("channel-id");
+					var sync = WPCLib.canvas.sync, token = sync.channelToken = xhr.getResponseHeader("channel-id");
                     sync.shadow = data.text;
                     sync.sessionid = xhr.getResponseHeader("collab-session-id");
                     sync.localversion = sync.remoteversion = 0;					
-                    if (sync.connected) { sync.reconnect(token) } else { sync.openchannel(token) };                    
+                    if (sync.connected) { 
+                    	// This will trigger a reconnect with the new token we set above
+                    	sync.socket.close();
+                    } else { sync.openchannel(token) };                    
 
 					// Check if the document had unseen updates		
 					if (WPCLib.folio.docs.lookup[docid] && WPCLib.folio.docs.lookup[docid].unseen == true) {
@@ -1326,7 +1339,7 @@ var WPCLib = {
                 }
 
                 // See if we're connected to Channel API and try to recover if not (precaution, case not seen yet)
-                if (!this.connected) this.reconnect(this.channelToken);
+                if (!this.connected && this.channelToken) this.openchannel(this.channelToken);
 
                 // Set variable to prevent double sending
                 this.inflight = true;
@@ -1461,19 +1474,19 @@ var WPCLib = {
 				return this.dmp.diff_toDelta(d);
 			},
 
-			openchannel: function(token,forcereconnect) {
+			openchannel: function(token) {
 				// Open Appengine Channel or Diff match patch wasn't loaded yet
 				if (!goog.appengine.Channel || !this.dmp) {
 					// Retry if channel API isn't loaded yet
 					setTimeout(function(){
-						WPCLib.canvas.sync.openchannel(token,forcereconnect);
+						WPCLib.canvas.sync.openchannel(token);
 						return;
 					},200);
 				}
 
-				if (this.connected || forcereconnect) {
-					// If we already have a proper connection then kill it and reset internal values
-					this.reconnect(token);
+				if (this.connected) {
+					// If we already have a proper connection then kill it
+					this.socket.close();
 					return;
 				}
 
@@ -1501,7 +1514,9 @@ var WPCLib = {
                 }
                 this.socket.onclose = function() {
                     console.log("Channel closed.");
-                    WPCLib.canvas.sync.reconnect(token);                  
+					WPCLib.canvas.sync.channel = WPCLib.canvas.sync.socket = null;
+					WPCLib.canvas.sync.connected = false;	                    
+                    WPCLib.canvas.sync.reconnect(WPCLib.canvas.sync.channelToken);                  
                 }			
 			},		
 
@@ -1527,14 +1542,8 @@ var WPCLib = {
             },			
 
 			reconnect: function(token) {
-				// If the connection dropped we start a new one
+				// If the connection dropped or the user loaded a new document we start a new one
 				WPCLib.sys.log('Reconnecting to Channel backend with token: ',token);
-
-				// Reset & cleanup before reconnect
-				// if (this.channel) this.channel.close();
-				// TODO: Cant find close() anywhere (neither channel, socket, nor goog.appengine.Socket)
-				this.channel = this.socket = null;
-				this.connected = false;	
 
 				// Create new connection
 				this.openchannel(token);			
