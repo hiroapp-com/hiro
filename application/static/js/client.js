@@ -647,8 +647,10 @@ var WPCLib = {
 		},	
 
         set_text: function(txt) {
-			WPCLib.canvas.text =  txt;
-            document.getElementById(WPCLib.canvas.contentId).value = txt;
+        	// Set all internal values and visual updates in one go
+			WPCLib.canvas.text = document.getElementById(WPCLib.canvas.contentId).value = txt;
+            // Resize canvas
+            WPCLib.canvas._resize();               
         },
 
 		preload: function(title,text) {
@@ -1380,7 +1382,7 @@ var WPCLib = {
                         this.localversion = edit.clientversion;
                         this.remoteversion = edit.serverversion;
                         this.edits = [];
-                        WPCLib.canvas.set_text(edit.delta);
+                        WPCLib.canvas.set_text(edit.delta);                     
                         continue;
                     }
                     if (edit.clientversion > this.localversion) {
@@ -1414,7 +1416,7 @@ var WPCLib = {
                         var merged = this.dmp.patch_apply(patch, old);
                         if (old != merged[0]) {
                             console.log("patches merged, replacing text");
-                            WPCLib.canvas.set_text(merged[0])
+                            WPCLib.canvas.set_text(merged[0]);                            
                         }
                         else{
                             console.log("no changes merged, nothing happened");
