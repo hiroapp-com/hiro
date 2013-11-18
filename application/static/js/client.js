@@ -1343,13 +1343,20 @@ var WPCLib = {
                         WPCLib.canvas.sync.process(data.deltas);
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
-                        if (WPCLib.canvas.sync.inflightcallback) WPCLib.canvas.sync.inflightcallback();	
+                        if (WPCLib.canvas.sync.inflightcallback) {
+                        	WPCLib.canvas.sync.inflightcallback();
+                        	WPCLib.canvas.sync.inflightcallback = null;
+                        }		
                     },
                     error: function(data) {
                         console.log('Completed sync request with error ',data);
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;  
-                        if (WPCLib.canvas.sync.inflightcallback) WPCLib.canvas.sync.inflightcallback();                                              
+                        if (WPCLib.canvas.sync.inflightcallback)  {
+                        	WPCLib.canvas.sync.inflightcallback();
+                        	WPCLib.canvas.sync.inflightcallback = null;
+                        }		
+
                     }
                 });				
 			},
