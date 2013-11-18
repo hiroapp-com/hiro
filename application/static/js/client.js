@@ -150,7 +150,8 @@ var WPCLib = {
 					docs = document.getElementById(that.doclistId),				
 					arc = that.archived,
 					archive = document.getElementById(that.archiveId),
-					bubble = document.getElementById('updatebubble');		
+					bubble = document.getElementById('updatebubble'),
+					seen = this.unseenupdates;		
 
 				// Update our lookup object
 				that.updatelookup();
@@ -176,6 +177,7 @@ var WPCLib = {
 				if (this.unseenupdates > 0) {
 					bubble.innerHTML = this.unseenupdates;
 					bubble.style.display = 'block';
+					if (seen < this.unseenupdates) WPCLib.ui.playaudio('unseen',0.7);
 				} else {
 					bubble.style.display = 'none';
 				}
@@ -1274,9 +1276,8 @@ var WPCLib = {
 
 				// Set internal values
 				this.channelToken = token;
-                this.shadow = text;
                 this.sessionid = sessionid;
-
+                this.shadow = text;       
 
                 if (this.connected) { 
                 	// This will trigger a reconnect with the new token we set above
@@ -1288,11 +1289,10 @@ var WPCLib = {
 			},
 
 			reset: function() {
-				// Reset sync state
+				// Reset local sync state
 				this.shadow = '';
 				this.edits = [];
-				this.localversion = 0;
-				this.remoteversion = 0;
+				this.localversion = this.remoteversion = 0;
 			},
 
 			addedit: function(force) {
@@ -1519,6 +1519,11 @@ var WPCLib = {
                 	// As we don't have a "send/request blank" yet, we trigger a then blank diff
                 	// TODO: Think of a better way
                     WPCLib.canvas.sync.addedit(true);
+                    var ui = WPCLib.ui;
+                    if (!ui.windowfocused && !ui.audioblurplayed) {
+                    	ui.playaudio('unseen',0.7);
+                    	ui.audioblurplayed = true;
+                    }
                 } else {
                 	// If the update is for a doc in folio thats not currently open
                 	// Update internal values and update display
@@ -3418,7 +3423,16 @@ var WPCLib = {
 	        if (focus && WPCLib.util._focuscallback) {
 	        	WPCLib.util._focuscallback();
 	        	WPCLib.util._focuscallback = null;	        	
-	        }     
+	        }   
+
+	        // Do things on change
+	        if (WPCLib.ui.windowfocused) {
+	        	// If the window gets focused
+	        	// Reset values
+	        	WPCLib.ui.audioblurplayed = false;
+	        } else {
+	        	// If the window blurs
+	        }
 		},
 
 		docallback: function(callback) {
@@ -3448,6 +3462,36 @@ var WPCLib = {
 		dialogTimer: null,
 		dialogOpen: false,
 		windowfocused: true,
+		audiosupport: undefined,
+		audioblurplayed: false,
+		wastebinid: 'wastebin',
+		
+		playaudio: function(filename, volume) {
+			// Plays a sound in /static/filename
+			var url = '/static/sounds/' + filename + '.wav'; 
+			volume = volume || 1;
+
+			// Check if audio is supported
+			if (typeof this.audiosupport === 'undefined') {
+				var test = document.createElement('audio');
+				this.audiosupport = (test.play) ? true : false;
+			}
+
+			// Play sound
+			if (this.audiosupport) {
+				// HTML5 audio play
+				var audio;
+				audio = document.createElement('audio');
+				audio.setAttribute('preload', 'auto');
+				audio.setAttribute('autobuffer', 'autobuffer');
+				audio.setAttribute('src', url);
+				audio.volume = volume;
+				audio.play();				
+			} else {
+				// In old browsers we do it via embed
+				document.getElementById(this.wastebinid).innerHTML = '<embed src="' + url + '" hidden="true" autostart="true" loop="false" />';
+			}
+		}, 	
 
 		keyboardshortcut: function(e) {
 			// Simple event listener for keyboard shortcuts	
