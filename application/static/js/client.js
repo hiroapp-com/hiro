@@ -157,7 +157,7 @@ var WPCLib = {
 				// Update our lookup object
 				that.updatelookup();
 
-				// Reset all contents and handlers
+				// Clone and reset containing divs
 				if (docs) {
 					var newdocs = docs.cloneNode();
 					newdocs.innerHTML = '';
@@ -168,7 +168,7 @@ var WPCLib = {
 				}	
 				this.unseenupdates = 0;	
 
-				// Add all links to new DOM object
+				// Add all elements & events to new DOM object
 				for (i=0,l=act.length;i<l;i++) {	
 					// Attach links to new active object
 					if (act[i].docid == WPCLib.canvas.docid && newdocs.firstChild) {
@@ -814,9 +814,7 @@ var WPCLib = {
 					}					
 
 					// Update document list
-					WPCLib.folio.docs.update();					
-
-					// Change null value to '' if document header is empty		
+					WPCLib.folio.docs.update();						
 
 					// Show data on canvas
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
@@ -1134,14 +1132,20 @@ var WPCLib = {
 		_settypingtimer: function(save) {
 			// set & clear timers for saving and context if user pauses
 			if (this.typingTimer) clearTimeout(this.typingTimer);
-			this.typingTimer = setTimeout(function() {				
-				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
+			this.typingTimer = setTimeout(function() {	
+				// Clean up (and remove potential previous editor from docs array)
+				var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];
+				if (doc.lastEditor) doc.lastEditor = null;
 				WPCLib.canvas._cleartypingtimer();
+
+				// Start off search							
+				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 
 				// Add edit if user is logged in or save locally if not
 				if (WPCLib.canvas.sync.inited) WPCLib.canvas.sync.addedit();
+
 				// Save rest of doc if flag is set or user not logged in yet
-				if (save || WPCLib.sys.user.level == 0) WPCLib.canvas.savedoc();		
+				if (save || WPCLib.sys.user.level == 0) WPCLib.canvas.savedoc();					
 			},1000);
 		},	
 
@@ -1311,7 +1315,7 @@ var WPCLib = {
 				// Add an edit to the edits array
 				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
 
-				// If we'Re inflight then wait for callback
+				// If we're inflight then wait for callback
 				if (this.inflight) {
 					this.inflightcallback = WPCLib.canvas.sync.addedit;
 					return;
@@ -1371,8 +1375,11 @@ var WPCLib = {
 
                         WPCLib.sys.log('Completed sync request successfully ',JSON.stringify(data.deltas));
 
+
+
                         // process the edit-stack received from the server
                         WPCLib.canvas.sync.process(data.deltas);
+
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
                         if (WPCLib.canvas.sync.inflightcallback) {
@@ -1443,10 +1450,15 @@ var WPCLib = {
             	var diffs, patch, merged,
             		regex = /^=[0-9]+$/,
             		oldtext = WPCLib.canvas.text,
-            		oldcursor = WPCLib.canvas._getposition();
+            		oldcursor = WPCLib.canvas._getposition(),
+            		doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];              	
 
             	// Iterate remote version
-            	this.remoteversion++;              		
+            	this.remoteversion++;   
+
+                // Update last edit timestamp & folio display
+				if (doc) doc.updated = WPCLib.util.now(); 
+				WPCLib.folio.docs.update();	              	           		
 
             	// If the delta is just a confirmation, do nothing
             	if (regex.test(delta)) {
@@ -1467,12 +1479,15 @@ var WPCLib = {
             		// Apply the patch & set new shadow
                     merged = this.shadow = this.dmp.patch_apply(patch, oldtext)[0];                                                                 
 	                WPCLib.sys.log("Patches successfully merged, replacing text");
+
 	                // Get current cursor position
 	                oldcursor = WPCLib.canvas._getposition();
+
 	                // Set text
-	                WPCLib.canvas.set_text(merged);       
+	                WPCLib.canvas.set_text(merged); 
+
 	                // Reset cursor   
-	                this.resetcursor(diffs,oldcursor);                   
+	                this.resetcursor(diffs,oldcursor);                                 
                 }            	
             },
 
@@ -1564,16 +1579,18 @@ var WPCLib = {
 
             on_channel_message: function(data) {
             	// Receive and process notification of document update
-            	var el = WPCLib.folio.docs.lookup[data.doc_id], ui = WPCLib.ui;              	
+            	var el = WPCLib.folio.docs.lookup[data.doc_id], 
+            		ui = WPCLib.ui,
+            		ownupdate = (data.user == WPCLib.sys.user.email);              	
             	el.updated = WPCLib.util.now();  
-                el.lastEditor = data.user; 
+                el.lastEditor =  (ownupdate) ? null : data.user; 
 
                 if (data.doc_id == WPCLib.canvas.docid) {
                 	// If the update is for the current document
                 	// As we don't have a "send/request blank" yet, we trigger a then blank diff
                 	// TODO: Think of a better way
                     WPCLib.canvas.sync.addedit(true);
-                    if (!ui.windowfocused && !ui.audioblurplayed) {
+                    if (!ui.windowfocused && !ui.audioblurplayed && !ownupdate) {
                     	// Play sound
                     	ui.playaudio('unseen',0.7);
                     	ui.audioblurplayed = true;
@@ -1581,7 +1598,7 @@ var WPCLib = {
                     	var title = WPCLib.canvas.title || 'Untitled';
                     	ui.tabnotify('Updated!');
                     }
-                } else {
+                } else if (!ownupdate) {
                 	// If the update is for a doc in folio thats not currently open
                 	// Update internal values and update display
                 	el.unseen = true;
@@ -1591,7 +1608,7 @@ var WPCLib = {
                 }
 
                 // Display the updates in the DOM
-                WPCLib.folio.docs.update(true);                
+                WPCLib.folio.docs.update();                
             },			
 
 			reconnect: function(token) {
@@ -2859,6 +2876,7 @@ var WPCLib = {
 
 		user: {
 			id: '',
+			email: '',
 			// levels: 0 = anon, 1 = free, 2 = paid
 			level: 0,
 			dialog: document.getElementById('dialog').contentDocument,
@@ -3600,7 +3618,7 @@ var WPCLib = {
 				if (next == 'Updated!') pool[nextpos] = ( WPCLib.canvas.title || 'Untitled' ) + ' updated!';
 				document.title = ( updates != 0) ? '(' + updates + ') ' + next : next;				
 			}
-			
+
 			// Switch favicon
 			var state = (this.faviconstate == 'normal') ? 'unseen' : 'normal';
 			ui.setfavicon(state);

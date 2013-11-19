@@ -321,6 +321,7 @@
 	  		// init segment io
 			analytics.identify('{{ current_user.token }}', _wpcsiou);  
 			_wpc.sys.user.id = '{{ current_user.token }}';
+			_wpc.sys.user.email = _wpcsiou.email;
 		{% endif %}			
 	</script>
 </body>
