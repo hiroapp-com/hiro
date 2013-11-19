@@ -1384,17 +1384,10 @@ var WPCLib = {
             	// Process one or multiple edit responses we get as response from the sync server
                 var len = stack.length;
                 for (var i=0; i<len; i++) {
-                    var edit = stack[i];
-
-                    // clear server-ACK'd edits from client stack
-                    if (this.edits) {
-                        this.edits = $.grep(this.edits, function(x, idx) { return (x.clientversion > edit.serverversion)})
-                    }                    
+                    var edit = stack[i];                   
 
                     if (edit.force === true) {
-                        // resync of document enforced by server, complying
-                        // TODO: test encaps needed?
-                        // *untested*
+                        // Something went wrong on the server, thus we reset everything
                         WPCLib.sys.log("server enforces resync, complying");
                         this.shadow = edit.delta;
                         this.localversion = edit.clientversion;
@@ -1403,45 +1396,78 @@ var WPCLib = {
                         WPCLib.canvas.set_text(edit.delta);                     
                         continue;
                     }
-                    if (edit.clientversion > this.localversion) {
-                        WPCLib.sys.log("TODO: client version mismatch -- resync");
-                        WPCLib.sys.log("cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
-                        continue;
-                    } 
-                    else if (this.remoteversion < edit.serverversion) {
+
+                    if (this.edits) {
+                    	// If we get a normal response from the server and have the last edit in our stack
+                    	// This should be the most common case
+                    	for (i=0,l=this.edits.length;i<l;i++) {
+                    		// Remove the old & ACK'd local edit(s) from the stack
+                    		if (this.edits[i].clientversion <= edit.clientversion) {                      			
+                    			this.edits.pop();
+                    		}	                 			
+                    	} 
+                    	// Apply the delta
+                    	this.patch(edit.delta);                  	
+                    	continue;
+                    } else if (this.remoteversion < edit.serverversion) {
                         WPCLib.sys.log("TODO: server version ahead of client -- resync");
                         continue;
-                    }
-                    else if (this.remoteversion > edit.serverversion) {
+                    } else if (this.remoteversion > edit.serverversion) {
                         //dupe
                         WPCLib.sys.log("dupe received");
                         continue;
-                    }
-                    var diffs;
-                    try {
-                        diffs = this.dmp.diff_fromDelta(this.shadow, edit.delta);
-                        this.remoteversion++;
-                        WPCLib.sys.log("Diffs applied successfully");
-                        WPCLib.sys.log("serverversion(client): " + this.remoteversion);
-                    } catch(ex) {
-                        WPCLib.sys.log("TODO: cannot merge received delta into shadow -- resync");
+                    } if (edit.clientversion > this.localversion) {
+                    	// Edge case: to be researched when this happens
+                        WPCLib.sys.log("TODO: client version mismatch -- resync");
+                        WPCLib.sys.log("cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
                         continue;
-                    }
-                    if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) {
-                        var patch = this.dmp.patch_make(this.shadow, diffs);
-                        this.shadow = this.dmp.patch_apply(patch, this.shadow)[0];
-                        var old = WPCLib.canvas.text;
-                        var merged = this.dmp.patch_apply(patch, old);
-                        if (old != merged[0]) {
-                            WPCLib.sys.log("patches merged, replacing text");
-                            WPCLib.canvas.set_text(merged[0]);                            
-                        }
-                        else{
-                            WPCLib.sys.log("no changes merged, nothing happened");
-                        }
-                    }
+                    }                     
                 }
-            },            
+            }, 
+
+            patch: function(delta) {
+            	// Create and apply a patch from the delta we got
+            	var diffs, patch, merged,
+            		regex = /^=[0-9]+$/,
+            		oldtext = WPCLib.canvas.text,
+            		oldcursor = WPCLib.canvas._getposition();
+
+            	// Iterate remote version
+            	this.remoteversion++;              		
+
+            	// If the delta is just a confirmation, do nothing
+            	if (regex.test(delta)) {
+            		WPCLib.sys.log('No text changed');
+            		return;
+            	} 	
+
+            	// Build diffs from the server delta
+            	try { diffs = this.dmp.diff_fromDelta(this.shadow, delta) } 
+            	catch(e) {
+            		WPCLib.sys.error('Something went wrong during patching:' + JSON.stringify(e));
+            	}	          	
+
+            	// Build patch from diffs
+            	patch = this.dmp.patch_make(this.shadow, diffs);
+
+                if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
+            		// Apply the patch & set new shadow
+                    merged = this.shadow = this.dmp.patch_apply(patch, oldtext)[0];                                                                 
+	                WPCLib.sys.log("Patches successfully merged, replacing text");
+	                // Get current cursor position
+	                var oldcursor = WPCLib.canvas._getposition();
+	                // Set text
+	                WPCLib.canvas.set_text(merged);       
+	                // Reset cursor   
+	                // this.resetcursor(patch,oldcursor);
+	                // console.log(patch);                    
+                }            	
+            },
+
+            resetcursor: function(diff,oldcursor) {
+            	// Move cursor to new position
+            	console.log('moving cursor',patch,oldcursor);
+            },           
 
 			delta: function(o,n) {
 				// Compare two versions and return standard diff format
