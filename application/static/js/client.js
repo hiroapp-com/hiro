@@ -1311,9 +1311,10 @@ var WPCLib = {
 				this.localversion = this.remoteversion = 0;
 			},
 
-			addedit: function(force) {
+			addedit: function(force,reason) {
 				// Add an edit to the edits array
 				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
+				reason = reason || 'Saving...';
 
 				// If we're inflight then wait for callback
 				if (this.inflight) {
@@ -1328,19 +1329,21 @@ var WPCLib = {
 				edit.delta = this.delta(s,c); 
 				edit.clientversion = this.localversion++;
 				edit.serverversion = this.remoteversion;
+				edit.cursor = WPCLib.canvas.caretPosition; 
 
 				// Add edit to edits stack
 				this.edits.push(edit);
 				this.shadow = c;
 
 				// Initiate sending of stack
-				this.sendedits();
+				this.sendedits(reason);
 			},
 
 			inflight: false,
 			inflightcallback: null,
-			sendedits: function() {
+			sendedits: function(reason) {
 				// Post current edits stack to backend and clear stack on success
+				var status = document.getElementById(WPCLib.context.statusId);
                 if (this.edits.length == 0 || this.inflight) {
                 	// if we do not have any edits
                     return;
@@ -1360,6 +1363,7 @@ var WPCLib = {
                 // Set variable to prevent double sending
                 this.inflight = true;
                 WPCLib.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
+                status.innerHTML = reason || 'Saving...';
 
                 // Post editstack to backend
                 $.ajax({
@@ -1373,9 +1377,9 @@ var WPCLib = {
                             return;
                         }
 
+                        // Confirm
+                		status.innerHTML = 'Saved.';                        
                         WPCLib.sys.log('Completed sync request successfully ',JSON.stringify(data.deltas));
-
-
 
                         // process the edit-stack received from the server
                         WPCLib.canvas.sync.process(data.deltas);
@@ -1581,7 +1585,9 @@ var WPCLib = {
             	// Receive and process notification of document update
             	var el = WPCLib.folio.docs.lookup[data.doc_id], 
             		ui = WPCLib.ui,
-            		ownupdate = (data.user == WPCLib.sys.user.email);              	
+            		ownupdate = (data.user == WPCLib.sys.user.email);
+
+            	// Update internal timestamp & last editor values	              	
             	el.updated = WPCLib.util.now();  
                 el.lastEditor =  (ownupdate) ? null : data.user; 
 
@@ -1589,7 +1595,7 @@ var WPCLib = {
                 	// If the update is for the current document
                 	// As we don't have a "send/request blank" yet, we trigger a then blank diff
                 	// TODO: Think of a better way
-                    WPCLib.canvas.sync.addedit(true);
+                    WPCLib.canvas.sync.addedit(true,'Syncing...');
                     if (!ui.windowfocused && !ui.audioblurplayed && !ownupdate) {
                     	// Play sound
                     	ui.playaudio('unseen',0.7);
