@@ -142,6 +142,7 @@ var WPCLib = {
 				WPCLib.canvas.loadlocal(ld);
 			},
 
+			_updatetimeout: null,	
 			update: function() {
 				// update the document list from the active / archive arrays
 				// We use absolute pointers as this can also be called as event handler
@@ -202,9 +203,11 @@ var WPCLib = {
 					bubble.style.display = 'none';
 				}
 
-				// Recursively call this to update the last edit times every minute
-				setTimeout(WPCLib.folio.docs.update,60000);
-			},
+				// Kick off regular updates, only once
+				if (!this._updatetimeout) {
+					this._updatetimeout = setInterval(WPCLib.folio.docs.update,60000);
+				}
+			},		
 
 			updatelookup: function() {
 				// Takes the two document arrays (active/archive) and creates a simple lookup reference object
@@ -3574,7 +3577,7 @@ var WPCLib = {
 				ui.tabnotifyMessages = [];	
 				ui.tabnotifyOn = false;		
 				return;
-			}
+			}		
 
 			// Turn on internal notify value
 			if (!ui.tabnotifyOn) ui.tabnotifyOn = true;
@@ -3586,15 +3589,18 @@ var WPCLib = {
 
 			// Do cycling, find out next message first
 			var pos = pool.indexOf(msg),
-				next = (pos + 2 > pool.length) ? pool[0] : pool[pos+1];
+				nextpos = (pos + 1 == pool.length) ? 0 : ++pos,
+				next = pool[nextpos],
+				updates = WPCLib.folio.docs.unseenupdates;
 			if (pool.length == 1) {
 				// If we only have one message, we cycle title between doc title and message
 				document.title = (document.title == next) ? WPCLib.canvas.title || 'Untitled' : next;
 			} else {
 				// If we have multiple we cycle between them, and change the single Updated to proper title
-				if (next == 'Updated!') next = WPCLib.canvas.title || 'Untitled' + ' updated!';
-				document.title = next;				
+				if (next == 'Updated!') pool[nextpos] = ( WPCLib.canvas.title || 'Untitled' ) + ' updated!';
+				document.title = ( updates != 0) ? '(' + updates + ') ' + next : next;				
 			}
+			
 			// Switch favicon
 			var state = (this.faviconstate == 'normal') ? 'unseen' : 'normal';
 			ui.setfavicon(state);
@@ -3604,14 +3610,43 @@ var WPCLib = {
 				// We send the current msg to the function so it can easily pick the next from the array
 				clearTimeout(ui.tabnotifyTimeout);
 				ui.tabnotifyTimeout = null;				
-				WPCLib.ui.tabnotify(msg);
+				WPCLib.ui.tabnotify(next);
 			},1000);
 
 		},
 
 		setfavicon: function(state) {
 			// Change the favicon to a certain state
+			var h = document.head || document.getElementsByTagName('head')[0],
+				el = document.createElement('link'),
+				old = document.getElementById('dynacon'),
+				src;
 
+			// pick right path & file
+			switch (state) {
+				case 'normal':
+					src = '/static/img/favicon.png';
+					break;
+				case 'unseen':
+					src = '/static/img/faviconred.png';	
+					break;
+			}
+
+			// Build link	
+			el.id = 'dynacon';
+			el.rel = 'shortcut icon';
+			el.href = src;
+
+			// Set internal value
+			this.faviconstate = state;
+
+			// Remove previous favicon from head if we have one
+			if (old) {
+				h.removeChild(old);
+			}
+
+			// Add favicon link to DOM
+			h.appendChild(el);	
 		},
 
 		keyboardshortcut: function(e) {
