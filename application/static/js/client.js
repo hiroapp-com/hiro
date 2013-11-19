@@ -1184,7 +1184,7 @@ var WPCLib = {
 		    return [x, y, content];			    
 		},	
 
-		_setposition: function(pos) {
+		_setposition: function(pos,force) {
 			// Set the cursor to a specified position	
 			if (!pos) pos = (this.caretPosition < this.text.length) ? this.caretPosition : 0;
 
@@ -1198,7 +1198,7 @@ var WPCLib = {
 			var el = document.getElementById(WPCLib.canvas.contentId);	
 
 			// Abort if focus is already on textarea
-			if (el && el.id == document.activeElement.id) return;  			
+			if (!force && (el && el.id == document.activeElement.id)) return;  			
 
     		// Abort if device is mobile (body or landscape) and menu not fully closed yet or text length is larger than visible area   		
     		if ('ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
@@ -1455,18 +1455,33 @@ var WPCLib = {
                     merged = this.shadow = this.dmp.patch_apply(patch, oldtext)[0];                                                                 
 	                WPCLib.sys.log("Patches successfully merged, replacing text");
 	                // Get current cursor position
-	                var oldcursor = WPCLib.canvas._getposition();
+	                oldcursor = WPCLib.canvas._getposition();
 	                // Set text
 	                WPCLib.canvas.set_text(merged);       
 	                // Reset cursor   
-	                // this.resetcursor(patch,oldcursor);
-	                // console.log(patch);                    
+	                this.resetcursor(diffs,oldcursor);                   
                 }            	
             },
 
-            resetcursor: function(diff,oldcursor) {
+            resetcursor: function(diffs,oldcursor) {
             	// Move cursor to new position
-            	console.log('moving cursor',patch,oldcursor);
+            	var newstart = this.dmp.diff_xIndex(diffs,oldcursor[0]),
+            		newend, range;
+
+            	if (oldcursor[0] == oldcursor[1]) {
+            		// We had a single cursor
+            		range = [newstart,newstart];
+            	} else {
+            		// We had a selection, preserving this
+            		newend = this.dmp.diff_xIndex(diffs,oldcursor[1]);
+            		range = [newstart,newend];
+            	}         	
+
+            	// Force-set new position, this also fires resize
+            	WPCLib.canvas._setposition(range,true);
+
+            	// Reset internal caret value to end of selection range (equals cursor if start=end)
+            	WPCLib.canvas.caretPosition = range[1];
             },           
 
 			delta: function(o,n) {
@@ -1522,7 +1537,8 @@ var WPCLib = {
                 this.socket.onmessage = function(data) {
                     WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
                 }                
-                this.socket.onerror = function() {
+                this.socket.onerror = function(data) {
+                	console.log('Socket error: ',data);
                     WPCLib.sys.log("ERROR connecting to channel api");
                 }
                 this.socket.onclose = function() {
