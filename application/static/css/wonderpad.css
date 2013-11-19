@@ -336,12 +336,13 @@ a.wpcbutton:hover {
   opacity: 1;
 }
 
-.menu .documents .document.shared a .sharing .bubble {
+.menu .documents .document.shared a .bubble {
   position: absolute;
   top: 2px;
   right: 0;
   line-height: 6px;
   padding: 5px 2px 0 2px;
+  z-index: 1000;
 }
 
 .menu .documents .document:hover a, .menu .documents .document:hover a small {

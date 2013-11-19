@@ -157,21 +157,41 @@ var WPCLib = {
 				that.updatelookup();
 
 				// Reset all contents and handlers
-				if (docs) docs.innerHTML = '';
-				if (archive) archive.innerHTML = '';
+				if (docs) {
+					var newdocs = docs.cloneNode();
+					newdocs.innerHTML = '';
+				}	
+				if (archive) {
+					var newarchive = archive.cloneNode();					
+					newarchive.innerHTML = '';
+				}	
 				this.unseenupdates = 0;	
 
-				// Render all links
-				for (i=0,l=act.length;i<l;i++) {		
-					that.renderlink(i,'active',act[i]);	
+				// Add all links to new DOM object
+				for (i=0,l=act.length;i<l;i++) {	
+					// Attach links to new active object
+					if (act[i].docid == WPCLib.canvas.docid && newdocs.firstChild) {
+						newdocs.insertBefore(that.renderlink(i,'active',act[i]), newdocs.firstChild);
+					} else { 
+						newdocs.appendChild(that.renderlink(i,'active',act[i])); 
+					};																	
 					// iterate unseen doc counter
 					if (act[i].unseen) this.unseenupdates++;					    
 				}
 				if (arc) {
-					for (i=0,l=arc.length;i<l;i++) {		
-						that.renderlink(i,'archive',arc[i]);						    
+					for (i=0,l=arc.length;i<l;i++) {	
+						// Attach links to new archive object
+						if (arc[i].docid == WPCLib.canvas.docid && newarchive.firstChild) {
+							newarchive.insertBefore(that.renderlink(i,'active',act[i]), newarchive.firstChild);
+						} else { 
+							newarchive.appendChild(that.renderlink(i,'active',act[i])); 
+						};													    
 					}					
-				}
+				}				
+
+				// Switch current DOM object with new one
+				docs.parentNode.replaceChild(newdocs, docs);
+				if (archive) archive.parentNode.replaceChild(newarchive, archive);
 
 				// Show bubble if we have unseen updates
 				if (this.unseenupdates > 0) {
@@ -219,7 +239,7 @@ var WPCLib = {
 					active = (type == 'active') ? true : false;
 
 				var d = document.createElement('div');
-				d.className = 'document shared';
+				d.className = 'document';
 				d.setAttribute('id','doc_'+docid);
 
 				var link = document.createElement('a');
@@ -243,7 +263,7 @@ var WPCLib = {
 				link.appendChild(stats);
 
 				if (data.shared) {
-					// Add sharing icon to document
+					// Add sharing icon to document and change class to shared
 					var s = document.createElement('div');
 					s.className = 'sharing';
 					var tooltip = 'Shared with others';	
@@ -252,11 +272,12 @@ var WPCLib = {
 						var sn = document.createElement('div');
 						sn.className = "bubble red";
 						sn.innerHTML = '*';
-						s.appendChild(sn);
+						link.appendChild(sn);
 						tooltip = tooltip + ', just updated';					
 					}			
 					s.setAttribute('title',tooltip);	
 					link.appendChild(s);
+					d.className = 'document shared';					
 				}
 
 
@@ -277,29 +298,18 @@ var WPCLib = {
 						}								
 						d.appendChild(a);
 					}
-				}
-
-
-				if (active) {
-					// Add folio item to DOM, insert current document in beginning
-					var list = document.getElementById(WPCLib.folio.docs.doclistId);
-					if (docid == WPCLib.canvas.docid && list.firstChild) {
-						list.insertBefore(d, list.firstChild);
-					} else { list.appendChild(d); };		
-				} else {	
-					var list = document.getElementById(WPCLib.folio.docs.archiveId);			
-					if (docid == WPCLib.canvas.docid && list.firstChild) {
-						list.insertBefore(d, list.firstChild);
-					} else { list.appendChild(d); };					
 				}	
 
+				// Attach default events
 				var title = item[i].title || 'Untitled';			
-				WPCLib.folio.docs._events(docid,title,active);				
+				WPCLib.folio.docs._events(d,docid,title,active);	
+
+				return d;			
 			},
 
-			_events: function(docid,title,active) {
+			_events: function(el,docid,title,active) {
 				// Attach events to doc links
-				WPCLib.util.registerEvent(document.getElementById('doc_'+docid).firstChild,'click', function() {
+				WPCLib.util.registerEvent(el.firstChild,'click', function() {
 					WPCLib.folio.docs.moveup(docid,active);
 					WPCLib.canvas.loaddoc(docid, title);											
 				});				
