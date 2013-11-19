@@ -177,7 +177,7 @@ var WPCLib = {
 				if (this.unseenupdates > 0) {
 					bubble.innerHTML = this.unseenupdates;
 					bubble.style.display = 'block';
-					if (seen < this.unseenupdates) WPCLib.ui.playaudio('unseen',0.7);
+					if (seen < this.unseenupdates && !WPCLib.ui.windowfocused) WPCLib.ui.playaudio('unseen',0.7);
 				} else {
 					bubble.style.display = 'none';
 				}
@@ -980,8 +980,7 @@ var WPCLib = {
 			if (el) el.firstChild.firstChild.innerHTML = this.value;			
 
 			// Initiate save & search
-			WPCLib.canvas._settypingtimer();
-
+			WPCLib.canvas._settypingtimer(true);
 		},
 
 		_cleanwelcome: function() {
@@ -1119,17 +1118,17 @@ var WPCLib = {
 			this.wordcount = cw;
 		},
 
-		_settypingtimer: function() {
+		_settypingtimer: function(save) {
 			// set & clear timers for saving and context if user pauses
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {				
 				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
 				WPCLib.canvas._cleartypingtimer();
 
-				// Add edit if user is logged in
+				// Add edit if user is logged in or save locally if not
 				if (WPCLib.canvas.sync.inited) WPCLib.canvas.sync.addedit();
-				// Save doc without text (as this is now done by sync)
-				WPCLib.canvas.savedoc();				
+				// Save rest of doc if flag is set or user not logged in yet
+				if (save || WPCLib.sys.user.level == 0) WPCLib.canvas.savedoc();		
 			},1000);
 		},	
 
