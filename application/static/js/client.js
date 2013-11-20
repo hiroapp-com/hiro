@@ -1221,12 +1221,18 @@ var WPCLib = {
 			if (!force && (el && el.id == document.activeElement.id)) return;  			
 
     		// Abort if device is mobile (body or landscape) and menu not fully closed yet or text length is larger than visible area   		
-    		if ('ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
-    			if (WPCLib.ui.menuCurrPos!=0 || el.value.length > 150) return;   			
+    		if (!force && 'ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
+    			// Switch of for now, crap doesn't work on iOS
+    			if (WPCLib.ui.menuCurrPos!=0 || el.value.length > 150) return;   
+    			setTimeout(function(){
+    				// Retry in this case because of quriky new iOS
+    				WPCLib.canvas._setposition(pos,true);
+    			},500);			
+    			return;
     		};   		
 
     		// Unfocus any existing elements
-    		document.activeElement.blur();
+    		if (document.activeElement && document.activeElement.id != WPCLib.canvas.contentId) document.activeElement.blur();
     		this._resize();
 
     		// Set the position
@@ -1396,16 +1402,12 @@ var WPCLib = {
                     },
                     error: function(data,status,xhr) {
                         WPCLib.sys.log('Completed sync request with error ',[data,status,xhr]);
-                        // Reset inflight variable
-                        WPCLib.canvas.sync.inflight = false; 
-                        if (xhr.status == 400 || xhr.status == 401) {
-                        	// This is most likely either a time out session or token, so we reset the whole sync stack
-                        	WPCLib.canvas.sync.reconnect(null,true);
-                        } else if (WPCLib.canvas.sync.inflightcallback)  {	
-                        	// If we don't have an expired session or more problems we just retry the callback or wait for next input
+                        // Reset inflight variable and try callback
+                        WPCLib.canvas.sync.inflight = false;
+                        if (WPCLib.canvas.sync.inflightcallback) {
                         	WPCLib.canvas.sync.inflightcallback();
                         	WPCLib.canvas.sync.inflightcallback = null;
-                        }		
+                        }
                     }
                 });				
 			},
@@ -1577,7 +1579,11 @@ var WPCLib = {
                 }                
                 this.socket.onerror = function(data) {
                 	console.log('Socket error: ',data);
-                    WPCLib.sys.log("ERROR connecting to channel api");
+                    WPCLib.sys.log("ERROR connecting to channel api");                	
+                    if (data.code == 400 || data.code == 401) {
+                    	// This is most likely either a time out session or token, so we reset the whole sync stack
+                    	WPCLib.canvas.sync.reconnect(null,true);
+                    }            	
                 }
                 this.socket.onclose = function() {
                     WPCLib.sys.log("Channel closed.");
@@ -3965,16 +3971,16 @@ var WPCLib = {
 			// Handler for elements acting as open and close trigger
 			var mp = WPCLib.ui.menuCurrPos;
 
-			// On touch devices we also remove the keyboard
-			if ('ontouchstart' in document.documentElement) {
-				if (document.activeElement.id == WPCLib.canvas.contentId && mp == 0) document.activeElement.blur();
-			}
-
 			if (mp==0) {
+				// Menu is completely to the left, so we open it
+				// On touch devices we also remove the keyboard
+				if ('ontouchstart' in document.documentElement) {
+					if (document.activeElement.id == WPCLib.canvas.contentId) document.activeElement.blur();
+					// Hide sharing dialog on narrow devices
+					if (WPCLib.sharing.visible && (document.body.offsetWidth<480)) WPCLib.sharing.close();
+				}				
 				// Open left folio menu
 				WPCLib.ui.menuSlide(1);
-				// Hide sharing dialog on mobile devices
-				if (WPCLib.sharing.visible && (document.body.offsetWidth<480)) WPCLib.sharing.close();
 			}	
 			if (mp!=0) {
 				// Close left folio menu
