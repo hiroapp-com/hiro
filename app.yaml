@@ -1,7 +1,7 @@
 application: wondapad
 # changes in first two positions force an upgrade popup in clients, third one does not (use for minor updates where old js is fine)
 # Please keep syntax, eg 2-0-0
-version: 1-5-15
+version: 1-5-16
 runtime: python27
 api_version: 1
 threadsafe: true

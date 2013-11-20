@@ -3540,6 +3540,7 @@ var WPCLib = {
 	        e = e || window.event;
 	        var focus = WPCLib.ui.windowfocused = (e.type in eMap) ? eMap[e.type] : ((WPCLib.ui.windowfocused) ? false : true); 
 	        if (focus && WPCLib.util._focuscallback) {
+	        	// If we added a focuscallback, run and clear it if we regain focus
 	        	WPCLib.util._focuscallback();
 	        	WPCLib.util._focuscallback = null;	        	
 	        }   
