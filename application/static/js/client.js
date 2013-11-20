@@ -183,9 +183,9 @@ var WPCLib = {
 					for (i=0,l=arc.length;i<l;i++) {	
 						// Attach links to new archive object
 						if (arc[i].docid == WPCLib.canvas.docid && newarchive.firstChild) {
-							newarchive.insertBefore(that.renderlink(i,'active',act[i]), newarchive.firstChild);
+							newarchive.insertBefore(that.renderlink(i,'archive',arc[i]), newarchive.firstChild);
 						} else { 
-							newarchive.appendChild(that.renderlink(i,'active',act[i])); 
+							newarchive.appendChild(that.renderlink(i,'archive',arc[i])); 
 						};													    
 					}					
 				}				
