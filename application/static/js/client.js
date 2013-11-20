@@ -1580,8 +1580,9 @@ var WPCLib = {
                 this.socket.onerror = function(data) {
                 	console.log('Socket error: ',data);
                     WPCLib.sys.log("ERROR connecting to channel api");                	
-                    if (data.code == 400 || data.code == 401) {
+                    if (!data.code || data.code == 0 || data.code == 400 || data.code == 401) {
                     	// This is most likely either a time out session or token, so we reset the whole sync stack
+                    	// TODO: See if this interferes with the reconnect we fire on close
                     	WPCLib.canvas.sync.reconnect(null,true);
                     }            	
                 }
