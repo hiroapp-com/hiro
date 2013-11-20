@@ -78,16 +78,16 @@ var WPCLib = {
 
 			loaddocs: function(folioonly) {
 				// Get the list of documents from the server
-				var f = WPCLib.folio.docs;	
-				var a = document.getElementById(this.a_counterId);	
+				var f = WPCLib.folio.docs,	
+					a = document.getElementById(this.a_counterId);	
 
 				$.ajax({
 				    dataType: "json",
 				    url: '/docs/?group_by=status',
 				    timeout: 5000,
 				    success: function(data) {
-						// See if we have any docs and load to internal model, otherwise create a new one
-						if (!data.active && !data.archived) {
+						// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
+						if (!data.active && !data.archived) {							
 							f.newdoc();
 							return;
 						}	
@@ -401,7 +401,7 @@ var WPCLib = {
 		                contentType: "application/json; charset=UTF-8",
 		                data: JSON.stringify(file),
 						success: function(data, status, xhr) {
-		                    WPCLib.sys.log("backend issued doc id ", data);
+		                    WPCLib.sys.log("backend issued doc id ", data.doc_id);
 
 							// Set params for local doc
 							WPCLib.canvas.docid = data.doc_id;
@@ -409,13 +409,16 @@ var WPCLib = {
 							// Set folio values
 							doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 							doc.id = 'doc_'+data;
-							WPCLib.folio.docs.active[0].id = data;	
+							WPCLib.folio.docs.active[0].id = data.doc_id;	
 
 							// Start sync
-							WPCLib.canvas.sync.begin(data.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));                    								
+							WPCLib.canvas.sync.begin('',xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));                    								
 
 							// Update the document counter
-							WPCLib.ui.documentcounter();														                    
+							WPCLib.ui.documentcounter();	
+
+							// Update folio
+							WPCLib.folio.docs.update();													                    
 						}
 					});				
 				}
@@ -438,7 +441,7 @@ var WPCLib = {
 		                contentType: "application/json; charset=UTF-8",
 		                data: JSON.stringify(file),
 						success: function(data) {
-		                    WPCLib.sys.log("move local to backend with new id ", data);
+		                    WPCLib.sys.log("move local to backend with new id ", data.doc_id);
 		                    // Delete local item
 		                    localStorage.removeItem('WPCdoc')
 
@@ -446,7 +449,7 @@ var WPCLib = {
 							WPCLib.canvas.docid = data.doc_id;
 
 							// Get updated file list
-							WPCLib.folio.docs.loaddocs();								                    
+							WPCLib.folio.docs.loaddocs(true);							                    
 						}
 					});
 				}
@@ -966,7 +969,7 @@ var WPCLib = {
 		_clicktitletip: function(event) {
 			event.stopPropagation();
 			var title = document.getElementById(WPCLib.canvas.pageTitle);
-			if (title.value==WPCLib.canvas.titleTip) title.value = '';	
+			if (title.value == WPCLib.canvas.titleTip || title.value == WPCLib.canvas.defaultTitle) title.value = '';	
 		},	
 
 		evaluatetitle: function(event) {
@@ -1135,7 +1138,7 @@ var WPCLib = {
 			this.typingTimer = setTimeout(function() {	
 				// Clean up (and remove potential previous editor from docs array)
 				var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];
-				if (doc.lastEditor) doc.lastEditor = null;
+				if (doc && doc.lastEditor) doc.lastEditor = null;
 				WPCLib.canvas._cleartypingtimer();
 
 				// Start off search							
@@ -1391,8 +1394,8 @@ var WPCLib = {
                         	WPCLib.canvas.sync.inflightcallback = null;
                         }		
                     },
-                    error: function(data) {
-                        WPCLib.sys.log('Completed sync request with error ',data);
+                    error: function(data,status,xhr) {
+                        WPCLib.sys.log('Completed sync request with error ',data,status,xhr);
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;  
                         if (WPCLib.canvas.sync.inflightcallback)  {
@@ -1617,12 +1620,18 @@ var WPCLib = {
                 WPCLib.folio.docs.update();                
             },			
 
-			reconnect: function(token) {
+			reconnect: function(token,reset) {
 				// If the connection dropped or the user loaded a new document we start a new one
 				WPCLib.sys.log('Reconnecting to Channel backend with token: ',token);
 
 				// Create new connection
-				this.openchannel(token);			
+				if (!reset) {
+					// Only restart the Channel API with existing token
+					this.openchannel(token);			
+				} else {
+					// Request a new token and the reset the Channel as well
+					this.socket.close();
+				}	
 			}
 		}
 	},	
