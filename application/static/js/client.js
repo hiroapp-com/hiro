@@ -1586,8 +1586,8 @@ var WPCLib = {
                     	WPCLib.canvas.sync.reconnect(null,true);
                     }            	
                 }
-                this.socket.onclose = function() {
-                    WPCLib.sys.log("Channel closed.");
+                this.socket.onclose = function(data) {
+                    WPCLib.sys.log("Channel closed.",data);
 					WPCLib.canvas.sync.channel = WPCLib.canvas.sync.socket = null;
 					WPCLib.canvas.sync.connected = false;	                    
                     WPCLib.canvas.sync.reconnect(WPCLib.canvas.sync.channelToken);                  
@@ -1628,15 +1628,20 @@ var WPCLib = {
 
                 // Display the updates in the DOM
                 WPCLib.folio.docs.update();                
-            },			
+            },		
 
+            reconnecting: false,
 			reconnect: function(token,reset) {
 				// If the connection dropped or the user loaded a new document we start a new one
+				// Prevent multiple reconnects if we do a hard reset
+				if (this.reconnecting) return;
+				this.reconnecting = true;
 				// Create new connection
 				if (!reset) {
 					// Only restart the Channel API with existing token
 					WPCLib.sys.log('Reconnecting to Channel backend with token: ',token);					
-					this.openchannel(token);			
+					this.openchannel(token);
+					this.reconnecting = false;			
 				} else {
 					// Request a new token and the reset the Channel as well
 					var docid = WPCLib.canvas.docid,					
@@ -1656,12 +1661,13 @@ var WPCLib = {
 						success: function(data, textStatus, xhr) {	
 							text = data.text || '';
 							WPCLib.canvas.sync.begin(text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));	
-
 							WPCLib.sys.log('Reconnecting sync with new sessionid & token ',[data,xhr]);
+							WPCLib.canvas.sync.reconnecting = false;
 						},
 						error: function(data) {
 							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs');
-							WPCLib.folio.docs.loaddocs();							
+							WPCLib.folio.docs.loaddocs();	
+							WPCLib.canvas.sync.reconnecting = false;													
 						}
 					});		
 				}	
