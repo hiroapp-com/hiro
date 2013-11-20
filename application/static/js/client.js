@@ -1374,7 +1374,7 @@ var WPCLib = {
                     type: "POST",
                     contentType: "application/json",
                     data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
-                    success: function(data) {
+                    success: function(data,status,xhr) {
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
                             WPCLib.sys.log("TODO: session-id mismatch, what to do?");
                             return;
@@ -1395,14 +1395,17 @@ var WPCLib = {
                         }		
                     },
                     error: function(data,status,xhr) {
-                        WPCLib.sys.log('Completed sync request with error ',data,status,xhr);
+                        WPCLib.sys.log('Completed sync request with error ',[data,status,xhr]);
                         // Reset inflight variable
-                        WPCLib.canvas.sync.inflight = false;  
-                        if (WPCLib.canvas.sync.inflightcallback)  {
+                        WPCLib.canvas.sync.inflight = false; 
+                        if (xhr.status == 400 || xhr.status == 401) {
+                        	// This is most likely either a time out session or token, so we reset the whole sync stack
+                        	WPCLib.canvas.sync.reconnect(null,true);
+                        } else if (WPCLib.canvas.sync.inflightcallback)  {	
+                        	// If we don't have an expired session or more problems we just retry the callback or wait for next input
                         	WPCLib.canvas.sync.inflightcallback();
                         	WPCLib.canvas.sync.inflightcallback = null;
                         }		
-
                     }
                 });				
 			},
@@ -1622,15 +1625,38 @@ var WPCLib = {
 
 			reconnect: function(token,reset) {
 				// If the connection dropped or the user loaded a new document we start a new one
-				WPCLib.sys.log('Reconnecting to Channel backend with token: ',token);
-
 				// Create new connection
 				if (!reset) {
 					// Only restart the Channel API with existing token
+					WPCLib.sys.log('Reconnecting to Channel backend with token: ',token);					
 					this.openchannel(token);			
 				} else {
 					// Request a new token and the reset the Channel as well
-					this.socket.close();
+					var docid = WPCLib.canvas.docid,					
+						url = '/docs/' + docid;
+
+					if (!docid) {
+						// If we don't even have a docid try to recover by reloading all docs
+						WPCLib.sys.error('SEVERE: Tried to reconnect Channel but still no docid, reloading docs');
+						WPCLib.folio.docs.loaddocs();
+						return;
+					}	
+
+					// Request new session id & token from backend
+					$.ajax({
+						dataType: "json",
+						url: url,
+						success: function(data, textStatus, xhr) {	
+							text = data.text || '';
+							WPCLib.canvas.sync.begin(text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));	
+
+							WPCLib.sys.log('Reconnecting sync with new sessionid & token ',[data,xhr]);
+						},
+						error: function(data) {
+							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs');
+							WPCLib.folio.docs.loaddocs();							
+						}
+					});		
 				}	
 			}
 		}
@@ -4039,7 +4065,7 @@ var WPCLib = {
 			step();			
 		},
 
-		menuHide: function() {
+		menuHide: function(event) {
 			var that = WPCLib.ui;			
 			if (that.delayedtimeout) {
 				clearInterval(that.delayedtimeout);
