@@ -415,13 +415,6 @@ def notify_sessions():
     return "ok"
 
 
-@login_required
-def channel_token():
-    sess_id = request.json.get('session_id')
-    if not sess_id:
-        return "required parameter `session_id` missing", 400
-    return  
-
 def test_share(doc_id, email):
     doc = Document.get_by_id(doc_id)
     user = User.query(User.email == email).get()

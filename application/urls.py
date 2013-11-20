@@ -38,7 +38,6 @@ app.add_url_rule('/docs/<doc_id>/perms', 'get_document_perms', view_func=views.g
 app.add_url_rule('/docs/<doc_id>/perms', 'set_document_perms', view_func=views.set_document_perms, methods=['PATCH', 'POST'])
 app.add_url_rule('/docs/<doc_id>/sync', 'sync_doc', view_func=views.sync_doc, methods=['POST'])
 app.add_url_rule('/docs/<doc_id>/_testdo_share/<email>', 'test_share', view_func=views.test_share, methods=['GET'])
-app.add_url_rule('/channeltoken', 'channel_token', view_func=views.channel_token, methods=['POST'])
 
 # textanalysis & semantic search
 app.add_url_rule('/analyze', 'analyze_content', view_func=views.analyze_content, methods=['POST'])
