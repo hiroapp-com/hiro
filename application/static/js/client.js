@@ -247,7 +247,7 @@ var WPCLib = {
 
 				var link = document.createElement('a');
 				link.setAttribute('onclick','return false;');
-				link.setAttribute('href','/docs/'+docid);	
+				link.setAttribute('href','/note/'+docid);	
 
 				var t = document.createElement('span');
 				t.className = 'doctitle';
@@ -787,16 +787,16 @@ var WPCLib = {
 		preload: function() {
 			// If flask already gave us the title and text values
 			this.preloaded = true;
-			this._resize();
+			this._resize();			
 		},
 
 
-		loaddoc: function(docid, title) {
+		loaddoc: function(docid, title, addnohistory) {
 			// Load a specific document to the canvas
 			var mobile = (document.body.offsetWidth<=900),
 				header = {}, token = WPCLib.sharing.token,
 				urlid = window.location.pathname.split('/')[2],
-				url = 'docs/'+docid, that = this;	
+				url = '/docs/'+docid, that = this, previousdoc = WPCLib.canvas.docid;	
 
 			// Final try to save doc, eg when connection wasn't available before				
 			if (!this.saved) this.savedoc();
@@ -852,7 +852,10 @@ var WPCLib = {
 					if (token) WPCLib.sharing.token = '';		
 
 					// Update document list
-					WPCLib.folio.docs.update();						
+					WPCLib.folio.docs.update();		
+
+					// Add object to history
+					if (!addnohistory) WPCLib.util.addhistory(data.id,data.title);				
 
 					// Show data on canvas
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
@@ -913,7 +916,7 @@ var WPCLib = {
 						WPCLib.sharing.accesslist.update();
 					}	
 				},
-				error: function(xhr,textStatus) {
+				error: function(data,textStatus,xhr) {
 					WPCLib.sys.error([xhr]);
 					// Set system status offline if we timed out	
 					if (textStatus == 'timeout') WPCLib.sys.goneoffline();	
@@ -2944,7 +2947,14 @@ var WPCLib = {
 			// Kick off tab or window active / background check
 			WPCLib.util.windowfocus();			
 
-			// Prevent browser window elasticity onotuch devices
+			// Add cross browser history event listener to enable back button
+			if (window.onpopstate) {
+				window.onpopstate = function(e) { WPCLib.util.goback(e); };			
+			} else {
+				WPCLib.util.registerEvent(window,'popstate', function(e) { WPCLib.util.goback(e); });			
+			}			
+
+			// Prevent browser window elasticity ontouch devices
 			if ('ontouchstart' in document.documentElement) {
 				document.addEventListener('touchmove',function(e) {e.preventDefault();},false);			
 			}
@@ -3468,7 +3478,6 @@ var WPCLib = {
 						logio.className = 'logio logout';
 						logio.getElementsByTagName('a')[0].title = 'Logout';
 						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
-						WPCLib.canvas.preloaded = false;
 
 						// Init sync capabilities
 						if (!WPCLib.canvas.sync.inited) WPCLib.canvas.sync.init();	
@@ -3621,6 +3630,40 @@ var WPCLib = {
 
 	// Generic utilities
 	util: {
+
+		previousdoc: '',
+		addhistory: function(docid,title) {
+			// Adds a state to the History API stack
+			var oldid = this.previousdoc,
+				url = '/note/'+docid, payload = {};					
+
+			// Abort if we try to load the same document twice
+			if (docid == oldid) return;
+
+			// Set previous on first load
+			if (!oldid) this.previousdoc = docid;
+
+			// Build payload
+			payload.id = docid;
+			if (title) payload.title = title;
+
+			// Add to browser stack	
+			if (history && 'pushState' in history) {
+				console.log('adding history object');
+				history.pushState(JSON.stringify(payload), null, url);
+				this.previousdoc = docid;
+			}	
+		},
+
+		goback: function(event) {
+			// Triggered if user presses back button (popstate event)
+			var data = JSON.parse(event.state);
+
+			// Test if we have an id & supported history in the first place
+			if (history && 'pushState' in history && data && data.id) {
+				WPCLib.canvas.loaddoc(data.id,data.title,true);
+			}	
+		},
 
 		getStyle: function(el,styleProp) {
 			if (el.currentStyle)
