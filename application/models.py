@@ -11,13 +11,14 @@ from datetime import datetime
 import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
-from google.appengine.api import memcache, mail, channel
+from google.appengine.api import memcache, channel
 from flask.ext.login import UserMixin, AnonymousUser, current_user
 from flask import session
 from textmodels.textrank import get_top_keywords_list
 from settings import STRIPE_SECRET_KEY
 
 from .utils import get_sorted_chunks
+from .email_templates import send_mail_tpl
 
 from diff_match_patch import diff_match_patch 
 
@@ -290,10 +291,7 @@ class Document(ndb.Model):
         if not user:
             token = SharingToken.create(email, self.key)
             print "TTTOOOOKEEENN >>", token, "<<"
-            mail.send_mail(sender="Team Hiro <hello@hiroapp.com>", 
-                           to=email,
-                           subject="New Note",
-                           body="Hi,\n\n {sender} shared a note with you on Hiro. \nJust visit {url}#{token} to access this document.\n\nPlease let us know if there is anything else we can do,\n\nkeep capturing the good stuff.\n\nThe Hiro Team".format(sender=current_user.email, url=base_url, token=token))
+            send_mail_tpl('invite', email, dict(sender=current_user.email or "foo", url=base_url, token=token))
             return "ok", 200
 
         if user.key == self.owner:
