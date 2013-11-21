@@ -795,8 +795,7 @@ var WPCLib = {
 			// Load a specific document to the canvas
 			var mobile = (document.body.offsetWidth<=900),
 				header = {}, token = WPCLib.sharing.token,
-				urlid = window.location.pathname.split('/')[2],
-				url = '/docs/'+docid, that = this, previousdoc = WPCLib.canvas.docid;	
+				urlid = window.location.pathname.split('/')[2], that = this;		
 
 			// Final try to save doc, eg when connection wasn't available before				
 			if (!this.saved) this.savedoc();
@@ -808,7 +807,7 @@ var WPCLib = {
 				// Override document id with url id if Flask did set preloaded flag
 				// Intentionally works only on /note/<note-id> URLs
 				docid = urlid || docid;
-			}
+			}		
 
 			// If we have an active accesstoken, we override all previous setting
 			if (token) {
@@ -830,7 +829,7 @@ var WPCLib = {
 			// Load data onto canvas
 			$.ajax({
 				dataType: "json",
-				url: url,
+				url: '/docs/'+docid,
 				header: header,
 				success: function(data, textStatus, xhr) {
 					WPCLib.canvas.docid = data.id;
@@ -1906,8 +1905,7 @@ var WPCLib = {
                     type: "POST",
                     contentType: "application/json; charset=UTF-8",
                     data: JSON.stringify(payload),
-                    success: function(data) {  
-                    	console.log('success',data);                  	
+                    success: function(data) {                   	
                     	input.value = '';
                     	input.focus();
                     	button.innerHTML = 'Invite next';
@@ -2027,6 +2025,9 @@ var WPCLib = {
 						return;
 					},500);
 				}
+
+				// Do not do this on localdoc
+				if (WPCLib.sys.user.level == 0) return;
 
 				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
 				var url = '/docs/' +  WPCLib.canvas.docid + '/collaborators';
@@ -2495,6 +2496,9 @@ var WPCLib = {
 				    dataType: "jsonp",
 				    success: function(data) {
 				    	if (!WPCLib.context.overquota) WPCLib.context.rendersynonyms(data,ss);				    	
+				    },
+				    error: function(data) {
+				    	// Prevent error tracking by Sentry Raven
 				    }
 				});
 				// Set the range of the documents to be replace to selection, or full document if it's only one word
@@ -3649,7 +3653,6 @@ var WPCLib = {
 
 			// Add to browser stack	
 			if (history && 'pushState' in history) {
-				console.log('adding history object');
 				history.pushState(JSON.stringify(payload), null, url);
 				this.previousdoc = docid;
 			}	
