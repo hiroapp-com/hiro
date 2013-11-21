@@ -295,6 +295,7 @@ class Document(ndb.Model):
     def api_dict(self):
         return {
                 "id": self.key.id(),
+                "owner": str(self.owner.id()),
                 "status": self.status,
                 "title": self.title,
                 "text": self.text,
