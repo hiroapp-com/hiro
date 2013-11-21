@@ -252,7 +252,10 @@ class Document(ndb.Model):
     blacklist = ndb.StructuredProperty(Link, repeated=True)
     cached_ser = ndb.StructuredProperty(Link, repeated=True)
 
+    collaborators = property(lambda s: s.shared_with + [s.owner])
+
     def allow_access(self, user):
+
         return (user.key == self.owner) or (user.key in self.shared_with)
 
     def analyze(self):

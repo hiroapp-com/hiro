@@ -324,7 +324,7 @@ def get_document(doc_id):
 
 
 @login_required
-def share(doc_id):
+def doc_collaborators(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
@@ -332,9 +332,10 @@ def share(doc_id):
         return "access denied, sorry.", 403
 
     if request.method == 'GET':
-        return jsonify({"collaborators": [u.get().email for u in doc.shared_with],
-                        "invited": [st.email for st in SharingToken.query(ancestor=doc.key)]
-                       })
+        collabs = [{"id": str(key.id()), "pending": False, "email": key.get().email} for key in doc.shared_with]
+        collabs += [{"id": None, "pending": True, "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
+        return jsonify(collaborators=collabs)
+
     elif request.method == 'POST':
         if not request.json:
             return 'payload missing', 400
