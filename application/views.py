@@ -217,6 +217,12 @@ def change_plan():
 def home():
     return render_template('index.html')
 
+def note(doc_id):
+    doc = Document.get_by_id(doc_id)
+    if doc and not doc.allow_access(current_user):
+        doc = None
+    return render_template('index.html', doc=doc)
+
 def landing():
     return render_template('landing.html')
 
