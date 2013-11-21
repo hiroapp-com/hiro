@@ -217,6 +217,12 @@ def change_plan():
 def home():
     return render_template('index.html')
 
+def note(doc_id):
+    doc = Document.get_by_id(doc_id)
+    if doc and not doc.allow_access(current_user):
+        doc = None
+    return render_template('index.html', doc=doc)
+
 def landing():
     return render_template('landing.html')
 
@@ -314,7 +320,7 @@ def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
-    elif not doc.allow_access(current_user):
+    elif not doc.allow_access(current_user, request.headers.get("accesstoken")):
         return "access denied, sorry.", 403
 
     resp = jsonify(doc.api_dict())
@@ -332,21 +338,21 @@ def doc_collaborators(doc_id):
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
 
-    if request.method == 'GET':
-        collabs = [{"id": str(doc.owner.id()), "perms": "owner", "email": doc.owner.get().email}]
-        collabs += [{"id": str(key.id()), "perms": "edit", "email": key.get().email} for key in doc.shared_with]
-        collabs += [{"id": None, "perms": "invited", "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
-        return Response(json.dumps(collabs, indent=4), mimetype="application/json")
-
-    elif request.method == 'POST':
+    if request.method == 'POST':
         if not request.json:
             return 'payload missing', 400
         email = request.json.get('email')
         if not email:
             return 'Required parameter `email` missin in payload', 400
+        if request.json.get('_delete'):
+            doc.uninvite(email)
+            return "ok"
         return doc.invite(email)
-    else:
-        return "", 400
+    else: # GET 
+        collabs = [{"id": str(doc.owner.id()), "perms": "owner", "email": doc.owner.get().email}]
+        collabs += [{"id": str(key.id()), "perms": "edit", "email": key.get().email} for key in doc.shared_with]
+        collabs += [{"id": None, "perms": "invited", "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
+        return Response(json.dumps(collabs, indent=4), mimetype="application/json")
 
 
 def analyze_content():

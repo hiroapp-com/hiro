@@ -86,12 +86,19 @@
 				</div>	
 			</div>						
 			<div class="page" id="page">	
+                {% if doc %}
+				<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
+				<div class="content" id ="content">
+					<textarea placeholder="Just write" id="pageContent">{{ doc.text or '' }}</textarea>
+				</div>
+                {% else %}
 				{% with doc = current_user.latest_doc %}										
 				<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
 				<div class="content" id ="content">
 					<textarea placeholder="Just write" id="pageContent">{{ doc.text or '' }}</textarea>
 				</div>
 				{% endwith %}
+                {% endif %}
 			</div>	
 			<div id="nicequote" style="display:none;">
 				<span class="quote">“One day I will find the right words, and they will be simple.”</span>
