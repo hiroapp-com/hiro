@@ -823,11 +823,15 @@ a.wpcbutton:hover {
   margin: 10px 0 10px 0;
 }
 
+#s_actions input.error {
+  border-color: rgba(202, 6, 6, 1);
+}
+
 #s_actions input.ninja {
   display: none;
 }
 
-#s_actions .error {
+#s_actions div.error {
   float: right;
   display: inline-block;
   font-size: 14px;

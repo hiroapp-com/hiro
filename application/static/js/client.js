@@ -896,6 +896,9 @@ var WPCLib = {
 					}
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';	
 					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
+
+					// Fetch collaborator list if we have collaborators
+					if (data.shared_with.length > 0) WPCLib.sharing.accesslist.fetch();					
 				},
 				error: function(xhr,textStatus) {
 					WPCLib.sys.error([xhr]);
@@ -1203,6 +1206,7 @@ var WPCLib = {
 			// when text is clicked
 			var sel = WPCLib.canvas._getposition();
 			if (sel[0] != sel[1]) WPCLib.context.search(WPCLib.canvas.title,sel[2],true);
+			WPCLib.ui.clearactions(null,true);
 		},
 
 		_getposition: function() {
@@ -1386,7 +1390,7 @@ var WPCLib = {
 			inflightcallback: null,
 			sendedits: function(reason) {
 				// Post current edits stack to backend and clear stack on success
-				var statusbar = document.getElementById(WPCLib.context.statusId).innerHTML;
+				var statusbar = document.getElementById(WPCLib.context.statusId);
                 if (this.edits.length == 0 || this.inflight) {
                 	// if we do not have any edits
                     return;
@@ -1406,7 +1410,7 @@ var WPCLib = {
                 // Set variable to prevent double sending
                 this.inflight = true;
                 WPCLib.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
-                statusbar = reason || 'Saving...';
+                statusbar.innerHTML = reason || 'Saving...';
 
                 // Post editstack to backend
                 $.ajax({
@@ -1421,7 +1425,7 @@ var WPCLib = {
                         }
 
                         // Confirm
-                		statusbar = 'Saved.';                        
+                		statusbar.innerHTML = 'Saved.';                        
                         WPCLib.sys.log('Completed sync request successfully ',[JSON.stringify(data.deltas)]);
 
                         // process the edit-stack received from the server
@@ -1717,12 +1721,25 @@ var WPCLib = {
 
 		init: function() {
 			// Bind basic events
+			WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('input')[0],'keydown', function(){
+				this.className = 'hiro';
+				this.nextSibling.innerHTML = '';
+			});			
 			if ('ontouchstart' in document.documentElement) {
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'touchstart', WPCLib.sharing.open);
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'touchstart', function(event){
+					if (WPCLib.sharing.visible) return;
+					WPCLib.sharing.open(event,true);
+				});
 				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'touchstart', WPCLib.sharing.close);				
 				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'touchstart', WPCLib.sharing.submit);				
 			} else {
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'mouseover', WPCLib.sharing.open);
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'mouseover', function(event) {
+					if (document.body.offsetWidth>480) WPCLib.sharing.open(event);
+				});
+				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'click', function(event){				
+					if (WPCLib.sharing.visible) return;
+					WPCLib.sharing.open(event,true);
+				});
 				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'click', WPCLib.sharing.close);			
 				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'click', WPCLib.sharing.submit);
 				// Register event that cancels the delayed opening of the options
@@ -1734,31 +1751,37 @@ var WPCLib = {
 				    }		
 				});	
 			}						
-		},
+		},		
 
-		open: function(event) {
+		open: function(event,forceopen) {
 			// Open the sharing snippet with a delayed timeout		
 			var that = WPCLib.sharing;			
 			if (event) {
 				event.preventDefault();
 				event.stopPropagation();
 			}	
-			if (that.visible) return;
 
-			// Kick off timeout 
-			if (!that.openTimeout) {
+			// See if this or any other action popins are already visible
+			if (WPCLib.ui.actionsvisible && !forceopen) return;
+
+			// Get the latest list of people who have access
+			that.accesslist.fetch();			
+
+
+			if (forceopen) {
+				WPCLib.ui.clearactions();
+			} else if (!that.openTimeout) {
+				// Kick off timeout 				
 				// Add a slight delay
 				that.openTimeout = setTimeout(function(){								
 					var that = WPCLib.sharing;
 					that.open();										
 					that.openTimeout = null;
 					clearTimeout(that.openTimeout);															
-				},150);
-				// Get the latest list of people who have access
-				that.accesslist.fetch();				
+				},150);				
 				return;
 			}
-			that.visible = true;				
+			that.visible = WPCLib.ui.actionsvisible = true;				
 			var widget = document.getElementById('s_actions').parentNode;
 			widget.style.display = 'block';
 
@@ -1770,7 +1793,7 @@ var WPCLib = {
 		close: function(event) {
 			// Close the sharing widget
 			var that = WPCLib.sharing;
-			// Check if we have a timeout and remove & abort if so 
+			// Check if we have a timeout and remove & abort if so 			
 			if (!that.visible) return;
 			if (event) {
 				event.preventDefault();
@@ -1778,7 +1801,7 @@ var WPCLib = {
 			}				
 			
 			var widget = document.getElementById('s_actions').parentNode;
-			that.visible = false;
+			that.visible = WPCLib.ui.actionsvisible = false;
 			widget.style.display = 'none';
 			WPCLib.canvas._setposition();			
 		},
@@ -1801,7 +1824,7 @@ var WPCLib = {
 			if (!regex.test(email.value)) {
 				email.focus();
 				email.nextSibling.innerHTML = "Invalid address";
-				email.style.border = '1px solid rgba(209, 11, 11, 0.7)';
+				email.className = 'hiro error';
 				button.innerHTML = "Try again";
 				return;
 			}
@@ -1837,8 +1860,8 @@ var WPCLib = {
 
 			add: function(email) {
 				// Add a user to the current editor list
-				var url = '/docs/' + WPCLib.canvas.docid + '/perms',
-					payload = {'email': email },
+				var url = '/docs/' + WPCLib.canvas.docid + '/share',
+					payload = {'email': email.trim() },
 					el = document.getElementById('s_actions'),
 					input = el.getElementsByTagName('input')[0],
 					button = el.getElementsByTagName('a')[0],
@@ -1857,6 +1880,7 @@ var WPCLib = {
 				d.className = 'user';
 				d.innerHTML = 'Inviting ' + email.split('@')[0].substring(0,18) + '...';
 				this.el.insertBefore(d,this.el.firstChild);
+				input.nextSibling.innerHTML = '';
 
                 $.ajax({
                 	// Post to backend
@@ -1864,17 +1888,22 @@ var WPCLib = {
                     type: "POST",
                     contentType: "application/json; charset=UTF-8",
                     data: JSON.stringify(payload),
-                    success: function(data) {                    	
+                    success: function(data) {  
+                    	console.log('success',data);                  	
                     	input.value = '';
                     	input.focus();
                     	button.innerHTML = 'Invite next';
                     	// that.fetch();
                     },
                     error: function(data) {
+                    	// Show error 
+                    	input.nextSibling.innerHTML = data.responseText; 
+						input.className = 'hiro error';                    	                     	
                     	input.focus();           
                     	button.innerHTML = 'Invite';
                     	WPCLib.sys.error(data);
-                    	input.nextSibling.innerHTML('')
+                    	// Remove inviting placeholder
+                    	d.parentNode.removeChild(d);
                     }
                 });				
 			},
@@ -1949,6 +1978,7 @@ var WPCLib = {
 			},
 
 			fetch: function() {
+				// Fetch the list of users with access
 				if (WPCLib.sys.production) return;
 
 				// Retry later if we don't have a docid yet
@@ -1960,13 +1990,14 @@ var WPCLib = {
 				}
 
 				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
-				var url = '/docs/' +  WPCLib.canvas.docid + '/perms';
+				var url = '/docs/' +  WPCLib.canvas.docid + '/share';
 				$.ajax({
                     url: url,
                     contentType: "json",
                     success: function(data) {
                     	// Set internal values and update visual display
                     	var that = WPCLib.sharing.accesslist;
+                    	console.log(data);
                     	that.users = data.users;
                         that.update();
                     }
@@ -1981,8 +2012,8 @@ var WPCLib = {
 		id: 'publish',
 		actionsId: 'p_actions',
 		initTimeout: null,
-		listvisible: false,
-		showListTimeout: null,
+		visible: false,
+		openTimeout: null,
 		actions: {
 			mail: {
 				id: 1,
@@ -2044,11 +2075,29 @@ var WPCLib = {
 			// if we hover over the publish icon, the event handlers are attached via canvas init
 			// show list of actions after n msec
 			var icon = document.getElementById(this.id).getElementsByTagName('div')[0];
+
+
+			// Bind basic events		
 			if ('ontouchstart' in document.documentElement) {
-				WPCLib.util.registerEvent(icon,'touchstart',WPCLib.publish.list);
+				WPCLib.util.registerEvent(icon,'touchstart',function(event){
+					if (WPCLib.publish.visible) { WPCLib.publish.close(); return; } else { WPCLib.publish.open(event,true); }
+				});				
 			} else {
-				WPCLib.util.registerEvent(icon,'mouseover',WPCLib.publish.list);				
+				WPCLib.util.registerEvent(icon,'mouseover',WPCLib.publish.open);
+				WPCLib.util.registerEvent(icon,'click',function(event){
+					if (WPCLib.publish.visible) { WPCLib.publish.close(); return; } else { WPCLib.publish.open(event,true); }
+				});									
+				// Register event that cancels the delayed opening of the options
+				WPCLib.util.registerEvent(icon,'mouseout', function() {
+					var that = WPCLib.publish;
+				    if (that.openTimeout && !that.visible) {
+					    clearTimeout(that.openTimeout);
+						that.openTimeout = null;
+				    }		
+				});	
 			}
+
+
 		},
 
 		list: function() {
@@ -2103,8 +2152,55 @@ var WPCLib = {
 			}
 		},
 
-		show: function() {
-			if ((event.relatedTarget || event.toElement) == this.parentNode) clearinfo();
+		open: function(event,forceopen) {
+			// Show the publish dialog
+			// Open the sharing snippet with a delayed timeout		
+			var that = WPCLib.publish;			
+			if (event) {
+				event.preventDefault();
+				event.stopPropagation();
+			}			
+
+			// See if this or any other action popins are already visible
+			if (WPCLib.ui.actionsvisible && !forceopen) return;
+
+			// List services
+			that.list();		
+
+			// Close other actions
+			if (forceopen) {
+				WPCLib.ui.clearactions();
+			} else if (!that.openTimeout) {			
+				// Kick off timeout 
+				// Add a slight delay
+				that.openTimeout = setTimeout(function(){								
+					var that = WPCLib.publish;
+					that.open();										
+					that.openTimeout = null;
+					clearTimeout(that.openTimeout);															
+				},150);
+				// Get the latest list of people who have access				
+				return;
+			}
+			that.visible = WPCLib.ui.actionsvisible = true;				
+			var widget = document.getElementById('p_actions').parentNode;
+			widget.style.display = 'block';	
+		},
+
+		close: function(event) {
+			// Hide the publish dialog
+			var that = WPCLib.publish;
+			// Check if we have a timeout and remove & abort if so 
+			if (!that.visible) return;
+			if (event) {
+				event.preventDefault();
+				event.stopPropagation();
+			}				
+			
+			var widget = document.getElementById('p_actions').parentNode;
+			that.visible = WPCLib.ui.actionsvisible = false;
+			widget.style.display = 'none';
+			WPCLib.canvas._setposition();			
 		},
 
 		execute: function(event,type) {
@@ -3661,6 +3757,7 @@ var WPCLib = {
 		audioblurplayed: false,
 		wastebinid: 'wastebin',
 		faviconstate: 'normal',
+		actionsvisible: false,
 		
 		playaudio: function(filename, volume) {
 			// Plays a sound in /static/filename
@@ -3794,6 +3891,12 @@ var WPCLib = {
 
 		    // Close dialog on escape
 		    if (k == 27 && that.dialogOpen) that.hideDialog();
+		},
+
+		clearactions: function(event,textclick) {
+			// Hides the action tabs (next to tile, right side) if any are open						
+			if (WPCLib.sharing.visible) WPCLib.sharing.close();
+			if (WPCLib.publish.visible && !textclick) WPCLib.publish.close();			
 		},
 
 		loadDialog: function(url) {
@@ -4038,7 +4141,7 @@ var WPCLib = {
 				if ('ontouchstart' in document.documentElement) {
 					if (document.activeElement.id == WPCLib.canvas.contentId) document.activeElement.blur();
 					// Hide sharing dialog on narrow devices
-					if (WPCLib.sharing.visible && (document.body.offsetWidth<480)) WPCLib.sharing.close();
+					if (document.body.offsetWidth<480) WPCLib.ui.clearactions();
 				}				
 				// Open left folio menu
 				WPCLib.ui.menuSlide(1);
