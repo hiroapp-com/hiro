@@ -32,7 +32,7 @@ from google.appengine.ext import ndb
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
 from application import app
 
-from .models import User, Document, Link, PasswordToken, EditSession
+from .models import User, Document, Link, PasswordToken, EditSession, SharingToken
 from .forms import LoginForm, SignupForm
 from .decorators import limit_free_plans, root_required
 
@@ -324,32 +324,27 @@ def get_document(doc_id):
 
 
 @login_required
-def get_document_perms(doc_id):
-    # Dummy endpoint, please refactor at will
-    # TBD/TODO: Do we add last_edit, last_access (-1 for never) or boolean accessed 
-    perms = defaultdict(list)
-    perms['users'].append({
-        "id": current_user.token,
-        "email": current_user.email,
-        "current_user": True,
-        "last_edit": 1383616490
-        })
-    perms['users'].append({
-        "id": "hajskhfakjshfkjsdhfkjgsdgf",
-        "email": "foo@bar.com",
-        "owner": True,
-        "last_edit": 1383416490
-        })
-    perms['users'].append({
-         "id": "jieiwruoiquroiuqweioruqwo",
-        "email": "somelongeraddress@example.com",
-        "last_edit": -1       
-        })        
-    return jsonify(perms), 200  
+def share(doc_id):
+    doc = Document.get_by_id(doc_id)
+    if not doc:
+        return "document not found", 404
+    elif not doc.allow_access(current_user):
+        return "access denied, sorry.", 403
 
-@login_required
-def set_document_perms(doc_id):
-    return 'foo', 200      
+    if request.method == 'GET':
+        return jsonify({"collaborators": [u.get().email for u in doc.shared_with],
+                        "invited": [st.email for st in SharingToken.query(ancestor=doc.key)]
+                       })
+    elif request.method == 'POST':
+        if not request.json:
+            return 'payload missing', 400
+        email = request.json.get('email')
+        if not email:
+            return 'Required parameter `email` missin in payload', 400
+        return doc.invite(email)
+    else:
+        return "", 400
+
 
 def analyze_content():
     tmpdoc = Document(text=request.form.get('content', ''))
@@ -415,12 +410,6 @@ def notify_sessions():
     return "ok"
 
 
-@login_required
-def channel_token():
-    sess_id = request.json.get('session_id')
-    if not sess_id:
-        return "required parameter `session_id` missing", 400
-    return  
 
 def test_share(doc_id, email):
     doc = Document.get_by_id(doc_id)
