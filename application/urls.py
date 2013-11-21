@@ -34,7 +34,7 @@ app.add_url_rule('/docs/', 'list_documents', view_func=views.list_documents, met
 app.add_url_rule('/docs/', 'create_document', view_func=views.create_document, methods=['POST'])
 app.add_url_rule('/docs/<doc_id>', 'get_document', view_func=views.get_document, methods=['GET'])
 app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_document, methods=['PATCH', 'POST'])
-app.add_url_rule('/docs/<doc_id>/share', 'share', view_func=views.share, methods=['GET', 'POST'])
+app.add_url_rule('/docs/<doc_id>/collaborators', 'collaborators', view_func=views.doc_collaborators, methods=['GET', 'POST'])
 app.add_url_rule('/docs/<doc_id>/sync', 'sync_doc', view_func=views.sync_doc, methods=['POST'])
 app.add_url_rule('/docs/<doc_id>/_testdo_share/<email>', 'test_share', view_func=views.test_share, methods=['GET'])
 

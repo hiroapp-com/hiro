@@ -14,13 +14,14 @@ import time
 import string
 import random
 import uuid
+import json
 
 from hashlib import sha512
 from collections import defaultdict
 from datetime import datetime
 
 
-from flask import request, session, render_template, redirect, url_for, jsonify
+from flask import request, session, render_template, redirect, url_for, jsonify, Response
 from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
@@ -324,7 +325,7 @@ def get_document(doc_id):
 
 
 @login_required
-def share(doc_id):
+def doc_collaborators(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
@@ -332,9 +333,10 @@ def share(doc_id):
         return "access denied, sorry.", 403
 
     if request.method == 'GET':
-        return jsonify({"collaborators": [u.get().email for u in doc.shared_with],
-                        "invited": [st.email for st in SharingToken.query(ancestor=doc.key)]
-                       })
+        collabs = [{"id": str(key.id()), "pending": False, "email": key.get().email} for key in doc.shared_with]
+        collabs += [{"id": None, "pending": True, "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
+        return Response(json.dumps(collabs, indent=4), mimetype="application/json")
+
     elif request.method == 'POST':
         if not request.json:
             return 'payload missing', 400
