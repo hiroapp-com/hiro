@@ -434,22 +434,26 @@ var WPCLib = {
 					// Strip id from file to get new one from backend
 					var file = WPCLib.canvas.builddoc();					
 					file.id = '';
+					file.text = WPCLib.canvas.text;
 					// Get doc id from server
 					$.ajax({
 						url: "/docs/",
 		                type: "POST",
 		                contentType: "application/json; charset=UTF-8",
 		                data: JSON.stringify(file),
-						success: function(data) {
-		                    WPCLib.sys.log("move local to backend with new id ", data.doc_id);
+						success: function(data, status, xhr) {
+		                    WPCLib.sys.log("move local to backend with new id ", data);
 		                    // Delete local item
 		                    localStorage.removeItem('WPCdoc')
+
+							// Start sync
+							WPCLib.canvas.sync.begin(WPCLib.canvas.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));   		                    
 
 							// Set new id for former local doc
 							WPCLib.canvas.docid = data.doc_id;
 
 							// Get updated file list														
-							WPCLib.folio.docs.loaddocs(true);	
+							WPCLib.folio.docs.loaddocs(true);                 																
 
 							// Edge Case: User had a document moved to the backend and also accesstoken waiting
 							if (WPCLib.sharing.token) {
