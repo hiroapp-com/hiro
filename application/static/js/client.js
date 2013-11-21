@@ -1621,6 +1621,9 @@ var WPCLib = {
 					if (!this.channelToken) WPCLib.sys.error('Tried to connect but no channel token available');
 				}
 
+				// Do not try to create multiple sockets
+				if (this.socket) return;
+
 				// Create new instance of channel object
                 this.channel = new goog.appengine.Channel(token),
                 this.socket = this.channel.open();
