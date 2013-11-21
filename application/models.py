@@ -215,12 +215,12 @@ class Link(ndb.Model):
                 }
      
 class SharingToken(ndb.Model):
+    #hash of token is stored as the key
     created_at = ndb.DateTimeProperty(auto_now_add=True)
     email = ndb.StringProperty()
     use_once = ndb.BooleanProperty()
 
-    doc = lambda(s): s.key.parent().get()
-    #token = ndb.StringProperty()
+    doc = property(lambda(s): s.key.parent().get())
 
 
     @classmethod
@@ -254,9 +254,20 @@ class Document(ndb.Model):
 
     collaborators = property(lambda s: s.shared_with + [s.owner])
 
-    def allow_access(self, user):
+    def allow_access(self, user, token=None):
+        if user.key == self.owner:
+            return True
+        if user.key in self.shared_with:
+            return True
+        st = SharingToken.get_by_id(sha512(token).hexdigest(), parent=self.key) if token else None
+        if st:
+            self.shared_with.append(user.key)
+            self.put()
+            if st.use_once:
+                st.key.delete()
+            return True
+        return False
 
-        return (user.key == self.owner) or (user.key in self.shared_with)
 
     def analyze(self):
         data = (self.title or '') + (self.text or '')
@@ -268,12 +279,17 @@ class Document(ndb.Model):
                 'proper_chunks':proper_noun_chunks
                 }
 
+    def uninvite(self, email):
+        #TODO drop editors from self.shared_with if requestor is owner
+        ndb.delete_multi(list(SharingToken.query(SharingToken.email == email, ancestor=self.key).iter(keys_only=True)))
+
     def invite(self, email):
         if SharingToken.query(SharingToken.email == email, ancestor=self.key).get():
             return "invite pending", 302
         user = User.query(User.email == email).get()
         if not user:
             token = SharingToken.create(email, self.key)
+            print "TTTOOOOKEEENN >>", token, "<<"
             mail.send_mail(sender="Team Hiro <hello@hiroapp.com>", 
                            to=email,
                            subject="New Note",
@@ -281,9 +297,9 @@ class Document(ndb.Model):
             return "ok", 200
 
         if user.key == self.owner:
-            return "it's your document, stupid!", 302
+            return "it's all yours", 302
         elif user.key  in self.shared_with:
-            return "already connected to him", 302
+            return "already a member of this clique", 302
         else:
             self.shared_with.append(user.key)
             self.put()
