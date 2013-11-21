@@ -256,6 +256,8 @@ class Document(ndb.Model):
     collaborators = property(lambda s: s.shared_with + [s.owner])
 
     def allow_access(self, user, token=None):
+        if not user.is_authenticated():
+            return False
         if user.key == self.owner:
             return True
         if user.key in self.shared_with:
