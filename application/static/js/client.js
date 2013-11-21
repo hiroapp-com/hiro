@@ -842,7 +842,7 @@ var WPCLib = {
 					}		
 
 					// Reset accesstoken if we had one
-					if (token) WPCLib.sharing.token = '';			
+					if (token) WPCLib.sharing.token = '';		
 
 					// Update document list
 					WPCLib.folio.docs.update();						
@@ -897,8 +897,14 @@ var WPCLib = {
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';	
 					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 
+
 					// Fetch collaborator list if we have collaborators
-					if (data.shared_with.length > 0) WPCLib.sharing.accesslist.fetch();					
+					if (data.shared_with.length > 0) {
+						WPCLib.sharing.accesslist.fetch();
+					} else {
+						WPCLib.sharing.accesslist.users = [];
+						WPCLib.sharing.accesslist.update();
+					}	
 				},
 				error: function(xhr,textStatus) {
 					WPCLib.sys.error([xhr]);
@@ -1895,7 +1901,7 @@ var WPCLib = {
                     	input.value = '';
                     	input.focus();
                     	button.innerHTML = 'Invite next';
-                    	// that.fetch();
+                    	that.fetch();
                     },
                     error: function(data) {
                     	// Show error 
@@ -1914,45 +1920,65 @@ var WPCLib = {
 				// Remove a user from the current editor list
 				var target = event.target || event.srcElement,
 					uid = target.parentNode.id.split('_').pop(),
-					currentuser = (uid == WPCLib.sys.user.id),
 					that = WPCLib.sharing.accesslist,
-					u = that.users;
+					u = that.users, currentuser = (u[uid].email == WPCLib.sys.user.email),
+					url = '/docs/' + WPCLib.canvas.docid + '/collaborators', payload = {};
 
-				for (i=0,l=u.length;i<l;i++) {
-					// Iterate through user list array in remove user object if found
-					if (u[i].id != uid) continue;
-					u.splice(i, 1);
-					that.update();
-					if (currentuser) WPCLib.folio.docs.loaddocs();
-					break;
-				}	
+				// Build payload
+				payload.email = u[uid].email;
+				payload._delete = true;
 
-				// TODO Coordinate with flo how to post this to backend, do anew fetch on successfull post
+				// Remove user from array right away
+				u.splice(uid,1);
+				that.update();
+
+				$.ajax({
+                	// Post to backend
+                    url: url,
+                    type: "POST",
+                    contentType: "application/json; charset=UTF-8",
+                    data: JSON.stringify(payload),
+                    success: function(data) {  
+						if (currentuser) WPCLib.folio.docs.loaddocs();                   	
+                    },
+                    error: function(data) {
+                    	// Reset list display 
+						that.fetch();
+                    }
+                });	
 			},
 
 			update: function() {
 				// Update list of users who currently have access
 				// Empty current DOM element
+				var l = this.users.length;
 				this.el.innerHTML = '';
 
-				for (i=0,l=this.users.length;i<l;i++) {
-					// Create and attach each link to the DOM
-					this.el.appendChild(this.renderuser(this.users[i]));
+				if (l>0) {
+					// Render list
+					for (i=0;i<l;i++) {
+						// Create and attach each link to the DOM
+						this.el.appendChild(this.renderuser(this.users[i],i));
+					} 
+				} else {
+					// Show ooooooonly yoooooouuuuuuu
+					this.el.innerHTML = '<div class="user"><span class="name">Only you</span></div>';
 				}
 			},
 
-			renderuser: function(user) {
+			renderuser: function(user,i) {
 				// Create a user DOM element and return it
 				var d, r, n,
 					currentuser = (user.email == WPCLib.sys.user.email),
-					lastaccess = (user.last_edit >= 0) ? 'Last seen ' + WPCLib.util.humanizeTimestamp(user.last_edit) + " ago" : 'Invited';
+					tooltip = (user.perms == 'edit') ? undefined : user.perms.charAt(0).toUpperCase() + user.perms.slice(1),
+					you = (this.users.length > 1) ? 'You' : 'Only you';
 
 				d = document.createElement('div');
-				d.id = 'user_' + user.id;
+				d.id = 'user_' + i;
 				d.className = 'user';
-				if (!currentuser) d.setAttribute('title', lastaccess);
+				if (!currentuser && tooltip) d.setAttribute('title', tooltip);
 
-				if (!user.owner) {
+				if (user.perms != "owner") {
 					// Add remove link if user is not owner					
 					r = document.createElement('a');
 					r.className = 'remove';
@@ -1971,8 +1997,8 @@ var WPCLib = {
 
 				// Add user name span
 				n = document.createElement('span');
-				n.className = 'name';
-				n.innerHTML = (currentuser) ? 'You' : user.email;
+				n.className = (user.perms == 'invited') ? 'name invited' : 'name';
+				n.innerHTML = (currentuser) ? you : user.email;
 				d.appendChild(n)
 
 				// Return object

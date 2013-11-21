@@ -862,6 +862,10 @@ a.wpcbutton:hover {
   white-space: nowrap;
 }
 
+#sharing .users .user .invited {
+  color: #999;
+}
+
 #sharing .users .user a.remove {
   display: block;
   width: 40px;
