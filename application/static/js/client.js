@@ -1202,11 +1202,12 @@ var WPCLib = {
 			WPCLib.sys.log('Words: ' + this.wordcount + " Lines: " + this.linecount + " Pos: " + pos);			
 		},
 
-		textclick: function() {
+		textclick: function(event) {
 			// when text is clicked
-			var sel = WPCLib.canvas._getposition();
+			var sel = WPCLib.canvas._getposition(),
+				target = event.target || event.srcElement;
 			if (sel[0] != sel[1]) WPCLib.context.search(WPCLib.canvas.title,sel[2],true);
-			WPCLib.ui.clearactions(null,true);
+			if (target.id == WPCLib.canvas.canvasId || target.id == WPCLib.canvas.contentId) WPCLib.ui.clearactions(null,true);
 		},
 
 		_getposition: function() {
@@ -1808,8 +1809,9 @@ var WPCLib = {
 
 		submit: function(event) {
 			// Submit form
-			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];
-			var button = document.getElementById(WPCLib.sharing.id).getElementsByTagName('a')[1];
+			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0],
+				button = document.getElementById(WPCLib.sharing.id).getElementsByTagName('a')[1];
+
 			if (event) {
 				event.preventDefault();
 				event.stopPropagation();
@@ -1860,7 +1862,7 @@ var WPCLib = {
 
 			add: function(email) {
 				// Add a user to the current editor list
-				var url = '/docs/' + WPCLib.canvas.docid + '/share',
+				var url = '/docs/' + WPCLib.canvas.docid + '/collaborators',
 					payload = {'email': email.trim() },
 					el = document.getElementById('s_actions'),
 					input = el.getElementsByTagName('input')[0],
@@ -1942,7 +1944,7 @@ var WPCLib = {
 			renderuser: function(user) {
 				// Create a user DOM element and return it
 				var d, r, n,
-					currentuser = (user.id == WPCLib.sys.user.id),
+					currentuser = (user.email == WPCLib.sys.user.email),
 					lastaccess = (user.last_edit >= 0) ? 'Last seen ' + WPCLib.util.humanizeTimestamp(user.last_edit) + " ago" : 'Invited';
 
 				d = document.createElement('div');
@@ -1990,15 +1992,14 @@ var WPCLib = {
 				}
 
 				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
-				var url = '/docs/' +  WPCLib.canvas.docid + '/share';
+				var url = '/docs/' +  WPCLib.canvas.docid + '/collaborators';
 				$.ajax({
                     url: url,
                     contentType: "json",
                     success: function(data) {
                     	// Set internal values and update visual display
                     	var that = WPCLib.sharing.accesslist;
-                    	console.log(data);
-                    	that.users = data.users;
+                    	that.users = data;
                         that.update();
                     }
                 });
