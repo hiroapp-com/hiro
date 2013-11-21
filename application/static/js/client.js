@@ -782,7 +782,14 @@ var WPCLib = {
 			// Check if user didn't navigate away from archive and set last updated
 			if (file.id == bucket.id) bucket.updated = WPCLib.util.now();
 			WPCLib.folio.docs.update();					
-		},		
+		},	
+
+		preload: function() {
+			// If flask already gave us the title and text values
+			this.preloaded = true;
+			this._resize();
+		},
+
 
 		loaddoc: function(docid, title) {
 			// Load a specific document to the canvas
