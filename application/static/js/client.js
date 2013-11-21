@@ -783,9 +783,19 @@ var WPCLib = {
 
 		loaddoc: function(docid, title) {
 			// Load a specific document to the canvas
-			if (!this.saved) this.savedoc();			
-			WPCLib.sys.log('loading doc id: ', docid);
-			var mobile = (document.body.offsetWidth<=900);	
+			var mobile = (document.body.offsetWidth<=900),
+				header = {}, token = WPCLib.sharing.token;				
+			if (!this.saved) this.savedoc();
+
+			// If we have an active accesstoken, we always try to load this one first
+			if (token) {
+				// Get docid from url (fallback to docid, this shouldn't happen) and set accesstoken header
+				docid = window.location.pathname.split('/')[2] || docid;
+				header.accesstoken = token;
+				title = '';
+			}
+
+			WPCLib.sys.log('loading doc id: ', [docid, header]);
 
 			// If we already know the title, we shorten the waiting time
 			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
@@ -800,6 +810,7 @@ var WPCLib = {
 			$.ajax({
 				dataType: "json",
 				url: file,
+				header: header,
 				success: function(data, textStatus, xhr) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
@@ -814,7 +825,10 @@ var WPCLib = {
 						}
 						WPCLib.folio.docs.lookup[docid].unseen = false;
 						WPCLib.folio.docs.updateunseen(-1);
-					}					
+					}		
+
+					// Reset accesstoken if we had one
+					if (token) WPCLib.sharing.token = '';			
 
 					// Update document list
 					WPCLib.folio.docs.update();						
@@ -870,8 +884,13 @@ var WPCLib = {
 					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 				},
 				error: function(xhr,textStatus) {
-					WPCLib.sys.error(xhr);	
-					if (textStatus == 'timeout') WPCLib.sys.goneoffline();						
+					WPCLib.sys.error([xhr]);
+					// Set system status offline if we timed out	
+					if (textStatus == 'timeout') WPCLib.sys.goneoffline();	
+					// Show notifications and reset token if we had one
+					if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
+					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.');
+					if (token) WPCLib.sharing.token = '';											
 				}
 			});						
 		},	
@@ -1680,6 +1699,7 @@ var WPCLib = {
 		id: 'sharing',
 		visible: false,
 		openTimeout: null,
+		token: '',
 
 		init: function() {
 			// Bind basic events
@@ -1779,6 +1799,15 @@ var WPCLib = {
 				WPCLib.sys.error(msg);
 			} else {
 				WPCLib.sharing.accesslist.add(email.value);
+			}
+		},
+
+		applytoken: function(token) {
+			// Applies a token for a shared doc
+			// We handle loading the doc with token through the normal loaddoc
+			this.token = token;			
+			if (WPCLib.sys.user.level == 0) {
+				WPCLib.sys.user.upgrade(1);
 			}
 		},
 
@@ -2786,6 +2815,9 @@ var WPCLib = {
 				if (p.indexOf('reset') > -1) {
 					WPCLib.sys.user.showreset(p[p.indexOf('reset') + 1]);
 				}
+				if (p.indexOf('token') > -1) {
+					WPCLib.sharing.applytoken(p[p.indexOf('token') + 1]);
+				}				
 			} 
 
 			// Add keyboard shortcuts
@@ -4193,6 +4225,7 @@ var WPCLib = {
 			var status = document.getElementById('status');
 			status.innerHTML = text;
 			if (color=='green') color = '#055a0b';
+			if (color=='red') color = '#D50000';			
 			status.style.color = color;
 			setTimeout(function(){
 				status.style.color = '#999';				
