@@ -333,8 +333,9 @@ def doc_collaborators(doc_id):
         return "access denied, sorry.", 403
 
     if request.method == 'GET':
-        collabs = [{"id": str(key.id()), "pending": False, "email": key.get().email} for key in doc.shared_with]
-        collabs += [{"id": None, "pending": True, "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
+        collabs = [{"id": str(doc.owner.id()), "perms": "owner", "email": doc.owner.get().email}]
+        collabs += [{"id": str(key.id()), "perms": "edit", "email": key.get().email} for key in doc.shared_with]
+        collabs += [{"id": None, "perms": "invited", "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
         return Response(json.dumps(collabs, indent=4), mimetype="application/json")
 
     elif request.method == 'POST':
