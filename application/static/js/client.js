@@ -683,12 +683,6 @@ var WPCLib = {
             WPCLib.canvas._resize();               
         },
 
-		preload: function(title,text) {
-			// If flask already gave us the title and text values
-			this.preloaded = true;
-			this._resize();
-		},
-
 		builddoc: function() {
 			// Collects doc properties from across the client lib and returns object
 			// Build the JSON object from th evarious pieces
@@ -734,7 +728,7 @@ var WPCLib = {
 						success: function(data) {
 		                    WPCLib.sys.log('Saved! ',data);
 							WPCLib.canvas.saved = true;	 
-							if (force) status.innerHTML = 'Saved!';
+							if (force) status.innerHTML = 'Saved.';
 							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 						},
 						error: function(xhr,textStatus) {
@@ -751,7 +745,7 @@ var WPCLib = {
 						success: function(data) {
 		                    WPCLib.sys.log('Saved! ',data);
 							WPCLib.canvas.saved = true;	 
-							if (force) status.innerHTML = 'Saved!';
+							if (force) status.innerHTML = 'Saved.';
 							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();							
 						},
 						error: function(xhr,textStatus) {
@@ -793,7 +787,9 @@ var WPCLib = {
 		loaddoc: function(docid, title) {
 			// Load a specific document to the canvas
 			var mobile = (document.body.offsetWidth<=900),
-				header = {}, token = WPCLib.sharing.token;	
+				header = {}, token = WPCLib.sharing.token,
+				urlid = window.location.pathname.split('/')[2],
+				url = 'docs/'+docid, that = this;	
 
 			// Final try to save doc, eg when connection wasn't available before				
 			if (!this.saved) this.savedoc();
@@ -801,10 +797,16 @@ var WPCLib = {
 			// Fall back to current docid if we didn't get one
 			docid = docid || WPCLib.canvas.docid;
 
-			// If we have an active accesstoken, we always try to load this one first
+			if (this.preloaded) {
+				// Override document id with url id if Flask did set preloaded flag
+				// Intentionally works only on /note/<note-id> URLs
+				docid = urlid || docid;
+			}
+
+			// If we have an active accesstoken, we override all previous setting
 			if (token) {
 				// Get docid from url (fallback to docid, this shouldn't happen) and set accesstoken header
-				docid = window.location.pathname.split('/')[2] || docid;
+				docid = urlid || docid;
 				header.accesstoken = token;
 				title = '';
 			}
@@ -819,11 +821,9 @@ var WPCLib = {
 
 
 			// Load data onto canvas
-			var file = 'docs/'+docid;
-			var that = this;
 			$.ajax({
 				dataType: "json",
-				url: file,
+				url: url,
 				header: header,
 				success: function(data, textStatus, xhr) {
 					WPCLib.canvas.docid = data.id;
@@ -851,7 +851,7 @@ var WPCLib = {
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
 					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
 					var content = document.getElementById(that.contentId);
-					if (!that.preloaded) {
+					if (!that.preloaded && content.value != data.text) {
 						content.value = data.text;					
 						// Reset the canvas size to document contents in the next 2 steps
 						content.style.height = 'auto';					
@@ -1939,6 +1939,7 @@ var WPCLib = {
                     contentType: "application/json; charset=UTF-8",
                     data: JSON.stringify(payload),
                     success: function(data) {  
+                    	// We do not have to do anything here, except reload the doclist if user has removed herself
 						if (currentuser) WPCLib.folio.docs.loaddocs();                   	
                     },
                     error: function(data) {
