@@ -448,8 +448,13 @@ var WPCLib = {
 							// Set new id for former local doc
 							WPCLib.canvas.docid = data.doc_id;
 
-							// Get updated file list
-							WPCLib.folio.docs.loaddocs(true);							                    
+							// Get updated file list														
+							WPCLib.folio.docs.loaddocs(true);	
+
+							// Edge Case: User had a document moved to the backend and also accesstoken waiting
+							if (WPCLib.sharing.token) {
+								WPCLib.canvas.loaddoc();
+							}							
 						}
 					});
 				}
@@ -784,8 +789,13 @@ var WPCLib = {
 		loaddoc: function(docid, title) {
 			// Load a specific document to the canvas
 			var mobile = (document.body.offsetWidth<=900),
-				header = {}, token = WPCLib.sharing.token;				
+				header = {}, token = WPCLib.sharing.token;	
+
+			// Final try to save doc, eg when connection wasn't available before				
 			if (!this.saved) this.savedoc();
+
+			// Fall back to current docid if we didn't get one
+			docid = docid || WPCLib.canvas.docid;
 
 			// If we have an active accesstoken, we always try to load this one first
 			if (token) {
@@ -1005,7 +1015,8 @@ var WPCLib = {
 			if (keys.indexOf(k) > -1) return;	
 
 			// Update internal values and Browser title			
-			WPCLib.canvas.title = WPCLib.folio.docs.lookup[WPCLib.canvas.docid].title = document.title = this.value;
+			WPCLib.canvas.title = document.title = this.value;
+			if (WPCLib.folio.docs.lookup[WPCLib.canvas.docid]) WPCLib.folio.docs.lookup[WPCLib.canvas.docid].title = this.value;
 			if (!this.value) document.title = 'Untitled';
 
 			// Visually update name in portfolio right away
@@ -1371,7 +1382,7 @@ var WPCLib = {
 			inflightcallback: null,
 			sendedits: function(reason) {
 				// Post current edits stack to backend and clear stack on success
-				var status = document.getElementById(WPCLib.context.statusId);
+				var statusbar = document.getElementById(WPCLib.context.statusId).innerHTML;
                 if (this.edits.length == 0 || this.inflight) {
                 	// if we do not have any edits
                     return;
@@ -1391,7 +1402,7 @@ var WPCLib = {
                 // Set variable to prevent double sending
                 this.inflight = true;
                 WPCLib.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
-                status.innerHTML = reason || 'Saving...';
+                statusbar = reason || 'Saving...';
 
                 // Post editstack to backend
                 $.ajax({
@@ -1406,8 +1417,8 @@ var WPCLib = {
                         }
 
                         // Confirm
-                		status.innerHTML = 'Saved.';                        
-                        WPCLib.sys.log('Completed sync request successfully ',JSON.stringify(data.deltas));
+                		statusbar = 'Saved.';                        
+                        WPCLib.sys.log('Completed sync request successfully ',[JSON.stringify(data.deltas)]);
 
                         // process the edit-stack received from the server
                         WPCLib.canvas.sync.process(data.deltas);
@@ -1597,8 +1608,7 @@ var WPCLib = {
                     WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
                 }                
                 this.socket.onerror = function(data) {
-                	console.log('Socket error: ',data);
-                    WPCLib.sys.log("ERROR connecting to channel api");                	
+                    WPCLib.sys.log("ERROR connecting to channel api",data);                	
                     if (!data.code || data.code == 0 || data.code == 400 || data.code == 401) {
                     	// This is most likely either a time out session or token, so we reset the whole sync stack
                     	// TODO: See if this interferes with the reconnect we fire on close
@@ -1805,9 +1815,14 @@ var WPCLib = {
 		applytoken: function(token) {
 			// Applies a token for a shared doc
 			// We handle loading the doc with token through the normal loaddoc
-			this.token = token;			
+			this.token = token;		
 			if (WPCLib.sys.user.level == 0) {
-				WPCLib.sys.user.upgrade(1);
+				// Load signup dialog if user isn't logged in
+				var frame = document.getElementById('dialog');
+				frame.onload = function() {		
+					// The if prevents the dialog from being loaded after login		
+					if (WPCLib.sys.user.level == 0) WPCLib.ui.showDialog(null,'','s_signup','signup_mail');					
+				}
 			}
 		},
 
@@ -3083,7 +3098,11 @@ var WPCLib = {
 				// On successfull backend auth the returned user-data 
 				// from the various endpoints and finishes up auth process
             	WPCLib.sys.user.setStage(user.tier);
-            	this.justloggedin = true;           	
+            	this.justloggedin = true;   
+
+            	// If we should still have the landingpage visible at this point
+				var landing = document.getElementById('landing');
+				if (landing) WPCLib.ui.fade(landing,-1,150);
 
             	if (WPCLib.canvas.docid=='localdoc' && !localStorage.getItem('WPCdoc')) {
             		// Remove empty document if user signs up / in right away            		
@@ -3107,7 +3126,7 @@ var WPCLib = {
                 if (this.signinCallback) WPCLib.util.docallback(this.signinCallback);			
 
                 // Suggest upgrade after initial registration or just hide dialog
-                if (user.tier==1&&type=='register') {
+                if (user.tier==1 && type=='register') {
                 	WPCLib.ui.statusflash('green','Welcome, great to have you!');
                 	this.forceupgrade(2,'Unlock <b>more features</b><em> right away</em>?');
                 } else {
@@ -3196,10 +3215,9 @@ var WPCLib = {
 
 				// Perform iframe actions
 				var frame = document.getElementById('dialog');
-				frame.onload = function() {
-					var landing = document.getElementById('landing');
-					if (landing) WPCLib.ui.fade(landing,-1,150);					
-					WPCLib.ui.showDialog(null,'','s_reset','new_password');
+				frame.onload = function() {	
+					// The if prevents the dialog from being loaded after login		
+					if (WPCLib.sys.user.level == 0) WPCLib.ui.showDialog(null,'','s_reset','new_password');
 				}
 			},			
 
