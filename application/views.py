@@ -14,13 +14,14 @@ import time
 import string
 import random
 import uuid
+import json
 
 from hashlib import sha512
 from collections import defaultdict
 from datetime import datetime
 
 
-from flask import request, session, render_template, redirect, url_for, jsonify
+from flask import request, session, render_template, redirect, url_for, jsonify, Response
 from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
@@ -334,7 +335,7 @@ def doc_collaborators(doc_id):
     if request.method == 'GET':
         collabs = [{"id": str(key.id()), "pending": False, "email": key.get().email} for key in doc.shared_with]
         collabs += [{"id": None, "pending": True, "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
-        return jsonify(collaborators=collabs)
+        return Response(json.dumps(collabs, indent=4), mimetype="application/json")
 
     elif request.method == 'POST':
         if not request.json:
