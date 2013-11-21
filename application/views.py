@@ -26,7 +26,7 @@ from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
-from google.appengine.api import memcache, mail, channel, taskqueue
+from google.appengine.api import memcache, channel, taskqueue
 from google.appengine.ext import ndb
 
 
@@ -36,6 +36,7 @@ from application import app
 from .models import User, Document, Link, PasswordToken, EditSession, SharingToken
 from .forms import LoginForm, SignupForm
 from .decorators import limit_free_plans, root_required
+from .email_templates import send_mail_tpl
 
 base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
 
@@ -195,10 +196,7 @@ def create_token():
     if not user:
         return 'Email not registered', 404
     token = PasswordToken.create_for(user)
-    mail.send_mail(sender="Team Hiro <hello@hiroapp.com>", 
-                   to=user.email,
-                   subject="Resetting your Hiro password",
-                   body="Hi,\n\njust visit {url}#reset={token} to reset your password.\n\nPlease let us know if there is anything else we can do,\n\nkeep capturing the good stuff.\n\nThe Hiro Team".format(url=base_url, token=token))
+    send_mail_tpl('resetpw', user.email, dict(url=base_url, token=token))
     return "Reset-Link sent."
 
 
