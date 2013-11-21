@@ -11,8 +11,8 @@ from datetime import datetime
 import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
-from google.appengine.api import memcache, channel
-from flask.ext.login import UserMixin, AnonymousUser
+from google.appengine.api import memcache, mail, channel
+from flask.ext.login import UserMixin, AnonymousUser, current_user
 from flask import session
 from textmodels.textrank import get_top_keywords_list
 from settings import STRIPE_SECRET_KEY
@@ -20,7 +20,9 @@ from settings import STRIPE_SECRET_KEY
 from .utils import get_sorted_chunks
 
 from diff_match_patch import diff_match_patch 
+
 DMP = diff_match_patch()
+base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
 
 class PlanChange(ndb.Model):
     created_at = ndb.DateTimeProperty(auto_now_add=True)
@@ -212,6 +214,27 @@ class Link(ndb.Model):
                 'description': self.description
                 }
      
+class SharingToken(ndb.Model):
+    created_at = ndb.DateTimeProperty(auto_now_add=True)
+    email = ndb.StringProperty()
+    use_once = ndb.BooleanProperty()
+
+    doc = lambda(s): s.key.parent().get()
+    #token = ndb.StringProperty()
+
+
+    @classmethod
+    def create(cls, email, parent):
+        token = uuid.uuid4().hex
+        key = sha512(token).hexdigest()
+        cls(id=key, email=email, use_once=True, parent=parent).put()
+        return token
+
+
+    def send_invitation(self):
+        pass
+
+
 
 class Document(ndb.Model):
     owner = ndb.KeyProperty(kind=User)
@@ -241,6 +264,30 @@ class Document(ndb.Model):
                 'noun_chunks': normal_noun_chunks, 
                 'proper_chunks':proper_noun_chunks
                 }
+
+    def invite(self, email):
+        if SharingToken.query(SharingToken.email == email, ancestor=self.key).get():
+            return "invite pending", 302
+        user = User.query(User.email == email).get()
+        if not user:
+            token = SharingToken.create(email, self.key)
+            mail.send_mail(sender="Team Hiro <hello@hiroapp.com>", 
+                           to=email,
+                           subject="New Note",
+                           body="Hi,\n\n {sender} shared a note with you on Hiro. \nJust visit {url}#{token} to access this document.\n\nPlease let us know if there is anything else we can do,\n\nkeep capturing the good stuff.\n\nThe Hiro Team".format(sender=current_user.email, url=base_url, token=token))
+            return "ok", 200
+
+        if user.key == self.owner:
+            return "it's your document, stupid!", 302
+        elif user.key  in self.shared_with:
+            return "already connected to him", 302
+        else:
+            self.shared_with.append(user.key)
+            self.put()
+            #notify user
+            return "ok", 200
+
+
 
     def api_dict(self):
         return {
