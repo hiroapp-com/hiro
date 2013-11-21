@@ -780,6 +780,7 @@ a.wpcbutton:hover {
   background-size: 50px auto; 
   opacity: 0.1; 
   background-position: right -408px;
+  cursor: pointer;  
 }
 
 #sharing:hover .header {
@@ -793,8 +794,8 @@ a.wpcbutton:hover {
   position: absolute;
   display: block;
   padding-right: 20px;
-  top: 0;
-  right: 65px;
+  top: 10;
+  right: 17px;
   color: #fff;
   opacity: .3;
   font-size: 12px;
@@ -809,9 +810,12 @@ a.wpcbutton:hover {
   display: none;
   background: rgba(255,255,255,0.95);
   position: absolute;
-  top: 50px;
-  right: -52px;
-  padding-right: 60px;  
+  top: 40px;
+  margin-top: 10px;
+  right: -4px;
+  padding-right: 12px; 
+  margin-top: 10px;
+  padding-top: 10px;   
 }
 
 #s_actions form {
@@ -925,13 +929,13 @@ a.wpcbutton:hover {
     right: 0;
     bottom: 0;
     z-index: 2799;
-    padding-top: 48px;
+    padding-top: 38px;
     padding-right: 0;  
   }
 
   #sharing .actions .cancel {
     right: 14px;
-    top: 48px;    
+    top: 38px;    
   } 
 
   #sharing .actions .title.light {
@@ -968,6 +972,37 @@ a.wpcbutton:hover {
 
 }
 
+@media (min-width: 481px) {
+  #sharing .actions, #publish .actions {
+    border: 1px solid rgba(0,0,0,0.15);
+    box-shadow: 0 5px 20px -12px #000;    
+  }
+
+  #sharing .actions:after, #sharing .actions:before, #publish .actions:after, #publish .actions:before {
+    bottom: 100%;
+    right: 17px;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    position: absolute;
+    pointer-events: none;
+  }
+
+  #sharing .actions:after, #publish .actions:after {
+    border-color: rgba(255, 255, 255, 0);
+    border-bottom-color: #ffffff;
+    border-width: 11px;
+    margin-left: -10px;
+  }
+  #sharing .actions:before, #publish .actions:before {
+    border-color: rgba(157, 166, 166, 0);
+    border-bottom-color: #666;
+    border-width: 11px;
+    margin-left: -11px;
+  }  
+}
+
 
 /*-------- Publishing --------*/
 #publish {
@@ -993,6 +1028,7 @@ a.wpcbutton:hover {
   background-size: 40px auto; 
   opacity: 0.07; 
   background-position: right 2px;
+  cursor: pointer;  
 }
 
 #publish:hover .header {
@@ -1004,32 +1040,33 @@ a.wpcbutton:hover {
   background: rgba(255,255,255,0.95);
   position: absolute;
   top: 50px;
-  right: 0;
-}
-
-#publish:hover .actions {
-  display: block;
+  right: -10px;
+  padding-top: 10px;
 }
 
 #publish .actions .title {
   font-size: 18px;
   color: #333;
-  margin: 0 0 4px 20px;
+  margin: 0 42px 4px 20px;
+  white-space: nowrap;
+}
+
+#publish .actions .title em {
+  font-style: normal;
 }
 
 #publish .actions .footer {
   color: #999;
   display: block;
   font-size: 0.8em;
-  white-space: nowrap;
-  margin: 10px 14px 10px 20px;
+  margin: 10px 22px 10px 20px;
 }
 
 #publish .actions a.action {
   text-align: right;
   display: block;
   opacity: 0.4;
-  margin: 0 13px 0 20px;
+  margin: 0 22px 0 20px;
   cursor: pointer;
   padding: 10px 20px 8px 0; 
   background-image: url(../img/publish.4.png);
@@ -1100,9 +1137,17 @@ a.wpcbutton:hover {
     top: 8px; 
     padding-top: 39px;
   }  
+  #publish .actions .title em {
+    display: none;
+  }
+
   #publish .actions .footer {
     margin-right: 26px;
   } 
+}
+
+@media (min-width: 481px) {
+  
 }
 
 /* ------ Context Bar ------*/
