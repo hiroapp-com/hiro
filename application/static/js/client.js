@@ -733,7 +733,13 @@ var WPCLib = {
 						},
 						error: function(xhr,textStatus) {
 							WPCLib.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(xhr));	
-							if (textStatus == 'timeout') WPCLib.sys.goneoffline();					
+							if (textStatus == 'timeout') WPCLib.sys.goneoffline();		
+							// Move away from note if rights were revoked
+							else if (xhr.status == 404 || xhr.status == 404) {
+		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
+								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.');  
+								WPCLib.folio.docs.loaddocs();								
+							} 										
 						}
 					});
 				} else if ($.ajax) {
@@ -750,7 +756,13 @@ var WPCLib = {
 						},
 						error: function(xhr,textStatus) {
 							WPCLib.sys.error('Savedoc POST returned error: ' + JSON.stringify(xhr));
-							if (textStatus == 'timeout') WPCLib.sys.goneoffline();													
+							if (textStatus == 'timeout') { WPCLib.sys.goneoffline(); }
+							// Move away from note if rights were revoked
+							else if (xhr.status == 404 || xhr.status == 404) {
+		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
+								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.');  
+								WPCLib.folio.docs.loaddocs();								
+							}                       
 						}
 					});					
 				} else {
@@ -1454,11 +1466,23 @@ var WPCLib = {
                         	WPCLib.canvas.sync.inflightcallback = null;
                         }		
                     },
-                    error: function(data,status,xhr) {
-                        WPCLib.sys.log('Completed sync request with error ',[data,status,xhr]);
+                    error: function(xhr,status,textStatus) {
+                        WPCLib.sys.log('Completed sync request with error ',[xhr,status,textStatus]);
                         // Reset inflight variable and try callback
                         WPCLib.canvas.sync.inflight = false;
-                        if (WPCLib.canvas.sync.inflightcallback) {
+
+                        // Move away from note if rights were revoked
+                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
+						if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.');  
+						
+						// Try callback but navigate away once access is lost 
+						if (xhr.status == 403 || xhr.status == 404) {
+                        	// Prevent further sendedits
+                        	WPCLib.canvas.sync.inflight = true;    
+                        	setTimeout(function(){ WPCLib.canvas.sync.inflight = false; },2000);
+                        	// Reload docs                  								
+                        	WPCLib.folio.docs.loaddocs();
+                        } else if (WPCLib.canvas.sync.inflightcallback) {
                         	WPCLib.canvas.sync.inflightcallback();
                         	WPCLib.canvas.sync.inflightcallback = null;
                         }
