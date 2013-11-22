@@ -1916,7 +1916,7 @@ var WPCLib = {
 					input = el.getElementsByTagName('input')[0],
 					button = el.getElementsByTagName('a')[0],
 					d = document.createElement('div'),
-					that = this;
+					that = this, unshared = (that.users.length <= 1) ? true : false;
 
 				// Retry later if we don't have a docid yet
 				if (!WPCLib.canvas.docid) {
@@ -1925,7 +1925,6 @@ var WPCLib = {
 						return;
 					},500);
 				}	
-
 				// Visual updates	
 				d.className = 'user';
 				d.innerHTML = 'Inviting ' + email.split('@')[0].substring(0,18) + '...';
@@ -1938,11 +1937,18 @@ var WPCLib = {
                     type: "POST",
                     contentType: "application/json; charset=UTF-8",
                     data: JSON.stringify(payload),
-                    success: function(data) {                   	
+                    success: function(data) {    
+                    	// Set UI               	
                     	input.value = '';
                     	input.focus();
                     	button.innerHTML = 'Invite next';
+                    	// Fetch list of collaborators
                     	that.fetch();
+                    	// If note was unshared at beginning of this function add shared flag & update list view                   	
+                    	if (unshared) {
+							WPCLib.folio.docs.lookup[WPCLib.canvas.docid].shared = true;  
+							WPCLib.folio.docs.update();                  		
+                    	}
                     },
                     error: function(data) {
                     	// Show error 
@@ -1980,8 +1986,13 @@ var WPCLib = {
                     contentType: "application/json; charset=UTF-8",
                     data: JSON.stringify(payload),
                     success: function(data) {  
-                    	// We do not have to do anything here, except reload the doclist if user has removed herself
-						if (currentuser) { WPCLib.folio.docs.loaddocs(); WPCLib.ui.clearactions(); };                  	
+                    	// Reload the doclist if user has removed herself
+						if (currentuser) { WPCLib.folio.docs.loaddocs(); WPCLib.ui.clearactions(); };
+                    	// If there are no more users in the array anymore, reload folio list to remove sharing icon
+                    	if (u.length <= 1) {
+							WPCLib.folio.docs.lookup[WPCLib.canvas.docid].shared = false;  
+							WPCLib.folio.docs.update();                  		
+                    	}					                  	
                     },
                     error: function(data) {
                     	// Reset list display 
