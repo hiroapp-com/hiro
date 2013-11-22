@@ -1453,7 +1453,7 @@ var WPCLib = {
                         }
 
                         // Confirm
-                		statusbar.innerHTML = 'Saved.';                        
+                		statusbar.innerHTML = 'Saved.';                       
                         WPCLib.sys.log('Completed sync request successfully ',[JSON.stringify(data.deltas)]);
 
                         // process the edit-stack received from the server
@@ -3806,7 +3806,11 @@ var WPCLib = {
 		    var that = WPCLib.util;
 
 		    // Standards:
-		    if (hidden in document)
+		    if ('focus' in window && 'blur' in window) {
+				WPCLib.util.registerEvent(window, 'focus', that._focuschanged);	 
+				WPCLib.util.registerEvent(window, 'blur', that._focuschanged);				   	
+		    }
+		    else if (hidden in document)
 		        document.addEventListener("visibilitychange", that._focuschanged);
 		    else if ((hidden = "mozHidden") in document)
 		        document.addEventListener("mozvisibilitychange", that._focuschanged);
@@ -3831,10 +3835,9 @@ var WPCLib = {
 	        	// If we added a focuscallback, run and clear it if we regain focus
 	        	WPCLib.util._focuscallback();
 	        	WPCLib.util._focuscallback = null;	        	
-	        }   
-
+	        }
 	        // Do things on change
-	        if (WPCLib.ui.windowfocused) {
+	        if (focus) {
 	        	// If the window gets focused
 	        	// Reset values
 	        	WPCLib.ui.audioblurplayed = false;
