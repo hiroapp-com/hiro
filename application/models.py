@@ -254,6 +254,7 @@ class Document(ndb.Model):
     cached_ser = ndb.StructuredProperty(Link, repeated=True)
 
     collaborators = property(lambda s: s.shared_with + [s.owner])
+    excerpt = property(lambda s: s.text[:500])
 
     def allow_access(self, user, token=None):
         if not user.is_authenticated():
@@ -297,7 +298,7 @@ class Document(ndb.Model):
         if not user:
             token = SharingToken.create(email, self.key)
             print "TTTOOOOKEEENN >>", token, "<<"
-            send_mail_tpl('invite', email, dict(sender=current_user.email or "foo", url=base_url, token=token))
+            send_mail_tpl('invite', email, dict(sender=current_user.email or "foo", url=base_url, token=token, doc=self))
             return "ok", 200
 
         if user.key == self.owner:
