@@ -282,9 +282,13 @@ class Document(ndb.Model):
                 'proper_chunks':proper_noun_chunks
                 }
 
-    def uninvite(self, email):
+    def uninvite(self, user_id, email):
         #TODO drop editors from self.shared_with if requestor is owner
-        ndb.delete_multi(list(SharingToken.query(SharingToken.email == email, ancestor=self.key).iter(keys_only=True)))
+        if user_id:
+            self.shared_with.remove(ndb.Key(User, int(user_id)))
+            self.put()
+        elif email:
+            ndb.delete_multi(list(SharingToken.query(SharingToken.email == email, ancestor=self.key).iter(keys_only=True)))
 
     def invite(self, email):
         if SharingToken.query(SharingToken.email == email, ancestor=self.key).get():

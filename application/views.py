@@ -340,12 +340,16 @@ def doc_collaborators(doc_id):
         if not request.json:
             return 'payload missing', 400
         email = request.json.get('email')
-        if not email:
-            return 'Required parameter `email` missin in payload', 400
+        pk = request.json.get('id')
+        if not email and not pk:
+            return 'Required parameter `email` or `id` missin in payload', 400
         if request.json.get('_delete'):
-            doc.uninvite(email)
+            doc.uninvite(pk, email)
             return "ok"
-        return doc.invite(email)
+        if email:
+            return doc.invite(email)
+        else:
+            return "", 400
     else: # GET 
         collabs = [{"id": str(doc.owner.id()), "perms": "owner", "email": doc.owner.get().email}]
         collabs += [{"id": str(key.id()), "perms": "edit", "email": key.get().email} for key in doc.shared_with]
