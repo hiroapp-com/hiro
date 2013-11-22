@@ -30,7 +30,7 @@ The Hiro Team
 
 
 templates["invite"] = (
-"{{sender}} Wants To Keep A Note With You", 
+"{{sender}} Wants To Share A Note With You", 
 """
 Hi,
 
@@ -50,7 +50,7 @@ Team Hiro
 <html lang="en" style="width: 100%;text-align: center;margin: 0;padding: 0;">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<title>{{sender}} Wants To Keep A Note With You</title>
+	<title>{{sender}} Wants To Share A Note With You</title>
 	<style>
 	@import url(http://fonts.googleapis.com/css?family=PT+Serif|Chau+Philomene+One);
 	body, html {
@@ -90,7 +90,7 @@ Team Hiro
 		font-size: 30px;
 		margin: 20px 30px 0 30px;
 		text-decoration:none;	
-		color: #000000;	
+		color: #000001 !important;;	
 		display: block;		
 	}		
 	a.notetext {
@@ -100,7 +100,7 @@ Team Hiro
 		line-height: 30px;
 		margin: 0 30px 0 30px;
 		text-decoration:none;
-		color: #000000;	
+		color: #000001 !important;;	
 		display: block;										
 	}			
 	.cto {
@@ -154,11 +154,8 @@ Team Hiro
 	}				
 	a.greylink {
 		text-decoration: none;
-		color: #333333;
+		color: #333334 !important;;
 	}						
-	a.greylink:visited {
-		color: #333333;
-	}
 
 	.unsubscribe {
 		margin: 0 31px 0 31px;		
@@ -194,13 +191,13 @@ Team Hiro
 	      <td>
 	<![endif]-->
 	<div class="content" style="width: 100%;max-width: 540px;text-align: left;margin: 30px auto 0 auto;	">
-		<div class="prenote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;	"><a href="mailto:{sender}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">{sender}</a> wants to keep a note with you:</div><br />
+		<div class="prenote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;	"><a href="mailto:{{sender}}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">{{sender}}</a> wants to share a note with you:</div><br />
 		<div class="note" style="background-color: #ffffff;border: 1px solid #dddddd;display: block;min-height: 150px;margin-top: 5px;max-height: 240px;overflow: hidden;box-shadow: 0 5px 17px -12px #000;"><br />
-			<a href="{url}#token={token}" class="noteheader" style="font-family: 'Chau Philomene One', sans-serif;font-size: 30px;margin: 0px 30px 0 30px;text-decoration:none;color: #000000;display: block;">bazzinga</a><br />
-			<a href="{url}#token={token}" class="notetext" style="font-family: 'PT Serif', serif;display: block;margin-top: 0px;font-size: 17px;line-height: 30px;margin: 0 30px 0 30px;text-decoration:none;color: #000000;">Die Menschen in 23 OECD-Ländern schlucken mehr und mehr Tabletten gegen chronische Erkrankungen. Im Schnitt stieg der Konsum etwa der medizinisch umstrittenen Antidepressiva zwischen 2000 und 2011 von 35 auf 56 tägliche Dosen pro 1.000 Einwohner, heißt es in dem am Donnerstag von der OECD in Paris veröffentlichten Bericht „Health at Glance“ („Gesundheit auf einen Blick“) 2013. Ein Anstieg von mehr als über 50 Prozent also.</a>
+			<a href="{{url}}#token={{token}}" class="noteheader" style="font-family: 'Chau Philomene One', sans-serif;font-size: 30px;margin: 0px 30px 0 30px;text-decoration:none;color: #000001 !important;display: block;">{{ doc.title }}</a><br />
+			<a href="{{url}}#token={{token}}" class="notetext" style="font-family: 'PT Serif', serif;display: block;margin-top: 0px;font-size: 17px;line-height: 30px;margin: 0 30px 0 30px;text-decoration:none;color: #000001 !important;">{{doc.excerpt}}</a>
 		</div><br /> 
-		<div class="cto" style="margin: 5px 30px 3px 30px;text-align: center;"><a href="{url}#token={token}" class="ctobutton" style="color:#ffffff;font-weight: normal;padding: 10px 6px 9px 6px;height: auto;border-radius: 3px;-webkit-border-radius: 3px;-moz-border-radius: 3px;-o-border-radius: 3px;border: 1px solid rgba(0,0,0,0.25);box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-o-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);text-decoration: none !important;opacity: 0.9;text-shadow: none;display: block;background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(0, 0, 0, 0)), color-stop(100%, rgba(0, 0, 0, 0.2)));background-image: -webkit-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -moz-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -ms-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -o-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.2));background-color: #3c6198;text-align: center;font-family: 'Chau Philomene One', sans-serif;font-size: 20px;">Accept Invitation</a></div><br />
-		<div class="postnote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;padding-bottom: 20px;border-bottom: 1px dotted #dddddd;display: block;"><a href="https://www.hiroapp.com" class="greylink" class="text-decoration: none;color: #333333;">Hiro</a> is the best way to keep notes with friends, or store them safely for yourself.</div><br />
+		<div class="cto" style="margin: 5px 30px 3px 30px;text-align: center;"><a href="{{url}}#token={{token}}" class="ctobutton" style="color:#ffffff;font-weight: normal;padding: 10px 6px 9px 6px;height: auto;border-radius: 3px;-webkit-border-radius: 3px;-moz-border-radius: 3px;-o-border-radius: 3px;border: 1px solid rgba(0,0,0,0.25);box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-o-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);text-decoration: none !important;opacity: 0.9;text-shadow: none;display: block;background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(0, 0, 0, 0)), color-stop(100%, rgba(0, 0, 0, 0.2)));background-image: -webkit-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -moz-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -ms-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -o-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.2));background-color: #3c6198;text-align: center;font-family: 'Chau Philomene One', sans-serif;font-size: 20px;">Accept Invitation</a></div><br />
+		<div class="postnote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;padding-bottom: 20px;border-bottom: 1px dotted #dddddd;display: block;"><a href="https://www.hiroapp.com" class="greylink" class="text-decoration: none;color: #333334 !important;">Hiro</a> is the best way to keep notes with friends, or store them safely for yourself.</div><br />
 		<div class="footer" style="color: #bbb;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;display: block;">Hiro Inc. | 1 Little W12th Street | 10014 New York </div><br />
 		<div class="unsubscribe" style="margin: 0 31px 0 31px;"><a href="https://www.hiroapp.com/#dontnotify=foo@bar.com" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">Turn off email notifications</a></div>
 	</div>	
