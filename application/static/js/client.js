@@ -2932,6 +2932,7 @@ var WPCLib = {
 			 fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));	
 
+
 			// Init Google APIs
 			//  (function() {
 			//    var gd = document.createElement('script'); gd.type = 'text/javascript'; gd.async = true;
@@ -3187,6 +3188,7 @@ var WPCLib = {
 		user: {
 			id: '',
 			email: '',
+			firstname: '',
 			// levels: 0 = anon, 1 = free, 2 = paid
 			level: 0,
 			dialog: document.getElementById('dialog').contentDocument,
@@ -3363,8 +3365,25 @@ var WPCLib = {
 
                 // Housekeeping, switch authactive off
                 WPCLib.sys.user.authactive = false;
-			},	
+			},
 
+			getfirstname: function() {
+				// Quick hack to get FB name of users that already signed id
+				setTimeout(function(){
+					if (!FB) {
+						WPCLib.sys.user.getfirstname();
+						return;
+					}					
+					FB.api('/me', function(response) {
+			            if (response.first_name && !WPCLib.sys.user.firstname) {
+			            	WPCLib.sys.user.firstname = response.first_name;
+			            	var payload = {};
+			            	payload.firstName = response.first_name;
+			            	analytics.identify(WPCLib.sys.user.id, payload);
+			            }
+			        });
+				},1500);	
+			},	
 
 			requestreset: function(event) {
 				// Checks if there is a valid mail address and sends a password request for it
