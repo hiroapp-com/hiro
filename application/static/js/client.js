@@ -1678,7 +1678,12 @@ var WPCLib = {
             	// Receive and process notification of document update
             	var el = WPCLib.folio.docs.lookup[data.doc_id], 
             		ui = WPCLib.ui,
-            		ownupdate = (data.user == WPCLib.sys.user.email);
+            		ownupdate = (data.origin.session_id == WPCLib.canvas.sync.sessionid);
+                if (ownupdate){
+                    WPCLib.folio.docs.update();                
+                    return;
+                }
+
 
             	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
             	if (!el) {
@@ -1688,7 +1693,7 @@ var WPCLib = {
 
             	// Update internal timestamp & last editor values	              	
             	el.updated = WPCLib.util.now();  
-                el.lastEditor =  (ownupdate) ? null : data.user; 
+                el.lastEditor =  (ownupdate) ? null : data.origin.name; 
 
                 if (data.doc_id == WPCLib.canvas.docid) {
                 	// If the update is for the current document
