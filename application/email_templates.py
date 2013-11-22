@@ -229,4 +229,4 @@ def send_mail_tpl(tpl, to, context):
     subj, body, html = templates.get(tpl, (None, None, None))
     if subj == body == html == None:
         raise Exception("email template {0} not found in email configuration".format(tpl))
-    mail.send_mail("Team Hiro <hello@hiroapp.com>", to, subj, body.format(**context), html=html.format(**context))
+    mail.send_mail("Team Hiro <hello@hiroapp.com>", to, subj.format(**context), body.format(**context), html=html.format(**context))
