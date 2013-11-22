@@ -1680,6 +1680,12 @@ var WPCLib = {
             		ui = WPCLib.ui,
             		ownupdate = (data.user == WPCLib.sys.user.email);
 
+            	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
+            	if (!el) {
+            		WPCLib.folio.docs.loaddocs(true);
+            		return;
+            	}            		
+
             	// Update internal timestamp & last editor values	              	
             	el.updated = WPCLib.util.now();  
                 el.lastEditor =  (ownupdate) ? null : data.user; 
