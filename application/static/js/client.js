@@ -1454,7 +1454,8 @@ var WPCLib = {
                     data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
                     success: function(data,status,xhr) {
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
-                            WPCLib.sys.log("TODO: session-id mismatch, what to do?");
+                        	// If for some reason the session got out of sync we reset
+                            WPCLib.canvas.sync.reconnect(null,true);
                             return;
                         }
 
