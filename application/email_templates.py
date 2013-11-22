@@ -3,9 +3,10 @@ from google.appengine.api import mail
 templates = {}
 
 templates["resetpw"] = (
-"Resetting your Hiro password",
+"Resetting Your Hiro Password",
 """
 Hi,
+
 just visit {url}#reset={token} to reset your password.
 
 Please let us know if there is anything else we can do,
@@ -27,22 +28,187 @@ The Hiro Team
 
 
 templates["invite"] = (
-"New Note!", 
+"{sender} Wants To Keep A Note With You", 
 """
-<html><body>
-{sender} shared a note with you, yiiha!
+Hi,
 
-Go to {url}#token={token}!
+{sender} just shared {title} with you:
 
-The Hiro Team
+Join in anytime via {url}#token={token}
+
+Keep capturing the good stuff,
+
+Team Hiro
 """,
 """
-{sender} shared a note with you, yiiha!
 
-Go to {url}#token={token}!
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
 
-The Hiro Team
-</body></html>
+<html lang="en" style="width: 100%;text-align: center;margin: 0;padding: 0;">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>{sender} Wants To Keep A Note With You</title>
+	<style>
+	@import url(http://fonts.googleapis.com/css?family=PT+Serif|Chau+Philomene+One);
+	body, html {
+		width: 100%;
+		text-align: center;
+		margin: 0;
+		padding: 0;
+	}
+	.content {
+		width: 100%;
+		max-width: 540px;
+		text-align: left;
+		margin: 30px auto 0 auto;
+	}
+	.prenote {
+		color: #999999;
+		font-family: 'Tahoma', sans-serif;		
+		font-size: 13px;
+		margin: 0 31px 0 31px;
+	}	
+	.note {
+		background-color: #ffffff;
+		border-top: 1px solid #dddddd;		
+		border-right: 1px solid #dddddd;	
+		border-bottom: 1px dotted #dddddd;		
+		border-left: 1px solid #dddddd;			
+		display: block;
+		min-height: 150px;
+		margin-top: 5px;
+		max-height: 240px;
+		overflow: hidden;
+		height: 218px;
+		box-shadow: 0 5px 20px -12px #000;		
+	}
+	a.noteheader {
+		font-family: 'Chau Philomene One', sans-serif;
+		font-size: 30px;
+		margin: 20px 30px 0 30px;
+		text-decoration:none;	
+		color: #000000;	
+		display: block;		
+	}		
+	a.notetext {
+		font-family: 'PT Serif', serif;
+		margin-top: 0px;
+		font-size: 17px;
+		line-height: 30px;
+		margin: 0 30px 0 30px;
+		text-decoration:none;
+		color: #000000;	
+		display: block;										
+	}			
+	.cto {
+		margin: 5px 30px 3px 30px;	
+		text-align: center;	
+	}			
+	a.ctobutton {
+		font-weight: normal;
+		padding: 10px 6px 9px 6px;
+		height: auto;
+		border-radius: 3px;
+		-webkit-border-radius: 3px;
+		-moz-border-radius: 3px;
+		-o-border-radius: 3px;
+		border: 1px solid rgba(0,0,0,0.25);
+		box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);
+		-webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);
+		-moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);
+		-o-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);
+		color: rgba(255,255,255,0.95) !important;
+		text-decoration: none !important;
+		opacity: 0.9;
+		text-shadow: none;
+		display: block;
+		background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(0, 0, 0, 0)), color-stop(100%, rgba(0, 0, 0, 0.2)));
+		background-image: -webkit-linear-gradient(top, transparent, rgba(0,0,0,.2));
+		background-image: -moz-linear-gradient(top, transparent, rgba(0,0,0,.2));
+		background-image: -ms-linear-gradient(top, transparent, rgba(0,0,0,.2));
+		background-image: -o-linear-gradient(top, transparent, rgba(0,0,0,.2));
+		background-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.2));
+		background-color: #3c6198;
+		text-align: center;
+		font-family: 'Chau Philomene One', sans-serif;
+		font-size: 20px;
+	}	
+	.postnote {
+		color: #999999;
+		font-family: 'Tahoma', sans-serif;		
+		font-size: 13px;
+		margin: 0 31px 0 31px;	
+		padding-bottom: 20px;
+		border-bottom: 1px dotted #dddddd;	
+		display: block;
+	}	
+	.footer {
+		color: #bbb;
+		font-family: 'Tahoma', sans-serif;		
+		font-size: 13px;
+		margin: 0 31px 0 31px;	
+		display: block;
+	}				
+	a.greylink {
+		text-decoration: none;
+		color: #333333;
+	}						
+	a.greylink:visited {
+		color: #333333;
+	}
+
+	.unsubscribe {
+		margin: 0 31px 0 31px;		
+	}
+
+	a.lightlink {
+		text-decoration: none;
+		color: #999999;
+		font-family: 'Tahoma', sans-serif;		
+		font-size: 13px;	
+	}		
+	a.lightlink:visited {
+		color: #999999;
+	}	
+	@media only screen and (max-width: 540px) {
+	  .note {
+	  	border-left: none;
+	  	border-right: none;
+	  }
+	}		
+	@media only screen and (min-device-width: 541px) {
+	  .content {
+	   /*  width: 540px !important; */
+	  }
+	}	
+	</style>
+</head>
+	<body bgcolor="#e4e4e4" topmargin="0" leftmargin="0" marginheight="0" marginwidth="0" style="-webkit-font-smoothing: antialiased;background:#fcfcfc;-webkit-text-size-adjust:none;width: 100%;text-align: center;margin: 0;padding: 0;">
+
+	<!--[if (gte mso 9)|(IE)]>
+	  <table width="540" align="center" cellpadding="0" cellspacing="0" border="0">
+	    <tr>
+	      <td>
+	<![endif]-->
+	<div class="content" style="width: 100%;max-width: 540px;text-align: left;margin: 30px auto 0 auto;	">
+		<div class="prenote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;	">Foo (<a href="mailto:{sender}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">{sender}</a>) wants to keep a note with you:</div><br />
+		<div class="note" style="background-color: #ffffff;border: 1px solid #dddddd;display: block;min-height: 150px;margin-top: 5px;max-height: 240px;overflow: hidden;box-shadow: 0 5px 20px -12px #000;"><br />
+			<a href="{url}#token={token}" class="noteheader" style="font-family: 'Chau Philomene One', sans-serif;font-size: 30px;margin: 0px 30px 0 30px;text-decoration:none;color: #000000;display: block;">bazzinga</a><br />
+			<a href="{url}#token={token}" class="notetext" style="font-family: 'PT Serif', serif;display: block;margin-top: 0px;font-size: 17px;line-height: 30px;margin: 0 30px 0 30px;text-decoration:none;color: #000000;">Die Menschen in 23 OECD-Ländern schlucken mehr und mehr Tabletten gegen chronische Erkrankungen. Im Schnitt stieg der Konsum etwa der medizinisch umstrittenen Antidepressiva zwischen 2000 und 2011 von 35 auf 56 tägliche Dosen pro 1.000 Einwohner, heißt es in dem am Donnerstag von der OECD in Paris veröffentlichten Bericht „Health at Glance“ („Gesundheit auf einen Blick“) 2013. Ein Anstieg von mehr als über 50 Prozent also.</a>
+		</div><br /> 
+		<div class="cto" style="margin: 5px 30px 3px 30px;text-align: center;"><a href="{url}#token={token}" class="ctobutton" style="color:#ffffff;font-weight: normal;padding: 10px 6px 9px 6px;height: auto;border-radius: 3px;-webkit-border-radius: 3px;-moz-border-radius: 3px;-o-border-radius: 3px;border: 1px solid rgba(0,0,0,0.25);box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-o-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);text-decoration: none !important;opacity: 0.9;text-shadow: none;display: block;background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(0, 0, 0, 0)), color-stop(100%, rgba(0, 0, 0, 0.2)));background-image: -webkit-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -moz-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -ms-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -o-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.2));background-color: #3c6198;text-align: center;font-family: 'Chau Philomene One', sans-serif;font-size: 20px;">Join Foo</a></div><br />
+		<div class="postnote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;padding-bottom: 20px;border-bottom: 1px dotted #dddddd;display: block;">Foo is using the free <a href="https://www.hiroapp.com" class="greylink" class="text-decoration: none;color: #333333;">Hiro</a> service for this. It's the best way to keep notes with friends, or store them safely for yourself.</div><br />
+		<div class="footer" style="color: #bbb;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;display: block;">Hiro Inc. | 1 Little W12th Street | 10014 New York </div><br />
+		<div class="unsubscribe" style="margin: 0 31px 0 31px;"><a href="https://www.hiroapp.com/#dontnotify=foo@bar.com" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">Turn off email notifications</a></div>
+	</div>	
+	<!--[if (gte mso 9)|(IE)]>
+	      </td>
+	    </tr>
+	  </table>
+	<![endif]-->
+	</body>
+</html>
 """)
 
 

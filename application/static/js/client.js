@@ -1951,8 +1951,7 @@ var WPCLib = {
                     data: JSON.stringify(payload),
                     success: function(data) {  
                     	// We do not have to do anything here, except reload the doclist if user has removed herself
-						if (currentuser) WPCLib.folio.docs.loaddocs();
-						WPCLib.ui.clearactions();                   	
+						if (currentuser) { WPCLib.folio.docs.loaddocs(); WPCLib.ui.clearactions(); };                  	
                     },
                     error: function(data) {
                     	// Reset list display 
