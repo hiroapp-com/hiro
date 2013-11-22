@@ -2029,6 +2029,9 @@ var WPCLib = {
 					// Show ooooooonly yoooooouuuuuuu
 					this.el.innerHTML = '<div class="user"><span class="name">Only you</span></div>';
 				}
+
+				// Update counter
+				this.count();
 			},
 
 			renderuser: function(user,i) {
@@ -2097,7 +2100,22 @@ var WPCLib = {
                         that.update();
                     }
                 });
-			}
+			},
+
+            count: function() {
+            	// Update the # of collaborator counter next to the icon
+            	var count = this.users.length,
+            		el = document.getElementById('collabcounter');
+
+            	if (count > 1) {
+            		// Show the count
+            		el.innerHTML = count;
+            		el.style.display = 'block';                		
+            	} else {
+            		// Hide
+            		el.style.display = 'none';                 		
+            	}	
+            }			
 		}		
 
 	},

@@ -101,7 +101,6 @@ a {
 }
 
 a.wpcbutton {
-  text-decoration: none;
   font-weight: normal;
   margin: 0 0 3px 0;
   padding: 6px 6px 5px 6px;
@@ -801,6 +800,29 @@ a.wpcbutton:hover {
   opacity: 0.41;
 }
 
+#collabcounter {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  padding: 0 4px;
+  text-align: center;
+  font-size: 14px;
+  font-family: "urbana", sans-serif;
+  font-weight: normal; 
+  background: #ccc;
+  color: #fff; 
+  border: 1px solid #fff;
+  border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -o-border-radius: 3px;  
+}
+
+#sharing:hover #collabcounter {
+  background: #999;
+}
+
 #sharing .actions .cancel {
   background: url(../img/icons.png) no-repeat;
   background-size: 102px auto;
@@ -939,6 +961,14 @@ a.wpcbutton:hover {
     height: 35px;
     width: 60px;    
   } 
+
+  #collabcounter {
+    top: 1px;
+    right: 9px;
+    padding: 0 3px;
+    line-height: 14px; 
+    font-size: 13px;
+  }
 
   #sharing .actions {
     position: fixed;
