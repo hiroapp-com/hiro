@@ -785,7 +785,8 @@ var WPCLib = {
 			        WPCLib.sys.user.upgrade(1);
 			    }				
 				WPCLib.canvas.saved = true;	
-				if (force) status.innerHTML = 'Saved!';								
+				status.innerHTML = 'Saving...';	
+				setTimeout(function(){document.getElementById('status').innerHTML = 'Saved.'},350);							
 			}	
 			// Update last edited counter in folio
 			var docs = WPCLib.folio.docs;
@@ -912,9 +913,7 @@ var WPCLib = {
 					WPCLib.context.blacklist = data.links.blacklist || [];	
 					if (data.links.normal.length!=0) {
 						WPCLib.context.renderresults();
-					} else {
-						WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);
-					}
+					} 
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';	
 					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 
@@ -987,7 +986,7 @@ var WPCLib = {
 			this.quoteShown = true;
 
 			WPCLib.context.clearresults();
-			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready to inspire.';
+			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';
 			this.created = WPCLib.util.now();
 
 			// Empty the link lists & internal values
@@ -1112,8 +1111,7 @@ var WPCLib = {
 		        that.title = document.getElementById(that.pageTitle).value;
 				that.caretPosition = that._getposition()[1];		        
 
-		        // Save Document
-				WPCLib.context.search(that.title,that.text);	        
+		        // Save Document        
                 if (!WPCLib.canvas.sync.inited) { that.savedoc() } else { WPCLib.canvas.sync.addedit(); }
 	        }, 100);
 		},
@@ -1128,7 +1126,7 @@ var WPCLib = {
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-                if (!WPCLib.canvas.sync.inited) { WPCLib.canvas.savedoc() } else { WPCLib.canvas.sync.addedit(); }
+				if (WPCLib.sys.user.level > 0) WPCLib.canvas.sync.addedit(); 
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
@@ -1201,18 +1199,23 @@ var WPCLib = {
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {	
 				// Clean up (and remove potential previous editor from docs array)
-				var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];
+				var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid],
+					lvl = WPCLib.sys.user.level;
 				if (doc && doc.lastEditor) doc.lastEditor = null;
-				WPCLib.canvas._cleartypingtimer();
-
-				// Start off search							
-				WPCLib.context.search(WPCLib.canvas.title,WPCLib.canvas.text);					
+				WPCLib.canvas._cleartypingtimer();				
 
 				// Add edit if user is logged in or save locally if not
 				if (WPCLib.canvas.sync.inited) WPCLib.canvas.sync.addedit();
 
 				// Save rest of doc if flag is set or user not logged in yet
-				if (save || WPCLib.sys.user.level == 0) WPCLib.canvas.savedoc();					
+				if (save || lvl == 0) WPCLib.canvas.savedoc();	
+
+				// Show searchtips if user isn't signed in yet
+				if (lvl == 0 && ((WPCLib.context.sticky.length + WPCLib.context.links.length) == 0)) {
+					var msg = (WPCLib.canvas.text.length > 500) ? 'Tip: You can also select a whole paragraph' : 'Select a word you typed to start a search';					
+						el = document.getElementById(WPCLib.context.wwwresultsId);
+						el.innerHTML = '<div class="tip">' + msg + '</div>';
+				} 				
 			},1000);
 		},	
 
@@ -1233,7 +1236,7 @@ var WPCLib = {
 			// when text is clicked
 			var sel = WPCLib.canvas._getposition(),
 				target = event.target || event.srcElement;
-			if (sel[0] != sel[1]) WPCLib.context.search(WPCLib.canvas.title,sel[2],true);
+			if (sel[0] != sel[1]) WPCLib.context.search(WPCLib.canvas.title,sel[2],true,true);
 			if (target.id == WPCLib.canvas.canvasId || target.id == WPCLib.canvas.contentId) WPCLib.ui.clearactions(null,true);
 		},
 
@@ -1325,6 +1328,9 @@ var WPCLib = {
     		} else {
     			el.focus();
     		}
+
+    		// Store internal value
+    		this.caretPosition = pos1;
 		},
 
 		sync: {
@@ -2453,7 +2459,7 @@ var WPCLib = {
 		quotareached: function() {
 			this.overquota = true;
 			var msg = document.getElementById(this.msgresultsId);
-            document.getElementById(this.statusId).innerHTML = 'Saved, but search quota reached.';			
+            document.getElementById(this.statusId).innerHTML = 'Search quota reached.';			
 			if (msg.innerHTML == '') {				
 				document.getElementById(this.wwwresultsId).innerHTML = document.getElementById(this.synresultsId).innerHTML = '';
 				var txt = (WPCLib.sys.user.level == 1) ?
@@ -2465,8 +2471,9 @@ var WPCLib = {
 
 		analyze: function(string, chunktype) {
 			// Send text to server for analysis, returning text chunks
+			// Not in use, for testing only
 			string = string || (WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
-			document.getElementById(this.statusId).innerHTML = 'Saving & Analyzing...';
+			document.getElementById(this.statusId).innerHTML = 'Analyzing...';
 			$.post('/analyze', {content: string}, 
 			function(data){
 	            WPCLib.context.chunksearch(data,chunktype);
@@ -2475,6 +2482,7 @@ var WPCLib = {
 
 		chunksearch: function(data,chunktype) {
 			// Search with specific chunks returned from analyzer above
+			// Not in use, for testing only
 			document.getElementById(this.statusId).innerHTML = 'Searching...';			
 			var data = data.chunktype || data.textrank_chunks;
             var terms = [];
@@ -2511,7 +2519,7 @@ var WPCLib = {
 		},
 
 
-		search: function(title,text,textonly) {
+		search: function(title,text,textonly,showtip) {
 			// Chunk extraction and search in one step in the backend
 			if (this.overquota) {
 				// Clean up all results exit
@@ -2524,7 +2532,7 @@ var WPCLib = {
 			var that = this;
 			var saved = WPCLib.canvas.saved;
 			var level = WPCLib.sys.user.level;
-			document.getElementById(this.statusId).innerHTML = (!saved || level == 0) ? 'Saving & Searching...' : 'Searching...';				
+			document.getElementById(this.statusId).innerHTML = 'Searching...';				
 
 			// Handle short strings for synonym search, first find out how many words we have and clean up string
 			var ss = string.replace(/\r?\n/g," "); 
@@ -2571,8 +2579,8 @@ var WPCLib = {
                 },           
                 success: function(data) {
                     WPCLib.context.storeresults(data.results);
-                    WPCLib.context.renderresults();		             
-                    document.getElementById(that.statusId).innerHTML = (saved && level > 0) ? 'Ready.' : 'Saved.';                   
+                    WPCLib.context.renderresults(showtip);		             
+                    document.getElementById(that.statusId).innerHTML = 'Ready.';                   
                 }
             });				
 		},
@@ -2679,7 +2687,7 @@ var WPCLib = {
 			WPCLib.canvas.savedoc(true);			
 		},
 
-		renderresults: function() {
+		renderresults: function(showtip) {
 			// Show results in DOM		
 			var results = document.getElementById(this.wwwresultsId);
 			var newresults = results.cloneNode();
@@ -2696,10 +2704,12 @@ var WPCLib = {
 				// Add normal links to DOM object
 				newresults.appendChild(this._buildresult(links[i], false));
 			}	
-			if (this.links.length == 0 && WPCLib.sys.user.level <= 1) {
-				var tip = document.createElement('div');
+			if (this.links.length == 0 && showtip) {
+				var tip = document.createElement('div'), msg, l = WPCLib.canvas.text.length;
+				if (l<500) msg = 'Nothing found';
+				if (l>499) msg = 'Tip: Try to select a different part.';
 				tip.className = 'tip';
-				tip.innerHTML = 'Tip: Select a single word or just a part of your text to narrow your search.';
+				tip.innerHTML = msg;
 				newresults.appendChild(tip);
 			}		
 			results.parentNode.replaceChild(newresults, results);			    
