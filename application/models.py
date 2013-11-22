@@ -461,11 +461,13 @@ class EditSession(ndb.Model):
         
     def notify_viewers(self):
         doc = self.get_doc()
-        users = list(doc.shared_with) + [doc.owner]
-        users.remove(self.user)
         msg = {"kind": "edit", 
                "doc_id": doc.key.id(), 
-               "user": self.user.get().email
+               "origin": {
+                   "session_id": str(self.key.id()),
+                   "email": self.user.get().email,
+                   "name": "foo"
+                   }
                }
-        for u in users:
+        for u in doc.collaborators:
             u.get().push_message(msg)
