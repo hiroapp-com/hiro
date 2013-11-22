@@ -1935,8 +1935,8 @@ var WPCLib = {
 					u = that.users, currentuser = (u[uid].email == WPCLib.sys.user.email),
 					url = '/docs/' + WPCLib.canvas.docid + '/collaborators', payload = {};
 
-				// Build payload
-				payload.email = u[uid].email;
+				// Build payload with either id if we have or email as fallback
+				if (u[uid].id) { payload.id = u[uid].id } else { payload.email = u[uid].email };
 				payload._delete = true;
 
 				// Remove user from array right away
@@ -1951,7 +1951,8 @@ var WPCLib = {
                     data: JSON.stringify(payload),
                     success: function(data) {  
                     	// We do not have to do anything here, except reload the doclist if user has removed herself
-						if (currentuser) WPCLib.folio.docs.loaddocs();                   	
+						if (currentuser) WPCLib.folio.docs.loaddocs();
+						WPCLib.ui.clearactions();                   	
                     },
                     error: function(data) {
                     	// Reset list display 
@@ -4223,7 +4224,7 @@ var WPCLib = {
 				// Menu is completely to the left, so we open it
 				// On touch devices we also remove the keyboard
 				if ('ontouchstart' in document.documentElement) {
-					if (document.activeElement.id == WPCLib.canvas.contentId) document.activeElement.blur();
+					if (document.activeElement) document.activeElement.blur();
 					// Hide sharing dialog on narrow devices
 					if (document.body.offsetWidth<480) WPCLib.ui.clearactions();
 				}				
