@@ -911,7 +911,7 @@ var WPCLib = {
 					WPCLib.context.sticky = data.links.sticky || [];
 					WPCLib.context.links = data.links.normal || [];
 					WPCLib.context.blacklist = data.links.blacklist || [];	
-					if (data.links.normal.length!=0) {
+					if (data.links.normal.length != 0 || data.links.sticky.length != 0) {
 						WPCLib.context.renderresults();
 					} 
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';	
