@@ -1684,11 +1684,11 @@ var WPCLib = {
             	// Receive and process notification of document update
             	var el = WPCLib.folio.docs.lookup[data.doc_id], 
             		ui = WPCLib.ui,
-            		ownupdate = (data.origin.session_id == WPCLib.canvas.sync.sessionid);
-                if (ownupdate){
-                    WPCLib.folio.docs.update();                
-                    return;
-                }
+            		ownupdate = (data.origin.session_id == WPCLib.canvas.sync.sessionid),
+            		ownuser = (data.origin.email == WPCLib.sys.user.email);
+
+            	// If the update was from our current session (same window)	
+            	if (ownupdate) return;	
 
 
             	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
@@ -1699,14 +1699,14 @@ var WPCLib = {
 
             	// Update internal timestamp & last editor values	              	
             	el.updated = WPCLib.util.now();  
-                el.lastEditor =  (ownupdate) ? null : data.origin.name; 
+                el.lastEditor =  (ownuser) ? null : data.origin.name; 
 
                 if (data.doc_id == WPCLib.canvas.docid) {
                 	// If the update is for the current document
                 	// As we don't have a "send/request blank" yet, we trigger a then blank diff
                 	// TODO: Think of a better way
                     WPCLib.canvas.sync.addedit(true,'Syncing...');
-                    if (!ui.windowfocused && !ui.audioblurplayed && !ownupdate) {
+                    if (!ui.windowfocused && !ui.audioblurplayed && !ownuser) {
                     	// Play sound
                     	ui.playaudio('unseen',0.7);
                     	ui.audioblurplayed = true;
@@ -1714,7 +1714,7 @@ var WPCLib = {
                     	var title = WPCLib.canvas.title || 'Untitled';
                     	ui.tabnotify('Updated!');
                     }
-                } else if (!ownupdate) {
+                } else if (!ownuser) {
                 	// If the update is for a doc in folio thats not currently open
                 	// Update internal values and update display
                 	el.unseen = true;
