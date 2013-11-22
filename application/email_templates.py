@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from jinja2 import Template
 from google.appengine.api import mail
 
 templates = {}
@@ -7,7 +9,7 @@ templates["resetpw"] = (
 """
 Hi,
 
-just visit {url}#reset={token} to reset your password.
+just visit {{url}}#reset={{token}} to reset your password.
 
 Please let us know if there is anything else we can do,
 keep capturing the good stuff.
@@ -17,7 +19,7 @@ The Hiro Team
 """
 <html><body>
 Hi,
-just visit {url}#reset={token} to reset your password.
+just visit {{url}}#reset={{token}} to reset your password.
 
 Please let us know if there is anything else we can do,
 keep capturing the good stuff.
@@ -28,13 +30,13 @@ The Hiro Team
 
 
 templates["invite"] = (
-"{sender} Wants To Keep A Note With You", 
+"{{sender}} Wants To Keep A Note With You", 
 """
 Hi,
 
-{sender} just shared {title} with you:
+{{sender}} just shared {{doc.title}} with you:
 
-Join in anytime via {url}#token={token}
+Join in anytime via {{url}}#token={{token}}
 
 Keep capturing the good stuff,
 
@@ -48,7 +50,7 @@ Team Hiro
 <html lang="en" style="width: 100%;text-align: center;margin: 0;padding: 0;">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<title>{sender} Wants To Keep A Note With You</title>
+	<title>{{sender}} Wants To Keep A Note With You</title>
 	<style>
 	@import url(http://fonts.googleapis.com/css?family=PT+Serif|Chau+Philomene+One);
 	body, html {
@@ -225,8 +227,9 @@ body html
 
 
 
-def send_mail_tpl(tpl, to, context):
-    subj, body, html = templates.get(tpl, (None, None, None))
-    if subj == body == html == None:
+def send_mail_tpl(tpl, to, ctx):
+    subj, body, html = [Template(x.decode('utf-8')) for x in templates.get(tpl, ("", "", ""))]
+    if subj == body == html == Template(""):
         raise Exception("email template {0} not found in email configuration".format(tpl))
-    mail.send_mail("Team Hiro <hello@hiroapp.com>", to, subj.format(**context), body.format(**context), html=html.format(**context))
+    print body.render(ctx)
+    mail.send_mail("Team Hiro <hello@hiroapp.com>", to, subj.render(ctx), body.render(ctx), html=html.render(ctx))

@@ -13,7 +13,7 @@ from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
 from google.appengine.api import memcache, channel
 from flask.ext.login import UserMixin, AnonymousUser, current_user
-from flask import session
+from flask import session, url_for
 from textmodels.textrank import get_top_keywords_list
 from settings import STRIPE_SECRET_KEY
 
@@ -23,7 +23,7 @@ from .email_templates import send_mail_tpl
 from diff_match_patch import diff_match_patch 
 
 DMP = diff_match_patch()
-base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
+base_url = 'http://localhost:8080' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com'
 
 class PlanChange(ndb.Model):
     created_at = ndb.DateTimeProperty(auto_now_add=True)
@@ -296,9 +296,9 @@ class Document(ndb.Model):
             return "invite pending", 302
         user = User.query(User.email == email).get()
         if not user:
+            url = base_url + url_for("note", doc_id=self.key.id())
             token = SharingToken.create(email, self.key)
-            print "TTTOOOOKEEENN >>", token, "<<"
-            send_mail_tpl('invite', email, dict(sender=current_user.email or "foo", url=base_url, token=token, doc=self))
+            send_mail_tpl('invite', email, dict(sender=current_user.email or "foo", url=url, token=token, doc=self))
             return "ok", 200
 
         if user.key == self.owner:
