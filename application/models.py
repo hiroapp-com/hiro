@@ -12,7 +12,7 @@ import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
 from google.appengine.api import memcache, channel
-from flask.ext.login import UserMixin, AnonymousUser, current_user
+from flask.ext.login import UserMixin, AnonymousUser
 from flask import session, url_for
 from textmodels.textrank import get_top_keywords_list
 from settings import STRIPE_SECRET_KEY
@@ -297,14 +297,14 @@ class Document(ndb.Model):
         elif email:
             ndb.delete_multi(list(SharingToken.query(SharingToken.email == email, ancestor=self.key).iter(keys_only=True)))
 
-    def invite(self, email):
+    def invite(self, email, invited_by):
         if SharingToken.query(SharingToken.email == email, ancestor=self.key).get():
             return "invite pending", 302
         user = User.query(User.email == email).get()
         url = base_url + url_for("note", doc_id=self.key.id())
         if not user:
             token = SharingToken.create(email, self.key)
-            send_mail_tpl('invite', email, dict(sender=current_user.email or "foo", url=url, token=token, doc=self))
+            send_mail_tpl('invite', email, dict(invited_by=invited_by, url=url, token=token, doc=self))
             return "ok", 200
 
         if user.key == self.owner:
@@ -323,6 +323,8 @@ class Document(ndb.Model):
                                                      "name": invited_by.name
                                                      }
                                                  })
+            if not active_sessions:
+                send_mail_tpl('invite', email, dict(invited_by=invited_by, url=url, doc=self))
             return "ok", 200
 
 

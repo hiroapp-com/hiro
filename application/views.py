@@ -361,7 +361,7 @@ def doc_collaborators(doc_id):
             doc.uninvite(pk, email)
             return "ok"
         if email:
-            return doc.invite(email)
+            return doc.invite(email, current_user)
         else:
             return "", 400
     else: # GET 
