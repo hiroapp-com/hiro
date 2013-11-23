@@ -177,7 +177,7 @@ var WPCLib = {
 						newdocs.appendChild(that.renderlink(i,'active',act[i])); 
 					};																	
 					// iterate unseen doc counter
-					if (act[i].unseen) this.unseenupdates++;					    
+					if (act[i].unseen && act[i].shared) this.unseenupdates++;					    
 				}
 				if (arc) {
 					for (i=0,l=arc.length;i<l;i++) {	
