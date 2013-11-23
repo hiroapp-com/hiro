@@ -3426,7 +3426,7 @@ var WPCLib = {
 					event.preventDefault();
 					var target = event.target || event.srcElement,
 						el = target.parentNode.previousSibling,
-						name = el.value,
+						name = el.value;
 						// Make sure we have a new value
 						if (!name) return;											
 				}	
