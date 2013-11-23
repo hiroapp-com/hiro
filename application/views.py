@@ -228,7 +228,7 @@ def profile():
     if request.method == 'POST':
         #for now, only User.name can be changed via that endpoint
         payload = request.json or {}
-        user.name = payload.get('name') or user.name
+        user.name = payload.get('name', user.name)
         user.put()
     return jsonify(user.to_dict())
 
@@ -262,7 +262,8 @@ def list_documents():
             "status": doc.status,
             "created": time.mktime(doc.created_at.timetuple()),
             "updated": time.mktime(doc.updated_at.timetuple()),
-            "shared": len(doc.shared_with) >0
+            "shared": len(doc.shared_with) >0,
+            "unseen": time.mktime(doc.updated_at.timetuple()) > current_user.last_seen[doc.key.id()]
             })
     
 
@@ -339,6 +340,7 @@ def get_document(doc_id):
     sess = EditSession(parent=doc.key, user=current_user.key, shadow=doc.text).put()
     resp.headers['Collab-Session-ID'] = sess.id()
     resp.headers['Channel-ID'] = channel.create_channel(str(sess.id()))
+    current_user.set_seen(doc.key.id())
     return resp
 
 
@@ -425,6 +427,7 @@ def sync_doc(doc_id):
     changed = sess.apply_edits(deltas)
     if changed:
         taskqueue.add(payload="{0}-{1}".format(doc_id, sess_id), url='/_hro/notify_sessions')
+    current_user.set_seen(doc.key.id())
     return jsonify(session_id=sess_id, deltas=[e.to_dict() for e in sess.edit_stack])
 
 

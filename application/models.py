@@ -7,6 +7,7 @@ import calendar
 import json
 from hashlib import sha512
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 import stripe
 from passlib.hash import pbkdf2_sha512
@@ -49,12 +50,20 @@ class User(UserMixin, ndb.Model):
     stripe_cust_id = ndb.StringProperty()
     relevant_counter = ndb.IntegerProperty(default=0)
     has_root = ndb.BooleanProperty(default=False)
+    docs_seen = ndb.JsonProperty()
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
     latest_doc = property(lambda self: Document.query(ndb.OR(Document.owner == self.key, 
                                                              Document.shared_with == self.key)).order(-Document.updated_at).get())
 
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
+    last_seen = property(lambda self: defaultdict(float, self.docs_seen or {}))
+
+    def set_seen(self, doc_id):
+        if not self.docs_seen:
+            self.docs_seen = {}
+        self.docs_seen[doc_id] = time.mktime(datetime.now().timetuple())
+        self.put()
 
     def push_message(self, msg):
         i = 0
