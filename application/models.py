@@ -6,7 +6,7 @@ import time
 import calendar
 import json
 from hashlib import sha512
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import stripe
 from passlib.hash import pbkdf2_sha512
@@ -57,8 +57,12 @@ class User(UserMixin, ndb.Model):
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
 
     def push_message(self, msg):
-        for sess in EditSession.query(EditSession.user == self.key):
+        i = 0
+        threshold = datetime.now() - timedelta(minutes=30)
+        for sess in EditSession.query(EditSession.user == self.key, EditSession.last_used_at > threshold):
+            i += 1
             channel.send_message(str(sess.key.id()), json.dumps(msg))
+        return i
 
 
     @property
@@ -297,8 +301,8 @@ class Document(ndb.Model):
         if SharingToken.query(SharingToken.email == email, ancestor=self.key).get():
             return "invite pending", 302
         user = User.query(User.email == email).get()
+        url = base_url + url_for("note", doc_id=self.key.id())
         if not user:
-            url = base_url + url_for("note", doc_id=self.key.id())
             token = SharingToken.create(email, self.key)
             send_mail_tpl('invite', email, dict(sender=current_user.email or "foo", url=url, token=token, doc=self))
             return "ok", 200
@@ -311,6 +315,14 @@ class Document(ndb.Model):
             self.shared_with.append(user.key)
             self.put()
             #notify user
+            active_sessions = user.push_message({"kind": "share", 
+                                                 "doc_id": str(self.key.id()), 
+                                                 "origin": {
+                                                     "user_id": invited_by.get_id(),
+                                                     "email": invited_by.email,
+                                                     "name": invited_by.name
+                                                     }
+                                                 })
             return "ok", 200
 
 
@@ -373,7 +385,7 @@ class Edit(ndb.Model):
 class EditSession(ndb.Model):
     user = ndb.KeyProperty(kind=User)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
-    last_used_at = ndb.DateTimeProperty()
+    last_used_at = ndb.DateTimeProperty(auto_now=True)
     shadow = ndb.TextProperty()
     server_version = ndb.IntegerProperty(default=0)
     client_version = ndb.IntegerProperty(default=0)

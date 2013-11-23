@@ -27,3 +27,8 @@ indexes:
   properties:
   - name: updated_at
     direction: desc
+
+- kind: EditSession
+  properties:
+  - name: user
+  - name: last_used_at
