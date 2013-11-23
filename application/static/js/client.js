@@ -1784,7 +1784,7 @@ var WPCLib = {
 			// Bind basic events
 			WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('input')[0],'keydown', function(){
 				this.className = 'hiro';
-				this.nextSibling.innerHTML = '';
+				this.nextSibling.display = 'none';
 			});			
 			if ('ontouchstart' in document.documentElement) {
 				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'touchstart', function(event){
@@ -1942,6 +1942,7 @@ var WPCLib = {
 				d.innerHTML = 'Inviting ' + email.split('@')[0].substring(0,18) + '...';
 				this.el.insertBefore(d,this.el.firstChild);
 				input.nextSibling.innerHTML = '';
+				input.nextSibling.style.display = 'none';				
 
                 $.ajax({
                 	// Post to backend
@@ -1964,7 +1965,8 @@ var WPCLib = {
                     },
                     error: function(data) {
                     	// Show error 
-                    	input.nextSibling.innerHTML = data.responseText; 
+                    	input.nextSibling.innerHTML = data.responseText;
+						input.nextSibling.style.display = 'block';	                    	
 						input.className = 'hiro error';                    	                     	
                     	input.focus();           
                     	button.innerHTML = 'Invite';

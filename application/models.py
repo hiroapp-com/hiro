@@ -308,9 +308,9 @@ class Document(ndb.Model):
             return "ok", 200
 
         if user.key == self.owner:
-            return "it's all yours", 302
+            return "This note is already yours", 302
         elif user.key  in self.shared_with:
-            return "already a member of this clique", 302
+            return "Already part of this clique", 302
         else:
             self.shared_with.append(user.key)
             self.put()

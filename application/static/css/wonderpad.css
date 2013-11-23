@@ -872,12 +872,10 @@ a.wpcbutton:hover {
 }
 
 #s_actions div.error {
-  float: right;
-  display: inline-block;
+  display: none;
+  margin: -7px 10px 4px 10px;
   font-size: 14px;
   color: red;
-  margin-top: -38px;
-  margin-right: 10px;
 }
 
 #s_actions a.wpcbutton {
