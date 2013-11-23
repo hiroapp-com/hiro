@@ -932,8 +932,13 @@ var WPCLib = {
 					if (textStatus == 'timeout') WPCLib.sys.goneoffline();	
 					// Show notifications and reset token if we had one
 					if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
-					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.');
+					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.');					
 					if (token) WPCLib.sharing.token = '';											
+					// If the load fails because of access issues reset doclist
+					if (xhr.status == 403 || xhr.status == 404) {
+                    	// Reload docs                  								
+                    	WPCLib.folio.docs.loaddocs();
+                    }					
 				}
 			});						
 		},	
