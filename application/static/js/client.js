@@ -3432,7 +3432,7 @@ var WPCLib = {
 				}	
 
 				// Submit to backend
-				payload.firstname = name;
+				payload.name = name;
 				$.ajax({
 					url: "/me",
 	                type: "POST",

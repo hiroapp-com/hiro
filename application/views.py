@@ -221,6 +221,20 @@ def note(doc_id):
         doc = None
     return render_template('index.html', doc=doc)
 
+
+@login_required
+def profile():
+    user = current_user
+    if request.method == 'POST':
+        #for now, only User.name can be changed via that endpoint
+        payload = request.json or {}
+        user.name = payload.get('name') or user.name
+        user.put()
+    return jsonify(user.to_dict())
+
+
+    
+
 def landing():
     return render_template('landing.html')
 

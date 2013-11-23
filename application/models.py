@@ -39,6 +39,7 @@ class User(UserMixin, ndb.Model):
 
     token = ndb.StringProperty()
     email = ndb.StringProperty()
+    name = ndb.StringProperty(default='')
     plan = ndb.StringProperty(default='free')
     plan_history = ndb.StructuredProperty(PlanChange, repeated=True)
     plan_expires_at = ndb.DateTimeProperty()
@@ -181,6 +182,7 @@ class User(UserMixin, ndb.Model):
     def to_dict(self):
         return {
                 'id': self.get_id(),
+                'name': self.name,
                 'email': self.email,
                 'tier': self.tier
                 }
