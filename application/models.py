@@ -324,7 +324,7 @@ class Document(ndb.Model):
                                                      }
                                                  })
             if not active_sessions:
-                send_mail_tpl('invite', email, dict(invited_by=invited_by, url=url, doc=self))
+                send_mail_tpl('invite', email, dict(invited_by=invited_by, invitee=user, url=url, doc=self))
             return "ok", 200
 
 
