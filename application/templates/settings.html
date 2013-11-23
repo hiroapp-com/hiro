@@ -135,11 +135,12 @@
 				</div>
 				{% if current_user.is_authenticated() %}
 				<div class="accountdetails">
-					<form>
-						<input type="text" value="{{ current_user.firstname }}" onkeyup="_wpc.sys.user.nametype(event)" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a href="#" onclick="_wpc.sys.user.namesave(event);">Save Changes</a></div>
+					<form id="accountform" action="javascript:void(0);">
+						<input type="text" value="{{ current_user.name }}" onkeyup="_wpc.sys.user.nametype(event)" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a href="#" onclick="_wpc.sys.user.namesave(event);">Save Changes</a></div>
 						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
 						<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-						<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			
+						<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>
+						<input type="submit" value="foo" onclick="_wpc.sys.user.namesave(event); return false;" class="pseudobutton"></input>			
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="_wpc.ui.facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
@@ -315,11 +316,11 @@
 			    email            : '{{ current_user.email }}',
 			    subscriptionPlan : '{{ current_user.plan }}',
 			    created: {{ current_user.signup_at_ts }} 
-			}, firstname = '{{ current_user.firstname  }}';
+			}, firstname = '{{ current_user.name }}';
 			if (window.navigator.standalone) _wpcsiou.mobileappinstalled = true;
 			if ('ontouchstart' in document.documentElement) _wpcsiou.touchdevice = true;
 			if (_wpc.sys.user.doccount > 0) _wpcsiou.doccount = _wpc.sys.user.doccount;	
-			if (firstname) _wpcsiou.firstname = _wpc.sys.user.firstname = firstname;	
+			if (firstname) _wpcsiou.firstName = _wpc.sys.user.firstname = firstname;	
 	  		// init segment io
 			analytics.identify('{{ current_user.token }}', _wpcsiou);  
 			_wpc.sys.user.id = '{{ current_user.token }}';

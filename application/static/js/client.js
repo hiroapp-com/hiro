@@ -3419,32 +3419,36 @@ var WPCLib = {
 
 			namesave: function(event,name) {
 				// Submit new name to backend
-				var payload = {};
+				var payload = {}, frame = document.getElementById('dialog').contentDocument,
+					form = frame.getElementById('accountform'),
+					input = frame.getElementsByTagName('input')[0],
+					button = frame.getElementsByTagName('a')[0];
 
 				// In case this was triggered by UI click
 				if (event) {
 					event.preventDefault();
-					var target = event.target || event.srcElement,
-						el = target.parentNode.previousSibling,
-						name = el.value;
-						// Make sure we have a new value
-						if (!name) return;											
+					var name = input.value;										
 				}	
+
+				// Make sure we have a new value
+				if (!name) return;					
 
 				// Submit to backend
 				payload.name = name;
+				console.log('Saving',payload)				
 				$.ajax({
 					url: "/me",
 	                type: "POST",
-	                contentType: "application/x-www-form-urlencoded",
-	                data: payload,
-					success: function() {
-						if (target) target.innerHTML = 'Saved!';
-						WPCLib.sys.user.firstname = name;	                    
+	                contentType: "application/json; charset=UTF-8",
+	                data: JSON.stringify(payload),
+					success: function(xhr) {
+						button.innerHTML = 'Saved!';
+						WPCLib.sys.user.firstname = name;
+						console.log(xhr);	                    
 					},
 					error: function(xhr) {				
-						if (el) el.focus();
-						if (target) target.innerHTML = 'Try again';	              		                    						                    
+						input.focus();
+						button.innerHTML = 'Try again';	              		                    						                    
 					}										
 				});					
 
