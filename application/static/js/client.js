@@ -3386,7 +3386,7 @@ var WPCLib = {
 			},
 
 			getfirstname: function() {
-				// Quick hack to get FB name of users that already signed id
+				// Quick hack to get FB name of users that already signed in
 				setTimeout(function(){
 					if (!FB) {
 						WPCLib.sys.user.getfirstname();
@@ -3394,14 +3394,61 @@ var WPCLib = {
 					}					
 					FB.api('/me', function(response) {
 			            if (response.first_name && !WPCLib.sys.user.firstname) {
+			            	// Fetch name & build payload
 			            	WPCLib.sys.user.firstname = response.first_name;
 			            	var payload = {};
 			            	payload.firstName = response.first_name;
+			            	// Notify segment.io
 			            	analytics.identify(WPCLib.sys.user.id, payload);
+			            	// Send to backend
+			            	WPCLib.sys.user.namesave(null,response.first_name)
 			            }
 			        });
 				},1500);	
 			},	
+
+			nametype: function(event) {
+				// Onkeydown handler for Username input field in settings dialog
+				var target = event.target || event.srcElement;
+				if (target.value.length > 0 && target.value != WPCLib.sys.user.firstname) {
+					target.nextSibling.style.display = 'block';
+				} else {
+					target.nextSibling.style.display = 'none';					
+				}			
+			},
+
+			namesave: function(event,name) {
+				// Submit new name to backend
+				var payload = {};
+
+				// In case this was triggered by UI click
+				if (event) {
+					event.preventDefault();
+					var target = event.target || event.srcElement,
+						el = target.parentNode.previousSibling,
+						name = el.value,
+						// Make sure we have a new value
+						if (!name) return;											
+				}	
+
+				// Submit to backend
+				payload.firstname = name;
+				$.ajax({
+					url: "/me",
+	                type: "POST",
+	                contentType: "application/x-www-form-urlencoded",
+	                data: payload,
+					success: function() {
+						if (target) target.innerHTML = 'Saved!';
+						WPCLib.sys.user.firstname = name;	                    
+					},
+					error: function(xhr) {				
+						if (el) el.focus();
+						if (target) target.innerHTML = 'Try again';	              		                    						                    
+					}										
+				});					
+
+			},			
 
 			requestreset: function(event) {
 				// Checks if there is a valid mail address and sends a password request for it
@@ -4575,7 +4622,7 @@ var WPCLib = {
 				// See if we have plan limits or mobile device
 				if (level < 2) val = val + ' of 10';
 				
-				target.getElementsByTagName('input')[2].value = val + ' notes';
+				target.getElementsByTagName('input')[3].value = val + ' notes';
 			}
 		},
 

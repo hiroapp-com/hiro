@@ -136,6 +136,7 @@
 				{% if current_user.is_authenticated() %}
 				<div class="accountdetails">
 					<form>
+						<input type="text" value="{{ current_user.firstname }}" onkeyup="_wpc.sys.user.nametype(event)" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a href="#" onclick="_wpc.sys.user.namesave(event);">Save Changes</a></div>
 						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
 						<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
 						<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>			

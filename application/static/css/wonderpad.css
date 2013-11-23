@@ -2028,7 +2028,7 @@ body#settingsPage input#cc_number.error {
 }
 
 #s_settings .accountdetails, #s_settings .checkoutdetails {
-  margin: 85px auto 0 auto;
+  margin: 68px auto 0 auto;
   width: 400px;
 }
 
@@ -2097,6 +2097,10 @@ body#settingsPage input#cc_number.error {
   margin-top: -38px;
   margin-right: 10px; 
   color: #999;
+}
+
+#s_settings form .ioption.save {
+  display: none;
 }
 
 #s_settings form .ioption.error {
@@ -2464,7 +2468,7 @@ body#settingsPage input#cc_number.error {
 
   #s_account form .ioption:last-child {
     position: absolute;
-    top: 166px;
+    top: 214px;
     right: 17px; 
     z-index: 99000;
   }
@@ -2670,7 +2674,7 @@ body#settingsPage input#cc_number.error {
 
   #s_settings .accountdetails, #s_settings .checkoutdetails {
     width: 380px;
-    margin-top: 47px;   
+    margin-top: 30px;   
     position: relative; 
   }
 
@@ -2689,11 +2693,11 @@ body#settingsPage input#cc_number.error {
 
   .accountdetails a.wpcbutton.share {
     width: 90px;
-  }     
+  }       
 
   #s_account form .ioption:last-child {
     position: absolute;
-    top: 147px;
+    top: 195px;
     right: 0; 
     z-index: 99000;
   }
