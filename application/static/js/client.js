@@ -3421,8 +3421,8 @@ var WPCLib = {
 				// Submit new name to backend
 				var payload = {}, frame = document.getElementById('dialog').contentDocument,
 					form = frame.getElementById('accountform'),
-					input = frame.getElementsByTagName('input')[0],
-					button = frame.getElementsByTagName('a')[0];
+					input = form.getElementsByTagName('input')[0],
+					button = form.getElementsByTagName('a')[0];
 
 				// In case this was triggered by UI click
 				if (event) {
@@ -3434,8 +3434,7 @@ var WPCLib = {
 				if (!name) return;					
 
 				// Submit to backend
-				payload.name = name;
-				console.log('Saving',payload)				
+				payload.name = name;				
 				$.ajax({
 					url: "/me",
 	                type: "POST",
@@ -3443,8 +3442,7 @@ var WPCLib = {
 	                data: JSON.stringify(payload),
 					success: function(xhr) {
 						button.innerHTML = 'Saved!';
-						WPCLib.sys.user.firstname = name;
-						console.log(xhr);	                    
+						WPCLib.sys.user.firstname = name;	                    
 					},
 					error: function(xhr) {				
 						input.focus();
