@@ -1941,7 +1941,6 @@ var WPCLib = {
 				d.className = 'user';
 				d.innerHTML = 'Inviting ' + email.split('@')[0].substring(0,18) + '...';
 				this.el.insertBefore(d,this.el.firstChild);
-				input.nextSibling.innerHTML = '';
 				input.nextSibling.style.display = 'none';				
 
                 $.ajax({
