@@ -38,7 +38,6 @@ app.add_url_rule('/docs/<doc_id>', 'get_document', view_func=views.get_document,
 app.add_url_rule('/docs/<doc_id>', 'edit_document', view_func=views.edit_document, methods=['PATCH', 'POST'])
 app.add_url_rule('/docs/<doc_id>/collaborators', 'collaborators', view_func=views.doc_collaborators, methods=['GET', 'POST'])
 app.add_url_rule('/docs/<doc_id>/sync', 'sync_doc', view_func=views.sync_doc, methods=['POST'])
-app.add_url_rule('/docs/<doc_id>/_testdo_share/<email>', 'test_share', view_func=views.test_share, methods=['GET'])
 
 # textanalysis & semantic search
 app.add_url_rule('/analyze', 'analyze_content', view_func=views.analyze_content, methods=['POST'])

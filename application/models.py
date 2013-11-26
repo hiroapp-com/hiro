@@ -1,18 +1,15 @@
-from pprint import pformat
-import re
 import os
 import uuid
 import time
 import calendar
-import json
 from hashlib import sha512
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import defaultdict
 
 import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
-from google.appengine.api import memcache, channel
+from google.appengine.api import memcache
 from flask.ext.login import UserMixin, AnonymousUser
 from flask import session, url_for
 from textmodels.textrank import get_top_keywords_list
@@ -20,6 +17,7 @@ from settings import STRIPE_SECRET_KEY
 
 from .utils import get_sorted_chunks
 from .email_templates import send_mail_tpl
+from .diffsync import SyncSession
 
 from diff_match_patch import diff_match_patch 
 
@@ -58,7 +56,9 @@ class User(UserMixin, ndb.Model):
 
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
     last_seen = property(lambda self: defaultdict(float, self.docs_seen or {}))
+    edit_sessions = ndb.StringProperty(repeated=True)
 
+    
     def set_seen(self, doc_id):
         if not self.docs_seen:
             self.docs_seen = {}
@@ -67,10 +67,16 @@ class User(UserMixin, ndb.Model):
 
     def push_message(self, msg):
         i = 0
-        threshold = datetime.now() - timedelta(minutes=30)
-        for sess in EditSession.query(EditSession.user == self.key, EditSession.last_used_at > threshold):
-            i += 1
-            channel.send_message(str(sess.key.id()), json.dumps(msg))
+        for sess_id in self.edit_sessions:
+            sess = SyncSession.fetch(sess_id)
+            if sess:
+                sess.push(msg)
+                i += 1
+            else:
+                # session expired
+                print "CLEANING UP EDITSESSION: ", sess_id
+                self.edit_sessions.remove(sess_id)
+        self.put()
         return i
 
 
@@ -287,7 +293,6 @@ class Document(ndb.Model):
             return True
         return False
 
-
     def analyze(self):
         data = (self.title or '') + (self.text or '')
         data = data.replace(os.linesep, ',') 
@@ -378,121 +383,9 @@ class PasswordToken(ndb.Model):
         return token
 
 
-class Edit(ndb.Model):
-    server_version = ndb.IntegerProperty(default=0)
-    client_version = ndb.IntegerProperty(default=0)
-    delta = ndb.TextProperty()
-    force = ndb.BooleanProperty(default=False)
-
-    def to_dict(self):
-        return {
-            'serverversion': self.server_version,
-            'clientversion': self.client_version,
-            'delta': self.delta,
-            'force': self.force
-            }
 
 
-class EditSession(ndb.Model):
-    user = ndb.KeyProperty(kind=User)
-    created_at = ndb.DateTimeProperty(auto_now_add=True)
-    last_used_at = ndb.DateTimeProperty(auto_now=True)
-    shadow = ndb.TextProperty()
-    server_version = ndb.IntegerProperty(default=0)
-    client_version = ndb.IntegerProperty(default=0)
-    backup = ndb.TextProperty()
-    backup_version = ndb.IntegerProperty(default=0)
-
-    edit_stack = ndb.StructuredProperty(Edit, repeated=True)
 
 
-    def get_doc(self):
-        return self.key.parent().get()
 
-    @ndb.transactional()
-    def apply_edits(self, stack):
-        ok = True
-        changed = False
-        doc = self.get_doc()
-        mastertext, shadow = doc.text, self.shadow
-        for edit in stack:
-            sv, cv, delta = edit['serverversion'], edit['clientversion'], edit['delta']
 
-            # if server-ACK lost, rollback to backup
-            if sv != self.server_version and sv == self.backup_version:
-                print "SV MISMATCH: RECOVERING FROM BACKUP"
-                shadow = self.backup
-                self.server_version = self.backup_version
-                self.edit_stack = []
-
-            # clear client-ACK'd edits from server stack
-            self.edit_stack = [e for e in self.edit_stack if e.server_version > sv]
-
-            # start the delta-fun!
-            if sv != self.server_version:
-                # version mismatch
-                #request re-sync
-                raise Exception("sv mismatch")
-                ok = False
-            elif cv > self.client_version:
-                # client in the future?
-                #request re-sync
-                raise Exception("cv mismatch")
-                ok = False
-            elif cv < self.client_version:
-                # dupe
-                pass
-            else:
-                try:
-                    diffs = DMP.diff_fromDelta(shadow, delta)
-                    if len(diffs) > 1 or (len(diffs) == 1 and diffs[0][0] != DMP.DIFF_EQUAL):
-                        changed = True
-                except ValueError, e:
-                    #request re-sync
-                    raise e
-                    diffs = None
-                    ok = False
-                self.client_version += 1
-                if diffs:
-                    # patch master-doc
-                    patches = DMP.patch_make(shadow, diffs)
-                    shadow = DMP.diff_text2(diffs)
-                    self.backup = shadow
-                    self.backup_version = self.server_version
-                    mastertext, res = DMP.patch_apply(patches, mastertext)
-                    mastertext = re.sub(r"(\r\n|\r|\n)", "\n", mastertext)
-
-        # render output
-        if ok:
-            diffs = DMP.diff_main(shadow, mastertext)
-            DMP.diff_cleanupEfficiency(diffs)
-            delta = DMP.diff_toDelta(diffs)
-            print "delta!", pformat(delta)
-            self.edit_stack.append(Edit(server_version=self.server_version, 
-                                        client_version=self.client_version,
-                                        delta=delta))
-            self.server_version += 1
-            doc.text = mastertext
-            self.shadow = mastertext
-            doc.put()
-            self.put()
-        else:
-            self.client_version += 1
-            self.edit_stack.append(Edit(server_version=self.server_version, 
-                                        client_version=self.client_version,
-                                        delta=mastertext, force=True))
-        return changed
-
-        
-    def notify_viewers(self):
-        doc = self.get_doc()
-        msg = {"kind": "edit", 
-               "doc_id": doc.key.id(), 
-               "origin": {
-                   "session_id": str(self.key.id()),
-                   "email": self.user.get().email,
-                   "name": "foo"
-                   }
-               }
-        for u in doc.collaborators:
-            u.get().push_message(msg)

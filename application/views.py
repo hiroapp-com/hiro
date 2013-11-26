@@ -33,7 +33,8 @@ from google.appengine.ext import ndb
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
 from application import app
 
-from .models import User, Document, Link, PasswordToken, EditSession, SharingToken
+from .diffsync import SyncSession
+from .models import User, Document, Link, PasswordToken, SharingToken
 from .forms import LoginForm, SignupForm
 from .decorators import limit_free_plans, root_required
 from .email_templates import send_mail_tpl
@@ -293,12 +294,13 @@ def create_document():
     doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc_id = doc.put()
 
-    # c&p, TODO: refactor session creation and Reponse-Header handling 
+    sess = SyncSession.create(current_user.key.id(), doc.text)
     resp = jsonify(doc_id=doc_id.id())
     resp.status = '201'
-    sess = EditSession(parent=doc.key, user=current_user.key, shadow=doc.text).put()
-    resp.headers['Collab-Session-ID'] = sess.id()
-    resp.headers['Channel-ID'] = channel.create_channel(str(sess.id()))
+    resp.headers['Collab-Session-ID'] = sess['session_id']
+    resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
+    current_user.edit_sessions.append(sess['session_id'])
+    current_user.put()
     return resp
 
 
@@ -337,10 +339,13 @@ def get_document(doc_id):
         return "access denied, sorry.", 403
 
     resp = jsonify(doc.api_dict())
-    sess = EditSession(parent=doc.key, user=current_user.key, shadow=doc.text).put()
-    resp.headers['Collab-Session-ID'] = sess.id()
-    resp.headers['Channel-ID'] = channel.create_channel(str(sess.id()))
+    sess = SyncSession.create(current_user.key.id(), doc.text)
+
+    resp.headers['Collab-Session-ID'] = sess['session_id']
+    resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
     current_user.set_seen(doc.key.id())
+    current_user.edit_sessions.append(sess['session_id'])
+    current_user.put()
     return resp
 
 
@@ -414,41 +419,70 @@ def sync_doc(doc_id):
     elif not doc.allow_access(current_user):
         return "access denied, sorry.", 403
 
+    cache = memcache.Client()
     sess_id = request.json.get('session_id')
-    if not sess_id or not sess_id.isdigit():
-        return "session-id required and needs to be a numbers", 400
-    sess = EditSession.get_by_id(int(sess_id), parent=doc.key)
-    if not sess:
-        return "collab session not found", 404
-    elif not sess.user == current_user.key:
-        return "not your collab session", 403
-
     deltas = request.json.get('deltas', [])
-    changed = sess.apply_edits(deltas)
-    if changed:
-        taskqueue.add(payload="{0}-{1}".format(doc_id, sess_id), url='/_hro/notify_sessions')
-    current_user.set_seen(doc.key.id())
-    return jsonify(session_id=sess_id, deltas=[e.to_dict() for e in sess.edit_stack])
+    cache_key = "doc:{0}".format(doc_id)
+    
+    retries = 5
+    while retries > 0:
+        retries -= 1
+        sess = SyncSession.fetch(sess_id, cache)
+        if not sess:
+            return "sync session not found", 404
+        elif not sess['user_id'] == current_user.key.id():
+            return "not your sync session", 403
+
+        if not cache.get(cache_key):
+            # make sure mastertext is in cache for later CAS retrieval
+            cache.set(cache_key, {'text': doc.text})
+        cached_doc = cache.gets(cache_key)
+        # N.B.: cached_doc will be modified inplace
+        changed = sess.sync_inbound(deltas, cached_doc)
+        if changed:
+            ok = cache.cas(cache_key, cached_doc) 
+            if ok:
+                sess.save()
+                taskqueue.add(payload="{0}-{1}".format(doc_id, sess_id), url='/_hro/notify_sessions')
+            else:
+                # CAS timestamp expired, try all over again
+                continue
+        else:
+            # master doc not changed, only persist session
+            sess.save()
+
+        doc.text = cached_doc['text']
+        # fire and forget...
+        doc.put_async()
+        current_user.set_seen(doc.key.id())
+        return jsonify(session_id=sess_id, deltas=sess['edit_stack'])
+    return jsonify_err(400, "could not acquire lock for masterdoc")
 
 
 def notify_sessions():
     doc_id, sess_id = request.data.split('-', 1)
-    sess = EditSession.get_by_id(int(sess_id), parent=ndb.Key(Document, doc_id))
-    sess.notify_viewers()
-    return "ok"
-
-
-
-def test_share(doc_id, email):
     doc = Document.get_by_id(doc_id)
-    user = User.query(User.email == email).get()
-    doc.shared_with.append(user.key)
-    doc.put()
+    sess = SyncSession.fetch(sess_id)
+    if not doc or not sess:
+        #something went wrong...
+        return
+    user = User.get_by_id(sess['user_id'])
+    msg = {"kind": "edit", 
+           "doc_id": doc.key.id(), 
+           "origin": {
+               "session_id": sess['session_id'],
+               "email": user.email,
+               "name": user.name
+               }
+           }
+    for u in doc.collaborators:
+        u.get().push_message(msg)
     return "ok"
 
 
 def warmup():
     """App Engine warmup handler
+
     See http://code.google.com/appengine/docs/python/config/appconfig.html#Warming_Requests
 
     """
