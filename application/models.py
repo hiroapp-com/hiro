@@ -57,6 +57,7 @@ class User(UserMixin, ndb.Model):
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
     last_seen = property(lambda self: defaultdict(float, self.docs_seen or {}))
     edit_sessions = ndb.StringProperty(repeated=True)
+    custom_css = ndb.StringProperty(default='')
 
     
     def set_seen(self, doc_id):

@@ -230,6 +230,8 @@ def profile():
         #for now, only User.name can be changed via that endpoint
         payload = request.json or {}
         user.name = payload.get('name', user.name)
+        if payload.get('limbo', '') == "!":
+            user.custom_css = ".canvas .page .content textarea { font-family: Inconsolata; font-size: 11px; font-weight: bold;}"
         user.put()
     return jsonify(user.to_dict())
 
