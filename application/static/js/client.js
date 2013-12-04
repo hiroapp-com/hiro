@@ -1372,7 +1372,7 @@ var WPCLib = {
                 this.inited = true;
             },
 
-			begin: function(text,sessionid,token) {
+			begin: function(text,sessionid,token,resend) {
 				// Reset state, load values from new doc and initiate websocket		
 				this.reset();
 
@@ -1388,6 +1388,9 @@ var WPCLib = {
                 	// First time we just open the channel
                 	this.openchannel(token) 
                 };
+
+                // If we have set the resend flag
+                if (resend) this.addedit('Syncing...',true);
 			},
 
 			reset: function() {
@@ -1431,7 +1434,7 @@ var WPCLib = {
 				// Post current edits stack to backend and clear stack on success
 				var statusbar = document.getElementById(WPCLib.context.statusId);
                 if (this.edits.length == 0 || this.inflight) {
-                	// if we do not have any edits
+                	// if we do not have any edits or are currently inflight
                     return;
                 }
 
@@ -1480,8 +1483,14 @@ var WPCLib = {
                     },
                     error: function(xhr,status,textStatus) {
                         WPCLib.sys.log('Completed sync request with error ',[xhr,status,textStatus]);
-                        // Reset inflight variable and try callback
+                        // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
+
+                        // Retry if it was just a timeout
+                        if (xhr.status == 412) {
+							WPCLib.canvas.sync.begin(xhr.responseJSON.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
+                        	return;
+                        }
 
                         // Move away from note if rights were revoked
                         if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
