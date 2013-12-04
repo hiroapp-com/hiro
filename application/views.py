@@ -431,7 +431,17 @@ def sync_doc(doc_id):
         retries -= 1
         sess = SyncSession.fetch(sess_id, cache)
         if not sess:
-            return "sync session not found", 404
+            # session expired r not found, create new and request re-init on client side
+            # TODO refactor and DRY out the whole sess-create and populate headers flow
+            sess = SyncSession.create(current_user.key.id(), doc.text)
+            resp = jsonify(doc.api_dict())
+            resp.status = "412"
+            resp.headers['Collab-Session-ID'] = sess['session_id']
+            resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
+            current_user.set_seen(doc.key.id())
+            current_user.edit_sessions.append(sess['session_id'])
+            current_user.put()
+            return resp
         elif not sess['user_id'] == current_user.key.id():
             return "not your sync session", 403
 
