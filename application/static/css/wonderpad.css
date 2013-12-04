@@ -783,7 +783,7 @@ a.wpcbutton:hover {
   top: 56px;
 }
 
-#sharing .header {
+#sharing .header .icon {
   display: block;
   text-align: right;
   width: 45px;
@@ -794,9 +794,10 @@ a.wpcbutton:hover {
   opacity: 0.1; 
   background-position: right -408px;
   cursor: pointer;  
+  z-index: 2952;  
 }
 
-#sharing:hover .header {
+#sharing:hover .header .icon {
   opacity: 0.41;
 }
 
@@ -817,6 +818,7 @@ a.wpcbutton:hover {
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   -o-border-radius: 3px;  
+  z-index: 2953; 
 }
 
 #sharing:hover #collabcounter {
@@ -953,7 +955,7 @@ a.wpcbutton:hover {
     z-index: 2950;
   }
 
-  #sharing .header {
+  #sharing .header .icon {
     background-size: 35px auto;
     background-position: 16px -288px;
     height: 35px;
@@ -966,6 +968,7 @@ a.wpcbutton:hover {
     padding: 0 3px;
     line-height: 14px; 
     font-size: 13px;
+    z-index: 2798;
   }
 
   #sharing .actions {
@@ -975,13 +978,14 @@ a.wpcbutton:hover {
     right: 0;
     bottom: 0;
     z-index: 2799;
-    padding-top: 38px;
-    padding-right: 0;  
+    padding-top: 45px;
+    padding-right: 0;
+    margin-top: 0;  
   }
 
   #sharing .actions .cancel {
     right: 14px;
-    top: 38px;    
+    top: 46px;    
   } 
 
   #sharing .actions .title.light {
