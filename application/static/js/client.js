@@ -152,6 +152,7 @@ var WPCLib = {
 					arc = that.archived,
 					archive = document.getElementById(that.archiveId),
 					bubble = document.getElementById('updatebubble'),
+					wastebin = document.getElementById('wastebin'),
 					seen = this.unseenupdates;		
 
 				// Update our lookup object
@@ -188,7 +189,14 @@ var WPCLib = {
 							newarchive.appendChild(that.renderlink(i,'archive',arc[i])); 
 						};													    
 					}					
-				}				
+				}	
+
+				// Check if something changed, otherwise discard to wastebin and abort
+				if (document.isEqualNode && docs.isEqualNode(newdocs)) {
+					wastebin.appendChild(newdocs);
+					wastebin.innerHTML = '';
+					return;
+				}			
 
 				// Switch current DOM object with new one
 				docs.parentNode.replaceChild(newdocs, docs);
@@ -1701,7 +1709,8 @@ var WPCLib = {
             	var el = WPCLib.folio.docs.lookup[data.doc_id], 
             		ui = WPCLib.ui,
             		ownupdate = (data.origin.session_id == WPCLib.canvas.sync.sessionid),
-            		ownuser = (data.origin.email == WPCLib.sys.user.email);
+            		ownuser = (data.origin.email == WPCLib.sys.user.email),
+            		name = data.origin.name || data.origin.email;
 
             	// If the update was from our current session (same window)	
             	if (ownupdate) return;	
@@ -1715,7 +1724,7 @@ var WPCLib = {
 
             	// Update internal timestamp & last editor values	              	
             	el.updated = WPCLib.util.now();  
-                el.lastEditor =  (ownuser) ? null : data.origin.name; 
+                el.lastEditor =  (ownuser) ? null : name; 
 
                 if (data.doc_id == WPCLib.canvas.docid) {
                 	// If the update is for the current document
@@ -4125,6 +4134,7 @@ var WPCLib = {
 			if ( e.ctrlKey || e.metaKey ) {
 				if (k == 83) {
 					// Ctrl+s
+					WPCLib.canvas.sync.addedit();					
 					WPCLib.canvas.savedoc(true);
 		    		e.preventDefault();											
 				}
