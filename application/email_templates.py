@@ -228,5 +228,6 @@ def send_mail_tpl(tpl, to, ctx):
     subj, body, html = [Template(x.decode('utf-8')) for x in templates.get(tpl, ("", "", ""))]
     if subj == body == html == Template(""):
         raise Exception("email template {0} not found in email configuration".format(tpl))
+    ctx["to"] = to
     print body.render(ctx)
     mail.send_mail("Hiro <hiro@hiroapp.com>", to, subj.render(ctx), body.render(ctx), html=html.render(ctx))
