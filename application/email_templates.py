@@ -18,11 +18,11 @@ The Hiro Team
 """,
 """
 <html><body>
-Hi,
-just visit {{url}}#reset={{token}} to reset your password.
+Hi,<br /><br />
+just visit <a href="{{url}}#reset={{token}}">this link</a> or open <a href="{{url}}#reset={{token}}">{{url}}#reset={{token}}</a> in a browser to reset your password.<br /><br />
 
-Please let us know if there is anything else we can do,
-keep capturing the good stuff.
+Please let us know if there is anything else we can do,<br /><br />
+keep capturing the good stuff.<br /><br />
 
 The Hiro Team
 </body></html>
@@ -30,7 +30,7 @@ The Hiro Team
 
 
 templates["invite"] = (
-"{% if invited_by.name %}{{ invited_by.name }}{% else %}{{ invited_by.email }}{% endif %} Wants To Share A Note With You", 
+"{% if invited_by.name %}{{ invited_by.name }}{% else %}{{ invited_by.email }}{% endif %} {% if invitee %}Just Gave You Access to a New Note{% else %}Wants to Share a Note With You{% endif %}", 
 """
 Hi,
 
@@ -50,7 +50,7 @@ Team Hiro
 <html lang="en" style="width: 100%;text-align: center;margin: 0;padding: 0;">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<title>{% if invited_by.name %}{{ invited_by.name }}{% else %}{{ invited_by.email }}{% endif %} Wants To Share A Note With You</title>
+	<title>{% if invited_by.name %}{{ invited_by.name }}{% else %}{{ invited_by.email }}{% endif %} {% if invitee %}Just Gave You Access to a New Note{% else %}Wants To Share A Note With You{% endif %}</title>
 	<style>
 	@import url(http://fonts.googleapis.com/css?family=PT+Serif|Chau+Philomene+One);
 	body, html {
@@ -191,15 +191,15 @@ Team Hiro
 	      <td>
 	<![endif]-->
 	<div class="content" style="width: 100%;max-width: 540px;text-align: left;margin: 30px auto 0 auto;	">
-		<div class="prenote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;	">{% if invited_by.name %}{{ invited_by.name }} (<a href="mailto:{{ invited_by.email }}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">{{ invited_by.email }}</a>){% else %}<a href="mailto:{{ invited_by.email }}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">{{ invited_by.email }}</a>{% endif %} wants to share a note with you:</div><br />
+		<div class="prenote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;	">{% if invited_by.name %}{{ invited_by.name }} (<a href="mailto:{{ invited_by.email }}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">{{ invited_by.email }}</a>){% else %}<a href="mailto:{{ invited_by.email }}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;">{{ invited_by.email }}</a>{% endif %} {% if invitee %}just gave you access to this note{% else %}wants to share a note with you{% endif %}:</div><br />
 		<div class="note" style="background-color: #ffffff;border: 1px solid #dddddd;display: block;min-height: 150px;margin-top: 5px;max-height: 240px;overflow: hidden;box-shadow: 0 5px 17px -12px #000;"><br />
 			<a href="{{url}}#token={{token}}" class="noteheader" style="font-family: 'Chau Philomene One', sans-serif;font-size: 30px;margin: 0px 30px 0 30px;text-decoration:none;color: #000001 !important;display: block;">{{ doc.title }}</a><br />
-			<a href="{{url}}#token={{token}}" class="notetext" style="font-family: 'PT Serif', serif;display: block;margin-top: 0px;font-size: 17px;line-height: 30px;margin: 0 30px 0 30px;text-decoration:none;color: #000001 !important;">{{doc.excerpt}}</a>
+			<a href="{{url}}#token={{token}}" class="notetext" style="font-family: 'PT Serif', serif;display: block;margin-top: 0px;font-size: 17px;line-height: 30px;margin: 0 30px 0 30px;text-decoration:none;color: #000001 !important;">{{ doc.excerpt }}</a>
 		</div><br /> 
-		<div class="cto" style="margin: 5px 30px 3px 30px;text-align: center;"><a href="{{url}}#token={{token}}" class="ctobutton" style="color:#ffffff;font-weight: normal;padding: 10px 6px 9px 6px;height: auto;border-radius: 3px;-webkit-border-radius: 3px;-moz-border-radius: 3px;-o-border-radius: 3px;border: 1px solid rgba(0,0,0,0.25);box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-o-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);text-decoration: none !important;opacity: 0.9;text-shadow: none;display: block;background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(0, 0, 0, 0)), color-stop(100%, rgba(0, 0, 0, 0.2)));background-image: -webkit-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -moz-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -ms-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -o-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.2));background-color: #3c6198;text-align: center;font-family: 'Chau Philomene One', sans-serif;font-size: 20px;">{% if invitee %}Join In{% else %}Accept Invitation{% endif %}</a></div><br />
-		<div class="postnote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;padding-bottom: 20px;border-bottom: 1px dotted #dddddd;display: block;">{% if invitee %}Thanks for using <a href="https://www.hiroapp.com" class="greylink" class="text-decoration: none;color: #333334 !important;">Hiro</a>, please let us know if there's anything we could do better.{% else %}<a href="https://www.hiroapp.com" class="greylink" class="text-decoration: none;color: #333334 !important;">Hiro</a> is the best way to keep notes with friends, or store them safely for yourself.{% endif %}</div><br />
+		<div class="cto" style="margin: 5px 30px 3px 30px;text-align: center;"><a href="{{url}}#token={{token}}" class="ctobutton" style="color:#ffffff;font-weight: normal;padding: 10px 6px 9px 6px;height: auto;border-radius: 3px;-webkit-border-radius: 3px;-moz-border-radius: 3px;-o-border-radius: 3px;border: 1px solid rgba(0,0,0,0.25);box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);-o-box-shadow: 0px 1px 3px rgba(0,0,0,0.35), inset 0px 1px 1px rgba(255,255,255,0.30);text-decoration: none !important;opacity: 0.9;text-shadow: none;display: block;background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(0, 0, 0, 0)), color-stop(100%, rgba(0, 0, 0, 0.2)));background-image: -webkit-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -moz-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -ms-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: -o-linear-gradient(top, transparent, rgba(0,0,0,.2));background-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.2));background-color: #3c6198;text-align: center;font-family: 'Chau Philomene One', sans-serif;font-size: 20px;">{% if invitee %}View Note{% else %}{% if invited_by.name %}Join {{ invited_by.name }}{% else %}Accept Invitation{% endif %}{% endif %}</a></div><br />
+		<div class="postnote" style="color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;padding-bottom: 20px;border-bottom: 1px dotted #dddddd;display: block;">{% if invitee %}Thanks for using <a href="https://www.hiroapp.com" class="greylink" class="text-decoration: none;color: #333334 !important;">Hiro</a>, please let us know if there's anything we could do better.{% else %}<a href="https://www.hiroapp.com" class="greylink" class="text-decoration: none;color: #333334 !important;">Hiro</a> is the best way to keep simple notes with friends & colleagues, or store them safely for yourself.{% endif %}</div><br />
 		<div class="footer" style="color: #bbb;font-family: 'Tahoma', sans-serif;font-size: 13px;margin: 0 31px 0 31px;display: block;">Hiro Inc. | 1 Little W12th Street | 10014 New York </div><br />
-		<div class="unsubscribe" style="margin: 0 31px 0 31px;"><a href="https://www.hiroapp.com/#dontnotify=foo@bar.com" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;display:block;margin-bottom: 30px;">Turn off email notifications</a></div>
+		<div class="unsubscribe" style="margin: 0 31px 0 31px;"><a href="https://www.hiroapp.com/#dontnotify={{ to }}" class="lightlink" style="text-decoration: none;color: #999999;font-family: 'Tahoma', sans-serif;font-size: 13px;display:block;margin-bottom: 30px;">Turn off email notifications</a></div>
 	</div>	
 	<!--[if (gte mso 9)|(IE)]>
 	      </td>
