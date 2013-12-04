@@ -1279,7 +1279,13 @@ var WPCLib = {
 		},	
 
 		_setposition: function(pos,force) {
-			// Set the cursor to a specified position	
+			// Set the cursor to a specified position
+			var el = document.getElementById(WPCLib.canvas.contentId),
+				al = document.activeElement,
+				touch = ('ontouchstart' in document.documentElement),
+				contentfocus = (el && al && el.id == al.id);		
+				
+			// Set default position if we didn't provide one			
 			if (!pos) pos = (this.caretPosition < this.text.length) ? this.caretPosition : 0;
 
 			// Check of we do have a proper array, otherwise fall pack to scalar
@@ -1289,15 +1295,12 @@ var WPCLib = {
 				var pos1 = pos2 = pos;				
 			}	
 
-			var el = document.getElementById(WPCLib.canvas.contentId);	
-
 			// Abort if focus is already on textarea
-			if (!force && (el && el.id == document.activeElement.id)) return;  			
+			if (!force && contentfocus) return;  			
 
-    		// Abort if device is mobile (body or landscape) and menu not fully closed yet or text length is larger than visible area   		
-    		if (!force && 'ontouchstart' in document.documentElement && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
-    			// Switch of for now, crap doesn't work on iOS
-    			if (WPCLib.ui.menuCurrPos!=0 || el.value.length > 150) return;   
+    		if (touch && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
+    			// Mobile device handling, mainly always aborting when menu is open
+    			if (WPCLib.ui.menuCurrPos != 0 || (!force && el.value.length > 150)) return; 
     			setTimeout(function(){
     				// Retry in this case because of quriky new iOS
     				WPCLib.canvas._setposition(pos,true);
@@ -1305,8 +1308,9 @@ var WPCLib = {
     			return;
     		};   		
 
-    		// Unfocus any existing elements
-    		if (document.activeElement && document.activeElement.id != WPCLib.canvas.contentId) document.activeElement.blur();
+    		// Unfocus any existing elements or abort if user is in an input field
+    		if (al && al.nodeName == "INPUT") return;
+    		if (contentfocus) document.activeElement.blur();
     		this._resize();
 
     		// Set the position
@@ -1618,9 +1622,6 @@ var WPCLib = {
 
             	// Force-set new position, this also fires resize
             	WPCLib.canvas._setposition(range,true);
-
-            	// Reset internal caret value to end of selection range (equals cursor if start=end)
-            	WPCLib.canvas.caretPosition = range[1];
             },           
 
 			delta: function(o,n) {
