@@ -1368,6 +1368,8 @@ var WPCLib = {
 			channelToken: undefined,
 			socket: undefined,
 			inited: false,
+			latestcursor: 0,
+			previouscursor: 0,
 
 			init: function() {
 				// Abort if we're on the production system or sync was already inited
@@ -1435,7 +1437,10 @@ var WPCLib = {
 				edit.delta = this.delta(s,c); 
 				edit.clientversion = this.localversion++;
 				edit.serverversion = this.remoteversion;
-				edit.cursor = WPCLib.canvas.caretPosition; 
+
+				// Cursor handling
+				this.previouscursor = this.latestcursor;
+				edit.cursor = this.latestcursor = WPCLib.canvas.caretPosition; 
 
 				// Add edit to edits stack
 				this.edits.push(edit);
@@ -1537,13 +1542,12 @@ var WPCLib = {
                     if (edit.force === true) {
                         // Something went wrong on the server, thus we reset everything
                         WPCLib.sys.log("server enforces resync, complying");
-                        var pos = WPCLib.canvas._getposition();
                         this.shadow = edit.delta;
                         this.localversion = edit.clientversion;
                         this.remoteversion = edit.serverversion;
                         this.edits = [];
                         WPCLib.canvas.set_text(edit.delta);    
-                        WPCLib.canvas._setposition(pos);                                         
+                        WPCLib.canvas._setposition(this.previouscursor,true);                                         
                         continue;
                     }
 
@@ -1789,6 +1793,11 @@ var WPCLib = {
 						url: url,
 						success: function(data, textStatus, xhr) {	
 							text = data.text || '';
+							// Make sure shadow etc equal what the user is seeing, otherwise update
+							// This is important if a Channel timed out and was reconnected hours later (eg device powered off)
+							// and thus the client never got informed of updates to the doc which would be overwritten by next addedit()
+							if (text != document.getElementById(WPCLib.canvas.contentId).value) WPCLib.canvas.set_text(text);
+							// Reconnect
 							WPCLib.canvas.sync.begin(text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));	
 							WPCLib.sys.log('Reconnecting sync with new sessionid & token ',[data,xhr]);
 							WPCLib.canvas.sync.reconnecting = false;
