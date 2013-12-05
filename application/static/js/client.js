@@ -1410,6 +1410,13 @@ var WPCLib = {
 
                 // If we have set the resend flag
                 if (resend) this.addedit('Syncing...',true);
+
+				// Initiate Keepalive
+				clearTimeout(WPCLib.canvas.sync.keepalive);				
+				this.keepalive = null;
+				this.keepalive = setTimeout(function(){
+					WPCLib.canvas.sync.addedit(true,'Syncing...');
+				},this.keepaliveinterval);                
 			},
 
 			reset: function() {
@@ -1450,7 +1457,7 @@ var WPCLib = {
 				// Initiate sending of stack
 				this.sendedits(reason);
 
-				// Cleanup and initiate Keepalive
+				// Cleanup and reset Keepalive
 				clearTimeout(WPCLib.canvas.sync.keepalive);				
 				this.keepalive = null;
 				this.keepalive = setTimeout(function(){
