@@ -4177,11 +4177,12 @@ var WPCLib = {
 			frame.src = url;
 		},
 
+		scrollhandlers: false,
 		showDialog: function(event,url,section,field,width,height) {
 			// Show a modal popup 
-			var s = document.getElementById(this.modalShieldId);
-			var d = document.getElementById(this.dialogWrapperId);
-			var frame = document.getElementById('dialog').contentDocument;			
+			var s = document.getElementById(this.modalShieldId),
+				d = document.getElementById(this.dialogWrapperId),
+				frame = document.getElementById('dialog').contentDocument;			
 			if (event) WPCLib.util.stopEvent(event);
 
 			// Close menu if left open
@@ -4222,25 +4223,57 @@ var WPCLib = {
 			// Attach clean error styling (red border) on all inputs, only if we load settings
 			var inputs = frame.getElementsByTagName('input');
 			for (i=0,l=inputs.length;i<l;i++) {
-				WPCLib.util.registerEvent(inputs[i], 'keydown', this.cleanerror);
-				WPCLib.util.registerEvent(inputs[i], 'keydown', this.autoconfirm);				
-			}
+				WPCLib.util.registerEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);			
+			}		
+
+	
+			// Attach events to signup input fields on very small browser, this is the only way to handle browser quirks
+			// That prevent users from signing up
+			if (('ontouchstart' in document.documentElement) && frame.body.offsetHeight < 900 && !this.scrollhandlers) {
+				var su_i = frame.getElementById('signup_mail'),
+					su_s = frame.getElementById('signuperror'),
+					si_i = frame.getElementById('signin_mail'),
+					si_s = frame.getElementById('loginerror');
+
+				// Abort if user is signed in and thus fields do not exist /settings HTML
+				if (!su_i || !si_i) return;
+				WPCLib.util.registerEvent(su_i, 'focus', function() {						
+					su_s.scrollIntoView();
+				});
+				WPCLib.util.registerEvent(si_i, 'focus', function() {						
+					si_s.scrollIntoView();
+				});	
+
+				// Prevent setting this twice, someday we should clean this up and deal with eventhandlers in consistent manner				
+				this.scrollhandlers = true;
+			}			
 
 			// Set internal value
 			this.dialogOpen = true;
 		},
 
-		autoconfirm: function(event) {
+		inputhandler: function(event) {
+			// remove the CSS class error from object
+			if (this.className) this.className = this.className.replace(' error', '');
+
+			// Submit form on enter
 		    if (event.keyCode == 13) {
 		        this.parentNode.getElementsByClassName('pseudobutton')[0].click();
-		    }			
+		    }
+
+		    // Remove any errors if we're in the input forms
+		    if (this.parentNode.id == 'signupform' || this.parentNode.id == 'loginform') this.nextSibling.innerHTML = '';
+
+		    // Copy signup values
+		    if (this.id == 'signin_mail') document.getElementById('dialog').contentDocument.getElementById('signup_mail').value = this.value;
+		    if (this.id == 'signup_mail') document.getElementById('dialog').contentDocument.getElementById('signin_mail').value = this.value;
 		},		
 
 		hideDialog: function() {
 			// Hide the current dialog
-			var s = document.getElementById(this.modalShieldId);
-			var d = document.getElementById(this.dialogWrapperId);
-			var frame = d.getElementsByTagName('iframe')[0];
+			var s = document.getElementById(this.modalShieldId),
+				d = document.getElementById(this.dialogWrapperId),
+				frame = document.getElementById('dialog').contentDocument;
 
 			// remove resize clickhandler & timer
 			if (this.dialogTimer) {
@@ -4269,8 +4302,7 @@ var WPCLib = {
 			// Remove input field handlers
 			var inputs = document.getElementById(frame.id).contentDocument.getElementsByTagName('input');
 			for (i=0,l=inputs.length;i<l;i++) {
-				WPCLib.util.releaseEvent(inputs[i], 'keydown', this.cleanerror);
-				WPCLib.util.releaseEvent(inputs[i], 'keydown', this.autoconfirm);					
+				WPCLib.util.releaseEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);					
 			}			
 
 			// reset the frame
@@ -4602,11 +4634,6 @@ var WPCLib = {
 			else if (typeof userCallback == 'string') {
 				eval(userCallback);
 			}
-		},
-
-		cleanerror: function() {
-			// remove the CSS class error from object
-			if (this.className) this.className = this.className.replace(' error', '');
 		},
 
 		statusflash: function(color,text) {
