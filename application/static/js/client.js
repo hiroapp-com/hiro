@@ -1372,10 +1372,8 @@ var WPCLib = {
 			previouscursor: 0,
 
 			init: function() {
-				// Abort if we're on the production system or sync was already inited
-				if (WPCLib.sys.production || this.inited) {
-					return;
-				}
+				// Abort if sync was already inited
+				if (this.inited) return;
 
 				// Create new diff_match_patch instance once all js is loaded, retry of not
 				if (!this.dmp && typeof diff_match_patch != 'function') {
@@ -1931,14 +1929,8 @@ var WPCLib = {
 				return;
 			}
 
-			if (WPCLib.sys.production) {
-				email.parentNode.parentNode.innerHTML ="<div class='title light'>Sorry, at the moment this feature is only available to a few users. We'll notify you as soon as it's ready. Sorry again & won't be long!</div>"
-				if (analytics && WPCLib.sys.user.level > 0) analytics.identify(WPCLib.sys.user.id, {sharingNotes:'true'});
-				var msg = ('Wants to invite: ' +  email.value);
-				WPCLib.sys.error(msg);
-			} else {
-				WPCLib.sharing.accesslist.add(email.value);
-			}
+			// Add invite
+			WPCLib.sharing.accesslist.add(email.value);
 		},
 
 		applytoken: function(token) {
@@ -2116,8 +2108,6 @@ var WPCLib = {
 
 			fetch: function() {
 				// Fetch the list of users with access
-				if (WPCLib.sys.production) return;
-
 				// Retry later if we don't have a docid yet
 				if (!WPCLib.canvas.docid) {
 					setTimeout(function() {
@@ -2136,6 +2126,7 @@ var WPCLib = {
                     contentType: "json",
                     success: function(data) {
                     	// Set internal values and update visual display
+                    	console.log(data);
                     	var that = WPCLib.sharing.accesslist;
                     	that.users = data;
                         that.update();
@@ -3011,23 +3002,21 @@ var WPCLib = {
 			}	
 
 			// Load Googles Diff Match Patch and Channel API
-			if (!WPCLib.sys.production) {
-				(function(d, s, id){
-					var js, fjs = d.getElementsByTagName(s)[0];
-					if (d.getElementById(id)) {return;}
-					js = d.createElement(s); js.id = id;
-					js.src = "/static/js/diff_match_patch.js";
-					fjs.parentNode.insertBefore(js, fjs);
-				}(document, 'script', 'diff_match_patch'));	
+			(function(d, s, id){
+				var js, fjs = d.getElementsByTagName(s)[0];
+				if (d.getElementById(id)) {return;}
+				js = d.createElement(s); js.id = id;
+				js.src = "/static/js/diff_match_patch.js";
+				fjs.parentNode.insertBefore(js, fjs);
+			}(document, 'script', 'diff_match_patch'));	
 
-				(function(d, s, id){
-					var js, fjs = d.getElementsByTagName(s)[0];
-					if (d.getElementById(id)) {return;}
-					js = d.createElement(s); js.id = id;
-					js.src = "/_ah/channel/jsapi";
-					fjs.parentNode.insertBefore(js, fjs);
-				}(document, 'script', 'channel_api'));					
-			}					
+			(function(d, s, id){
+				var js, fjs = d.getElementsByTagName(s)[0];
+				if (d.getElementById(id)) {return;}
+				js = d.createElement(s); js.id = id;
+				js.src = "/_ah/channel/jsapi";
+				fjs.parentNode.insertBefore(js, fjs);
+			}(document, 'script', 'channel_api'));										
 
 			this.inited = true;
 		}
