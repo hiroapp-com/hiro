@@ -1286,7 +1286,7 @@ var WPCLib = {
 		    return [x, y, content];			    
 		},	
 
-		_setposition: function(pos,force) {
+		_setposition: function(pos,force,retry) {			
 			// Set the cursor to a specified position
 			var el = document.getElementById(WPCLib.canvas.contentId),
 				al = document.activeElement,
@@ -1301,40 +1301,45 @@ var WPCLib = {
 				var pos1 = pos[0], pos2 = pos[1];				
 			} else {
 				var pos1 = pos2 = pos;				
-			}	
+			}				
 
 			// Abort if focus is already on textarea
-			if (!force && contentfocus) return;  			
+			if (!force && contentfocus) return;  
 
     		if (touch && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
-    			// Mobile device handling, mainly always aborting when menu is open
-    			if (WPCLib.ui.menuCurrPos != 0 || (!force && el.value.length > 150)) return; 
-    			setTimeout(function(){
-    				// Retry in this case because of quriky new iOS
-    				WPCLib.canvas._setposition(pos,true);
-    			},500);			
-    			return;
-    		};   		
+    			// Abort if doc is not empty or very short
+    			if (WPCLib.ui.menuCurrPos != 0 || (!force && el.value.length > 150)) return; 	
+    			if (!force) {
+	    			// Delay in this case because of quirky new iOS, where instant focus does not work for some reason    				
+	    			setTimeout(function(){	    				
+	    				WPCLib.canvas._setposition(pos,true,true);
+	    			},150);	
+	    			return;
+    			} else if (!retry && !contentfocus) {
+    				return;
+    			}		
+    		};   
 
     		// Unfocus any existing elements or abort if user is in an input field
     		if (al && al.nodeName == "INPUT") return;
-    		if (contentfocus) document.activeElement.blur();
-    		this._resize();
+    		if (!contentfocus) document.activeElement.blur();
+    		this._resize();   
 
-    		// Set the position
+
+    		// Set the position    		
     		if (el.setSelectionRange) {
 				if (window.navigator.standalone && this.safariinit) {		
 					// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
 					// TODO Bruno findout why, it's not about something else setting the focus elsewhere						
-					setTimeout( function(){
+					setTimeout( function(){						
 						if (WPCLib.ui.menuCurrPos!=0) return;
+						WPCLib.canvas.safariinit = false;						
 						el.focus();							
-						el.setSelectionRange(pos1,pos2);	
-						WPCLib.canvas.safariinit = false;										
+						el.setSelectionRange(pos1,pos2);														
 					},1000);								
-				} else {	
-					el.focus();							
-					el.setSelectionRange(pos1,pos2);															
+				} else {
+					el.focus();													
+					el.setSelectionRange(pos1,pos2);																																		
 				}     									
     		} else if (el.createTextRange) {
         		var range = el.createTextRange();
@@ -1532,11 +1537,13 @@ var WPCLib = {
                     if (edit.force === true) {
                         // Something went wrong on the server, thus we reset everything
                         WPCLib.sys.log("server enforces resync, complying");
+                        var pos = WPCLib.canvas._getposition();
                         this.shadow = edit.delta;
                         this.localversion = edit.clientversion;
                         this.remoteversion = edit.serverversion;
                         this.edits = [];
-                        WPCLib.canvas.set_text(edit.delta);                     
+                        WPCLib.canvas.set_text(edit.delta);    
+                        WPCLib.canvas._setposition(pos);                                         
                         continue;
                     }
 
@@ -3040,7 +3047,7 @@ var WPCLib = {
 		init: function() {
 			// allow this only once			
 			if (this.initCalled) return;
-			WPCLib.ui.resolveAnimFrameAPI();
+			WPCLib.ui.resolveAnimFrameAPI();			
 
 			// Add startup event listeners for old & modern browser
 			if (document.addEventListener) {
