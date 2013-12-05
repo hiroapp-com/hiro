@@ -1313,7 +1313,7 @@ var WPCLib = {
 	    			// Delay in this case because of quirky new iOS, where instant focus does not work for some reason    				
 	    			setTimeout(function(){	    				
 	    				WPCLib.canvas._setposition(pos,true,true);
-	    			},150);	
+	    			},500);	
 	    			return;
     			} else if (!retry && !contentfocus) {
     				return;
@@ -1370,6 +1370,8 @@ var WPCLib = {
 			inited: false,
 			latestcursor: 0,
 			previouscursor: 0,
+			keepalive: null,
+			keepaliveinterval: 600000,
 
 			init: function() {
 				// Abort if sync was already inited
@@ -1417,6 +1419,7 @@ var WPCLib = {
 				this.localversion = this.remoteversion = 0;
 			},
 
+
 			addedit: function(force,reason) {
 				// Add an edit to the edits array
 				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
@@ -1446,6 +1449,13 @@ var WPCLib = {
 
 				// Initiate sending of stack
 				this.sendedits(reason);
+
+				// Cleanup and initiate Keepalive
+				clearTimeout(WPCLib.canvas.sync.keepalive);				
+				this.keepalive = null;
+				this.keepalive = setTimeout(function(){
+					WPCLib.canvas.sync.addedit(true,'Syncing...');
+				},this.keepaliveinterval);
 			},
 
 			inflight: false,
@@ -1502,7 +1512,7 @@ var WPCLib = {
                         }		
                     },
                     error: function(xhr,status,textStatus) {
-                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([xhr,status,textStatus]));
+                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([status,textStatus]));
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
 
@@ -1700,18 +1710,17 @@ var WPCLib = {
                 }                
                 this.socket.onerror = function(data) {
                     WPCLib.sys.log("ERROR connecting to channel api",data);                	
-                    if (!data.code || data.code == 0 || data.code == 400 || data.code == 401) {
+                    if (!data.code || data.code == 0 || data.code == -1 || data.code == 400 || data.code == 401) {
                     	// This is most likely either a time out session or token, so we reset the whole sync stack
                     	// TODO: See if this interferes with the reconnect we fire on close
-
-                    } 
-                    WPCLib.canvas.sync.reconnect(null,true);                              	
+                    	WPCLib.canvas.sync.reconnect(null,true);
+                    }                               	
                 }
                 this.socket.onclose = function(data) {
                     WPCLib.sys.log("Channel closed.",data);
 					WPCLib.canvas.sync.channel = WPCLib.canvas.sync.socket = null;
 					WPCLib.canvas.sync.connected = false;	                    
-                    WPCLib.canvas.sync.reconnect(null,true);                 
+                    WPCLib.canvas.sync.reconnect(WPCLib.canvas.sync.channelToken);                 
                 }			
 			},		
 
@@ -1909,6 +1918,9 @@ var WPCLib = {
 			var widget = document.getElementById('s_actions').parentNode;
 			that.visible = WPCLib.ui.actionsvisible = false;
 			widget.style.display = 'none';
+
+			// Set position or blur input
+			if ('ontouchstart' in document.documentElement) document.activeElement.blur();
 			WPCLib.canvas._setposition();			
 		},
 
