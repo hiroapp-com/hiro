@@ -3270,6 +3270,9 @@ var WPCLib = {
 				this.authactive = true;				
 				button.innerHTML ="Signing Up...";
 
+				// Remove focus on mobiles
+				if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();				
+
 				// Clear any old error messages
 				val[0].nextSibling.innerHTML = '';
 				val[1].nextSibling.innerHTML = '';				
@@ -3323,6 +3326,9 @@ var WPCLib = {
 				if (WPCLib.sys.user.authactive) return;
 				WPCLib.sys.user.authactive = true;				
 				button.innerHTML ="Logging in...";
+
+				// Remove focus on mobiles
+				if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();
 
 				// Clear any old error messages
 				val[0].nextSibling.innerHTML = '';
@@ -3500,7 +3506,7 @@ var WPCLib = {
 				// Check if there's any input at all
 				if (email.value.length<=5) {
 					email.className += ' error';
-					email.focus();
+					if ('ontouchstart' in document.documentElement) { document.activeElement.blur(); } else { email.focus(); }
 					error.innerHTML = 'Please enter your email address and click "Lost Password?" again.';
 					return;
 				}
@@ -4221,28 +4227,27 @@ var WPCLib = {
 			if(!('ontouchstart' in document.documentElement)) this.dialogTimer = window.setInterval(this._centerDialog, 200);
 
 			// Attach clean error styling (red border) on all inputs, only if we load settings
-			var inputs = frame.getElementsByTagName('input');
+			var inputs = frame.getElementsByTagName('input'), inputtypes = ['email','password','text'];
 			for (i=0,l=inputs.length;i<l;i++) {
-				WPCLib.util.registerEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);			
+				if (inputtypes.indexOf(inputs[i].type) > -1) WPCLib.util.registerEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);			
 			}		
 
-	
 			// Attach events to signup input fields on very small browser, this is the only way to handle browser quirks
 			// That prevent users from signing up
 			if (('ontouchstart' in document.documentElement) && frame.body.offsetHeight < 900 && !this.scrollhandlers) {
 				var su_i = frame.getElementById('signup_mail'),
+					su_p = frame.getElementById('signup_pwd'),
 					su_s = frame.getElementById('signuperror'),
 					si_i = frame.getElementById('signin_mail'),
+					si_p = frame.getElementById('signin_pwd'),					
 					si_s = frame.getElementById('loginerror');
 
 				// Abort if user is signed in and thus fields do not exist /settings HTML
 				if (!su_i || !si_i) return;
-				WPCLib.util.registerEvent(su_i, 'focus', function() {						
-					su_s.scrollIntoView();
-				});
-				WPCLib.util.registerEvent(si_i, 'focus', function() {						
-					si_s.scrollIntoView();
-				});	
+				WPCLib.util.registerEvent(su_i, 'focus', function() { su_s.scrollIntoView(); });
+				WPCLib.util.registerEvent(su_p, 'touchend', function() { setTimeout(function() {su_s.scrollIntoView();su_p.focus()},100);  });				
+				WPCLib.util.registerEvent(si_i, 'focus', function() { si_s.scrollIntoView(); });
+				WPCLib.util.registerEvent(si_p, 'touchend', function() { setTimeout(function() {si_s.scrollIntoView();si_p.focus()},100);  });					
 
 				// Prevent setting this twice, someday we should clean this up and deal with eventhandlers in consistent manner				
 				this.scrollhandlers = true;
@@ -4300,10 +4305,10 @@ var WPCLib = {
 			}		
 
 			// Remove input field handlers
-			var inputs = document.getElementById(frame.id).contentDocument.getElementsByTagName('input');
+			var inputs = frame.getElementsByTagName('input'), inputtypes = ['email','password','text'];
 			for (i=0,l=inputs.length;i<l;i++) {
-				WPCLib.util.releaseEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);					
-			}			
+				if (inputtypes.indexOf(inputs[i].type) > -1) WPCLib.util.releaseEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);					
+			}					
 
 			// reset the frame
 			if (WPCLib.sys.user.justloggedin) {
@@ -4612,6 +4617,7 @@ var WPCLib = {
 		},
 
 		switchView: function(elementOrId, display, userCallback) {
+			// Switch to an element on the same DOM level and hide all others
 			var el, n;
 			el = (typeof elementOrId != 'object')? document.getElementById(elementOrId):elementOrId;
 			if (!display || typeof display != 'string') display='block';
@@ -4634,6 +4640,11 @@ var WPCLib = {
 			else if (typeof userCallback == 'string') {
 				eval(userCallback);
 			}
+
+			// Always blur mobile inputs if focus is not on canvas
+			if ('ontouchstart' in document.documentElement && document.activeElement && document.activeElement.id != WPCLib.canvas.contentId) {
+				document.activeElement.blur();
+			} 
 		},
 
 		statusflash: function(color,text) {

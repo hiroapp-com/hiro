@@ -15,7 +15,7 @@
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform" action="javascript:void(0);">
 					<input type="email" placeholder="E-Mail" id="signup_mail"></input><div class="error"></div>					
-					<input type="password" placeholder="Choose a password"></input><div class="error"></div>	
+					<input type="password" id="signup_pwd" placeholder="Choose a password"></input><div class="error"></div>	
 					<input type="submit" value="foo" onclick="_wpc.sys.user.register(event); return false;" class="pseudobutton"></input>
 				</form>		
 				<a class="wpcbutton green" id="signupbutton" onclick="_wpc.sys.user.register(event);">Create Account</a>	
@@ -27,7 +27,7 @@
 				<div class="divider"><span class="or">or</span></div>
 				<form id="loginform" action="javascript:void(0);">
 					<input type="email" placeholder="E-Mail" id="signin_mail"></input><div class="error"></div>
-					<input type="password" placeholder="Password"></input><div class="error"></div>
+					<input type="password" id="signin_pwd" placeholder="Password"></input><div class="error"></div>
 					<input type="submit" value="foo" onclick="_wpc.sys.user.login(event);" class="pseudobutton"></input>
 				</form>		
 				<a class="wpcbutton green" id="loginbutton" onclick="_wpc.sys.user.login(event);">Log-In</a>	
