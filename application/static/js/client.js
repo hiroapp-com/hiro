@@ -1703,14 +1703,15 @@ var WPCLib = {
                     if (!data.code || data.code == 0 || data.code == 400 || data.code == 401) {
                     	// This is most likely either a time out session or token, so we reset the whole sync stack
                     	// TODO: See if this interferes with the reconnect we fire on close
-                    	WPCLib.canvas.sync.reconnect(null,true);
-                    }            	
+
+                    } 
+                    WPCLib.canvas.sync.reconnect(null,true);                              	
                 }
                 this.socket.onclose = function(data) {
                     WPCLib.sys.log("Channel closed.",data);
 					WPCLib.canvas.sync.channel = WPCLib.canvas.sync.socket = null;
 					WPCLib.canvas.sync.connected = false;	                    
-                    WPCLib.canvas.sync.reconnect(WPCLib.canvas.sync.channelToken);                  
+                    WPCLib.canvas.sync.reconnect(null,true);                 
                 }			
 			},		
 
@@ -1785,6 +1786,11 @@ var WPCLib = {
 						WPCLib.folio.docs.loaddocs();
 						return;
 					}	
+
+					// Delete Channel API iframe
+					// as per https://code.google.com/p/googleappengine/issues/detail?id=4940
+                	var frame = document.getElementById('#wcs-iframe');
+                	if (frame) frame.parentNode.removeChild(frame);
 
 					// Request new session id & token from backend
 					$.ajax({
