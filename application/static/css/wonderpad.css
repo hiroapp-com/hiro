@@ -672,8 +672,9 @@ a.wpcbutton:hover {
   #switchview {
     margin-right: 0;
     top: 0;
-    padding-right: 20px;
+    padding-right: 18px;
     padding-top: 15px;
+    padding-bottom: 0;  
   }
 
   #switchview.error {
@@ -978,14 +979,16 @@ a.wpcbutton:hover {
     right: 0;
     bottom: 0;
     z-index: 2799;
-    padding-top: 45px;
+    padding-top: 47px;
     padding-right: 0;
     margin-top: 0;  
   }
 
   #sharing .actions .cancel {
-    right: 14px;
-    top: 46px;    
+    right: 12px;
+    top: 42px;
+    height: 30px;
+    background-position: -12px -34px;    
   } 
 
   #sharing .actions .title.light {
@@ -994,7 +997,7 @@ a.wpcbutton:hover {
 
   #s_actions form {
     padding: 0;
-    margin: 0 19px 0 13px;    
+    margin: 0 17px 0 15px;    
   }
 
   #s_actions input.hiro {
@@ -1003,15 +1006,15 @@ a.wpcbutton:hover {
 
 
   #s_actions a.wpcbutton {
-    margin-right: 19px;   
+    margin-right: 17px;   
   } 
 
   #s_actions a.wpcbutton, #sharing .actions .title, #sharing .actions .footer {
-    margin-left: 13px;    
+    margin-left: 15px;    
   }    
 
   #sharing .users .user a.remove {
-    right: 9px;
+    right: 8px;
   }  
 
   #sharing .users .user {
