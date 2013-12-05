@@ -1502,7 +1502,7 @@ var WPCLib = {
                         }		
                     },
                     error: function(xhr,status,textStatus) {
-                        WPCLib.sys.log('Completed sync request with error ',[xhr,status,textStatus]);
+                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([xhr,status,textStatus]));
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
 
@@ -1545,7 +1545,8 @@ var WPCLib = {
                         this.remoteversion = edit.serverversion;
                         this.edits = [];
                         WPCLib.canvas.set_text(edit.delta);    
-                        WPCLib.canvas._setposition(this.previouscursor,true);                                         
+                        WPCLib.canvas._setposition(this.previouscursor,true);  
+                        WPCLib.sys.error('Server forced resync ' + JSON.stringify(edit));                                                               
                         continue;
                     }
 
@@ -1993,6 +1994,12 @@ var WPCLib = {
 							WPCLib.folio.docs.lookup[WPCLib.canvas.docid].shared = true;  
 							WPCLib.folio.docs.update();                  		
                     	}
+
+                    	// Notify segment.io
+		            	var payload2 = {};
+		            	payload2.sharing = true;
+		            	// Notify segment.io
+		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);                    	
                     },
                     error: function(data) {
                     	// Show error 
@@ -2126,7 +2133,6 @@ var WPCLib = {
                     contentType: "json",
                     success: function(data) {
                     	// Set internal values and update visual display
-                    	console.log(data);
                     	var that = WPCLib.sharing.accesslist;
                     	that.users = data;
                         that.update();
@@ -3429,7 +3435,7 @@ var WPCLib = {
 			            	var payload = {};
 			            	payload.firstName = response.first_name;
 			            	// Notify segment.io
-			            	analytics.identify(WPCLib.sys.user.id, payload);
+			            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload);
 			            	// Send to backend
 			            	WPCLib.sys.user.namesave(null,response.first_name)
 			            }
@@ -3472,7 +3478,11 @@ var WPCLib = {
 	                data: JSON.stringify(payload),
 					success: function(xhr) {
 						button.innerHTML = 'Saved!';
-						WPCLib.sys.user.firstname = name;	                    
+						WPCLib.sys.user.firstname = name;	
+		            	var payload2 = {};
+		            	payload2.firstName = name;
+		            	// Notify segment.io
+		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);						                    
 					},
 					error: function(xhr) {				
 						input.focus();
