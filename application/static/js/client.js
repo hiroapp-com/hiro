@@ -81,6 +81,9 @@ var WPCLib = {
 				var f = WPCLib.folio.docs,	
 					a = document.getElementById(this.a_counterId);	
 
+				// Start progres bar
+				if (!folioonly) WPCLib.ui.hprogress.begin();					
+
 				$.ajax({
 				    dataType: "json",
 				    url: '/docs/?group_by=status',
@@ -121,7 +124,7 @@ var WPCLib = {
 				    },
 					error: function(xhr,textStatus) {
 						WPCLib.sys.error(xhr);	
-						if (textStatus == 'timeout') WPCLib.sys.goneoffline();					
+						if (textStatus == 'timeout' || xhr.status == 0) WPCLib.sys.goneoffline();					
 					}
 				});						
 			},
@@ -840,6 +843,9 @@ var WPCLib = {
 
 			WPCLib.sys.log('loading doc id: ', [docid, header]);
 
+			// Start progress bar or increment
+			if (WPCLib.ui.hprogress.active) WPCLib.ui.hprogress.inc(0.2); else WPCLib.ui.hprogress.begin();
+
 			// If we already know the title, we shorten the waiting time
 			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
 			document.getElementById(WPCLib.context.statusId).value = 'Loading...';			
@@ -933,8 +939,13 @@ var WPCLib = {
 						WPCLib.sharing.accesslist.users = [];
 						WPCLib.sharing.accesslist.update();
 					}	
+
+					// Complete progress bar
+					WPCLib.ui.hprogress.done();					
 				},
 				error: function(data,textStatus,xhr) {
+					// Complete progress bar
+					WPCLib.ui.hprogress.done(true);					
 					WPCLib.sys.error([xhr]);
 					// Set system status offline if we timed out	
 					if (textStatus == 'timeout') WPCLib.sys.goneoffline();	
@@ -946,7 +957,8 @@ var WPCLib = {
 					if (xhr.status == 403 || xhr.status == 404) {
                     	// Reload docs                  								
                     	WPCLib.folio.docs.loaddocs();
-                    }					
+                    }
+
 				}
 			});						
 		},	
@@ -1371,7 +1383,7 @@ var WPCLib = {
 			latestcursor: 0,
 			previouscursor: 0,
 			keepalive: null,
-			keepaliveinterval: 600000,
+			keepaliveinterval: 300000,
 
 			init: function() {
 				// Abort if sync was already inited
@@ -3127,6 +3139,9 @@ var WPCLib = {
 			// Add keyboard shortcuts
 			WPCLib.util.registerEvent(document,'keydown', WPCLib.ui.keyboardshortcut);
 
+			// Setup hgrogress bar
+			WPCLib.ui.hprogress.init();
+
 			// Init remaining parts
 			WPCLib.folio.init();
 			WPCLib.publish.init();
@@ -3200,6 +3215,9 @@ var WPCLib = {
 			es.innerHTML = reason;
 			si.className = 'error';
 			si.innerHTML = '!';
+
+			// Abort progress bar
+			if (WPCLib.ui.hprogress.active) WPCLib.ui.hprogress.done(true);
 
 			// Log error (to be switched off again, just to see how often this happens)
 			this.error('Gone offline, ' + reason);
@@ -4039,7 +4057,8 @@ var WPCLib = {
 	},
 
 	// Everything UI / visually relevant
-	ui: {	
+	ui: {
+		// Menu (folio) specific properties	
 		menuContextRight: 0,
 		menuSlideSpan: 301,
 		menuSlideDuration: 200,
@@ -4047,18 +4066,26 @@ var WPCLib = {
 		menuSlideCurrDirection: 0,
 		menuSlideTimer: 0,
 		menuHideTimer: 0,	
+		// Dialog (modal popup)
 		modalShieldId: 'modalShield',
 		dialogWrapperId: 'dialogWrapper',
 		dialogDefaultWidth: 750,
 		dialogDefaultHeight: 480,
 		dialogTimer: null,
 		dialogOpen: false,
+		// Is the window currently focused? Set by event handlers
 		windowfocused: true,
+		// Audio settings
 		audiosupport: undefined,
 		audioblurplayed: false,
-		wastebinid: 'wastebin',
+		// Current state of the favicon
 		faviconstate: 'normal',
+		// Are any actions (the small card menus next to the headline) visible?
 		actionsvisible: false,
+		// Generic wastebin for elements that are only briefly needed and the destroyed again (audio, divs not inserted)
+		wastebinid: 'wastebin',	
+		// Prefix for current browser	
+		vendorprefix: undefined,
 		
 		playaudio: function(filename, volume) {
 			// Plays a sound in /static/filename
@@ -4086,6 +4113,123 @@ var WPCLib = {
 				document.getElementById(this.wastebinid).innerHTML = '<embed src="' + url + '" hidden="true" autostart="true" loop="false" />';
 			}
 		}, 	
+
+		hprogress: {
+			// Simple top loading bar lib
+			active: false,
+			renderstyle: undefined,	
+			bar: document.getElementById('hprogress').getElementsByTagName('div')[0],	
+			progress: 0,	
+
+			// How long until we start hiding the text and minimum visibility time
+			slowtreshhold: 800,
+			slowduration: 800,
+
+			init: function() {
+			    // Determine proper render style
+			    var s = document.body.style,
+			    	v = WPCLib.ui.vendorprefix = ('WebkitTransform' in s) ? 'Webkit' :
+	                    ('MozTransform' in s) ? 'Moz' :
+	                    ('msTransform' in s) ? 'ms' :
+	                    ('OTransform' in s) ? 'O' : '';
+
+			    if (v + 'Perspective' in s) {
+					// Modern browsers with 3D support, e.g. Webkit, IE10
+					this.renderstyle = 'translate3d';
+			    } else if (v + 'Transform' in s) {
+					// Browsers without 3D support, e.g. IE9
+					this.renderstyle = 'translate';
+			    } else {
+					// Browsers without translate() support, e.g. IE7-8
+					this.renderstyle = 'margin';
+			    }
+			},
+
+			begin: function() {
+				// Start new bar (and clear old)
+				if (this.active) return;
+				this.active = true;
+
+				// Fade in
+				WPCLib.ui.hprogress.bar.style.display = 'block';
+				WPCLib.ui.hprogress.bar.style.opacity = 1;							
+
+				// Set initial treshhold
+				this.progress = 0.15;
+				this._setbarcss(0.15);
+
+				// Kick off autoinc
+				this.autoinc();
+			},
+
+			autoinc: function() {
+				// Progresses the bar by 1/10th of the remaining progress every n msec
+				if (!this.active) return;
+
+				// Calculate & execute, abort if too little left
+				var diff = (1 - this.progress) / 10;
+				if (diff < 0.001) return;
+				this.inc(diff);
+
+				// Repeat
+				setTimeout(function(){
+					WPCLib.ui.hprogress.autoinc();
+				},300);
+			},
+
+			inc: function(inc) {
+				// Increment n inc
+				this.progress = this.progress + inc;
+				this._setbarcss(this.progress);				
+			},
+
+			done: function(error) {
+				// Complete bar and fade out
+				this._setbarcss(1);
+
+				if (error) {
+					// if we had an error we change the color to red and fade out later
+					this.bar.style.background = '#D61818';	
+					setTimeout(function(){
+						WPCLib.ui.hprogress.bar.style.opacity = 0;				
+					},300);								
+					setTimeout(function(){
+						WPCLib.ui.hprogress.bar.style.display = 'none';
+						WPCLib.ui.hprogress.bar.style.background = '#3c6198';						
+						WPCLib.ui.hprogress.active = false;					
+					},500);					
+				} else {
+					// normal case
+					this.bar.style.opacity = 0.15;			
+					setTimeout(function(){
+						WPCLib.ui.hprogress.bar.style.display = 'none';
+						WPCLib.ui.hprogress.active = false;					
+					},200);					
+				}
+			},
+
+			_setbarcss: function(pos) {
+				// Sets the CSS of the progress bar
+				var pos = (-1 + pos) * 100,
+					s = this.renderstyle,
+					vendor = WPCLib.ui.vendorprefix.toLowerCase(),
+					v, tf = (vendor) ? vendor + 'Transform' : 'transform';
+
+				// Complete vendor prefix string
+				if (vendor) vendor = '-' + vendor + '-'; 	
+
+				// Determine & set the css transition value
+				if (s == 'translate3d') {
+					v = 'translate3d(' + pos + '%,0,0)';
+					this.bar.style[tf] = v;
+				} else if (s == 'translate') {
+					v = 'translate(' + pos + '%,0)';
+					this.bar.style[tf] = v;					
+				} else {
+					this.bar.style.marginRight = (pos * -1) + '%'; 
+				}	
+			}
+		},
 
 		tabnotifyOn: false,
 		tabnotifyMessages: [],
