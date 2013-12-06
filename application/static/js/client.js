@@ -1317,7 +1317,7 @@ var WPCLib = {
     		};   
 
     		// Unfocus any existing elements or abort if user is in an input field
-    		if (al && al.nodeName == "INPUT") return;
+    		if (al && al.nodeName == "INPUT" && al.id != 'pageTitle') return;
     		if (!contentfocus) document.activeElement.blur();
     		this._resize();   
 
@@ -1496,8 +1496,10 @@ var WPCLib = {
                     timeout: 5000,
                     success: function(data,status,xhr) {
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
+	                        // Reset inflight variable
+	                        WPCLib.canvas.sync.inflight = false;                         	
                         	// If for some reason the session got out of sync we reset
-                            WPCLib.canvas.sync.reconnect(null,true);
+                            WPCLib.canvas.sync.reconnect(null,true);                           
                             return;
                         }
 
@@ -1509,7 +1511,9 @@ var WPCLib = {
                         WPCLib.canvas.sync.process(data.deltas);
 
                         // Reset inflight variable
-                        WPCLib.canvas.sync.inflight = false;
+                        WPCLib.canvas.sync.inflight = false;                        
+
+                        // Do callback if we have one
                         if (WPCLib.canvas.sync.inflightcallback) {
                         	WPCLib.canvas.sync.inflightcallback();
                         	WPCLib.canvas.sync.inflightcallback = null;
