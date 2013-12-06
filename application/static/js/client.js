@@ -4,8 +4,7 @@ var WPCLib = {
 	// Folio is the nav piece on the left, holding all file management pieces
 	folio: {
 		folioId: 'folio',
-		logioId: 'logio',
-		consistencychecktimer: 30000,	
+		logioId: 'logio',	
 
 		init: function() {
 			// Basic Folio Setup
@@ -40,27 +39,6 @@ var WPCLib = {
 			    	}
 			    }			
 			});				
-		},
-
-		checkconsistency: function() {
-			// Pings the doc API and checks if current document is latest and no newer version on the server
-			if (!WPCLib.ui.windowfocused) {
-				// If the window is not focused break recursive check and resume as soon as window is focused again
-				WPCLib.util._focuscallback = WPCLib.folio.checkconsistency;
-				return;
-			}
-
-			// Repeat the check periodically
-			setTimeout(function(){
-				WPCLib.folio.checkconsistency();
-			},this.consistencychecktimer);
-
-			// If we didn't get the doclist yet, wait until next cycle
-			var local = WPCLib.folio.docs;
-			if (!local.active[0] && !local.archived[0]) return;
-
-			// Get latest docs
-			WPCLib.folio.docs.loaddocs(true);					
 		},
 
 		docs: {
@@ -1509,6 +1487,7 @@ var WPCLib = {
                     type: "POST",
                     contentType: "application/json",
                     data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
+                    timeout: 50,
                     success: function(data,status,xhr) {
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
                         	// If for some reason the session got out of sync we reset
@@ -1528,14 +1507,20 @@ var WPCLib = {
                         if (WPCLib.canvas.sync.inflightcallback) {
                         	WPCLib.canvas.sync.inflightcallback();
                         	WPCLib.canvas.sync.inflightcallback = null;
-                        }		
+                        }	
+
+					    // Check if were offline and switch back to normal state
+					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();                        	
                     },
                     error: function(xhr,status,textStatus) {
                         WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([status,textStatus]));
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
+  
+  						// Go offline if request timed out
+						if (textStatus == 'timeout' || xhr.status == 0) WPCLib.sys.goneoffline();
 
-                        // Retry if it was just a timeout
+                        // Retry if it was just a sync session timeout (20 mins)
                         if (xhr.status == 412) {
 							WPCLib.canvas.sync.begin(xhr.responseJSON.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
                         	return;
@@ -3221,7 +3206,41 @@ var WPCLib = {
 
 			// Log error (to be switched off again, just to see how often this happens)
 			this.error('Gone offline, ' + reason);
+
+			// Try reconnecting
+			this.tryreconnect();
 		},
+
+		reconnecttimer: null,
+		reconnectinterval: 1000,
+		tryreconnect: function() {
+			// Pings the doc API and checks if current document is latest and no newer version on the server
+			var that = WPCLib.sys;
+			if (!WPCLib.ui.windowfocused) {
+				// If the window is not focused break recursive check and resume as soon as window is focused again
+				WPCLib.util._focuscallback = that.tryreconnect;
+				return;
+			}
+
+			// Abort if we already have a timer
+			if (that.reconnecttimer) return;
+
+			// Repeat the check periodically
+			that.reconnecttimer = setTimeout(function(){
+				clearTimeout(that.reconnecttimer);
+				that.reconnecttimer = null;
+				that.tryreconnect();
+			},that.reconnectinterval);
+
+			// Increase reconnecttimer
+			that.reconnectinterval = that.reconnectinterval * 2;	
+
+			// Try reconnecting
+			WPCLib.canvas.sync.addedit(true,'Reconnecting...');						
+
+			// Log
+			that.log('Offline, attempting to reconnect', that.reconnecttimer)					
+		},		
 
 		backonline: function() {
 			// Swicth state back to online and update UI
@@ -3236,7 +3255,14 @@ var WPCLib = {
 			this.normalStatus.style.display = 'block';
 			es.style.display = 'none';
 			si.className = (mo) ? 'open' : '';			
-			si.innerHTML = (mo) ? '&#187;' : '&#171;';			
+			si.innerHTML = (mo) ? '&#187;' : '&#171;';	
+
+			// Reset reconnecttimer
+			clearTimeout(this.reconnecttimer);
+			this.reconnecttimer = null;
+
+			// Make sure we get the latest version from the server
+			WPCLib.canvas.sync.addedit(true,'Reconnecting...');		
 		},
 
 		error: function(data) {
