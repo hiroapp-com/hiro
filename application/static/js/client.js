@@ -4447,7 +4447,7 @@ var WPCLib = {
 			// Hide the current dialog
 			var s = document.getElementById(this.modalShieldId),
 				d = document.getElementById(this.dialogWrapperId),
-				frame = document.getElementById('dialog').contentDocument;
+				frame = document.getElementById('dialog');
 
 			// remove resize clickhandler & timer
 			if (this.dialogTimer) {
@@ -4474,7 +4474,7 @@ var WPCLib = {
 			}		
 
 			// Remove input field handlers
-			var inputs = frame.getElementsByTagName('input'), inputtypes = ['email','password','text'];
+			var inputs = frame.contentDocument.getElementsByTagName('input'), inputtypes = ['email','password','text'];
 			for (i=0,l=inputs.length;i<l;i++) {
 				if (inputtypes.indexOf(inputs[i].type) > -1) WPCLib.util.releaseEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);					
 			}					
@@ -4486,20 +4486,20 @@ var WPCLib = {
 			} else {
 				// Depending on user level switch to register or account overview
 				if (WPCLib.sys.user.level==0) {
-					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_login'));
-					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_signup'));				
+					this.switchView(frame.contentDocument.getElementById('s_login'));
+					this.switchView(frame.contentDocument.getElementById('s_signup'));				
 				} else {
-					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_settings'));
-					this.switchView(document.getElementById('dialog').contentDocument.getElementById('s_account'));	
+					this.switchView(frame.contentDocument.getElementById('s_settings'));
+					this.switchView(frame.contentDocument.getElementById('s_account'));	
 				}
 			}
 
 			// See if we had a forced upgrade header
-			var plan = document.getElementById('dialog').contentDocument.getElementById('s_plan');
+			var plan = frame.contentDocument.getElementById('s_plan');
 			if (plan) {
 				var head = plan.getElementsByTagName('div');				
 				if (head[0].style.display=='block') {
-					var checkout = document.getElementById('dialog').contentDocument.getElementById('s_checkout').getElementsByTagName('div');
+					var checkout = frame.contentDocument.getElementById('s_checkout').getElementsByTagName('div');
 					head[0].style.display = checkout[0].style.display = 'none';
 					head[1].style.display = checkout[1].style.display = 'block';
 				}
