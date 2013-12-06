@@ -838,7 +838,7 @@ var WPCLib = {
 				dataType: "json",
 				url: '/docs/'+docid,
 				headers: header,
-				timeout: 5000,
+				timeout: 30000,
 				success: function(data, textStatus, xhr) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
@@ -935,6 +935,8 @@ var WPCLib = {
 					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.');															
 					// If the load fails because of access issues reset doclist
 					if (xhr.status == 403 || xhr.status == 404) {
+						// Release preloaded to enable loaddocs to load any doc
+						WPCLib.canvas.preloaded = false;
                     	// Reload docs                  								
                     	WPCLib.folio.docs.loaddocs();
                     }
