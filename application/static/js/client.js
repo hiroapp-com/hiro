@@ -60,7 +60,7 @@ var WPCLib = {
 					a = document.getElementById(this.a_counterId);	
 
 				// Start progres bar
-				if (!folioonly) WPCLib.ui.hprogress.begin();					
+				if (!folioonly) WPCLib.ui.hprogress.begin();			
 
 				$.ajax({
 				    dataType: "json",
@@ -817,6 +817,8 @@ var WPCLib = {
 				docid = urlid || docid;
 				header.accesstoken = token;
 				title = '';
+				// Remove token right away so it can't wreak havoc
+				WPCLib.sharing.token = '';
 			}
 
 			WPCLib.sys.log('loading doc id: ', [docid, header]);
@@ -835,7 +837,8 @@ var WPCLib = {
 			$.ajax({
 				dataType: "json",
 				url: '/docs/'+docid,
-				header: header,
+				headers: header,
+				timeout: 5000,
 				success: function(data, textStatus, xhr) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
@@ -852,8 +855,8 @@ var WPCLib = {
 						WPCLib.folio.docs.updateunseen(-1);
 					}		
 
-					// Reset accesstoken if we had one
-					if (token) WPCLib.sharing.token = '';		
+					// Reload folio if we had a token 
+					if (token) WPCLib.folio.docs.loaddocs(true);		
 
 					// Update document list
 					WPCLib.folio.docs.update();		
@@ -921,7 +924,7 @@ var WPCLib = {
 					// Complete progress bar
 					WPCLib.ui.hprogress.done();					
 				},
-				error: function(data,textStatus,xhr) {
+				error: function(xhr,status,textStatus) {
 					// Complete progress bar
 					WPCLib.ui.hprogress.done(true);					
 					WPCLib.sys.error([xhr]);
@@ -929,14 +932,12 @@ var WPCLib = {
 					if (textStatus == 'timeout') WPCLib.sys.goneoffline();	
 					// Show notifications and reset token if we had one
 					if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
-					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.');					
-					if (token) WPCLib.sharing.token = '';											
+					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.');															
 					// If the load fails because of access issues reset doclist
 					if (xhr.status == 403 || xhr.status == 404) {
                     	// Reload docs                  								
                     	WPCLib.folio.docs.loaddocs();
                     }
-
 				}
 			});						
 		},	
