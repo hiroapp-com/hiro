@@ -1487,7 +1487,7 @@ var WPCLib = {
                     type: "POST",
                     contentType: "application/json",
                     data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
-                    timeout: 50,
+                    timeout: 5000,
                     success: function(data,status,xhr) {
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
                         	// If for some reason the session got out of sync we reset
