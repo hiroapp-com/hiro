@@ -4185,27 +4185,21 @@ var WPCLib = {
 
 			done: function(error) {
 				// Complete bar and fade out
+				this.progress = 1;
 				this._setbarcss(1);
+				setTimeout(function(){
+					WPCLib.ui.hprogress.bar.style.opacity = 0.15;				
+				},300);						
 
-				if (error) {
-					// if we had an error we change the color to red and fade out later
-					this.bar.style.background = '#D61818';	
-					setTimeout(function(){
-						WPCLib.ui.hprogress.bar.style.opacity = 0;				
-					},300);								
-					setTimeout(function(){
-						WPCLib.ui.hprogress.bar.style.display = 'none';
-						WPCLib.ui.hprogress.bar.style.background = '#3c6198';						
-						WPCLib.ui.hprogress.active = false;					
-					},500);					
-				} else {
-					// normal case
-					this.bar.style.opacity = 0.15;			
-					setTimeout(function(){
-						WPCLib.ui.hprogress.bar.style.display = 'none';
-						WPCLib.ui.hprogress.active = false;					
-					},200);					
-				}
+				// if we had an error we change the color to red and fade out later
+				if (error)	this.bar.style.background = '#D61818';											
+
+				// Renove remains and get ready again
+				setTimeout(function(){
+					WPCLib.ui.hprogress.bar.style.display = 'none';
+					if (error) WPCLib.ui.hprogress.bar.style.background = '#3c6198';						
+					WPCLib.ui.hprogress.active = false;					
+				},500);					
 			},
 
 			_setbarcss: function(pos) {
