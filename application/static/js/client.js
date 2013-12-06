@@ -1124,7 +1124,10 @@ var WPCLib = {
 			var k = e.keyCode;
 
 			// Tab key insert 5 whitespaces
-			if (k==9) WPCLib.canvas._replacekey(e,'tab');
+			if (k==9) {
+				WPCLib.canvas._replacekey(e,'tab');
+				e.preventDefault();
+			}
 
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
@@ -3320,7 +3323,7 @@ var WPCLib = {
 		user: {
 			id: '',
 			email: '',
-			firstname: '',
+			name: '',
 			// levels: 0 = anon, 1 = free, 2 = paid
 			level: 0,
 			dialog: document.getElementById('dialog').contentDocument,
@@ -3513,11 +3516,11 @@ var WPCLib = {
 						return;
 					}					
 					FB.api('/me', function(response) {
-			            if (response.first_name && !WPCLib.sys.user.firstname) {
+			            if (response.first_name && !WPCLib.sys.user.name) {
 			            	// Fetch name & build payload
-			            	WPCLib.sys.user.firstname = response.first_name;
+			            	WPCLib.sys.user.name = response.first_name;
 			            	var payload = {};
-			            	payload.firstName = response.first_name;
+			            	payload.name = response.first_name;
 			            	// Notify segment.io
 			            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload);
 			            	// Send to backend
@@ -3530,7 +3533,7 @@ var WPCLib = {
 			nametype: function(event) {
 				// Onkeydown handler for Username input field in settings dialog
 				var target = event.target || event.srcElement;
-				if (target.value.length > 0 && target.value != WPCLib.sys.user.firstname) {
+				if (target.value.length > 0 && target.value != WPCLib.sys.user.name) {
 					target.nextSibling.style.display = 'block';
 				} else {
 					target.nextSibling.style.display = 'none';					
@@ -3562,9 +3565,9 @@ var WPCLib = {
 	                data: JSON.stringify(payload),
 					success: function(xhr) {
 						button.innerHTML = 'Saved!';
-						WPCLib.sys.user.firstname = name;	
+						WPCLib.sys.user.name = name;	
 		            	var payload2 = {};
-		            	payload2.firstName = name;
+		            	payload2.name = name;
 		            	// Notify segment.io
 		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);						                    
 					},

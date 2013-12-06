@@ -316,20 +316,17 @@
 			    email            : '{{ current_user.email }}',
 			    subscriptionPlan : '{{ current_user.plan }}',
 			    created: {{ current_user.signup_at_ts }} 
-			}, firstname = '{{ current_user.name }}';
+			}, name = '{{ current_user.name }}';
 			if (window.navigator.standalone) _wpcsiou.mobileappinstalled = true;
 			if ('ontouchstart' in document.documentElement) _wpcsiou.touchdevice = true;
 			if (_wpc.sys.user.doccount > 0) _wpcsiou.doccount = _wpc.sys.user.doccount;	
-			if (firstname) {
-				_wpcsiou.firstName = _wpc.sys.user.firstname = firstname;
-				_wpcsiou.lastName = "";	
-			}	
+			if (name) _wpcsiou.name = _wpc.sys.user.name = name;	
 	  		// init segment io
 			analytics.identify('{{ current_user.token }}', _wpcsiou);  
 			_wpc.sys.user.id = '{{ current_user.token }}';
 			_wpc.sys.user.email = _wpcsiou.email;
 			// TODO: Remove after a few weeks
-			if (!firstname) _wpc.sys.user.getfirstname();
+			if (!name) _wpc.sys.user.getfirstname();
 		{% endif %}			
 	</script>
 </body>
