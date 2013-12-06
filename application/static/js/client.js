@@ -1518,8 +1518,11 @@ var WPCLib = {
                         WPCLib.canvas.sync.inflight = false;
   
   						// Go offline if request timed out
-						if (textStatus == 'timeout' || xhr.status == 0) WPCLib.sys.goneoffline();
-
+						if (textStatus == 'timeout' || xhr.status == 0) {
+							WPCLib.sys.goneoffline();
+							return;
+						}	
+							
                         // Retry if it was just a sync session timeout (20 mins)
                         if (xhr.status == 412) {
 							WPCLib.canvas.sync.begin(xhr.responseJSON.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
@@ -1569,7 +1572,7 @@ var WPCLib = {
                     	// This should be the most common case
                     	for (i=0,l=this.edits.length;i<l;i++) {
                     		// Remove the old & ACK'd local edit(s) from the stack
-                    		if (this.edits[i].clientversion <= edit.clientversion) {                      			
+                    		if (this.edits[i] && this.edits[i].clientversion <= edit.clientversion) {                      			
                     			this.edits.pop();
                     		}	                 			
                     	} 
@@ -1714,11 +1717,13 @@ var WPCLib = {
                 }                
                 this.socket.onerror = function(data) {
                     WPCLib.sys.log("ERROR connecting to channel api",data);                	
-                    if (!data.code || data.code == 0 || data.code == -1 || data.code == 400 || data.code == 401) {
-                    	// This is most likely either a time out session or token, so we reset the whole sync stack
-                    	// TODO: See if this interferes with the reconnect we fire on close
+                    if (!data.code || data.code == 400 || data.code == 401) {
+                    	// This is most likely either a timed out session or token, so we reset the whole sync stack
                     	WPCLib.canvas.sync.reconnect(null,true);
-                    }                               	
+                    } else if (data.code == 0 || data.code == -1) {
+                    	// Damn, we or Channel API just went offline
+                    	WPCLib.sys.goneoffline();
+                    }                           	
                 }
                 this.socket.onclose = function(data) {
                     WPCLib.sys.log("Channel closed.",data);
@@ -1779,8 +1784,8 @@ var WPCLib = {
             reconnecting: false,
 			reconnect: function(token,reset) {
 				// If the connection dropped or the user loaded a new document we start a new one
-				// Prevent multiple reconnects if we do a hard reset
-				if (this.reconnecting) return;
+				// Prevent multiple reconnects if we do a hard reset, or reconnecting if we are offline
+				if (this.reconnecting || WPCLib.sys.status != 'normal') return;
 				this.reconnecting = true;
 				// Create new connection
 				if (!reset) {
@@ -1822,7 +1827,8 @@ var WPCLib = {
 						},
 						error: function(data) {
 							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs');
-							WPCLib.folio.docs.loaddocs();	
+							// Check if we are only, otherwise avoid potential side effects
+							if (WPCLib.sys.online) WPCLib.folio.docs.loaddocs();	
 							WPCLib.canvas.sync.reconnecting = false;													
 						}
 					});		
@@ -3188,6 +3194,7 @@ var WPCLib = {
 
 		goneoffline: function() {
 			// Triggered if an AJAX requests return textStatus == timeout
+			if (!this.online) return;
 			if ('onLine' in navigator && !navigator.onLine) this.online = false;
 			this.status = 'offline';
 			var reason = (this.online) ? 'Server not available' : 'No internet connection',
@@ -3215,7 +3222,7 @@ var WPCLib = {
 		reconnectinterval: 1000,
 		tryreconnect: function() {
 			// Pings the doc API and checks if current document is latest and no newer version on the server
-			var that = WPCLib.sys;
+			var that = WPCLib.sys, t = that.reconnectinterval;
 			if (!WPCLib.ui.windowfocused) {
 				// If the window is not focused break recursive check and resume as soon as window is focused again
 				WPCLib.util._focuscallback = that.tryreconnect;
@@ -3230,10 +3237,10 @@ var WPCLib = {
 				clearTimeout(that.reconnecttimer);
 				that.reconnecttimer = null;
 				that.tryreconnect();
-			},that.reconnectinterval);
+			},t);
 
-			// Increase reconnecttimer
-			that.reconnectinterval = that.reconnectinterval * 2;	
+			// Increase reconnectinterval to up to one minute
+			that.reconnectinterval = (t > 60000) ? 60000 : t * 2;	
 
 			// Try reconnecting
 			WPCLib.canvas.sync.addedit(true,'Reconnecting...');						
@@ -3260,8 +3267,10 @@ var WPCLib = {
 			// Reset reconnecttimer
 			clearTimeout(this.reconnecttimer);
 			this.reconnecttimer = null;
+			this.reconnectinterval = 1000;
 
-			// Make sure we get the latest version from the server
+			// Make sure we get the latest version from the server and reset the Channel API
+            WPCLib.canvas.sync.reconnect(null,true);			
 			WPCLib.canvas.sync.addedit(true,'Reconnecting...');		
 		},
 
