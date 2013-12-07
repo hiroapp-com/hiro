@@ -1523,7 +1523,6 @@ var WPCLib = {
 					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();                        	
                     },
                     error: function(xhr,status,textStatus) {
-                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([status,textStatus]));
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
   
@@ -1538,6 +1537,9 @@ var WPCLib = {
 							WPCLib.canvas.sync.begin(xhr.responseJSON.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
                         	return;
                         }
+
+                        // Log error if it wasn't a reconnect (see above)
+                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([status,textStatus]));                        
 
                         // Move away from note if rights were revoked
                         if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
