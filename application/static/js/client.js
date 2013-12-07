@@ -65,7 +65,7 @@ var WPCLib = {
 				$.ajax({
 				    dataType: "json",
 				    url: '/docs/?group_by=status',
-				    timeout: 5000,
+				    timeout: 10000,
 				    success: function(data) {
 						// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
 						if (!data.active && !data.archived) {							
@@ -157,9 +157,9 @@ var WPCLib = {
 						newdocs.insertBefore(that.renderlink(i,'active',act[i]), newdocs.firstChild);
 					} else { 
 						newdocs.appendChild(that.renderlink(i,'active',act[i])); 
-					};																	
-					// iterate unseen doc counter
-					if (act[i].unseen && act[i].shared) this.unseenupdates++;					    
+					};																
+					// iterate unseen doc counter except for document to be loaded
+					if (act[i].unseen && act[i].shared && i != 0) this.unseenupdates++;					    
 				}
 				if (arc) {
 					for (i=0,l=arc.length;i<l;i++) {	
@@ -194,7 +194,7 @@ var WPCLib = {
 
 				// Kick off regular updates, only once
 				if (!this._updatetimeout) {
-					this._updatetimeout = setInterval(WPCLib.folio.docs.update,60000);
+					this._updatetimeout = setInterval(WPCLib.folio.docs.update,61000);
 				}
 			},		
 
@@ -1778,8 +1778,8 @@ var WPCLib = {
                     	var title = WPCLib.canvas.title || 'Untitled';
                     	ui.tabnotify('Updated!');
                     }
-                } else if (!ownuser) {
-                	// If the update is for a doc in folio thats not currently open
+                } else if (!ownuser && el && el.status == 'active') {
+                	// If the update is for an active (not archived) doc in folio thats not currently open
                 	// Update internal values and update display
                 	el.unseen = true;
                 	// Add message to notification function, sound is only triggered once by folio update
