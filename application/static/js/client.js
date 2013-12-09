@@ -1157,7 +1157,7 @@ var WPCLib = {
 	            WPCLib.util.stopEvent(e);				
 	            src.value = WPCLib.canvas.text = [src.value.slice(0, pos), '\t', src.value.slice(pos)].join('');
 	            // We have to do this as some browser jump to the end of the textarea for some strange reason		
-	            document.activeElement.blur();
+	            if (document.activeElement) document.activeElement.blur();
 	            WPCLib.canvas._setposition(pos+1);        
 	        }        
 		},
@@ -1318,7 +1318,7 @@ var WPCLib = {
 
     		// Unfocus any existing elements or abort if user is in an input field
     		if (al && al.nodeName == "INPUT" && al.id != 'pageTitle') return;
-    		if (!contentfocus) document.activeElement.blur();
+    		if (!contentfocus && document.activeElement) document.activeElement.blur();
     		this._resize();   
 
 
@@ -1943,7 +1943,7 @@ var WPCLib = {
 			widget.style.display = 'none';
 
 			// Set position or blur input
-			if ('ontouchstart' in document.documentElement) document.activeElement.blur();
+			if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();
 			WPCLib.canvas._setposition();			
 		},
 
@@ -2532,7 +2532,7 @@ var WPCLib = {
 			var midi = (document.body.offsetWidth<=900);
 			var menu = WPCLib.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
-			if (mobile) document.activeElement.blur();
+			if (mobile && document.activeElement) document.activeElement.blur();
 			if ((!midi&&WPCLib.context.show)||(midi&&c.style.display=='block')) {
 				c.style.display = 'none';
 				can.className += " full";								
@@ -3598,7 +3598,7 @@ var WPCLib = {
 				// Check if there's any input at all
 				if (email.value.length<=5) {
 					email.className += ' error';
-					if ('ontouchstart' in document.documentElement) { document.activeElement.blur(); } else { email.focus(); }
+					if ('ontouchstart' in document.documentElement && document.activeElement) { document.activeElement.blur(); } else { email.focus(); }
 					error.innerHTML = 'Please enter your email address and click "Lost Password?" again.';
 					return;
 				}
@@ -3874,7 +3874,7 @@ var WPCLib = {
 						document.getElementById('dialog').contentDocument.getElementById('checkoutbutton').innerHTML = "Upgrade";
 	                    WPCLib.sys.user.setStage(data.tier);	
 	                    WPCLib.sys.user.checkoutActive = false;	
-						document.activeElement.blur();
+						if (document.activeElement) document.activeElement.blur();
 	                    WPCLib.ui.hideDialog();				                    
 	                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!');						                    
 					},
@@ -4424,7 +4424,7 @@ var WPCLib = {
 				WPCLib.ui.switchView(el);
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
-					document.activeElement.blur();
+					if (document.activeElement) document.activeElement.blur();
 					// On some mobile browser the input field is frozen if we don't focus the iframe first	
 					// iOS 7 input fields freeze if they are autofocused & then touched, thus no autofocus on touch devices for now 			 
 					// if ('ontouchstart' in document.documentElement) document.getElementById('dialog').contentWindow.focus();								
@@ -4501,7 +4501,7 @@ var WPCLib = {
 
 			// Hide shield & dialog
 			if ('ontouchstart' in document.documentElement) {
-				document.activeElement.blur();
+				if (document.activeElement) document.activeElement.blur();
 			}			
 			s.style.display = 'none';
 			d.style.display = 'none';
@@ -4855,7 +4855,7 @@ var WPCLib = {
 
 			// Always blur mobile inputs if focus is not on canvas
 			if ('ontouchstart' in document.documentElement && document.activeElement && document.activeElement.id != WPCLib.canvas.contentId) {
-				document.activeElement.blur();
+				if (document.activeElement) document.activeElement.blur();
 			} 
 		},
 
