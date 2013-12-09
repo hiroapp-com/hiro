@@ -1095,9 +1095,9 @@ var WPCLib = {
 		_resize: function() {
 			// Resize canvas textarea as doc grows
 			// TODO: Consider cut/copy/paste, fix padding/margin glitches
-			var w = document.body.offsetWidth
-			var midi = (w > 480 && w <900) ? true : false;
-		    var text = document.getElementById(WPCLib.canvas.contentId);   
+			var w = document.body.offsetWidth,
+				midi = (w > 480 && w <900) ? true : false,
+		    	text = document.getElementById(WPCLib.canvas.contentId);   
 		    if (midi) {
 		    	text.style.height = (text.scrollHeight-100)+'px';
 		    } else {
