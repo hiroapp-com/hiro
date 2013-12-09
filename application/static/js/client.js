@@ -914,7 +914,7 @@ var WPCLib = {
 
 
 					// Fetch collaborator list if we have collaborators
-					if (data.shared_with.length > 0) {
+					if (data.shared) {
 						WPCLib.sharing.accesslist.fetch();
 					} else {
 						WPCLib.sharing.accesslist.users = [];
@@ -1839,7 +1839,7 @@ var WPCLib = {
 							WPCLib.canvas.sync.reconnecting = false;
 						},
 						error: function(data) {
-							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs');
+							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs. ' + JSON.stringify(data));
 							// Check if we are only, otherwise avoid potential side effects
 							if (WPCLib.sys.online) WPCLib.folio.docs.loaddocs();	
 							WPCLib.canvas.sync.reconnecting = false;													
