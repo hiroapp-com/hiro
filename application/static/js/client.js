@@ -396,7 +396,7 @@ var WPCLib = {
 							WPCLib.canvas.docid = data.doc_id;
 
 							// Set folio values
-							doc.firstChild.firstChild.innerHTML = 'Untitled Note';
+							if (doc.firstChild) doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 							doc.id = 'doc_'+data;
 							WPCLib.folio.docs.active[0].id = data.doc_id;	
 
@@ -1480,7 +1480,8 @@ var WPCLib = {
                 }
 
                 // See if we're connected to Channel API and try to recover if not (precaution, case not seen yet)
-                if (!this.connected && this.channelToken) this.openchannel(this.channelToken);
+                // Do not open try to reopen channel if Channel API is blocked by plugin or similar
+                if (goog && !this.connected && this.channelToken) this.openchannel(this.channelToken);
 
                 // Set variable to prevent double sending
                 this.inflight = true;
@@ -1493,7 +1494,7 @@ var WPCLib = {
                     type: "POST",
                     contentType: "application/json",
                     data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
-                    timeout: 5000,
+                    timeout: 8000,
                     success: function(data,status,xhr) {
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
 	                        // Reset inflight variable
@@ -1525,13 +1526,13 @@ var WPCLib = {
                     error: function(xhr,status,textStatus) {
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
-  
+
   						// Go offline if request timed out
 						if (textStatus == 'timeout' || xhr.status == 0) {
 							WPCLib.sys.goneoffline();
 							return;
-						}	
-							
+						}						
+
                         // Retry if it was just a sync session timeout (20 mins)
                         if (xhr.status == 412) {
 							WPCLib.canvas.sync.begin(xhr.responseJSON.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
@@ -1691,12 +1692,12 @@ var WPCLib = {
 
 			openchannel: function(token) {
 				// Open Appengine Channel or Diff match patch wasn't loaded yet
-				if (!goog.appengine.Channel || !this.dmp) {
+				if (!goog || !goog.appengine.Channel || !this.dmp) {
 					// Retry if channel API isn't loaded yet
 					setTimeout(function(){
 						WPCLib.canvas.sync.openchannel(token);
 						return;
-					},200);
+					},500);
 				}
 
 				if (this.connected) {
@@ -3518,7 +3519,8 @@ var WPCLib = {
 			},
 
 			getfirstname: function() {
-				// Quick hack to get FB name of users that already signed in
+				// Quick hack to get FB name (if we don't have one yet) of users that already signed in
+				if (WPCLib.sys.user.name) return;
 				setTimeout(function(){
 					if (!FB) {
 						WPCLib.sys.user.getfirstname();
@@ -3536,7 +3538,7 @@ var WPCLib = {
 			            	WPCLib.sys.user.namesave(null,response.first_name)
 			            }
 			        });
-				},1500);	
+				},10000);	
 			},	
 
 			nametype: function(event) {
