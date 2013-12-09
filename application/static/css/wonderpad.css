@@ -630,7 +630,7 @@ a.wpcbutton:hover {
   .canvas .page input.title, .canvas.full .page input.title {
     position: fixed;
     width: auto;
-    top: 10px;
+    top: 9px;
     left: 0;
     right: 0;
     margin-left: 47px;
@@ -671,7 +671,7 @@ a.wpcbutton:hover {
     border: 0px;
     overflow: hidden;   
     color: #333; 
-    padding: 48px 12px 2px 12px;    
+    padding: 45px 12px 2px 12px;    
     background-color: #fff;
   } 
 
@@ -684,8 +684,8 @@ a.wpcbutton:hover {
   #switchview {
     margin-right: 0;
     top: 0;
-    padding-right: 18px;
-    padding-top: 15px;
+    padding-right: 19px;
+    padding-top: 14px;
     padding-bottom: 0;  
   }
 
@@ -962,7 +962,7 @@ a.wpcbutton:hover {
 
 @media (max-width: 480px) {
   #sharing, .canvas.full #sharing {
-    top: 47px;
+    top: 46px;
     margin-right: 0; 
     position: fixed;
     z-index: 2950;
