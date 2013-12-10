@@ -362,6 +362,59 @@ class Document(ndb.Model):
                     "blacklist": [c.url for c in self.blacklist]
                     }
                 }
+
+
+class DeltaLog(ndb.Model):
+    delta = ndb.JsonProperty('d')
+    timestamp = ndb.DateTimeProperty('ts', auto_now_add=True)
+
+
+class DocAccess(ndb.Model):
+    """ Generic Document access association and book-keeping. 
+    
+        User reference is optional (e.g. if invited but not accepted) 
+        and exact usage of token_hash is open to the creator (e.g. emailed or used as public hash)
+    """
+    # association and metainfo
+    #future status: 'public', 'declined', 'revoked'
+    role = ndb.StringProperty(default='collab', choices=('collab', 'owner')) 
+    status = ndb.StringProperty(default='invited', choices=('invited', 'active', 'archived')) 
+    doc = ndb.KeyProperty(kind=Document, required=True)
+    user = ndb.KeyProperty(kind=User)
+    email = ndb.StringProperty()
+    token_hash =  ndb.StringProperty()
+    
+    # backlogs and session-references
+    deltalog = ndb.StructuredProperty(DeltaLog, repeated=True)
+    sync_sessions = ndb.StringProperty(repeated=True)
+
+    # various timestamps
+    last_change_at = ndb.DateTimeProperty(auto_now_add=True) # will not be updated on "=<len>"(no-op) deltas
+    last_access_at = ndb.DateTimeProperty(auto_now=True)
+    created_at = ndb.DateTimeProperty(auto_now_add=True)
+
+    
+    @classmethod
+    def create(cls, doc, user=None, role='collab', status='invited', email=None):
+        token = uuid.uuid4().hex
+        hashed = sha512(token).hexdigest()
+        obj = cls(token_hash=hashed, doc=doc.key, role=role, status=status, email=email)
+        if user:
+            obj.user = user.key
+        obj.put()
+        return obj, token
+
+    def create_session(self):
+        sess = SyncSession.create(self.doc.get().text, user_id=(self.user.id() if self.user else None))
+        self.sync_sessions.append(sess['session_id'])
+        self.put()
+        return sess
+
+    def _pre_put_hook(self):
+        self.deltalog = self.deltalog[:100]
+
+
+
 class StripeToken(ndb.Model):
     used_by = ndb.KeyProperty(kind=User)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
