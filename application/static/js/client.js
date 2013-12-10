@@ -864,7 +864,7 @@ var WPCLib = {
 					}		
 
 					// Reload folio if we had a token 
-					if (token) WPCLib.folio.docs.loaddocs(true);		
+					if (token) WPCLib.folio.docs.loaddocs(true);	
 
 					// Update document list
 					WPCLib.folio.docs.update();		
@@ -874,7 +874,6 @@ var WPCLib = {
 
 					// Show data on canvas
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
-					if (!title) document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
 					var content = document.getElementById(that.contentId);
 					if (!that.preloaded && content.value != data.text) {
 						content.value = data.text;					
@@ -883,6 +882,15 @@ var WPCLib = {
 						WPCLib.canvas._resize();
 					}	
 					that._setposition(data.cursor);
+
+					// If the title changed in the meantime or wasn't passed to loaddoc at all
+					if (!title || title != data.title) {
+						document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
+						if (title) {
+							WPCLib.folio.docs.lookup[docid].title = data.title;
+							WPCLib.folio.docs.update();
+						}	
+					}						
 
 					// Set internal values, do not store 'null' as title string as it fucks up search
 					that.text = data.text;
@@ -902,11 +910,6 @@ var WPCLib = {
 					} else {
 						WPCLib.canvas._removeblank();
 					}	
-
-					// Show default title if none was saved	
-					if (!data.title || data.title.length==0) {
-						document.getElementById(that.pageTitle).value = 'Untitled';
-					}
 						
 					// Load links
 					WPCLib.context.wipe();	
@@ -2092,6 +2095,8 @@ var WPCLib = {
 				// Remove user from array right away
 				u.splice(uid,1);
 				that.update();
+
+				console.log(payload);
 
 				$.ajax({
                 	// Post to backend
