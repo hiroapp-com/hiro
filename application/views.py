@@ -375,7 +375,7 @@ def doc_collaborators(doc_id):
             # revoke doc-access
             da = DocAccess.get_by_id(pk)
             if da and da.doc == doc.key and da.role != 'owner':
-                da.delete()
+                da.key.delete()
                 return "ok"
             else:
                 return "document not found or insufficient right", 404
