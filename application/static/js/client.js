@@ -2085,8 +2085,8 @@ var WPCLib = {
 					u = that.users, currentuser = (u[uid].email == WPCLib.sys.user.email),
 					url = '/docs/' + WPCLib.canvas.docid + '/collaborators', payload = {};
 
-				// Build payload with either id if we have or email as fallback
-				if (u[uid].id) { payload.id = u[uid].id } else { payload.email = u[uid].email };
+				// Build payload with access id
+				payload.access_id = u[uid].access_id;
 				payload._delete = true;
 
 				// Remove user from array right away
