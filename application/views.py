@@ -369,7 +369,7 @@ def doc_collaborators(doc_id):
     if request.method == 'POST':
         if not request.json:
             return 'payload missing', 400
-        pk = request.json.get('id')
+        pk = request.json.get('access_id')
         email = request.json.get('email')
         if pk and request.json.get('_delete'):
             # revoke doc-access
