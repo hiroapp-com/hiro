@@ -348,7 +348,7 @@ def get_document(doc_id):
     access = doc.grant(current_user, request.headers.get("accesstoken"))
     if not access:
         return "access denied, sorry.", 403
-    access.put() #will set last_access_at to now(); TODO check if this could be done in DocAccess.post-get hook
+    access.tick_seen()
 
     sess = access.create_session()
     resp = jsonify(doc.api_dict())
@@ -454,7 +454,7 @@ def sync_doc(doc_id):
             resp.status = "412"
             resp.headers['Collab-Session-ID'] = sess['session_id']
             resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-            access.put() #will set last_access_at to now(); TODO check if this could be done in DocAccess.post-get hook
+            access.tick_seen() 
             return resp
         elif not sess['user_id'] == current_user.key.id():
             return "not your sync session {0} != {1}".format(sess['user_id'], current_user.key.id()), 403
@@ -483,7 +483,7 @@ def sync_doc(doc_id):
             # master doc not changed, only persist session
             sess.save()
 
-        access.put() #will set last_access_at to now(); TODO check if this could be done in DocAccess.post-get hook
+        access.tick_seen() 
         return jsonify(session_id=sess_id, deltas=sess['edit_stack'])
     return jsonify_err(400, "could not acquire lock for masterdoc")
 
