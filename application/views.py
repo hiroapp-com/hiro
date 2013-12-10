@@ -264,6 +264,7 @@ def list_documents():
             "id": doc.key.id(),
             "title": doc.title,
             "status": da.status,
+            "role": da.role,
             "created": time.mktime(da.created_at.timetuple()),
             "updated": time.mktime(da.last_change_at.timetuple()),
             "shared": is_shared,
