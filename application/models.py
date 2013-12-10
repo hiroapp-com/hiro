@@ -306,7 +306,7 @@ class Document(ndb.Model):
         if DocAccess.query(DocAccess.doc == self.key, DocAccess.user == user.key).get():
             return "Already part of this clique", 302
         else:
-            da, token = DocAccess.create(self, user=user.key)
+            da, token = DocAccess.create(self, user=user, status='active')
             #notify user
             active_sessions = user.push_message({"kind": "share", 
                                                  "doc_id": str(self.key.id()), 
@@ -367,8 +367,8 @@ class DocAccess(ndb.Model):
     sync_sessions = ndb.StringProperty(repeated=True)
 
     # various timestamps
-    last_change_at = ndb.DateTimeProperty(auto_now_add=True) # will not be updated on "=<len>"(no-op) deltas
-    last_access_at = ndb.DateTimeProperty(auto_now=True)
+    last_change_at = ndb.DateTimeProperty(default=datetime.min) # will not be updated on "=<len>"(no-op) deltas
+    last_access_at = ndb.DateTimeProperty(default=datetime.min)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
 
     
@@ -381,6 +381,10 @@ class DocAccess(ndb.Model):
             obj.user = user.key
         obj.put()
         return obj, token
+
+    def tick_seen(self):
+        self.last_access_at = datetime.now()
+        self.put()
 
     def create_session(self):
         sess = SyncSession.create(self.doc.get().text, user_id=(self.user.id() if self.user else None))
