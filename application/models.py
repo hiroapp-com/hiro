@@ -367,7 +367,7 @@ class DocAccess(ndb.Model):
     sync_sessions = ndb.StringProperty(repeated=True)
 
     # various timestamps
-    last_change_at = ndb.DateTimeProperty(auto_now_add=True) # will not be updated on "=<len>"(no-op) deltas
+    last_change_at = ndb.DateTimeProperty(default=datetime.min) # will not be updated on "=<len>"(no-op) deltas
     last_access_at = ndb.DateTimeProperty(auto_now=True)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
 
