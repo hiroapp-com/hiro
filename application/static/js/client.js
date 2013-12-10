@@ -134,7 +134,7 @@ var WPCLib = {
 					archive = document.getElementById(that.archiveId),
 					bubble = document.getElementById('updatebubble'),
 					wastebin = document.getElementById('wastebin'),
-					seen = this.unseenupdates;		
+					seen = this.unseenupdates, urlid = window.location.pathname.split('/')[2];		
 
 				// Update our lookup object
 				that.updatelookup();
@@ -151,9 +151,10 @@ var WPCLib = {
 				this.unseenupdates = 0;	
 
 				// Add all elements & events to new DOM object
-				for (i=0,l=act.length;i<l;i++) {	
+				for (i=0,l=act.length;i<l;i++) {						
 					// Attach links to new active object
-					if (act[i].docid == WPCLib.canvas.docid && newdocs.firstChild) {
+					if (newdocs.firstChild && ((act[i].id == WPCLib.canvas.docid) || (!WPCLib.canvas.docid && urlid && urlid == act[i].id))) {
+						// If we: Already have a node we can insertbefore, doc[i] is the current doc or we have a url id that equals doc[i]
 						newdocs.insertBefore(that.renderlink(i,'active',act[i]), newdocs.firstChild);
 					} else { 
 						newdocs.appendChild(that.renderlink(i,'active',act[i])); 
@@ -164,7 +165,7 @@ var WPCLib = {
 				if (arc) {
 					for (i=0,l=arc.length;i<l;i++) {	
 						// Attach links to new archive object
-						if (arc[i].docid == WPCLib.canvas.docid && newarchive.firstChild) {
+						if (arc[i].id == WPCLib.canvas.docid && newarchive.firstChild) {
 							newarchive.insertBefore(that.renderlink(i,'archive',arc[i]), newarchive.firstChild);
 						} else { 
 							newarchive.appendChild(that.renderlink(i,'archive',arc[i])); 
@@ -228,7 +229,8 @@ var WPCLib = {
 				var item = (type=='active') ? this.active : this.archived,
 					lvl = WPCLib.sys.user.level,
 					docid = item[i].id,
-					active = (type == 'active') ? true : false;
+					active = (type == 'active') ? true : false,
+					lastupdate = (data.last_doc_update && data.updated <= data.last_doc_update.updated) ? data.last_doc_update.updated : data.updated;
 
 				var d = document.createElement('div');
 				d.className = 'document';
@@ -243,13 +245,19 @@ var WPCLib = {
 				t.innerHTML = item[i].title || 'Untitled Note';
 
 				var stats = document.createElement('small');
+
 				if (item[i].updated) {
-					var statline = WPCLib.util.humanizeTimestamp(item[i].updated) + " ago";
-					if (data.lastEditor) statline = statline + ' by ' + data.lastEditor;
+					var statline = WPCLib.util.humanizeTimestamp(lastupdate) + " ago";
+					// Check if document was last updated by somebody else
+					// We also have to check the time difference including slight deviatian because our own updates are set by two different functions
+					if (data.last_doc_update && data.last_doc_update.email != WPCLib.sys.user.email && data.updated <= (data.last_doc_update.updated + 10)) {
+						statline = statline + ' by ' + (data.last_doc_update.name || data.last_doc_update.email); 
+					}					
 					stats.appendChild(document.createTextNode(statline));
 				} else {
 					stats.appendChild(document.createTextNode('Not saved yet'))							
-				}			
+				}	
+	
 
 				link.appendChild(t);
 				link.appendChild(stats);
@@ -1442,6 +1450,13 @@ var WPCLib = {
 				edit.clientversion = this.localversion++;
 				edit.serverversion = this.remoteversion;
 
+                // Update last edit timestamp & folio display if text was changed
+                if (c != s) {
+                	var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];
+					if (doc) doc.updated = WPCLib.util.now(); 
+					WPCLib.folio.docs.update();
+                }				
+
 				// Cursor handling
 				this.previouscursor = this.latestcursor;
 				edit.cursor = this.latestcursor = WPCLib.canvas.caretPosition; 
@@ -1617,17 +1632,17 @@ var WPCLib = {
             		doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];              	
 
             	// Iterate remote version
-            	this.remoteversion++;   
-
-                // Update last edit timestamp & folio display
-				if (doc) doc.updated = WPCLib.util.now(); 
-				WPCLib.folio.docs.update();	              	           		
+            	this.remoteversion++;                 	           		
 
             	// If the delta is just a confirmation, do nothing
             	if (regex.test(delta)) {
             		WPCLib.sys.log('No text changed');
             		return;
             	} 	
+
+                // Update last edit timestamp & folio display
+				if (doc) doc.updated = WPCLib.util.now(); 
+				WPCLib.folio.docs.update();	            	
 
             	// Build diffs from the server delta
             	try { diffs = this.dmp.diff_fromDelta(this.shadow, delta) } 
@@ -1747,6 +1762,7 @@ var WPCLib = {
 			},		
 
             on_channel_message: function(data) {
+            	console.log(data);
             	// Receive and process notification of document update
             	var el = WPCLib.folio.docs.lookup[data.doc_id], 
             		ui = WPCLib.ui,
@@ -1764,9 +1780,14 @@ var WPCLib = {
             		return;
             	}            		
 
-            	// Update internal timestamp & last editor values	              	
-            	el.updated = WPCLib.util.now();  
-                el.lastEditor =  (ownuser) ? null : name; 
+            	// Update internal timestamp & last editor values	
+            	if (ownuser) {
+            		el.updated = WPCLib.util.now();  
+            	} else {
+            		el.last_doc_update.updated = WPCLib.util.now();
+            		el.last_doc_update.name = data.origin.name;  
+            		el.last_doc_update.email = data.origin.email;            		          		
+            	}              	
 
                 if (data.doc_id == WPCLib.canvas.docid) {
                 	// If the update is for the current document
@@ -2115,11 +2136,11 @@ var WPCLib = {
 				this.count();
 			},
 
-			renderuser: function(user,i) {
+			renderuser: function(user,i) {			
 				// Create a user DOM element and return it
 				var d, r, n,
 					currentuser = (user.email == WPCLib.sys.user.email),
-					tooltip = (user.perms == 'edit') ? undefined : user.perms.charAt(0).toUpperCase() + user.perms.slice(1),
+					tooltip = (user.status == 'invited') ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : undefined,
 					you = (this.users.length > 1) ? 'You' : 'Only you';
 
 				d = document.createElement('div');
@@ -2127,7 +2148,7 @@ var WPCLib = {
 				d.className = 'user';
 				if (!currentuser && tooltip) d.setAttribute('title', tooltip);
 
-				if (user.perms != "owner") {
+				if (user.role != "owner") {
 					// Add remove link if user is not owner					
 					r = document.createElement('a');
 					r.className = 'remove';
@@ -2142,12 +2163,14 @@ var WPCLib = {
 					}
 
 					d.appendChild(r);
+				} else if (!currentuser) {
+					d.setAttribute('title', 'Owner');
 				}
 
 				// Add user name span
 				n = document.createElement('span');
-				n.className = (user.perms == 'invited') ? 'name invited' : 'name';
-				n.innerHTML = (currentuser) ? you : user.email;
+				n.className = (user.status == 'invited') ? 'name invited' : 'name';
+				n.innerHTML = (currentuser) ? you : user.name || user.email;
 				d.appendChild(n)
 
 				// Return object
