@@ -306,7 +306,7 @@ class Document(ndb.Model):
         if DocAccess.query(DocAccess.doc == self.key, DocAccess.user == user.key).get():
             return "Already part of this clique", 302
         else:
-            da, token = DocAccess.create(self, user=user.key)
+            da, token = DocAccess.create(self, user=user, status='active')
             #notify user
             active_sessions = user.push_message({"kind": "share", 
                                                  "doc_id": str(self.key.id()), 
