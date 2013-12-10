@@ -10,6 +10,30 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: DocAccess
+  properties:
+  - name: doc
+  - name: last_change_at
+    direction: desc
+
+- kind: DocAccess
+  properties:
+  - name: doc
+  - name: role
+  - name: status
+
+- kind: DocAccess
+  properties:
+  - name: doc
+  - name: token_hash
+  - name: token_hash
+
+- kind: DocAccess
+  properties:
+  - name: user
+  - name: last_change_at
+    direction: desc
+
 - kind: Document
   properties:
   - name: owner

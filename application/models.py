@@ -4,7 +4,6 @@ import time
 import calendar
 from hashlib import sha512
 from datetime import datetime
-from collections import defaultdict
 
 import stripe
 from passlib.hash import pbkdf2_sha512
@@ -48,36 +47,26 @@ class User(UserMixin, ndb.Model):
     stripe_cust_id = ndb.StringProperty()
     relevant_counter = ndb.IntegerProperty(default=0)
     has_root = ndb.BooleanProperty(default=False)
-    docs_seen = ndb.JsonProperty()
     tier = property(lambda self: User.PLANS.get(self.plan, 0))
     has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
-    latest_doc = property(lambda self: Document.query(ndb.OR(Document.owner == self.key, 
-                                                             Document.shared_with == self.key)).order(-Document.updated_at).get())
+    latest_doc = property(lambda self: DocAccess.query(DocAccess.user == self.key).order(-DocAccess.last_change_at).get().doc.get())
 
     signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
-    last_seen = property(lambda self: defaultdict(float, self.docs_seen or {}))
-    edit_sessions = ndb.StringProperty(repeated=True)
     custom_css = ndb.StringProperty(default='')
 
-    
-    def set_seen(self, doc_id):
-        if not self.docs_seen:
-            self.docs_seen = {}
-        self.docs_seen[doc_id] = time.mktime(datetime.now().timetuple())
-        self.put()
 
     def push_message(self, msg):
         i = 0
-        for sess_id in self.edit_sessions:
-            sess = SyncSession.fetch(sess_id)
-            if sess:
-                sess.push(msg)
-                i += 1
-            else:
-                # session expired
-                print "CLEANING UP EDITSESSION: ", sess_id
-                self.edit_sessions.remove(sess_id)
-        self.put()
+        for da in DocAccess.query(DocAccess.user == self.key):
+            for sess_id in da.sync_sessions:
+                sess = SyncSession.fetch(sess_id)
+                if sess:
+                    sess.push(msg)
+                    i += 1
+                else:
+                    # session expired, remove from list
+                    da.sync_sessions.remove(sess_id)
+            da.put()
         return i
 
 
@@ -237,6 +226,7 @@ class Link(ndb.Model):
                 'description': self.description
                 }
      
+#NOTE SharingToken will be removed after migration to DocAccess
 class SharingToken(ndb.Model):
     #hash of token is stored as the key
     created_at = ndb.DateTimeProperty(auto_now_add=True)
@@ -258,7 +248,6 @@ class SharingToken(ndb.Model):
         pass
 
 
-
 class Document(ndb.Model):
     owner = ndb.KeyProperty(kind=User)
     title = ndb.StringProperty()
@@ -268,6 +257,7 @@ class Document(ndb.Model):
     hidecontext = ndb.BooleanProperty()
     created_at = ndb.DateTimeProperty(auto_now_add=True)
     updated_at = ndb.DateTimeProperty(auto_now=True)
+    #NOTE shared_with will be removed after migration to DocAccess
     shared_with = ndb.KeyProperty(kind=User, repeated=True)
 
     # contextual links
@@ -275,24 +265,22 @@ class Document(ndb.Model):
     blacklist = ndb.StructuredProperty(Link, repeated=True)
     cached_ser = ndb.StructuredProperty(Link, repeated=True)
 
-    collaborators = property(lambda s: s.shared_with + [s.owner])
     excerpt = property(lambda s: s.text[:500])
 
-    def allow_access(self, user, token=None):
+    def grant(self, user, token=None):
         if not user.is_authenticated():
-            return False
-        if user.key == self.owner:
-            return True
-        if user.key in self.shared_with:
-            return True
-        st = SharingToken.get_by_id(sha512(token).hexdigest(), parent=self.key) if token else None
-        if st:
-            self.shared_with.append(user.key)
-            self.put()
-            if st.use_once:
-                st.key.delete()
-            return True
-        return False
+            return None
+        token_hash = sha512(token).hexdigest() if token else ""
+        access = DocAccess.query(DocAccess.doc == self.key, ndb.OR(DocAccess.user == user.key,
+                                                                   ndb.AND(DocAccess.token_hash != "",
+                                                                           DocAccess.token_hash == token_hash))).get()
+        if access and not access.user:
+            #consume invite token
+            access.user = user.key
+            access.token_hash = ''
+            access.status = 'active'
+            access.put()
+        return access
 
     def analyze(self):
         data = (self.title or '') + (self.text or '')
@@ -304,31 +292,21 @@ class Document(ndb.Model):
                 'proper_chunks':proper_noun_chunks
                 }
 
-    def uninvite(self, user_id, email):
-        #TODO drop editors from self.shared_with if requestor is owner
-        if user_id:
-            self.shared_with.remove(ndb.Key(User, int(user_id)))
-            self.put()
-        elif email:
-            ndb.delete_multi(list(SharingToken.query(SharingToken.email == email, ancestor=self.key).iter(keys_only=True)))
 
     def invite(self, email, invited_by):
-        if SharingToken.query(SharingToken.email == email, ancestor=self.key).get():
+        if DocAccess.query(DocAccess.email == email, DocAccess.user == None).get():
             return "invite pending", 302
         user = User.query(User.email == email).get()
         url = base_url + url_for("note", doc_id=self.key.id())
         if not user:
-            token = SharingToken.create(email, self.key)
+            da, token = DocAccess.create(self, email=email)
             send_mail_tpl('invite', email, dict(invited_by=invited_by, url=url, token=token, doc=self))
             return "ok", 200
 
-        if user.key == self.owner:
-            return "This note is already yours", 302
-        elif user.key  in self.shared_with:
+        if DocAccess.query(DocAccess.doc == self.key, DocAccess.user == user.key).get():
             return "Already part of this clique", 302
         else:
-            self.shared_with.append(user.key)
-            self.put()
+            da, token = DocAccess.create(self, user=user.key)
             #notify user
             active_sessions = user.push_message({"kind": "share", 
                                                  "doc_id": str(self.key.id()), 
@@ -339,7 +317,7 @@ class Document(ndb.Model):
                                                      }
                                                  })
             if not active_sessions:
-                send_mail_tpl('invite', email, dict(invited_by=invited_by, invitee=user, url=url, doc=self))
+                send_mail_tpl('invite', email, dict(invited_by=invited_by, invitee=user, url=url, token=token, doc=self))
             return "ok", 200
 
 
@@ -355,7 +333,7 @@ class Document(ndb.Model):
                 "updated": time.mktime(self.updated_at.timetuple()),
                 "cursor": self.cursor,
                 "hidecontext": self.hidecontext,
-                "shared_with": [u.get().email for u in self.shared_with],
+                "shared": DocAccess.query(DocAccess.doc == self.key).count() > 1,
                 "links": {
                     "normal": [c.to_dict() for c in self.cached_ser],
                     "sticky": [c.to_dict() for c in self.sticky],

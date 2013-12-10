@@ -28,7 +28,7 @@ class SyncSession(dict):
         return uuid.uuid4().hex
 
     @classmethod
-    def create(cls, user_id, text):
+    def create(cls, text, user_id=None):
         sess = cls(user_id=user_id, shadow=text)
         sess.save()
         return sess

@@ -30,6 +30,7 @@ app.add_url_rule('/_hro/notify_sessions', 'notify_sessions', view_func=views.not
 app.add_url_rule('/note/<doc_id>', 'note', view_func=views.note, methods=['GET'])
 
 # super-user only realm, AAA pass required.
+app.add_url_rule('/_create_docaccess', 'create_docaccess', view_func=views.create_missing_accessobjs, methods=['GET'])
 
 # document store
 app.add_url_rule('/docs/', 'list_documents', view_func=views.list_documents, methods=['GET'])

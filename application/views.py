@@ -27,14 +27,13 @@ from flask.ext.login import current_user, login_user, logout_user, login_require
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
 from google.appengine.api import memcache, channel, taskqueue
-from google.appengine.ext import ndb
 
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
 from application import app
 
 from .diffsync import SyncSession
-from .models import User, Document, Link, PasswordToken, SharingToken
+from .models import User, Document, Link, PasswordToken, SharingToken, DocAccess, DeltaLog
 from .forms import LoginForm, SignupForm
 from .decorators import limit_free_plans, root_required
 from .email_templates import send_mail_tpl
@@ -218,7 +217,7 @@ def home():
 
 def note(doc_id):
     doc = Document.get_by_id(doc_id)
-    if doc and not doc.allow_access(current_user):
+    if doc and not doc.grant(current_user):
         doc = None
     return render_template('index.html', doc=doc)
 
@@ -257,16 +256,23 @@ def list_documents():
         group_key = lambda d: d.get(group_by)
 
     docs = defaultdict(list)
-    for doc in  Document.query(ndb.OR(Document.owner == current_user.key,
-                                      Document.shared_with == current_user.key)).order(-Document.updated_at):
+    for da in DocAccess.query(DocAccess.user == current_user.key).order(-DocAccess.last_change_at):
+        doc = da.doc.get()
+        is_shared = DocAccess.query(DocAccess.doc == da.doc).count() > 1
+        last_da = DocAccess.query(DocAccess.doc == da.doc).order(-DocAccess.last_change_at).get()
         docs[group_key(doc.to_dict())].append({ 
             "id": doc.key.id(),
             "title": doc.title,
-            "status": doc.status,
-            "created": time.mktime(doc.created_at.timetuple()),
-            "updated": time.mktime(doc.updated_at.timetuple()),
-            "shared": len(doc.shared_with) >0,
-            "unseen": time.mktime(doc.updated_at.timetuple()) > current_user.last_seen[doc.key.id()]
+            "status": da.status,
+            "created": time.mktime(da.created_at.timetuple()),
+            "updated": time.mktime(da.last_change_at.timetuple()),
+            "shared": is_shared,
+            "unseen": last_da.last_change_at > da.last_access_at,
+            "last_doc_update": {
+                "updated": time.mktime(last_da.last_change_at.timetuple()),
+                "name": last_da.user.get().name if last_da.user else None,
+                "email": last_da.user.get().email if last_da.user else last_da.email,
+                }
             })
     
 
@@ -296,13 +302,12 @@ def create_document():
     doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc_id = doc.put()
 
-    sess = SyncSession.create(current_user.key.id(), doc.text)
+    da, _ = DocAccess.create(doc, user=current_user, role='owner', status='active') 
+    sess = da.create_session()
     resp = jsonify(doc_id=doc_id.id())
     resp.status = '201'
     resp.headers['Collab-Session-ID'] = sess['session_id']
     resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-    current_user.edit_sessions.append(sess['session_id'])
-    current_user.put()
     return resp
 
 
@@ -314,10 +319,12 @@ def edit_document(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
-    elif not doc.allow_access(current_user):
+    access = doc.grant(current_user)
+    if not access:
         return "access denied, sorry.", 403
 
     doc.title = data.get('title', doc.title)
+    #TODO save status in DocAccess instance, not Document itself
     doc.status = data.get('status', doc.status)
     #doc.text = data.get('text', doc.text)
     doc.cursor = data.get('cursor', doc.cursor)
@@ -337,17 +344,15 @@ def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
-    elif not doc.allow_access(current_user, request.headers.get("accesstoken")):
+    access = doc.grant(current_user, request.headers.get("accesstoken"))
+    if not access:
         return "access denied, sorry.", 403
+    access.put() #will set last_access_at to now(); TODO check if this could be done in DocAccess.post-get hook
 
+    sess = access.create_session()
     resp = jsonify(doc.api_dict())
-    sess = SyncSession.create(current_user.key.id(), doc.text)
-
     resp.headers['Collab-Session-ID'] = sess['session_id']
     resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-    current_user.set_seen(doc.key.id())
-    current_user.edit_sessions.append(sess['session_id'])
-    current_user.put()
     return resp
 
 
@@ -356,28 +361,37 @@ def doc_collaborators(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
-    elif not doc.allow_access(current_user):
+    access = doc.grant(current_user)
+    if not access:
         return "access denied, sorry.", 403
 
     if request.method == 'POST':
         if not request.json:
             return 'payload missing', 400
-        email = request.json.get('email')
         pk = request.json.get('id')
-        if not email and not pk:
-            return 'Required parameter `email` or `id` missin in payload', 400
-        if request.json.get('_delete'):
-            doc.uninvite(pk, email)
-            return "ok"
-        if email:
+        email = request.json.get('email')
+        if pk and request.json.get('_delete'):
+            # revoke doc-access
+            da = DocAccess.get_by_id(pk)
+            if da and da.doc == doc.key and da.role != 'owner':
+                da.delete()
+                return "ok"
+            else:
+                return "document not found or insufficient right", 404
+        elif email:
             return doc.invite(email, current_user)
         else:
             return "", 400
     else: # GET 
-        collabs = [{"id": str(doc.owner.id()), "perms": "owner", "email": doc.owner.get().email}]
-        collabs += [{"id": str(key.id()), "perms": "edit", "email": key.get().email} for key in doc.shared_with]
-        collabs += [{"id": None, "perms": "invited", "email": st.email} for st in SharingToken.query(ancestor=doc.key)]
-        return Response(json.dumps(collabs, indent=4), mimetype="application/json")
+        collabs = DocAccess.query(DocAccess.doc == doc.key).order(DocAccess.role, DocAccess.status)
+        res = [{"access_id": x.key.id(),
+                "role": x.role,
+                "status": x.status,
+                "user_id": x.user and x.user.id() or None,
+                "email": x.user and x.user.get().email or x.email,
+                "name": x.user and x.user.get().name or None,
+                } for x in collabs]
+        return Response(json.dumps(res, indent=4), mimetype="application/json")
 
 
 def analyze_content():
@@ -418,7 +432,8 @@ def sync_doc(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
         return "document not found", 404
-    elif not doc.allow_access(current_user):
+    access = doc.grant(current_user)
+    if not access:
         return "access denied, sorry.", 403
 
     cache = memcache.Client()
@@ -433,17 +448,15 @@ def sync_doc(doc_id):
         if not sess:
             # session expired r not found, create new and request re-init on client side
             # TODO refactor and DRY out the whole sess-create and populate headers flow
-            sess = SyncSession.create(current_user.key.id(), doc.text)
+            sess = access.create_session()
             resp = jsonify(doc.api_dict())
             resp.status = "412"
             resp.headers['Collab-Session-ID'] = sess['session_id']
             resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-            current_user.set_seen(doc.key.id())
-            current_user.edit_sessions.append(sess['session_id'])
-            current_user.put()
+            access.put() #will set last_access_at to now(); TODO check if this could be done in DocAccess.post-get hook
             return resp
         elif not sess['user_id'] == current_user.key.id():
-            return "not your sync session", 403
+            return "not your sync session {0} != {1}".format(sess['user_id'], current_user.key.id()), 403
 
         if not cache.get(cache_key):
             # make sure mastertext is in cache for later CAS retrieval
@@ -456,6 +469,12 @@ def sync_doc(doc_id):
             if ok:
                 sess.save()
                 taskqueue.add(payload="{0}-{1}".format(doc_id, sess_id), url='/_hro/notify_sessions')
+                # persist changes in datastore; fire and forget...
+                doc.text = cached_doc['text']
+                doc.put_async()
+                access.last_change_at = datetime.now()
+                for d in deltas:
+                    access.deltalog.insert(0, DeltaLog(delta=d['delta'], timestamp=access.last_change_at))
             else:
                 # CAS timestamp expired, try all over again
                 continue
@@ -463,10 +482,7 @@ def sync_doc(doc_id):
             # master doc not changed, only persist session
             sess.save()
 
-        doc.text = cached_doc['text']
-        # fire and forget...
-        doc.put_async()
-        current_user.set_seen(doc.key.id())
+        access.put() #will set last_access_at to now(); TODO check if this could be done in DocAccess.post-get hook
         return jsonify(session_id=sess_id, deltas=sess['edit_stack'])
     return jsonify_err(400, "could not acquire lock for masterdoc")
 
@@ -475,7 +491,7 @@ def notify_sessions():
     doc_id, sess_id = request.data.split('-', 1)
     doc = Document.get_by_id(doc_id)
     sess = SyncSession.fetch(sess_id)
-    if not doc or not sess:
+    if not doc or not sess or not sess['user_id']:
         #something went wrong...
         return
     user = User.get_by_id(sess['user_id'])
@@ -487,9 +503,31 @@ def notify_sessions():
                "name": user.name
                }
            }
-    for u in doc.collaborators:
-        u.get().push_message(msg)
+    print "COLLABS"
+    #collabs = [c.user.get() for c in DocAccess.query(DocAccess.doc == doc.key)]
+    for da in DocAccess.query(DocAccess.doc == doc.key):
+        if da.user:
+            print "USER", da.user
+            u = da.user.get()
+            print "NOTIFY"
+            u.push_message(msg)
     return "ok"
+
+
+def create_missing_accessobjs():
+    for doc in Document.query():
+        if not DocAccess.query(DocAccess.doc == doc.key, DocAccess.role == 'owner', DocAccess.user == doc.owner).get():
+            DocAccess.create(doc, user=doc.owner.get(), role='owner', status='active')
+        for u in doc.shared_with:
+            if not DocAccess.query(DocAccess.doc == doc.key, DocAccess.role == 'collab', DocAccess.user == u).get():
+                DocAccess.create(doc, user=u.get(), role='collab', status='active')
+    for st in SharingToken.query():
+        da, _ = DocAccess.create(st.doc, email=st.email, role='collab', status='invited')
+        da.token_hash = st.key.id()
+        da.put()
+    return 'ok'
+
+
 
 
 def warmup():
