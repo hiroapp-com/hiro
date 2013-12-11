@@ -1125,7 +1125,7 @@ var WPCLib = {
 	        	var that = WPCLib.canvas, newtext = document.getElementById(that.contentId).value;
 
 	        	// See if there was newly added text
-	        	if (that.sync.dmp && that.text != newtext) {
+	        	if (!WPCLib.sys.production && that.sync.dmp && that.text != newtext) {
 	        		// Send pasted text to link extraction
 	        		var diff = that.sync.dmp.diff_main(that.text, newtext)[1];
 	        		if (diff) WPCLib.context.extractlinks(diff[1]);
@@ -2541,6 +2541,7 @@ var WPCLib = {
 	// Context is the link bar on the right
 	context: {
 		sticky: [],
+		stickylookup: {},
 		links: [],
 		blacklist: [],
 		show: true,
@@ -2655,6 +2656,7 @@ var WPCLib = {
                 contentType: "application/json; charset=UTF-8",
                 data: JSON.stringify({ links:links }),
                 success: function(data) {
+                	WPCLib.sys.log('Verfified links: ',data);
                     // Update the links we found more info about
                     for (i=0,l=data.links.length;i<l;i++) {
 
@@ -2666,7 +2668,7 @@ var WPCLib = {
                 },
                 error: function(data) {
                 	// Notifiy user
-					WPCLib.ui.statusflash('red',"Couldn't verify links.",false);   
+					WPCLib.ui.statusflash('red',"Couldn't verify the links.",false);   
 					             	
                 	// Remove all placeholder links
                 	WPCLib.context.clearunverified();
@@ -4973,7 +4975,7 @@ var WPCLib = {
 
 		statusflash: function(color,text,touchalert) {
 			// briefly flash the status in a given color or show alert on mobile
-			if ('ontouchstart' in document.documentElement && touchalert) {
+			if (touchalert && 'ontouchstart' in document.documentElement) {
 				// As the sidebar is mostly hidden on mobiles we show an alert, but give the menu a bit to adapt
 				setTimeout(function(){
 					alert(text);				
