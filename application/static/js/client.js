@@ -2675,11 +2675,26 @@ var WPCLib = {
 
                     // Update the links we found more info about
                     for (i=0,l=data.links.length;i<l;i++) {
-                    	var u = data.links[i].url
+                    	var u = data.links[i].url;
                     	if (!lookup[u]) continue;
                     	lookup[u].verifying = false;
-                    	lookup[u].title = data.links[i].title;
-                    	lookup[u].description = data.links[i].description;
+                    	if (data.links[i].statuscode) {
+                    		// If google fetch was unable to obtain details
+                    		// Get last part of URL, replace - and uppercase
+                    		var f = u.split('/');                    		
+                    		f = f[f.length-1];
+                    		if (f) {
+                    			f = f.replace(/-/g," ")
+                    			f = f.replace(/\w\S*/g, function(str){return str.charAt(0).toUpperCase() + str.substr(1).toLowerCase();});
+                    		} else { f = 'Untitled'}
+                    		lookup[u].title = f;
+                    		// Add error specific details
+	                    	if (data.links[i].statuscode == 404) lookup[u].description = 'No description available (page not found).';                    		
+                    	} else {
+                    		// If we found details via fetch backend
+	                    	lookup[u].title = data.links[i].title;
+	                    	lookup[u].description = data.links[i].description;
+                    	}
                     }
 
                     // Update display and save doc
@@ -3025,12 +3040,17 @@ var WPCLib = {
 			// Blacklist the current result
 			var link = el.parentNode;
 
-			// FInd the URL, this is a bit suboptimal as it breaks with dom changes
+			// Find the URL, this is a bit suboptimal as it breaks with dom changes
 			var url = link.getElementsByTagName("a")[2].getAttribute("href");
 			this.blacklist.push(url);
 
 			// We do not need to render the links again in this case, just pop the node
 			link.parentNode.removeChild(link);
+
+			// Remove the link from links array
+			for (i=this.links.length-1; i>=0; i--) {
+			    if (this.links[i].url == url) this.links.splice(i,1);
+			}				
 
 			// Save document
 			WPCLib.canvas.savedoc();			

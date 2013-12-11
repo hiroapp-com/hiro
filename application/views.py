@@ -445,11 +445,12 @@ def fetch_link(url):
     # Fetch link via appengine fetch service
     # TODO: Retry with http/https if missing and add Beautiful soup (or similar lib)
     link = {"url" : url}
-    result = urlfetch.fetch(url, allow_truncated=True, deadline=20)
+    result = urlfetch.fetch(url, allow_truncated=True, deadline=10, validate_certificate=False)
     if result.status_code == 200:
         link['title'] = "Beautiful Soup coming soon"
         link['description'] = "Wohaaa" 
-        link['verifying'] = False       
+    else:
+        link['statuscode'] = result.status_code      
     return link       
 
 @login_required
