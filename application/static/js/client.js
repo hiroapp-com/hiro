@@ -1388,18 +1388,21 @@ var WPCLib = {
 			keepalive: null,
 			keepaliveinterval: 300000,
 
-			init: function() {
+			init: function(dmponly) {
 				// Abort if sync was already inited
 				if (this.inited) return;
 
 				// Create new diff_match_patch instance once all js is loaded, retry of not
 				if (!this.dmp && typeof diff_match_patch != 'function') {
 					setTimeout(function(){
-						WPCLib.canvas.sync.init();
+						WPCLib.canvas.sync.init(dmponly);
 					},100);
 					return;
 				}
-				this.dmp = new diff_match_patch();			
+				this.dmp = new diff_match_patch();
+
+				// For anon users we only load the dmp
+				if (dmponly) return;			
 
                 // Set internal value
 				this.enabled = true;	                
@@ -1560,7 +1563,7 @@ var WPCLib = {
 						}						
 
                         // Retry if it was just a sync session timeout (20 mins)
-                        if (xhr.status == 412) {
+                        if (xhr.status == 412 || textStatus == 'Precondition Failed') {
 							WPCLib.canvas.sync.begin(xhr.responseJSON.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
                         	return;
                         }
@@ -2622,6 +2625,7 @@ var WPCLib = {
 
 		attachlinks: function(links) {
 			// Adds links in an array to the sticky list, if they are not there yet or blacklisted
+			var counter = 0;
 			for (i=0,l=links.length;i<l;i++) {
 				// Remove trailing slash
 				url = links[i].replace(/\/$/, "");
@@ -2630,7 +2634,7 @@ var WPCLib = {
 				if (this.blacklist && this.blacklist.indexOf(url) > -1) continue;
 
 				// Check if link is already sticky
-				if (this.sticky && this.sticky.filter(function(obj){ return obj.url === url})[0]) continue;
+				if (this.sticky && this.sticky.filter(function(obj){ return obj.url === links[i]})[0]) continue;
 
 				// Build object
 				var link = {};			
@@ -2639,13 +2643,18 @@ var WPCLib = {
 				link.description = 'We quickly check this link for you.';
 				link.verifying = true;
 
+				// Iterate counter
+				counter++;
+
 				// Add at end of array
 				this.sticky.push(link);					
 			}
 
-			// Update DOM and send links to verification backend
-			this.renderresults();
-			this.verifylinks(links);						
+			// Update DOM and send links to verification backend, if we had any new links
+			if (counter > 0 ) {
+				this.renderresults();
+				this.verifylinks(links);
+			}						
 		},
 
 		verifylinks: function(links) {
@@ -3880,6 +3889,10 @@ var WPCLib = {
 
 				// generic styles & functions for logged in users
 				switch(level) {
+					case 0:
+						// Init dmp library for link adding capabilities
+						if (!WPCLib.canvas.sync.inited) WPCLib.canvas.sync.init(true);	
+						break;				
 					case 1:
 					case 2:	
 					case 3:				
