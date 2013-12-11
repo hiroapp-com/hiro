@@ -733,8 +733,8 @@ var WPCLib = {
 							if (textStatus == 'timeout') WPCLib.sys.goneoffline();		
 							// Move away from note if rights were revoked
 							else if (xhr.status == 404 || xhr.status == 404) {
-		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
-								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.');  
+		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
+								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
 								WPCLib.folio.docs.loaddocs();								
 							} 										
 						}
@@ -756,8 +756,8 @@ var WPCLib = {
 							if (textStatus == 'timeout') { WPCLib.sys.goneoffline(); }
 							// Move away from note if rights were revoked
 							else if (xhr.status == 404 || xhr.status == 404) {
-		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
-								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.');  
+		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
+								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
 								WPCLib.folio.docs.loaddocs();								
 							}                       
 						}
@@ -942,8 +942,8 @@ var WPCLib = {
 					// Set system status offline if we timed out	
 					if (textStatus == 'timeout') WPCLib.sys.goneoffline();	
 					// Show notifications and reset token if we had one
-					if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
-					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.');															
+					if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
+					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.',true);															
 					// If the load fails because of access issues reset doclist
 					if (xhr.status == 403 || xhr.status == 404) {
 						// Release preloaded to enable loaddocs to load any doc
@@ -1122,15 +1122,23 @@ var WPCLib = {
 
 	        window.setTimeout(function(){
 	        	// Some browser fire c&p events with delay, without this we would copy the old values
-	        	var that = WPCLib.canvas;
+	        	var that = WPCLib.canvas, newtext = document.getElementById(that.contentId).value;
+
+	        	// See if there was newly added text
+	        	if (that.sync.dmp && that.text != newtext) {
+	        		// Send pasted text to link extraction
+	        		var diff = that.sync.dmp.diff_main(that.text, newtext)[1];
+	        		if (diff) WPCLib.context.extractlinks(diff[1]);
+	        	}
+
 		        // Set internal variables
-		        that.text = document.getElementById(that.contentId).value;
+		        that.text = newtext;
 		        that.title = document.getElementById(that.pageTitle).value;
 				that.caretPosition = that._getposition()[1];		        
 
 		        // Save Document        
                 if (!WPCLib.canvas.sync.inited) { that.savedoc() } else { WPCLib.canvas.sync.addedit(); }
-	        }, 100);
+	        }, 10);
 		},
 
 		keyhandler: function(e) {
@@ -1561,8 +1569,8 @@ var WPCLib = {
                         WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([status,textStatus]));                        
 
                         // Move away from note if rights were revoked
-                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.');
-						if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.');  
+                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
+						if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
 						
 						// Try callback but navigate away once access is lost 
 						if (xhr.status == 403 || xhr.status == 404) {
@@ -1765,7 +1773,6 @@ var WPCLib = {
 			},		
 
             on_channel_message: function(data) {
-            	console.log(data);
             	// Receive and process notification of document update
             	var el = WPCLib.folio.docs.lookup[data.doc_id], 
             		ui = WPCLib.ui,
@@ -2095,8 +2102,6 @@ var WPCLib = {
 				// Remove user from array right away
 				u.splice(uid,1);
 				that.update();
-
-				console.log(payload);
 
 				$.ajax({
                 	// Post to backend
@@ -2515,7 +2520,7 @@ var WPCLib = {
 				filepicker.exportFile(data.url,payload,function(data){
 					// Yay, completed & successful
 					WPCLib.ui.hideDialog();
-			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].name+'.'); 
+			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].name+'.',true); 
 					WPCLib.publish.actions[service].publishing = false;
 					var el = (target) ? target : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];	
 					el.className = 'action done';		
@@ -2591,13 +2596,92 @@ var WPCLib = {
 			this.overquota = true;
 			var msg = document.getElementById(this.msgresultsId);
             document.getElementById(this.statusId).innerHTML = 'Search quota reached.';			
-			if (msg.innerHTML == '') {				
-				document.getElementById(this.wwwresultsId).innerHTML = document.getElementById(this.synresultsId).innerHTML = '';
+			if (msg.innerHTML == '') {	
+				// If we don't have a message yet, empty the normal links		
+				document.getElementById(this.synresultsId).innerHTML = '';
+
+				// Clear normal results
+				this.links.length = 0;
+				this.renderresults();
+
 				var txt = (WPCLib.sys.user.level == 1) ?
 					'<a href="#" class="msg" onclick="WPCLib.sys.user.forceupgrade(2,\'<em>Upgrade now to enjoy </em><b>unlimited searches</b><em> and much more.</em>\'); return false;"><em>Upgrade now</em> for unlimited searches & more.</a>' :
 					'<a href="#" class="msg" onclick="WPCLib.sys.user.upgrade(1); return false;"><em>Sign up now</em> for more searches.</a>';
 				document.getElementById(this.msgresultsId).innerHTML = txt;
 			}
+		},
+
+		extractlinks: function(text) {
+			// Extracts URLs from a provided text string
+			var regex = /((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/g;
+			if (regex.test(text)) {
+				this.attachlinks(text.match(regex));			
+			}
+		},
+
+		attachlinks: function(links) {
+			// Adds links in an array to the sticky list, if they are not there yet or blacklisted
+			for (i=0,l=links.length;i<l;i++) {
+				// Remove trailing slash
+				url = links[i].replace(/\/$/, "");
+
+				// Check of URL is already blacklisted	
+				if (this.blacklist && this.blacklist.indexOf(url) > -1) continue;
+
+				// Check if link is already sticky
+				if (this.sticky && this.sticky.filter(function(obj){ return obj.url === url})[0]) continue;
+
+				// Build object
+				var link = {};			
+				link.url = links[i];
+				link.title = 'Verifying...';
+				link.description = 'We quickly check this link for you.';
+				link.verifying = true;
+
+				// Add at end of array
+				this.sticky.push(link);					
+			}
+
+			// Update DOM and send links to verification backend
+			this.renderresults();
+			this.verifylinks(links);						
+		},
+
+		verifylinks: function(links) {
+			// Send links to server for verification
+            $.ajax({
+                url: "/relevant/verify",
+                type: "POST",
+                contentType: "application/json; charset=UTF-8",
+                data: JSON.stringify({ links:links }),
+                success: function(data) {
+                    // Update the links we found more info about
+                    for (i=0,l=data.links.length;i<l;i++) {
+
+                    }
+
+                    // Update display and save doc
+					WPCLib.context.clearunverified();	                    
+					WPCLib.canvas.savedoc();                    
+                },
+                error: function(data) {
+                	// Notifiy user
+					WPCLib.ui.statusflash('red',"Couldn't verify links.",false);   
+					             	
+                	// Remove all placeholder links
+                	WPCLib.context.clearunverified();
+                }
+            });
+		},
+
+		clearunverified: function() {
+			// Remove unverified links from sticky list and update DOM
+			for (i=this.sticky.length-1; i>=0; i--) {
+			    if (this.sticky[i].verifying == true) this.sticky.splice(i,1);
+			}			
+
+			// Refresh display
+			this.renderresults();	
 		},
 
 		analyze: function(string, chunktype) {
@@ -3517,7 +3601,7 @@ var WPCLib = {
 
                 // Suggest upgrade after initial registration or just hide dialog
                 if (user.tier==1 && type=='register') {
-                	WPCLib.ui.statusflash('green','Welcome, great to have you!');
+                	WPCLib.ui.statusflash('green','Welcome, great to have you!',true);
                 	this.forceupgrade(2,'Unlock <b>more features</b><em> right away</em>?');
                 } else {
                 	WPCLib.ui.hideDialog();	
@@ -3667,7 +3751,7 @@ var WPCLib = {
 			showreset: function(hash) {
 				// Perform basic checks and open reset menu
 				if (this.level != 0) {
-			    	WPCLib.ui.statusflash('green','Please log out to reset your password.'); 	
+			    	WPCLib.ui.statusflash('green','Please log out to reset your password.',true); 	
 			    	return;				
 				}
 
@@ -3904,7 +3988,7 @@ var WPCLib = {
 	                    WPCLib.sys.user.checkoutActive = false;	
 						if (document.activeElement) document.activeElement.blur();
 	                    WPCLib.ui.hideDialog();				                    
-	                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!');						                    
+	                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!',true);						                    
 					},
 	                error: function(data) {
 						if (Raven) Raven.captureMessage ('Checkout gone wrong: '+JSON.stringify(data));		                	
@@ -3934,7 +4018,7 @@ var WPCLib = {
 	                    WPCLib.sys.user.setStage(data.tier);	
 	                    WPCLib.sys.user.downgradeActive = false;	
 	                    WPCLib.ui.hideDialog();	                    
-	                    WPCLib.ui.statusflash('green','Downgraded, sorry to see you go.');					                    
+	                    WPCLib.ui.statusflash('green','Downgraded, sorry to see you go.',true);					                    
 					}
 				});					
 			}
@@ -4887,9 +4971,9 @@ var WPCLib = {
 			} 
 		},
 
-		statusflash: function(color,text) {
+		statusflash: function(color,text,touchalert) {
 			// briefly flash the status in a given color or show alert on mobile
-			if ('ontouchstart' in document.documentElement) {
+			if ('ontouchstart' in document.documentElement && touchalert) {
 				// As the sidebar is mostly hidden on mobiles we show an alert, but give the menu a bit to adapt
 				setTimeout(function(){
 					alert(text);				
