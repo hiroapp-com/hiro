@@ -2657,9 +2657,20 @@ var WPCLib = {
                 data: JSON.stringify({ links:links }),
                 success: function(data) {
                 	WPCLib.sys.log('Verfified links: ',data);
+
+                	// Build a lookup object from our stickies
+					var stickies = WPCLib.context.sticky, lookup = {};
+					for (var i = 0, l = stickies.length; i < l; i++) {
+					    lookup[stickies[i].url] = stickies[i];			    
+					}   
+
                     // Update the links we found more info about
                     for (i=0,l=data.links.length;i<l;i++) {
-
+                    	var u = data.links[i].url
+                    	if (!lookup[u]) continue;
+                    	lookup[u].verifying = false;
+                    	lookup[u].title = data.links[i].title;
+                    	lookup[u].description = data.links[i].description;
                     }
 
                     // Update display and save doc

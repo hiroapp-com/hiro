@@ -26,7 +26,7 @@ from flask_cache import Cache
 from flask.ext.login import current_user, login_user, logout_user, login_required
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
-from google.appengine.api import memcache, channel, taskqueue
+from google.appengine.api import memcache, channel, taskqueue, urlfetch
 
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
@@ -427,6 +427,30 @@ def relevant_links():
     else:
         results = search_yahoo(terms)
     return jsonify(results=results)
+
+def verify_links():  
+    results = []
+    if not request.json:
+        return 'payload missing', 400
+    if 'links' in request.json:
+        links = request.json['links']
+        for url in links:
+            link = fetch_link(url)
+            results.append(link);   
+    else:
+        return 'No links provided', 400     
+    return jsonify(links=results)   
+
+def fetch_link(url):
+    # Fetch link via appengine fetch service
+    # TODO: Retry with http/https if missing and add Beautiful soup (or similar lib)
+    link = {"url" : url}
+    result = urlfetch.fetch(url, allow_truncated=True, deadline=20)
+    if result.status_code == 200:
+        link['title'] = "Beautiful Soup coming soon"
+        link['description'] = "Wohaaa" 
+        link['verifying'] = False       
+    return link       
 
 @login_required
 def sync_doc(doc_id):

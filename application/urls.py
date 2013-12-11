@@ -43,6 +43,7 @@ app.add_url_rule('/docs/<doc_id>/sync', 'sync_doc', view_func=views.sync_doc, me
 # textanalysis & semantic search
 app.add_url_rule('/analyze', 'analyze_content', view_func=views.analyze_content, methods=['POST'])
 app.add_url_rule('/relevant', 'relevant', view_func=views.relevant_links, methods=['POST'])
+app.add_url_rule('/relevant/verify', 'verify_links', view_func=views.verify_links, methods=['POST'])
 
 
 ## Error handlers
