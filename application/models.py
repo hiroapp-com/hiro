@@ -382,8 +382,10 @@ class DocAccess(ndb.Model):
         obj.put()
         return obj, token
 
-    def tick_seen(self):
+    def tick_seen(self, also_changed=False):
         self.last_access_at = datetime.now()
+        if also_changed:
+            self.last_change_at = self.last_access_at
         self.put()
 
     def create_session(self):
