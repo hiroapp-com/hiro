@@ -238,7 +238,7 @@ def profile():
     
 
 def landing():
-    return render_template('landing.html')
+    return render_template('landing_new.html')
 
 def settings():
     return render_template('settings.html')

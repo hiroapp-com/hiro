@@ -1717,6 +1717,116 @@ iframe#landing  {
   z-index: 80000;  
 }
 
+body#landingPage2 {
+  text-align: center;
+  background-color: #fcfcfc;   
+}
+
+body#landingPage2 .l_container {
+  margin: auto 0;
+  position: absolute;
+  top: 0; 
+  left: 0; 
+  bottom: 0; 
+  right: 0;
+  display: block;
+  height: 80%;
+  background: url(../img/site/landing.2.png) no-repeat;
+  background-size: auto 100%;;
+  background-position: center center;    
+}
+
+body#landingPage2 .l_container .l_overlay {
+  margin: 0;
+  position: absolute;
+  top: 0; 
+  left: 0; 
+  bottom: 10%; 
+  display: block;
+  width: 45%;
+  cursor: pointer;
+}
+
+body#landingPage2 .l_container .l_canvas {
+  margin: 0;
+  position: absolute;
+  top: 20px; 
+  left: 50%;
+  right: 30px;
+  text-align: left;   
+}
+
+body#landingPage2 .l_container .l_canvas h1 {
+  font-size: 40px;
+  display: block;
+  color: #333;  
+  font-weight: 400; 
+}
+
+body#landingPage2 .l_container .l_canvas .text {
+  max-width: 400px;
+  color: #666;  
+  margin: 10px 0 20px 0;  
+  line-height: 22px;
+}
+
+body#landingPage2 .l_container .l_canvas .text em {
+  font-style: normal;   
+  color: #333;  
+}
+
+body#landingPage2 .l_container .l_canvas .cto {
+  font-size: 14px;
+  color: #999;  
+}
+
+body#landingPage2 .l_container .l_canvas .cto a.start {
+  padding: 12px 18px 12px 18px;
+  display: block;
+  font-size: 20px;
+  outline: none;
+  margin-bottom: 16px;
+  max-width: 332px;
+}
+
+body#landingPage2 .l_container .l_canvas .cto .small {
+  display: block;
+  margin-left: 18px;
+}
+
+body#landingPage2 .l_container .l_canvas .cto .small a.signin {
+  padding: 0;
+  font-size: 14px;
+  outline: none;
+  color: #666;
+  text-decoration: none;
+}
+
+body#landingPage2 .l_footer {
+  position: absolute;
+  bottom: 7%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  font-size: 14px;
+  color: #999;
+}
+
+body#landingPage2 .l_footer .l_box {
+  width: 150px;
+  display: inline-block;
+  margin: 0;
+}
+
+body#landingPage2 .l_footer .l_box.middle {
+  width: 170px;
+  margin: 0 5%;
+}
+
+body#landingPage2 .l_footer .l_box .l_header {
+  color: #888;
+}
+
 body#landingPage {
   text-align: center;
   background-color: #fcfcfc;
