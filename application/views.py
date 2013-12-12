@@ -306,6 +306,7 @@ def create_document():
     doc_id = doc.put()
 
     da, _ = DocAccess.create(doc, user=current_user, role='owner', status='active') 
+    da.tick_seen(also_changed=True)
     sess = da.create_session()
     resp = jsonify(doc_id=doc_id.id())
     resp.status = '201'
