@@ -541,14 +541,24 @@ def notify_sessions():
 
 
 def create_missing_accessobjs():
+    nao = datetime.now()
     for doc in Document.query():
+        last_changed = doc.updated_at
         if not DocAccess.query(DocAccess.doc == doc.key, DocAccess.role == 'owner', DocAccess.user == doc.owner).get():
-            DocAccess.create(doc, user=doc.owner.get(), role='owner', status='active')
+            da, _ = DocAccess.create(doc, user=doc.owner.get(), role='owner', status='active')
+            da.last_access_at = nao
+            da.last_change_at = last_changed
+            da.put()
         for u in doc.shared_with:
             if not DocAccess.query(DocAccess.doc == doc.key, DocAccess.role == 'collab', DocAccess.user == u).get():
-                DocAccess.create(doc, user=u.get(), role='collab', status='active')
+                sda, _ = DocAccess.create(doc, user=u.get(), role='collab', status='active')
+                sda.last_access_at = nao
+                sda.last_change_at = last_changed
+                sda.put()
     for st in SharingToken.query():
         da, _ = DocAccess.create(st.doc, email=st.email, role='collab', status='invited')
+        da.last_access_at = nao
+        da.last_change_at = da.doc.updated_at
         da.token_hash = st.key.id()
         da.put()
     return 'ok'
