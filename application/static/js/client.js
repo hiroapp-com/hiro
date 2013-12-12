@@ -329,20 +329,32 @@ var WPCLib = {
 					return;
 				}
 				if (this.active && WPCLib.sys.user.level == 1 && this.active.length >= 10) {
-					WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
-					return;					
+					// If user has more than 10 docs
+					var own_counter = 0;
+					for (i=0,l=this.active.length;i<l;i++) {
+						if (this.active[i].role == 'owner') own_counter++;
+					}
+					console.log(own_counter);
+					if (own_counter > 10) {
+						WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
+						return;	
+					}				
 				}
 
 				// Check if the archive is open, otherwise switch view
 				if (this.archiveOpen) this.openarchive();
 
 				// All good to go
-				this.creatingDoc = true;				
+				this.creatingDoc = true;	
+
+				// Start the bar
+				WPCLib.ui.hprogress.begin();								
 
 				// Add a doc placeholder to the internal folio array
 				var doc = {};
-				doc.title = 'Untitled';
+				doc.title = 'Untitled Note';
 				doc.created = WPCLib.util.now();
+				doc.role = 'owner';
 				this.active.splice(0,0,doc);
 
 				// Render a placeholder until we get the OK from the server
@@ -382,6 +394,9 @@ var WPCLib = {
 					// Save document & cleanup
 					doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 					doc.id = 'doc_localdoc';
+
+					// Complete bar
+					WPCLib.ui.hprogress.done();					
 				} else {
 					// Request new document id
 					var doc = document.getElementById('doc_creating');
@@ -415,7 +430,10 @@ var WPCLib = {
 							WPCLib.ui.documentcounter();	
 
 							// Update folio
-							WPCLib.folio.docs.update();													                    
+							WPCLib.folio.docs.update();		
+
+							// Complete bar
+							WPCLib.ui.hprogress.done();																			                    
 						}
 					});				
 				}
@@ -810,6 +828,16 @@ var WPCLib = {
 			// Final try to save doc, eg when connection wasn't available before				
 			if (!this.saved) this.savedoc();
 
+			// Redirect to loadlocal if id should be localdoc
+			if (docid == 'localdoc') {
+				var ld = localStorage.getItem('WPCdoc');
+				if (ld) {
+					this.loadlocal(JSON.parse(ld)); 
+					WPCLib.ui.menuHide();					
+				}
+				return;					
+			}
+
 			// Fall back to current docid if we didn't get one
 			docid = docid || WPCLib.canvas.docid;
 
@@ -832,7 +860,7 @@ var WPCLib = {
 			WPCLib.sys.log('loading doc id: ', [docid, header]);
 
 			// Start progress bar or increment
-			if (WPCLib.ui.hprogress.active) WPCLib.ui.hprogress.inc(0.2); else WPCLib.ui.hprogress.begin();
+			WPCLib.ui.hprogress.begin();
 
 			// If we already know the title, we shorten the waiting time
 			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
@@ -886,7 +914,7 @@ var WPCLib = {
 					// If the title changed in the meantime or wasn't passed to loaddoc at all
 					if (!title || title != data.title) {
 						document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
-						if (title) {
+						if (title && WPCLib.folio.docs.lookup[docid]) {
 							WPCLib.folio.docs.lookup[docid].title = data.title;
 							WPCLib.folio.docs.update();
 						}	
@@ -985,7 +1013,10 @@ var WPCLib = {
 			this.title = data.title;
 			this.docid = data.id;
 			this.created = data.created;
-			this.lastUpdated = data.last_updated;						
+			this.lastUpdated = data.last_updated;	
+
+			// Complete bar
+			WPCLib.ui.hprogress.done();									
 		},
 
 		newdoc: function() {
@@ -1019,7 +1050,10 @@ var WPCLib = {
 				if (el) el.focus();
 			} else {
 				document.getElementById(WPCLib.canvas.contentId).focus();				
-			} 							
+			} 
+
+			// Complete bar
+			WPCLib.ui.hprogress.done();											
 		},
 
 
@@ -1791,7 +1825,7 @@ var WPCLib = {
             	if (!el) {
             		WPCLib.folio.docs.loaddocs(true);
             		return;
-            	}            		
+            	}         		
 
             	// Update internal timestamp & last editor values	
             	if (ownuser) {
@@ -3248,7 +3282,7 @@ var WPCLib = {
 		init: function() {
 			// allow this only once			
 			if (this.initCalled) return;
-			WPCLib.ui.resolveAnimFrameAPI();			
+			WPCLib.ui.resolveAnimFrameAPI();
 
 			// Add startup event listeners for old & modern browser
 			if (document.addEventListener) {
@@ -4355,11 +4389,17 @@ var WPCLib = {
 					// Browsers without translate() support, e.g. IE7-8
 					this.renderstyle = 'margin';
 			    }
+
+				// Start loading bar on init
+				WPCLib.ui.hprogress.begin();			    
 			},
 
 			begin: function() {
 				// Start new bar (and clear old)
-				if (this.active) return;
+				if (this.active) {
+					this.inc(0.2);
+					return;
+				} 
 				this.active = true;
 
 				// Fade in
@@ -4391,12 +4431,14 @@ var WPCLib = {
 
 			inc: function(inc) {
 				// Increment n inc
+				if (!this.active) return;				
 				this.progress = this.progress + inc;
 				this._setbarcss(this.progress);				
 			},
 
 			done: function(error) {
 				// Complete bar and fade out
+				if (!this.active) return;				
 				this.progress = 1;
 				this._setbarcss(1);
 				setTimeout(function(){
@@ -4404,7 +4446,7 @@ var WPCLib = {
 				},300);						
 
 				// if we had an error we change the color to red and fade out later
-				if (error)	this.bar.style.background = '#D61818';											
+				if (error) this.bar.style.background = '#D61818';											
 
 				// Renove remains and get ready again
 				setTimeout(function(){
@@ -4552,7 +4594,7 @@ var WPCLib = {
 		clearactions: function(event,textclick) {
 			// Hides the action tabs (next to tile, right side) if any are open						
 			if (WPCLib.sharing.visible) WPCLib.sharing.close();
-			if (WPCLib.publish.visible && !textclick) WPCLib.publish.close();			
+			if (WPCLib.publish.visible) WPCLib.publish.close();			
 		},
 
 		loadDialog: function(url) {
@@ -4850,6 +4892,10 @@ var WPCLib = {
 				},55);
 				return;
 			}
+
+			// Abort if menu is currently moving
+			if (WPCLib.ui.menuSlideCurrDirection != 0) return;		
+
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
 			var context = document.getElementById('context');
@@ -4874,6 +4920,7 @@ var WPCLib = {
 				return -c/2 * ((--t)*(t-2) - 1) + b;
 			}
 			function step() {
+
 				var dt=new Date().getTime()-startTime, done;
 				if (dt>=duration) {
 					dt=duration;
