@@ -364,7 +364,7 @@ var WPCLib = {
 
 				var ph = document.createElement('a');
 				ph.setAttribute('href','#');	
-				ph.setAttribute('onclick','return false;');	
+				ph.setAttribute('onclick','WPCLib.ui.menuHide();return false;');	
 				var pht = document.createElement('span');
 				pht.className = 'doctitle';
 				pht.innerHTML = 'Creating new note...';	
