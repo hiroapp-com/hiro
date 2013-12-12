@@ -4243,6 +4243,9 @@ var WPCLib = {
 	        	// Clean up stuff that happens while we where blurred
 	        	WPCLib.ui.tabnotify();
 	        	setTimeout(function(){
+					// Don't do this for unregistered users
+					if (WPCLib.sys.user.level == 0) return;  
+					    		
 	        		// Some browser erratically block the title setting, so we make sure this happens here
 		        	document.title = ' ';
 					document.title = WPCLib.canvas.title || 'Untitled';	
@@ -4438,6 +4441,10 @@ var WPCLib = {
 		tabnotify: function(msg) {
 			// Cycles a que of notifictaions if tab is not focused and changes favicon
 			var ui = WPCLib.ui, pool = ui.tabnotifyMessages;
+
+			// This can only happen for registered users
+			if (WPCLib.sys.user.level == 0) return;
+
 			if (ui.windowfocused) {
 				// Cancel all actions and reset state								
 				clearTimeout(ui.tabnotifyTimeout);
