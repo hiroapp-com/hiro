@@ -1871,10 +1871,12 @@ var WPCLib = {
 							WPCLib.canvas.sync.begin(text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));	
 							WPCLib.sys.log('Reconnecting sync with new sessionid & token ',[data,xhr]);
 							WPCLib.canvas.sync.reconnecting = false;
+							// Also refresh doclist for version updates and file changes
+							WPCLib.folio.docs.loaddocs(true);							
 						},
 						error: function(data) {
 							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs. ' + JSON.stringify(data));
-							// Check if we are only, otherwise avoid potential side effects
+							// Check if we are online, otherwise avoid potential side effects
 							if (WPCLib.sys.online) WPCLib.folio.docs.loaddocs();	
 							WPCLib.canvas.sync.reconnecting = false;													
 						}

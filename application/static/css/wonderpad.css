@@ -1722,37 +1722,28 @@ body#landingPage2 {
   background-color: #fcfcfc;   
 }
 
-body#landingPage2 .l_container {
-  margin: auto 0;
-  position: absolute;
-  top: 0; 
-  left: 0; 
-  bottom: 0; 
-  right: 0;
-  display: block;
-  height: 80%;
-  background: url(../img/site/landing.2.png) no-repeat;
-  background-size: auto 100%;;
-  background-position: center center;    
+@media (max-width: 550px) and (min-height: 480px) {
+  body#landingPage2 {
+    background: url(../img/site/landing.mobile.2.png) no-repeat;
+    background-size: 100% auto;
+    background-position: center bottom; 
+  }  
 }
 
-body#landingPage2 .l_container .l_overlay {
-  margin: 0;
-  position: absolute;
-  top: 0; 
-  left: 0; 
-  bottom: 10%; 
-  display: block;
-  width: 45%;
-  cursor: pointer;
+@media (max-width: 550px) and (max-height: 479px) {
+  body#landingPage2 {
+    background: url(../img/site/landing.mobile.2.png) no-repeat;
+    background-size: 100% auto;
+    background-position: center 300px; 
+  }  
 }
 
 body#landingPage2 .l_container .l_canvas {
   margin: 0;
   position: absolute;
   top: 20px; 
-  left: 50%;
-  right: 40px;
+  left: 30px;
+  right: 30px;
   text-align: left;   
 }
 
@@ -1764,7 +1755,6 @@ body#landingPage2 .l_container .l_canvas h1 {
 }
 
 body#landingPage2 .l_container .l_canvas .text {
-  max-width: 400px;
   color: #666;  
   margin: 10px 0 20px 0;  
   line-height: 22px;
@@ -1786,7 +1776,6 @@ body#landingPage2 .l_container .l_canvas .cto a.start {
   font-size: 20px;
   outline: none;
   margin-bottom: 16px;
-  max-width: 332px;
 }
 
 body#landingPage2 .l_container .l_canvas .cto .small {
@@ -1803,6 +1792,7 @@ body#landingPage2 .l_container .l_canvas .cto .small a.signin {
 }
 
 body#landingPage2 .l_footer {
+  display: none;
   position: absolute;
   bottom: 7%;
   left: 0;
@@ -1810,6 +1800,12 @@ body#landingPage2 .l_footer {
   width: 100%;
   font-size: 14px;
   color: #999;
+}
+
+@media (min-height: 420px) and (min-width: 550px) {
+  body#landingPage2 .l_footer {
+    display: block;
+  }
 }
 
 body#landingPage2 .l_footer .l_box {
@@ -1844,249 +1840,45 @@ body#landingPage h1 {
   display: block; 
 }
 
-body#landingPage h1 em {
-  font-style: normal; 
-  color: #333;
-}
-
-body#landingPage h1 .sub {
-  display: block;
-  font-size: 18px;
-  color: #aaa;
-}
-
-body#landingPage .cto {
-  position: absolute;
-  bottom: 32px;
-  left: 0;
-  right: 0;
-  width: 100%;
-  font-size: 14px;
-  color: #999;  
-}
-
-body#landingPage .cto a.start {
-  padding: 12px 50px 12px 50px;
-  display: inline-block;
-  font-size: 20px;
-  outline: none;
-  margin-bottom: 5px;
-}
-
-body#landingPage .cto a.signin {
-  padding: 0;
-  font-size: 14px;
-  outline: none;
-  color: #666;
-  text-decoration: none;
-}
-
-body#landingPage .teaser {
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 150px;
-  bottom: 150px;
-  border-bottom: 1px solid #ccc;
-}
-
-body#landingPage .teaser .screen {
-  background: url(../img/site/screen.png) no-repeat;
-  background-size: 100% auto;
-  background-position:center top;  
-  position: absolute;
-  left: 130px;
-  right: 130px;
-  top: 0px;
-  bottom: 0px;
-  z-index: 98000;
-  cursor: pointer;
-}
-
-body#landingPage .teaser .screen .manage {
-  position: absolute;
-  left: -130px;
-  top: 50px;
-  text-align: left;
-  z-index: 98010;  
-}
-
-body#landingPage .teaser .screen .manage .header {
-  width: 180px;
-}
-
-body#landingPage .teaser .screen .write {
-  position: absolute;
-  left: -130px;
-  top: 150px;
-  text-align: left;
-  z-index: 98010;  
-}
-
-body#landingPage .teaser .screen .write .header {
-  width: 360px;
-}
-
-body#landingPage .teaser .screen .research {
-  position: absolute;
-  right: -130px;
-  top: 50px;
-  text-align: right;
-  z-index: 98010;  
-}
-
-body#landingPage .teaser .screen .research .header {
-  width: 180px;
-}
-
-body#landingPage .teaser .screen .research .desc {
-  float: right;
-  width: 120px !important;  
-}
-
-body#landingPage .teaser .screen .blurb .header {
-  padding-bottom: 3px;
-  border-bottom: 1px solid rgba(125,125,125,0.5);
-  color: #333; 
-  cursor: default;    
-}
-
-body#landingPage .teaser .screen  .blurb .desc {
-  font-family: 'lucida grande',tahoma,verdana,arial,sans-serif;
-  font-size: 11px;
-  padding-top: 5px;
-  width: 120px;
-  color: #666;
-  cursor: default;   
-}
-
-body#landingPage .teaser .screen  .blurb .desc em {
-  font-style: normal;
-  color: #000;
-}
-
-@media (max-width: 480px) {
-  body#landingPage h1 {
-    text-align: center;
-    margin: 10% auto 0 auto;    
-    font-size: 16px; 
-    line-height: 25px;  
-    color: #666;  
-  }
-
-  body#landingPage h1 em {
-    font-size: 40px; 
-    display: block;
-    color: #333;
-  }  
-
-  body#landingPage h1 .claim {
-    display: none;
-  }   
-
-  body#landingPage h1 .sub {
-    color: #666; 
-    font-size: 16px; 
-    line-height: 18px;
-    margin: 8px 15% 0 15%;   
-  } 
-
-  body#landingPage .teaser {
+@media (min-width: 550px) {
+  body#landingPage2 .l_container {
+    margin: auto 0;
     position: absolute;
-    top: 24%;
-    bottom: 90px;
-    border-bottom: none;
-    overflow: hidden;   
-  }  
-
-  body#landingPage .teaser .screen {
-    background: url(../img/site/screen.png) no-repeat;
-    background-size: 80% auto;
-    background-position: center top;  
-    position: absolute;
-    left: 0;
+    top: 0; 
+    left: 0; 
+    bottom: 0; 
     right: 0;
-    top: 0;
-    bottom: 0;
-    z-index: 98000;
-  } 
-
-  body#landingPage .teaser .screen .manage,  body#landingPage .teaser .screen .write {
-    position: static;  
-  }
-
-  body#landingPage .teaser .screen .manage {
-    margin-top: 40%; 
-    border-top: 1px solid rgba(0,0,0,0.3);
-    padding-top: 10px;
-  }
-
-  body#landingPage .teaser .screen .manage .header, body#landingPage .teaser .screen .write .header, body#landingPage .teaser .screen .research .header {
-    width: 100%;
-  }
-
-  body#landingPage .teaser .screen .research {
-    position: static;
-    text-align: left; 
-  }
-
-  body#landingPage .teaser .screen .research .desc {
-    float: left;
-    width: 100% !important;  
-  }   
-
-  body#landingPage .teaser .screen .blurb {
-    background-color: #fff;   
-  }    
-
-  body#landingPage .teaser .screen .blurb .header {
-    padding-bottom: 0;
-    border-bottom: none;    
-  }  
-
-  body#landingPage .teaser .screen .blurb .desc {
-    width: 100%;
-    padding-top: 0; 
-    padding-bottom: 10px;   
-  }
-
-  body#landingPage .cto {
-    bottom: 10px;
-  }
-
-  body#landingPage .cto a.start {
-    padding: 8px 0 8px 0;
-    width: 80%;
-    margin-bottom: 8px;
-  }
-
-}
-
-@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
-  body#landingPage h1 {
-    margin: 10% auto 0 auto;    
-    font-size: 18px; 
-    line-height: 28px;  
-    color: #666;  
-  }
-
-  body#landingPage h1 em {
-    font-size: 40px; 
     display: block;
-    color: #333;
+    height: 80%;
+    background: url(../img/site/landing.2.png) no-repeat;
+    background-size: auto 100%;
+    background-position: center center;    
   }
 
-  body#landingPage .teaser {
-    top: 25%;
-  }  
-
-  body#landingPage h1 .claim {
-    display: none;  
-  }  
-
-  body#landingPage h1 .sub {
-    color: #666;
+  body#landingPage2 .l_container .l_overlay {
+    margin: 0;
+    position: absolute;
+    top: 0; 
+    left: 0; 
+    bottom: 10%; 
+    display: block;
+    width: 45%;
+    cursor: pointer;
   }
+
+  body#landingPage2 .l_container .l_canvas {
+    left: 50%;
+    right: 40px;
+  }
+
+  body#landingPage2 .l_container .l_canvas .text {
+    max-width: 400px;
+  }  
+
+  body#landingPage2 .l_container .l_canvas .cto a.start {
+    max-width: 332px;
+  }  
+
 }
 
 
