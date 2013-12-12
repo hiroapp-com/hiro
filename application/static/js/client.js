@@ -4883,6 +4883,10 @@ var WPCLib = {
 
 		delayedtimeout: null,
 		menuSlide: function(direction, callback, delayed) {
+			// Catch cases where sliding makes no sense
+			if (direction == -1 && this.menuCurrPos == 0) return;
+			if (direction == 1 && this.menuCurrPos > 100) return;
+
 			if (delayed && !this.delayedtimeout && this.menuCurrPos == 0 ) {
 				// Add a slight delay
 				this.delayedtimeout = setTimeout(function(){					
@@ -4983,6 +4987,8 @@ var WPCLib = {
 			if (this.menuHideTimer) {
 				clearTimeout(this.menuHideTimer);				
 			}
+
+			// Fired delayed menuhide
 			this.menuHideTimer = setTimeout(function(){that.menuSlide(-1);},1);			
 		},
 
