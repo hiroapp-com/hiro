@@ -4884,9 +4884,6 @@ var WPCLib = {
 					if (document.activeElement) document.activeElement.blur();
 				}	
 
-				// Hide sharing dialog on narrow devices
-				WPCLib.ui.clearactions();
-
 				// Open left folio menu
 				WPCLib.ui.menuSlide(1);
 			}	
@@ -4913,7 +4910,10 @@ var WPCLib = {
 			}
 
 			// Abort if menu is currently moving
-			if (WPCLib.ui.menuSlideCurrDirection != 0) return;		
+			if (WPCLib.ui.menuSlideCurrDirection != 0) return;	
+
+			// Hide sharing dialog
+			if (direction == 1) WPCLib.ui.clearactions();				
 
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
