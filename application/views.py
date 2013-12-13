@@ -483,7 +483,7 @@ def fetch_link(url):
                     summary = summary + brz
                     continue
             if len(summary) > 200:
-                link['description'] = summary[:200], '...'
+                link['description'] = summary[:200] + '...'
 
             # Fall back to get raw textnode contents of body    
             else:
