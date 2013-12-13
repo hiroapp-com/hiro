@@ -334,7 +334,6 @@ var WPCLib = {
 					for (i=0,l=this.active.length;i<l;i++) {
 						if (this.active[i].role == 'owner') own_counter++;
 					}
-					console.log(own_counter);
 					if (own_counter > 10) {
 						WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
 						return;	
@@ -1161,8 +1160,9 @@ var WPCLib = {
 	        	// See if there was newly added text
 	        	if (that.sync.dmp && that.text != newtext) {
 	        		// Send pasted text to link extraction
-	        		var diff = that.sync.dmp.diff_main(that.text, newtext)[1];
-	        		if (diff) WPCLib.context.extractlinks(diff[1]);
+	        		var diff = that.sync.dmp.diff_main(that.text, newtext);
+	        		diff = diff[1] || diff[0];
+	        		if (diff && diff[0] == 1) WPCLib.context.extractlinks(diff[1]);
 	        	}
 
 		        // Set internal variables
@@ -2000,7 +2000,11 @@ var WPCLib = {
 
 		close: function(event) {
 			// Close the sharing widget
-			var that = WPCLib.sharing;
+			var that = WPCLib.sharing,
+				widget = document.getElementById('s_actions').parentNode,
+				input = document.getElementById('s_actions').getElementsByTagName('input')[0],
+				error = document.getElementById('s_actions').getElementsByTagName('div')[0];
+
 			// Check if we have a timeout and remove & abort if so 			
 			if (!that.visible) return;
 			if (event) {
@@ -2008,13 +2012,19 @@ var WPCLib = {
 				event.stopPropagation();
 			}				
 			
-			var widget = document.getElementById('s_actions').parentNode;
 			that.visible = WPCLib.ui.actionsvisible = false;
 			widget.style.display = 'none';
 
 			// Set position or blur input
 			if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();
-			WPCLib.canvas._setposition();			
+			WPCLib.canvas._setposition();
+
+			// Remove error remains if we had one			
+			if (error && error.style.display != 'none' && error.className == 'error') {
+				input.className = 'hiro';
+				input.value = '';
+				error.style.display = 'none';
+			}				
 		},
 
 		submit: function(event) {
@@ -2035,7 +2045,8 @@ var WPCLib = {
 			var regex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 			if (!regex.test(email.value)) {
 				email.focus();
-				email.nextSibling.innerHTML = "Invalid address";
+				email.nextSibling.innerHTML = "Sorry, not a valid email address.";
+				email.nextSibling.style.display = 'block';				
 				email.className = 'hiro error';
 				button.innerHTML = "Try again";
 				return;
@@ -2189,13 +2200,13 @@ var WPCLib = {
 				// Create a user DOM element and return it
 				var d, r, n,
 					currentuser = (user.email == WPCLib.sys.user.email),
-					tooltip = (user.status == 'invited') ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : undefined,
+					namestring = (user.name) ? user.name + ' (' + user.email + ')' : user.email,					
 					you = (this.users.length > 1) ? 'You' : 'Only you';
 
 				d = document.createElement('div');
 				d.id = 'user_' + i;
 				d.className = 'user';
-				if (!currentuser && tooltip) d.setAttribute('title', tooltip);
+				if (!currentuser && user.status && user.status == 'invited') d.setAttribute('title', (user.status.charAt(0).toUpperCase() + user.status.slice(1)));
 
 				if (user.role != "owner") {
 					// Add remove link if user is not owner					
@@ -2219,7 +2230,7 @@ var WPCLib = {
 				// Add user name span
 				n = document.createElement('span');
 				n.className = (user.status == 'invited') ? 'name invited' : 'name';
-				n.innerHTML = (currentuser) ? you : user.name || user.email;
+				n.innerHTML = (currentuser) ? you : namestring;
 				d.appendChild(n)
 
 				// Return object
@@ -3397,7 +3408,6 @@ var WPCLib = {
 
 		goneoffline: function() {
 			// Triggered if an AJAX requests return textStatus == timeout
-			if (!this.online) return;
 			if ('onLine' in navigator && !navigator.onLine) this.online = false;
 			this.status = 'offline';
 			var reason = (this.online) ? 'Server not available' : 'No internet connection',
@@ -3413,6 +3423,9 @@ var WPCLib = {
 
 			// Abort progress bar
 			if (WPCLib.ui.hprogress.active) WPCLib.ui.hprogress.done(true);
+
+			// Stop here if we're already offline
+			if (!this.online) return;
 
 			// Log error (to be switched off again, just to see how often this happens)
 			this.error('Gone offline, ' + reason);
@@ -4813,11 +4826,11 @@ var WPCLib = {
 	        var obj = {
 	            method: 'feed',
 	            link: 'https://www.hiroapp.com',
-	            name: 'Hiro.',
+	            name: 'Hiro. Notes With Friends.',
 	            caption: 'https://www.hiroapp.com',
-	            description: "Hiro is a safe place to write down your ideas: It's extremely fast, beautifully designed and works on all your devices.",
+	            description: "From ideas for your business to party preparations: Hiro is the easiest way to stay organized throughout the day.",
 	            actions: {
-	                name: 'Start writing',
+	                name: 'Start a note',
 	                link: 'https://www.hiroapp.com/connect/facebook',
 	            }
 	        };
@@ -4869,9 +4882,11 @@ var WPCLib = {
 				// On touch devices we also remove the keyboard
 				if ('ontouchstart' in document.documentElement) {
 					if (document.activeElement) document.activeElement.blur();
-					// Hide sharing dialog on narrow devices
-					if (document.body.offsetWidth<480) WPCLib.ui.clearactions();
-				}				
+				}	
+
+				// Hide sharing dialog on narrow devices
+				WPCLib.ui.clearactions();
+
 				// Open left folio menu
 				WPCLib.ui.menuSlide(1);
 			}	

@@ -1722,19 +1722,19 @@ body#landingPage2 {
   background-color: #fcfcfc;   
 }
 
-@media (max-width: 550px) and (min-height: 480px) {
+@media (max-width: 550px) and (min-height: 450px) {
   body#landingPage2 {
-    background: url(../img/site/landing.mobile.2.png) no-repeat;
+    background: url(../img/site/landing.mobile.3.png) no-repeat;
     background-size: 100% auto;
     background-position: center bottom; 
   }  
 }
 
-@media (max-width: 550px) and (max-height: 479px) {
+@media (max-width: 550px) and (max-height: 449px) {
   body#landingPage2 {
-    background: url(../img/site/landing.mobile.2.png) no-repeat;
+    background: url(../img/site/landing.mobile.3.png) no-repeat;
     background-size: 100% auto;
-    background-position: center 300px; 
+    background-position: center 280px; 
   }  
 }
 
@@ -1752,11 +1752,12 @@ body#landingPage2 .l_container .l_canvas h1 {
   display: block;
   color: #333;  
   font-weight: 400; 
+  line-height: 40px;
 }
 
 body#landingPage2 .l_container .l_canvas .text {
   color: #666;  
-  margin: 10px 0 20px 0;  
+  margin: 10px 0 16px 0;  
   line-height: 22px;
 }
 
@@ -1775,7 +1776,7 @@ body#landingPage2 .l_container .l_canvas .cto a.start {
   display: block;
   font-size: 20px;
   outline: none;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 body#landingPage2 .l_container .l_canvas .cto .small {
@@ -1850,7 +1851,7 @@ body#landingPage h1 {
     right: 0;
     display: block;
     height: 80%;
-    background: url(../img/site/landing.2.png) no-repeat;
+    background: url(../img/site/landing.3.png) no-repeat;
     background-size: auto 100%;
     background-position: center center;    
   }
@@ -1871,12 +1872,18 @@ body#landingPage h1 {
     right: 40px;
   }
 
+  body#landingPage2 .l_container .l_canvas h1 {
+    line-height: normal;
+  }  
+
   body#landingPage2 .l_container .l_canvas .text {
     max-width: 400px;
+    margin-bottom: 20px;
   }  
 
   body#landingPage2 .l_container .l_canvas .cto a.start {
     max-width: 332px;
+    margin-bottom: 16px;
   }  
 
 }
@@ -2025,6 +2032,20 @@ body#settingsPage input#cc_number.error {
 #s_settings form .ioption.error {
   color: red;
   background: none;
+}
+
+#s_settings form .ioption.upgradelink {
+  position: absolute;
+  top: 324px;
+  right: 176px;
+  z-index: 99000;    
+}
+
+#s_checkout form .ioption.changeplan {
+  position: absolute;
+  top: 209px;
+  right: 175px;
+  z-index: 99000;  
 }
 
 #s_settings form .ioption a {
@@ -2379,7 +2400,12 @@ body#settingsPage input#cc_number.error {
 
   #s_settings form .ioption {
     color: transparent;
-  }   
+  }  
+
+  #s_settings form .ioption.upgradelink {
+    top: 214px;
+    right: 18px;
+  } 
 
   #s_settings form .ioption a.facebook {
     display: none;
@@ -2393,10 +2419,8 @@ body#settingsPage input#cc_number.error {
   }
 
   #s_checkout form .ioption.changeplan {
-    position: absolute;
     top: 49px;
     right: 0; 
-    z-index: 99000;  
   }
 
   .checkoutdetails .pbstripe .right {
@@ -2621,11 +2645,14 @@ body#settingsPage input#cc_number.error {
     z-index: 99000;
   }
 
+  #s_settings form .ioption.upgradelink {
+    top: 196px;
+    right: 1px;
+  }   
+
   #s_checkout form .ioption.changeplan {
-    position: absolute;
     top: 49px;
-    right: 0; 
-    z-index: 99000;  
+    right: 0;  
   }  
 
   #s_plan .box {

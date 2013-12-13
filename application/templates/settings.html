@@ -139,14 +139,14 @@
 						<input type="text" value="{{ current_user.name }}" onkeyup="_wpc.sys.user.nametype(event)" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a href="#" onclick="_wpc.sys.user.namesave(event);">Save Changes</a></div>
 						<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
 						<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-						<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>
+						<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption upgradelink"><a href="#" onclick="_wpc.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>
 						<input type="submit" value="foo" onclick="_wpc.sys.user.namesave(event); return false;" class="pseudobutton"></input>			
 					</form>		
 					<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 					<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="_wpc.ui.facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
-					<a href="https://twitter.com/intent/tweet?text=A%20safe%20place%20for%20your%20ideas%20%23hiro%20%23notetaking%20%23app%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="wpcbutton share tw">via&nbsp;<b>Twitter</b></a>	
+					<a href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="wpcbutton share tw">via&nbsp;<b>Twitter</b></a>	
 					<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20little%20app%20for%20daily%20note-taking%3A%20www.hiroapp.com" class="wpcbutton share mail green" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'Mail'});" target="_blank">via&nbsp;<b>Mail</b></a>	
-					<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'SMS'});" class="wpcbutton share sms">via&nbsp;<b>SMS</b></a>
+					<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F%20%27Notes%20With%20Friends%27" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'SMS'});" class="wpcbutton share sms">via&nbsp;<b>SMS</b></a>
 				</div>	
 				{% endif %}					
 			</div>
