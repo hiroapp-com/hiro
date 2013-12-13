@@ -1159,7 +1159,7 @@ var WPCLib = {
 	        	var that = WPCLib.canvas, newtext = document.getElementById(that.contentId).value;
 
 	        	// See if there was newly added text
-	        	if (!WPCLib.sys.production && that.sync.dmp && that.text != newtext) {
+	        	if (that.sync.dmp && that.text != newtext) {
 	        		// Send pasted text to link extraction
 	        		var diff = that.sync.dmp.diff_main(that.text, newtext)[1];
 	        		if (diff) WPCLib.context.extractlinks(diff[1]);

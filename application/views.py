@@ -27,6 +27,7 @@ from flask.ext.login import current_user, login_user, logout_user, login_require
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
 from google.appengine.api import memcache, channel, taskqueue, urlfetch
+from bs4 import BeautifulSoup
 
 
 from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
@@ -446,14 +447,50 @@ def verify_links():
 
 def fetch_link(url):
     # Fetch link via appengine fetch service
-    # TODO: Retry with http/https if missing and add Beautiful soup (or similar lib)
+    # TODO: Handle most common edge cases
+    # Create link object with initial URL (used as id in client)
     link = {"url" : url}
+
+    # If URL doesn't have protocol, which fetch() needs
+    if not url.startswith('http:'):
+        url = 'http://' + url;
+
+    # Fetch URL via Appengine Fetch
     result = urlfetch.fetch(url, allow_truncated=True, deadline=10, validate_certificate=False)
+
     if result.status_code == 200:
-        link['title'] = "Beautiful Soup coming soon"
-        link['description'] = "Wohaaa" 
+        # Build bs object
+        doc = BeautifulSoup(result.content)
+
+        # Try to find title
+        if doc.title.string:
+            link['title'] = doc.title.string
+
+        # Try to find desciption in metatags, otherwise use body text
+        if doc.find("meta", {"name":"description"}):
+            link['description'] = doc.find("meta", {"name":"description"})['content'][:200]  
+        elif doc.find("meta", {"name":"og:description"}):
+            link['description'] = doc.find("meta", {"name":"og:description"})['content'][:200]                        
+        else:   
+            # Try to harvest enough p contents 
+            body = doc.find("body")
+            summary = '' 
+            for p in body.findAll('p'):
+                if len(summary) > 200:
+                    break
+                brz = ' '.join(p.findAll(text=True))
+                if len(brz) > 10: 
+                    summary = summary + brz
+                    continue
+            if len(summary) > 200:
+                link['description'] = summary[:200], '...'
+
+            # Fall back to get raw textnode contents of body    
+            else:
+                link['description'] = body.get_text("|", strip=True)[200]   
     else:
-        link['statuscode'] = result.status_code      
+        link['statuscode'] = result.status_code  
+
     return link       
 
 @login_required
