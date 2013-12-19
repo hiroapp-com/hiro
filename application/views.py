@@ -569,13 +569,9 @@ def notify_sessions():
                "name": user.name
                }
            }
-    print "COLLABS"
-    #collabs = [c.user.get() for c in DocAccess.query(DocAccess.doc == doc.key)]
     for da in DocAccess.query(DocAccess.doc == doc.key):
         if da.user:
-            print "USER", da.user
             u = da.user.get()
-            print "NOTIFY"
             u.push_message(msg)
     return "ok"
 
