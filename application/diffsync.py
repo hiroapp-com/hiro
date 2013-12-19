@@ -2,6 +2,7 @@
 import re
 import uuid 
 import json
+import logging
 from datetime import datetime, timedelta
 
 from google.appengine.api import memcache, channel
@@ -22,6 +23,9 @@ class SyncSession(dict):
         self['edit_stack'] = []
         super(SyncSession, self).__init__(*args, **kwargs)
 
+    def debug_state(self, prefix=""):
+        out = "{2}cv: {0[client_version]}\t sv: {0[server_version]}\t shadow: `{0[shadow]}`\t\t backup: `{0[backup]}` \t\t editstack: {1}".format(self, ";".join(["{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in self['edit_stack']]), prefix)
+        logging.error(out)
 
     @classmethod
     def gen_sessionid(cls):
@@ -75,10 +79,12 @@ class SyncSession(dict):
             if sv != self['server_version']:
                 # version mismatch
                 #request re-sync
+                logging.error("SV MISMATCH - resync")
                 ok = False
             elif cv > self['client_version']:
                 # client in the future?
                 #request re-sync
+                logging.error("CV MISMATCH - resync")
                 ok = False
             elif cv < self['client_version']:
                 # dupe
@@ -92,6 +98,9 @@ class SyncSession(dict):
                     #request re-sync
                     diffs = None
                     ok = False
+                    logging.error("==================== COULD NOT MERGE - resync, state: ")
+                    self.debug_state("err\t")
+                    logging.error("doc.text: `{0[text]}` stack: {1}".format(doc, ";".join(["{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in stack])))
                 self['client_version'] += 1
                 if diffs:
                     # patch master-doc
