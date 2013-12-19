@@ -1703,7 +1703,8 @@ var WPCLib = {
 
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
             		// Apply the patch & set new shadow
-                    merged = this.shadow = this.dmp.patch_apply(patch, oldtext)[0];                                                                 
+                    this.shadow = this.dmp.patch_apply(patch, this.shadow)[0];
+                    merged      = this.dmp.patch_apply(patch, oldtext)[0];
 	                WPCLib.sys.log("Patches successfully merged, replacing text");
 
 	                // Get current cursor position
