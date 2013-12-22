@@ -361,6 +361,7 @@ class DocAccess(ndb.Model):
     user = ndb.KeyProperty(kind=User)
     email = ndb.StringProperty()
     token_hash =  ndb.StringProperty()
+    hidecontext = ndb.BooleanProperty(default=False)
     
     # backlogs and session-references
     deltalog = ndb.StructuredProperty(DeltaLog, repeated=True)

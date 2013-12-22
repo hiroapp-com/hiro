@@ -263,7 +263,7 @@ def list_documents():
         doc = da.doc.get()
         is_shared = DocAccess.query(DocAccess.doc == da.doc).count() > 1
         last_da = DocAccess.query(DocAccess.doc == da.doc).order(-DocAccess.last_change_at).get()
-        docs[group_key(doc.to_dict())].append({ 
+        docs[group_key(da.to_dict())].append({ 
             "id": doc.key.id(),
             "title": doc.title,
             "status": da.status,
@@ -298,7 +298,6 @@ def create_document():
     doc.title = data.get('title') 
     doc.text = data.get('text', '')
     doc.cursor = data.get('cursor', 0)
-    doc.hidecontext = data.get('hidecontext', False)
 
     links = data.get('links', {})
     doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
@@ -307,6 +306,7 @@ def create_document():
     doc_id = doc.put()
 
     da, _ = DocAccess.create(doc, user=current_user, role='owner', status='active') 
+    da.hidecontext = data.get('hidecontext', False)
     da.tick_seen(also_changed=True)
     sess = da.create_session()
     resp = jsonify(doc_id=doc_id.id())
@@ -328,12 +328,9 @@ def edit_document(doc_id):
     if not access:
         return "access denied, sorry.", 403
 
+    # save Document specific data
     doc.title = data.get('title', doc.title)
-    #TODO save status in DocAccess instance, not Document itself
-    doc.status = data.get('status', doc.status)
-    #doc.text = data.get('text', doc.text)
     doc.cursor = data.get('cursor', doc.cursor)
-    doc.hidecontext = data.get('hidecontext', doc.hidecontext)
     links = data.get('links', {})
     if links.get('normal') is not None:
         doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
@@ -342,6 +339,13 @@ def edit_document(doc_id):
     if links.get('blacklist') is not None:
         doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc.put()
+
+    # save DocAccess specific data
+    if data.get('status') in ('active', 'archived'):
+        access.status = data.get('status')
+    access.hidecontext = data.get('hidecontext', access.hidecontext)
+    access.put()
+
     return "", 204
 
 @login_required
@@ -355,7 +359,12 @@ def get_document(doc_id):
     access.tick_seen()
 
     sess = access.create_session()
-    resp = jsonify(doc.api_dict())
+    docinfo = doc.api_dict()
+    docinfo.update({
+        'updated': time.mktime(access.last_change_at.timetuple()),
+        'hidecontext': access.hidecontext,
+        })
+    resp = jsonify(docinfo)
     resp.headers['Collab-Session-ID'] = sess['session_id']
     resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
     return resp
