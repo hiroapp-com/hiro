@@ -5,11 +5,20 @@ import cPickle
 from cStringIO import StringIO
 import inspect
 import linecache
+import logging
 import optparse
 import os
 import sys
 
-from _line_profiler import LineProfiler as CLineProfiler
+try:
+    from _line_profiler import LineProfiler as CLineProfiler
+except ImportError:
+    def log_import_error(*args, **kwargs):
+        logging.error("Failed to import LineProfiler!")
+    class CLineProfiler(object):
+        enable_by_count = log_import_error
+        disable_by_count = log_import_error
+    log_import_error()
 
 
 CO_GENERATOR = 0x0020
