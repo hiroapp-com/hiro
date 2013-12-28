@@ -253,8 +253,8 @@ class Document(ndb.Model):
     title = ndb.StringProperty()
     status = ndb.StringProperty(default='active', choices=('active', 'archived')) 
     text = ndb.TextProperty()
-    cursor = ndb.IntegerProperty()
-    hidecontext = ndb.BooleanProperty()
+    cursor = ndb.IntegerProperty(indexed=False)
+    hidecontext = ndb.BooleanProperty(indexed=False)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
     #note: updated_at will soon be deprecated
     updated_at = ndb.DateTimeProperty(auto_now=True)
@@ -265,9 +265,9 @@ class Document(ndb.Model):
     access_list = ndb.KeyProperty(kind='DocAccess', repeated=True)
 
     # contextual links
-    sticky = ndb.StructuredProperty(Link, repeated=True)
-    blacklist = ndb.StructuredProperty(Link, repeated=True)
-    cached_ser = ndb.StructuredProperty(Link, repeated=True)
+    sticky = ndb.StructuredProperty(Link, repeated=True, indexed=False)
+    blacklist = ndb.StructuredProperty(Link, repeated=True, indexed=False)
+    cached_ser = ndb.StructuredProperty(Link, repeated=True, indexed=False)
 
     excerpt = property(lambda s: s.text[:500])
 
@@ -347,8 +347,8 @@ class Document(ndb.Model):
 
 
 class DeltaLog(ndb.Model):
-    delta = ndb.JsonProperty('d')
-    timestamp = ndb.DateTimeProperty('ts', auto_now_add=True)
+    delta = ndb.JsonProperty('d', indexed=False)
+    timestamp = ndb.DateTimeProperty('ts', auto_now_add=True, indexed=False)
 
 
 class DocAccess(ndb.Model):
@@ -365,11 +365,11 @@ class DocAccess(ndb.Model):
     user = ndb.KeyProperty(kind=User)
     email = ndb.StringProperty()
     token_hash =  ndb.StringProperty()
-    hidecontext = ndb.BooleanProperty(default=False)
+    hidecontext = ndb.BooleanProperty(default=False, indexed=False)
     
     # backlogs and session-references
-    deltalog = ndb.StructuredProperty(DeltaLog, repeated=True)
-    sync_sessions = ndb.StringProperty(repeated=True)
+    deltalog = ndb.StructuredProperty(DeltaLog, repeated=True, indexed=False)
+    sync_sessions = ndb.StringProperty(repeated=True, indexed=False)
 
     # various timestamps
     last_change_at = ndb.DateTimeProperty(default=datetime.min) # will not be updated on "=<len>"(no-op) deltas
