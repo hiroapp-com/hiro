@@ -24,14 +24,18 @@ class SyncSession(dict):
         super(SyncSession, self).__init__(*args, **kwargs)
 
     def debug_state(self, doc=None, incoming_stack=None, prefix=""):
-        out_stack = ";".join(["{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in self['edit_stack']])
-        logging.error("{prefix} cv: {self[client_version]}\t sv: {self[server_version]}\t shadow: `{self[shadow]}`\t\t backup: `{self[backup]}` \t\t editstack: {out_stack}".format(**locals()))
+        try:
+            out_stack = u";".join([u"{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in self['edit_stack']])
+            logging.error(u"{prefix} cv: {self[client_version]}\t sv: {self[server_version]}\t shadow: `{self[shadow]}`\t\t backup: `{self[backup]}` \t\t editstack: {out_stack}".format(**locals()))
 
-        if doc:
-            logging.error("{prefix} doc.text: `{doc[text]}`".format(**locals()))
-        if incoming_stack:
-            in_stack = ";".join(["{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in incoming_stack])
-            logging.error("{prefix} incoming stack: {in_stack}".format(**locals()))
+            if doc:
+                logging.error(u"{prefix} doc.text: `{doc[text]}`".format(**locals()))
+            if incoming_stack:
+                in_stack = u";".join([u"{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in incoming_stack])
+                logging.error(u"{prefix} incoming stack: {in_stack}".format(**locals()))
+        except e:
+            #make sure nuthin (encoding issues etc) will explode in the debug output
+            logging.error(u"meta-debug: debug call crashed")
 
     @classmethod
     def gen_sessionid(cls):
