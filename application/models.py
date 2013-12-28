@@ -256,9 +256,13 @@ class Document(ndb.Model):
     cursor = ndb.IntegerProperty()
     hidecontext = ndb.BooleanProperty()
     created_at = ndb.DateTimeProperty(auto_now_add=True)
+    #note: updated_at will soon be deprecated
     updated_at = ndb.DateTimeProperty(auto_now=True)
-    #NOTE shared_with will be removed after migration to DocAccess
-    shared_with = ndb.KeyProperty(kind=User, repeated=True)
+
+    # de-normalized properties updated async by TaskQueue
+    last_update_at = ndb.DateTimeProperty()
+    last_update_by = ndb.KeyProperty(kind=User, indexed=False)
+    access_list = ndb.KeyProperty(kind='DocAccess', repeated=True)
 
     # contextual links
     sticky = ndb.StructuredProperty(Link, repeated=True)

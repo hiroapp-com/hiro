@@ -586,9 +586,26 @@ def notify_sessions():
 
 
 def schemamigration(ptr=0):
-    #import update_schema
-    #from google.appengine.ext import deferred
-    #deferred.defer(update_schema.UpdateSchema)
+    import update_schema
+    from google.appengine.ext import deferred
+    deferred.defer(update_schema.UpdateSchema)
+    return 'ok'
+
+
+def update_doc_stats():
+    doc_id = request.form.get('doc_id')
+    doc = Document.get_by_id(doc_id)
+
+    # update timestamps
+    last_da = DocAccess.query(DocAccess.doc == doc.key).order(-DocAccess.last_change_at).get()
+    if doc.last_update_at == last_da :
+        return 'skipped; already uptodate'
+    doc.last_update_at = last_da.last_change_at
+    doc.last_update_by = last_da.user
+
+    # update access-list
+    doc.access_list = [k for k in DocAccess.query(DocAccess.doc == doc.key).iter(keys_only=True)]
+    doc.put()
     return 'ok'
 
 
