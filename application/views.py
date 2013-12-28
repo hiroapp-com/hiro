@@ -305,9 +305,13 @@ def create_document():
     doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
     doc_id = doc.put()
 
-    da, _ = DocAccess.create(doc, user=current_user, role='owner', status='active') 
-    da.hidecontext = data.get('hidecontext', False)
-    da.tick_seen(also_changed=True)
+    da, _ = DocAccess.create(doc, 
+                             user=current_user, 
+                             role='owner', 
+                             status='active', 
+                             hidecontext=data.get('hidecontext', False),
+                             last_access_at=datetime.now(),
+                             last_change_at=datetime.now()) 
     sess = da.create_session()
     resp = jsonify(doc_id=doc_id.id())
     resp.status = '201'
@@ -341,10 +345,15 @@ def edit_document(doc_id):
     doc.put()
 
     # save DocAccess specific data
+    put_access = False
     if data.get('status') in ('active', 'archived'):
         access.status = data.get('status')
-    access.hidecontext = data.get('hidecontext', access.hidecontext)
-    access.put()
+        put_access = True
+    if data.get('hidecontext'):
+        access.hidecontext = data.get('hidecontext')
+        put_access = True
+    if put_access: 
+        access.put()
 
     return "", 204
 
@@ -356,7 +365,6 @@ def get_document(doc_id):
     access = doc.grant(current_user, request.headers.get("accesstoken"))
     if not access:
         return "access denied, sorry.", 403
-    access.tick_seen()
 
     sess = access.create_session()
     docinfo = doc.api_dict()
@@ -528,7 +536,6 @@ def sync_doc(doc_id):
             resp.status = "412"
             resp.headers['Collab-Session-ID'] = sess['session_id']
             resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-            access.tick_seen() 
             return resp
         elif not sess['user_id'] == current_user.key.id():
             return "not your sync session {0} != {1}".format(sess['user_id'], current_user.key.id()), 403
@@ -557,7 +564,8 @@ def sync_doc(doc_id):
             # master doc not changed, only persist session
             sess.save()
 
-        access.tick_seen() 
+        access.last_access_at = datetime.now()
+        access.put()
         return jsonify(session_id=sess_id, deltas=sess['edit_stack'])
     return jsonify_err(400, "could not acquire lock for masterdoc")
 

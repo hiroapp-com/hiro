@@ -66,7 +66,7 @@ class User(UserMixin, ndb.Model):
                 else:
                     # session expired, remove from list
                     da.sync_sessions.remove(sess_id)
-            da.put()
+                    da.put()
         return i
 
 
@@ -378,24 +378,19 @@ class DocAccess(ndb.Model):
 
     
     @classmethod
-    def create(cls, doc, user=None, role='collab', status='invited', email=None):
+    def create(cls, doc, user=None, role='collab', status='invited', **kwargs):
         token = uuid.uuid4().hex
         hashed = sha512(token).hexdigest()
-        obj = cls(token_hash=hashed, doc=doc.key, role=role, status=status, email=email)
+        obj = cls(token_hash=hashed, doc=doc.key, role=role, status=status, **kwargs)
         if user:
             obj.user = user.key
         obj.put()
         return obj, token
 
-    def tick_seen(self, also_changed=False):
-        self.last_access_at = datetime.now()
-        if also_changed:
-            self.last_change_at = self.last_access_at
-        self.put()
-
     def create_session(self):
         sess = SyncSession.create(self.doc.get().text, user_id=(self.user.id() if self.user else None))
         self.sync_sessions.append(sess['session_id'])
+        self.last_access_at = datetime.now()
         self.put()
         return sess
 
