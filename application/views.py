@@ -301,9 +301,8 @@ def create_document():
     doc.cursor = data.get('cursor', 0)
 
     links = data.get('links', {})
-    doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
-    doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
-    doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
+    doc.sticky = links.get('sticky', [])
+    doc.blacklist = links.get('blacklist', [])
     doc_id = doc.put()
 
     da, _ = DocAccess.create(doc, 
@@ -337,12 +336,10 @@ def edit_document(doc_id):
     doc.title = data.get('title', doc.title)
     doc.cursor = data.get('cursor', doc.cursor)
     links = data.get('links', {})
-    if links.get('normal') is not None:
-        doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
     if links.get('sticky') is not None:
-        doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
+        doc.sticky = links.get('sticky', [])
     if links.get('blacklist') is not None:
-        doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
+        doc.blacklist = links.get('blacklist', [])
     doc.put()
 
     # save DocAccess specific data

@@ -265,9 +265,9 @@ class Document(ndb.Model):
     access_list = ndb.KeyProperty(kind='DocAccess', repeated=True, indexed=False)
 
     # contextual links
-    sticky = ndb.StructuredProperty(Link, repeated=True, indexed=False)
-    blacklist = ndb.StructuredProperty(Link, repeated=True, indexed=False)
-    cached_ser = ndb.StructuredProperty(Link, repeated=True, indexed=False)
+    sticky = ndb.JsonProperty()
+    blacklist = ndb.JsonProperty()
+
 
     excerpt = property(lambda s: s.text[:500])
 
@@ -339,9 +339,9 @@ class Document(ndb.Model):
                 "hidecontext": self.hidecontext,
                 "shared": DocAccess.query(DocAccess.doc == self.key).count() > 1,
                 "links": {
-                    "normal": [c.to_dict() for c in self.cached_ser],
-                    "sticky": [c.to_dict() for c in self.sticky],
-                    "blacklist": [c.url for c in self.blacklist]
+                    "normal": [], #TODO deprecate this in js client
+                    "sticky": self.sticky,
+                    "blacklist": self.blacklist
                     }
                 }
 
