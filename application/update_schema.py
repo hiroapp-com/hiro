@@ -1,27 +1,28 @@
 import logging
 
-from .models import Document, DocAccess
+from .models import User, Document, DocAccess
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 
-BATCH_SIZE = 100  # ideal batch size may vary based on entity size.
+BATCH_SIZE = 1000  # ideal batch size may vary based on entity size.
 
 def UpdateSchema(cursor=None, num_updated=0):
-    query = Document.query()
+    query = User.query()
     logging.debug('start one update run')
 
     to_put = []
-    docs, next_cursor, more = query.fetch_page(BATCH_SIZE, start_cursor=cursor)
-    for doc in docs:
-        last_da = DocAccess.query(DocAccess.doc == doc.key).order(-DocAccess.last_change_at).get()
-        if doc.last_update_at == last_da :
-            continue
-        doc.last_update_at = last_da.last_change_at
-        doc.last_update_by = last_da.user
-
-        # update access-list
-        doc.access_list = [k for k in DocAccess.query(DocAccess.doc == doc.key).iter(keys_only=True)]
-        to_put.append(doc)
+    ents, next_cursor, more = query.fetch_page(BATCH_SIZE, start_cursor=cursor)
+    for ent in ents:
+        put = False
+        if 'docs_seen' in ent._properties:
+            del ent._properties['docs_seen']
+            put = True
+        if put:
+            to_put.append(ent)
+        #doc.sticky = doc.json_sticky 
+        #doc.blacklist = doc.json_blacklist 
+        #doc.cached_ser = doc.json_cached_ser 
+        #to_put.append(doc)
 
     logging.debug('found {0} items to put'.format(len(to_put)))
     if to_put:
