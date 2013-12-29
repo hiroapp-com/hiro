@@ -8,7 +8,7 @@ from datetime import datetime
 import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
-from google.appengine.api import memcache
+from google.appengine.api import memcache, taskqueue
 from flask.ext.login import UserMixin, AnonymousUser
 from flask import session, url_for
 from textmodels.textrank import get_top_keywords_list
@@ -396,6 +396,13 @@ class DocAccess(ndb.Model):
 
     def _pre_put_hook(self):
         self.deltalog = self.deltalog[:100]
+
+    def _post_put_hook(self, future):
+        taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')
+
+    def _post_delete_hook(self):
+        taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')
+        
 
 
 
