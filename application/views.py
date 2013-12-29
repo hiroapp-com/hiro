@@ -27,7 +27,6 @@ from flask.ext.login import current_user, login_user, logout_user, login_require
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
 from google.appengine.api import memcache, channel, taskqueue, urlfetch
-from google.appengine.ext import ndb
 from bs4 import BeautifulSoup
 
 
@@ -260,10 +259,10 @@ def list_documents():
         group_key = lambda d: d.get(group_by)
 
     docs = defaultdict(list)
-    dbdocs = ndb.get_multi(list(DocAccess.query(DocAccess.user == current_user.key).iter(keys_only=True)))
-    for da in dbdocs:
+    for da in DocAccess.query(DocAccess.user == current_user.key).order(-DocAccess.last_change_at):
         doc = da.doc.get()
-        last_editor = doc.last_update_by.get() if doc.last_update_by else None
+        is_shared = DocAccess.query(DocAccess.doc == da.doc).count() > 1
+        last_da = DocAccess.query(DocAccess.doc == da.doc).order(-DocAccess.last_change_at).get()
         docs[group_key(da.to_dict())].append({ 
             "id": doc.key.id(),
             "title": doc.title,
@@ -271,12 +270,12 @@ def list_documents():
             "role": da.role,
             "created": time.mktime(da.created_at.timetuple()),
             "updated": time.mktime(da.last_change_at.timetuple()),
-            "shared": len(doc.access_list) > 1,
-            "unseen": doc.last_update_at > da.last_access_at,
+            "shared": is_shared,
+            "unseen": last_da.last_change_at > da.last_access_at,
             "last_doc_update": {
-                "updated": time.mktime(doc.last_update_at.timetuple()),
-                "name": last_editor.name if last_editor else None,
-                "email": last_editor.email if last_editor else None,
+                "updated": time.mktime(last_da.last_change_at.timetuple()),
+                "name": last_da.user.get().name if last_da.user else None,
+                "email": last_da.user.get().email if last_da.user else last_da.email,
                 }
             })
     
@@ -403,7 +402,7 @@ def doc_collaborators(doc_id):
         else:
             return "", 400
     else: # GET 
-        collabs = ndb.get_multi(list(DocAccess.query(DocAccess.doc == doc.key).order(DocAccess.role, DocAccess.status).iter(keys_only=True)))
+        collabs = DocAccess.query(DocAccess.doc == doc.key).order(DocAccess.role, DocAccess.status)
         res = [{"access_id": x.key.id(),
                 "role": x.role,
                 "status": x.status,
