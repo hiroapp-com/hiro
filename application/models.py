@@ -262,7 +262,7 @@ class Document(ndb.Model):
     # de-normalized properties updated async by TaskQueue
     last_update_at = ndb.DateTimeProperty()
     last_update_by = ndb.KeyProperty(kind=User, indexed=False)
-    access_list = ndb.KeyProperty(kind='DocAccess', repeated=True)
+    access_list = ndb.KeyProperty(kind='DocAccess', repeated=True, indexed=False)
 
     # contextual links
     sticky = ndb.StructuredProperty(Link, repeated=True, indexed=False)
