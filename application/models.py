@@ -368,7 +368,7 @@ class DocAccess(ndb.Model):
     hidecontext = ndb.BooleanProperty(default=False, indexed=False)
     
     # backlogs and session-references
-    deltalog = ndb.StructuredProperty(DeltaLog, repeated=True, indexed=False)
+    #deltalog = ndb.StructuredProperty(DeltaLog, repeated=True, indexed=False)
     sync_sessions = ndb.StringProperty(repeated=True, indexed=False)
 
     # various timestamps
@@ -393,9 +393,6 @@ class DocAccess(ndb.Model):
         self.last_access_at = datetime.now()
         self.put()
         return sess
-
-    def _pre_put_hook(self):
-        self.deltalog = self.deltalog[:100]
 
     def _post_put_hook(self, future):
         taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')

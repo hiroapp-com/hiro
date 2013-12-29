@@ -553,8 +553,8 @@ def sync_doc(doc_id):
                 doc.text = cached_doc['text']
                 doc.put_async()
                 access.last_change_at = datetime.now()
-                for d in deltas:
-                    access.deltalog.insert(0, DeltaLog(delta=d['delta'], timestamp=access.last_change_at))
+                #for d in deltas:
+                #    access.deltalog.insert(0, DeltaLog(delta=d['delta'], timestamp=access.last_change_at))
             else:
                 # CAS timestamp expired, try all over again
                 continue
