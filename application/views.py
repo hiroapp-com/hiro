@@ -259,31 +259,48 @@ def list_documents():
     else:
         group_key = lambda d: d.get(group_by)
 
-    docs = defaultdict(list)
-    dbdocs = ndb.get_multi(list(DocAccess.query(DocAccess.user == current_user.key).iter(keys_only=True)))
-    for da in dbdocs:
-        doc = da.doc.get()
-        last_editor = doc.last_update_by.get() if doc.last_update_by else None
-        docs[group_key(da.to_dict())].append({ 
-            "id": doc.key.id(),
-            "title": doc.title,
+    doc_accesses = ndb.get_multi(list(DocAccess.query(DocAccess.user == current_user.key).iter(keys_only=True)))
+    docs_fut = ndb.get_multi_async([da.doc for da in doc_accesses])
+    # first populate info we already have from doc-accesses, 
+    docs = dict()
+    for da in doc_accesses:
+        docs[da.doc] = { 
+            "id": da.doc.id(),
+            "title": '',
             "status": da.status,
             "role": da.role,
             "created": time.mktime(da.created_at.timetuple()),
             "updated": time.mktime(da.last_change_at.timetuple()),
-            "shared": len(doc.access_list) > 1,
-            "unseen": doc.last_update_at > da.last_access_at,
-            "last_doc_update": {
+            "shared": False,
+            "unseen": False,
+            "last_doc_update": None 
+            }
+
+    # next fill in all the (async-fetched) doc-data
+    for doc in (d.get_result() for d in docs_fut):
+        last_update = None
+        if doc.last_update_by and doc.last_update_by != current_user.key:
+            last_editor = doc.last_update_by.get() 
+            last_update = {
                 "updated": time.mktime(doc.last_update_at.timetuple()),
                 "name": last_editor.name if last_editor else None,
                 "email": last_editor.email if last_editor else None,
                 }
+        docs[doc.key].update({
+            "title": doc.title,
+            "shared": len(doc.access_list) > 1,
+            "unseen": doc.last_update_at > da.last_access_at,
+            "last_doc_update": last_update,
             })
-    
 
-    # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks    
+    # sort and filter the output
+    doclist = defaultdict(list)
+    for doc in sorted(docs.values(), key=lambda d: d.get('updated'), reverse=True):
+        doclist[group_key(doc)].append(doc)
+
+    # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks
     docs['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
-    return jsonify(docs)
+    return jsonify(doclist)
 
 
 @login_required
