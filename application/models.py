@@ -58,7 +58,8 @@ class User(UserMixin, ndb.Model):
     def push_message(self, msg):
         i = 0
         for da in DocAccess.query(DocAccess.user == self.key):
-            for sess_id in da.sync_sessions:
+            sess_ids = da.sync_sessions[:]
+            for sess_id in sess_ids:
                 sess = SyncSession.fetch(sess_id)
                 if sess:
                     sess.push(msg)
@@ -66,7 +67,10 @@ class User(UserMixin, ndb.Model):
                 else:
                     # session expired, remove from list
                     da.sync_sessions.remove(sess_id)
-                    da.put()
+
+            if len(da.sync_sessions) < len(sess_ids):
+                # session-list has been modified, save it!
+                da.put()
         return i
 
 
