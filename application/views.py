@@ -299,7 +299,7 @@ def list_documents():
         doclist[group_key(doc)].append(doc)
 
     # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks
-    docs['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
+    doclist['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
     return jsonify(doclist)
 
 
