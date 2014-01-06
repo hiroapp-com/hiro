@@ -590,8 +590,8 @@ def notify_sessions():
     doc = Document.get_by_id(doc_id)
     sess = SyncSession.fetch(sess_id)
     if not doc or not sess or not sess['user_id']:
-        #something went wrong...
-        return
+        #something went wrong, e.g. session timed out etc
+        return 'noop'
     user = User.get_by_id(sess['user_id'])
     msg = {"kind": "edit", 
            "doc_id": doc.key.id(), 
