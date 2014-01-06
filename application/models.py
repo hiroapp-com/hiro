@@ -340,8 +340,8 @@ class Document(ndb.Model):
                 "shared": DocAccess.query(DocAccess.doc == self.key).count() > 1,
                 "links": {
                     "normal": [], #TODO deprecate this in js client
-                    "sticky": self.sticky,
-                    "blacklist": self.blacklist
+                    "sticky": self.sticky or [],
+                    "blacklist": self.blacklist or []
                     }
                 }
 
