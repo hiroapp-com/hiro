@@ -250,7 +250,7 @@ var WPCLib = {
 					var statline = WPCLib.util.humanizeTimestamp(lastupdate) + " ago";
 					// Check if document was last updated by somebody else
 					// We also have to check the time difference including slight deviatian because our own updates are set by two different functions
-					if (data.last_doc_update && data.last_doc_update.email != WPCLib.sys.user.email && data.updated <= (data.last_doc_update.updated + 10)) {
+					if (data.last_doc_update) {
 						statline = statline + ' by ' + (data.last_doc_update.name || data.last_doc_update.email); 
 					}					
 					stats.appendChild(document.createTextNode(statline));
@@ -1832,6 +1832,7 @@ var WPCLib = {
             	if (ownuser) {
             		el.updated = WPCLib.util.now();  
             	} else {
+            		if (!el.last_doc_update) el.last_doc_update = {};
             		el.last_doc_update.updated = WPCLib.util.now();
             		el.last_doc_update.name = data.origin.name;  
             		el.last_doc_update.email = data.origin.email;            		          		
