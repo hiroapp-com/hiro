@@ -1472,7 +1472,7 @@ var WPCLib = {
                 };
 
                 // If we have set the resend flag
-                if (resend) this.addedit('Syncing...',true);
+                if (resend) this.addedit(true,'Syncing...');
 
 				// Initiate Keepalive
 				clearTimeout(WPCLib.canvas.sync.keepalive);				
@@ -1609,7 +1609,17 @@ var WPCLib = {
 
                         // Retry if it was just a sync session timeout (20 mins)
                         if (xhr.status == 412 || textStatus == 'Precondition Failed') {
-							WPCLib.canvas.sync.begin(xhr.responseJSON.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
+                        	var sv = xhr.responseJSON.text,
+                        	    lv = WPCLib.canvas.sync.shadow;
+
+                        	// See if the client/server versions differ, build and apply patch if
+                        	if (sv != lv) {
+                        		// Build delta from 'old' local version and 'new' server version
+                        		var delta = WPCLib.canvas.sync.delta(lv,sv);
+                        		WPCLib.canvas.sync.patch(delta);
+                        	}    
+
+							WPCLib.canvas.sync.begin(sv,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
                         	return;
                         }
 
