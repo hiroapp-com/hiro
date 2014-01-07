@@ -250,6 +250,35 @@ def settings():
 def test():
     return render_template('test.html')    
 
+@ndb.tasklet
+def fetch_docinfo(da):
+    doc = yield da.doc.get_async()
+    if doc.last_update_by:
+        if doc.last_update_by != current_user.key:
+            last_editor = yield doc.last_update_by.get_async()
+        else:
+            last_editor = current_user
+    last_update = None
+    if last_editor.key != current_user.key:
+        last_update = {
+            "updated": time.mktime(doc.last_update_at.timetuple()),
+            "name": last_editor.name if last_editor else None,
+            "email": last_editor.email if last_editor else None,
+            }
+    raise ndb.Return({ 
+           "id": da.doc.id(),
+           "title": doc.title,
+           "status": da.status,
+           "role": da.role,
+           "created": time.mktime(da.created_at.timetuple()),
+           "updated": time.mktime(da.last_change_at.timetuple()),
+           "shared": len(doc.access_list) > 1,
+           "unseen": last_editor.key != current_user.key and doc.last_update_at > da.last_access_at,
+           "last_doc_update": last_update
+           })
+
+
+
 @login_required
 def list_documents():
     group_by = request.args.get('group_by')
@@ -259,39 +288,10 @@ def list_documents():
     else:
         group_key = lambda d: d.get(group_by)
 
-    doc_accesses = ndb.get_multi(list(DocAccess.query(DocAccess.user == current_user.key).iter(keys_only=True)))
-    docs_fut = ndb.get_multi_async([da.doc for da in doc_accesses])
-    # first populate info we already have from doc-accesses, 
     docs = dict()
-    for da in doc_accesses:
-        docs[da.doc] = { 
-            "id": da.doc.id(),
-            "title": '',
-            "status": da.status,
-            "role": da.role,
-            "created": time.mktime(da.created_at.timetuple()),
-            "updated": time.mktime(da.last_change_at.timetuple()),
-            "shared": False,
-            "unseen": False,
-            "last_doc_update": None 
-            }
-
-    # next fill in all the (async-fetched) doc-data
-    for doc in (d.get_result() for d in docs_fut):
-        last_update = None
-        if doc.last_update_by and doc.last_update_by != current_user.key:
-            last_editor = doc.last_update_by.get() 
-            last_update = {
-                "updated": time.mktime(doc.last_update_at.timetuple()),
-                "name": last_editor.name if last_editor else None,
-                "email": last_editor.email if last_editor else None,
-                }
-        docs[doc.key].update({
-            "title": doc.title,
-            "shared": len(doc.access_list) > 1,
-            "unseen": doc.last_update_at > da.last_access_at,
-            "last_doc_update": last_update,
-            })
+    docs_fetcher = DocAccess.query(DocAccess.user == current_user.key).map(fetch_docinfo, limit=100)
+    for doc in docs_fetcher:
+        docs[doc['id']] = doc
 
     # sort and filter the output
     doclist = defaultdict(list)
