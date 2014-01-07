@@ -319,7 +319,8 @@ var WPCLib = {
 				// Attach events to doc links
 				WPCLib.util.registerEvent(el.firstChild,'click', function() {
 					WPCLib.folio.docs.moveup(docid,active);
-					WPCLib.canvas.loaddoc(docid, title);											
+					WPCLib.canvas.loaddoc(docid, title);
+					WPCLib.ui.menuHide();																
 				});				
 			},
 
@@ -685,7 +686,10 @@ var WPCLib = {
 				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);
 
 				// Cancel safariinit after enough time passed to focus textarea fast after that
-				if (this.safariinit) setTimeout( function() { WPCLib.canvas.safariinit = false; },5000);				
+				if (this.safariinit) setTimeout( function() { WPCLib.canvas.safariinit = false; },5000);	
+
+				// Set defaulttitle to something more descriptive on touch devices
+				this.defaultTitle = 'Title';			
 
 			} else {
 				// click on the page puts focus on textarea
@@ -872,7 +876,6 @@ var WPCLib = {
 			// If we already know the title, we shorten the waiting time
 			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
 			document.getElementById(WPCLib.context.statusId).value = 'Loading...';			
-			WPCLib.ui.menuHide();
 			if (mobile && document.getElementById(WPCLib.context.id).style.display=='block') WPCLib.context.switchview();
 
 
@@ -3502,7 +3505,9 @@ var WPCLib = {
 
 		error: function(data) {
 			// Pipe errors into Sentry
-			if ('Raven' in window) Raven.captureMessage('General Error: ' + JSON.stringify(data) + ', ' + arguments.callee.caller.toString());
+			var err = new Error();
+			var stacktrace = err.stack || arguments.callee.caller.toString();
+			if ('Raven' in window) Raven.captureMessage('General Error for version ' + WPCLib.sys.version + ': ' + JSON.stringify(data) + ', ' + stacktrace);
 			WPCLib.sys.log('Dang, something went wrong: ',data);
 		},
 
@@ -4454,7 +4459,11 @@ var WPCLib = {
 
 			inc: function(inc) {
 				// Increment n inc
-				if (!this.active) return;				
+				if (!this.active) return;	
+
+				// Return if we'd increment beyond 1	
+				if (this.progress + inc > 1) return;
+
 				this.progress = this.progress + inc;
 				this._setbarcss(this.progress);				
 			},
