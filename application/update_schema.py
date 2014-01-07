@@ -1,34 +1,28 @@
 import logging
-from datetime import datetime
 
-from .models import Document, DocAccess
+from .models import User, Document, DocAccess
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
 
-BATCH_SIZE = 100  # ideal batch size may vary based on entity size.
+BATCH_SIZE = 1000  # ideal batch size may vary based on entity size.
 
 def UpdateSchema(cursor=None, num_updated=0):
-    query = Document.query()
+    query = User.query()
     logging.debug('start one update run')
 
-    nao = datetime.now()
     to_put = []
-    docs, next_cursor, more = query.fetch_page(BATCH_SIZE, start_cursor=cursor)
-    for doc in docs:
-        #logging.debug('doc {0}'.format(doc.key.id()))
-        last_changed = doc.updated_at
-        if not DocAccess.query(DocAccess.doc == doc.key, DocAccess.role == 'owner', DocAccess.user == doc.owner).get():
-            da, _ = DocAccess.create(doc, user=doc.owner.get(), role='owner', status='active')
-            da.last_access_at = nao
-            da.last_change_at = last_changed
-            to_put.append(da)
-        for u in doc.shared_with:
-            if not DocAccess.query(DocAccess.doc == doc.key, DocAccess.role == 'collab', DocAccess.user == u).get():
-                sda, _ = DocAccess.create(doc, user=u.get(), role='collab', status='active')
-                sda.last_access_at = nao
-                sda.last_change_at = last_changed
-                to_put.append(sda)
-
+    ents, next_cursor, more = query.fetch_page(BATCH_SIZE, start_cursor=cursor)
+    for ent in ents:
+        put = False
+        if 'docs_seen' in ent._properties:
+            del ent._properties['docs_seen']
+            put = True
+        if put:
+            to_put.append(ent)
+        #doc.sticky = doc.json_sticky 
+        #doc.blacklist = doc.json_blacklist 
+        #doc.cached_ser = doc.json_cached_ser 
+        #to_put.append(doc)
 
     logging.debug('found {0} items to put'.format(len(to_put)))
     if to_put:

@@ -8,7 +8,7 @@ from datetime import datetime
 import stripe
 from passlib.hash import pbkdf2_sha512
 from google.appengine.ext import ndb
-from google.appengine.api import memcache
+from google.appengine.api import memcache, taskqueue
 from flask.ext.login import UserMixin, AnonymousUser
 from flask import session, url_for
 from textmodels.textrank import get_top_keywords_list
@@ -58,7 +58,8 @@ class User(UserMixin, ndb.Model):
     def push_message(self, msg):
         i = 0
         for da in DocAccess.query(DocAccess.user == self.key):
-            for sess_id in da.sync_sessions:
+            sess_ids = da.sync_sessions[:]
+            for sess_id in sess_ids:
                 sess = SyncSession.fetch(sess_id)
                 if sess:
                     sess.push(msg)
@@ -66,7 +67,10 @@ class User(UserMixin, ndb.Model):
                 else:
                     # session expired, remove from list
                     da.sync_sessions.remove(sess_id)
-            da.put()
+
+            if len(da.sync_sessions) < len(sess_ids):
+                # session-list has been modified, save it!
+                da.put()
         return i
 
 
@@ -253,17 +257,21 @@ class Document(ndb.Model):
     title = ndb.StringProperty()
     status = ndb.StringProperty(default='active', choices=('active', 'archived')) 
     text = ndb.TextProperty()
-    cursor = ndb.IntegerProperty()
-    hidecontext = ndb.BooleanProperty()
+    cursor = ndb.IntegerProperty(indexed=False)
+    hidecontext = ndb.BooleanProperty(indexed=False)
     created_at = ndb.DateTimeProperty(auto_now_add=True)
+    #note: updated_at will soon be deprecated
     updated_at = ndb.DateTimeProperty(auto_now=True)
-    #NOTE shared_with will be removed after migration to DocAccess
-    shared_with = ndb.KeyProperty(kind=User, repeated=True)
+
+    # de-normalized properties updated async by TaskQueue
+    last_update_at = ndb.DateTimeProperty()
+    last_update_by = ndb.KeyProperty(kind=User)
+    access_list = ndb.KeyProperty(kind='DocAccess', repeated=True)
 
     # contextual links
-    sticky = ndb.StructuredProperty(Link, repeated=True)
-    blacklist = ndb.StructuredProperty(Link, repeated=True)
-    cached_ser = ndb.StructuredProperty(Link, repeated=True)
+    sticky = ndb.JsonProperty()
+    blacklist = ndb.JsonProperty()
+
 
     excerpt = property(lambda s: s.text[:500])
 
@@ -335,16 +343,16 @@ class Document(ndb.Model):
                 "hidecontext": self.hidecontext,
                 "shared": DocAccess.query(DocAccess.doc == self.key).count() > 1,
                 "links": {
-                    "normal": [c.to_dict() for c in self.cached_ser],
-                    "sticky": [c.to_dict() for c in self.sticky],
-                    "blacklist": [c.url for c in self.blacklist]
+                    "normal": [], #TODO deprecate this in js client
+                    "sticky": self.sticky or [],
+                    "blacklist": self.blacklist or []
                     }
                 }
 
 
 class DeltaLog(ndb.Model):
-    delta = ndb.JsonProperty('d')
-    timestamp = ndb.DateTimeProperty('ts', auto_now_add=True)
+    delta = ndb.JsonProperty('d', indexed=False)
+    timestamp = ndb.DateTimeProperty('ts', auto_now_add=True, indexed=False)
 
 
 class DocAccess(ndb.Model):
@@ -361,10 +369,11 @@ class DocAccess(ndb.Model):
     user = ndb.KeyProperty(kind=User)
     email = ndb.StringProperty()
     token_hash =  ndb.StringProperty()
+    hidecontext = ndb.BooleanProperty(default=False, indexed=False)
     
     # backlogs and session-references
-    deltalog = ndb.StructuredProperty(DeltaLog, repeated=True)
-    sync_sessions = ndb.StringProperty(repeated=True)
+    #deltalog = ndb.StructuredProperty(DeltaLog, repeated=True, indexed=False)
+    sync_sessions = ndb.StringProperty(repeated=True, indexed=False)
 
     # various timestamps
     last_change_at = ndb.DateTimeProperty(default=datetime.min) # will not be updated on "=<len>"(no-op) deltas
@@ -373,29 +382,28 @@ class DocAccess(ndb.Model):
 
     
     @classmethod
-    def create(cls, doc, user=None, role='collab', status='invited', email=None):
+    def create(cls, doc, user=None, role='collab', status='invited', **kwargs):
         token = uuid.uuid4().hex
         hashed = sha512(token).hexdigest()
-        obj = cls(token_hash=hashed, doc=doc.key, role=role, status=status, email=email)
+        obj = cls(token_hash=hashed, doc=doc.key, role=role, status=status, **kwargs)
         if user:
             obj.user = user.key
         obj.put()
         return obj, token
 
-    def tick_seen(self, also_changed=False):
-        self.last_access_at = datetime.now()
-        if also_changed:
-            self.last_change_at = self.last_access_at
-        self.put()
-
     def create_session(self):
         sess = SyncSession.create(self.doc.get().text, user_id=(self.user.id() if self.user else None))
         self.sync_sessions.append(sess['session_id'])
+        self.last_access_at = datetime.now()
         self.put()
         return sess
 
-    def _pre_put_hook(self):
-        self.deltalog = self.deltalog[:100]
+    def _post_put_hook(self, future):
+        taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')
+
+    def _post_delete_hook(self):
+        taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')
+        
 
 
 

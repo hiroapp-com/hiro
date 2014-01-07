@@ -23,9 +23,19 @@ class SyncSession(dict):
         self['edit_stack'] = []
         super(SyncSession, self).__init__(*args, **kwargs)
 
-    def debug_state(self, prefix=""):
-        out = "{2}cv: {0[client_version]}\t sv: {0[server_version]}\t shadow: `{0[shadow]}`\t\t backup: `{0[backup]}` \t\t editstack: {1}".format(self, ";".join(["{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in self['edit_stack']]), prefix)
-        logging.error(out)
+    def debug_state(self, doc=None, incoming_stack=None, prefix=""):
+        try:
+            out_stack = u";".join([u"{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in self['edit_stack']])
+            logging.error(u"{prefix} cv: {self[client_version]}\t sv: {self[server_version]}\t shadow: `{self[shadow]}`\t\t backup: `{self[backup]}` \t\t editstack: {out_stack}".format(**locals()))
+
+            if doc:
+                logging.error(u"{prefix} doc.text: `{doc[text]}`".format(**locals()))
+            if incoming_stack:
+                in_stack = u";".join([u"{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in incoming_stack])
+                logging.error(u"{prefix} incoming stack: {in_stack}".format(**locals()))
+        except e:
+            #make sure nuthin (encoding issues etc) will explode in the debug output
+            logging.error(u"meta-debug: debug call crashed")
 
     @classmethod
     def gen_sessionid(cls):
@@ -68,6 +78,7 @@ class SyncSession(dict):
             # if server-ACK lost, rollback to backup
             if sv != self['server_version'] and sv == self['backup_version']:
                 print "SV MISMATCH: RECOVERING FROM BACKUP"
+                self.debug_state(incoming_stack=stack)
                 shadow = self['backup']
                 self['server_version'] = self['backup_version']
                 self['edit_stack'] = []
@@ -80,11 +91,13 @@ class SyncSession(dict):
                 # version mismatch
                 #request re-sync
                 logging.error("SV MISMATCH - resync")
+                self.debug_state(doc=doc, incoming_stack=stack)
                 ok = False
             elif cv > self['client_version']:
                 # client in the future?
                 #request re-sync
                 logging.error("CV MISMATCH - resync")
+                self.debug_state(incoming_stack=stack)
                 ok = False
             elif cv < self['client_version']:
                 # dupe
@@ -99,8 +112,7 @@ class SyncSession(dict):
                     diffs = None
                     ok = False
                     logging.error("==================== COULD NOT MERGE - resync, state: ")
-                    self.debug_state("err\t")
-                    logging.error("doc.text: `{0[text]}` stack: {1}".format(doc, ";".join(["{0[clientversion]}:{0[serverversion]}:{0[delta]}".format(d) for d in stack])))
+                    self.debug_state(doc=doc, incoming_stack=stack)
                 self['client_version'] += 1
                 if diffs:
                     # patch master-doc

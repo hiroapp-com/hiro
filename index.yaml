@@ -36,6 +36,14 @@ indexes:
 
 - kind: Document
   properties:
+  - name: __key__
+  - name: access_list
+  - name: last_update_at
+  - name: last_update_by
+  - name: title
+
+- kind: Document
+  properties:
   - name: owner
   - name: updated_at
     direction: desc

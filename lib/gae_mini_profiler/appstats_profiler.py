@@ -134,7 +134,7 @@ class Profile(object):
 
     def wrap(self, app):
         """Wrap and return a WSGI application with appstats recording enabled.
-        
+
         Args:
             app: existing WSGI application to be wrapped
         Returns:

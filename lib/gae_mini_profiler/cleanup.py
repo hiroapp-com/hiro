@@ -50,7 +50,7 @@ def memcache_get_response(response):
 
     items = response['item']
     for i, item in enumerate(items):
-        if type(item) == dict:
+        if isinstance(item, dict):
             if 'MemcacheGetResponse_Item' in item:
                 # This key exists in dev and in the 'python' production runtime.
                 item = item['MemcacheGetResponse_Item']['value']
@@ -163,8 +163,9 @@ def datastore_query_filter(query):
             if 'value' in p:
 
                 propval = p['value']['PropertyValue']
-
-                if 'stringvalue' in propval:
+                if len(propval) == 0:
+                    value = ''
+                elif 'stringvalue' in propval:
                     value = propval["stringvalue"]
                 elif 'referencevalue' in propval:
                     if 'PropertyValue_ReferenceValue' in propval['referencevalue']:
@@ -179,6 +180,8 @@ def datastore_query_filter(query):
                         if 'PropertyValue_ReferenceValuePathElement' in el:
                             # This key exists in dev and in the 'python' production runtime.
                             path = el['PropertyValue_ReferenceValuePathElement']
+                        elif 'PathElement' in el:
+                            path = el['PathElement']
                         else:
                             # But it's a different key in the 'python27' production runtime.
                             path = el['ReferenceValuePathElement']
@@ -242,7 +245,7 @@ def datastore_get(request):
         return cleanup_key(keys[0])
 
 def cleanup_key(key):
-    if 'Reference' not in key: 
+    if 'Reference' not in key:
         #sometimes key is passed in as '...'
         return key
     els = key['Reference']['path']['Path']['element']

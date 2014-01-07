@@ -27,6 +27,7 @@ from flask.ext.login import current_user, login_user, logout_user, login_require
 from flask.ext.oauth import OAuth
 from pattern.web import Yahoo
 from google.appengine.api import memcache, channel, taskqueue, urlfetch
+from google.appengine.ext import ndb
 from bs4 import BeautifulSoup
 
 
@@ -258,31 +259,48 @@ def list_documents():
     else:
         group_key = lambda d: d.get(group_by)
 
-    docs = defaultdict(list)
-    for da in DocAccess.query(DocAccess.user == current_user.key).order(-DocAccess.last_change_at):
-        doc = da.doc.get()
-        is_shared = DocAccess.query(DocAccess.doc == da.doc).count() > 1
-        last_da = DocAccess.query(DocAccess.doc == da.doc).order(-DocAccess.last_change_at).get()
-        docs[group_key(doc.to_dict())].append({ 
-            "id": doc.key.id(),
-            "title": doc.title,
+    doc_accesses = ndb.get_multi(list(DocAccess.query(DocAccess.user == current_user.key).iter(keys_only=True)))
+    docs_fut = ndb.get_multi_async([da.doc for da in doc_accesses])
+    # first populate info we already have from doc-accesses, 
+    docs = dict()
+    for da in doc_accesses:
+        docs[da.doc] = { 
+            "id": da.doc.id(),
+            "title": '',
             "status": da.status,
             "role": da.role,
             "created": time.mktime(da.created_at.timetuple()),
             "updated": time.mktime(da.last_change_at.timetuple()),
-            "shared": is_shared,
-            "unseen": last_da.last_change_at > da.last_access_at,
-            "last_doc_update": {
-                "updated": time.mktime(last_da.last_change_at.timetuple()),
-                "name": last_da.user.get().name if last_da.user else None,
-                "email": last_da.user.get().email if last_da.user else last_da.email,
-                }
-            })
-    
+            "shared": False,
+            "unseen": False,
+            "last_doc_update": None 
+            }
 
-    # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks    
-    docs['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
-    return jsonify(docs)
+    # next fill in all the (async-fetched) doc-data
+    for doc in (d.get_result() for d in docs_fut):
+        last_update = None
+        if doc.last_update_by and doc.last_update_by != current_user.key:
+            last_editor = doc.last_update_by.get() 
+            last_update = {
+                "updated": time.mktime(doc.last_update_at.timetuple()),
+                "name": last_editor.name if last_editor else None,
+                "email": last_editor.email if last_editor else None,
+                }
+        docs[doc.key].update({
+            "title": doc.title,
+            "shared": len(doc.access_list) > 1,
+            "unseen": doc.last_update_at > da.last_access_at,
+            "last_doc_update": last_update,
+            })
+
+    # sort and filter the output
+    doclist = defaultdict(list)
+    for doc in sorted(docs.values(), key=lambda d: d.get('updated'), reverse=True):
+        doclist[group_key(doc)].append(doc)
+
+    # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks
+    doclist['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
+    return jsonify(doclist)
 
 
 @login_required
@@ -298,16 +316,19 @@ def create_document():
     doc.title = data.get('title') 
     doc.text = data.get('text', '')
     doc.cursor = data.get('cursor', 0)
-    doc.hidecontext = data.get('hidecontext', False)
 
     links = data.get('links', {})
-    doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
-    doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
-    doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
+    doc.sticky = links.get('sticky', [])
+    doc.blacklist = links.get('blacklist', [])
     doc_id = doc.put()
 
-    da, _ = DocAccess.create(doc, user=current_user, role='owner', status='active') 
-    da.tick_seen(also_changed=True)
+    da, _ = DocAccess.create(doc, 
+                             user=current_user, 
+                             role='owner', 
+                             status='active', 
+                             hidecontext=data.get('hidecontext', False),
+                             last_access_at=datetime.now(),
+                             last_change_at=datetime.now()) 
     sess = da.create_session()
     resp = jsonify(doc_id=doc_id.id())
     resp.status = '201'
@@ -328,20 +349,27 @@ def edit_document(doc_id):
     if not access:
         return "access denied, sorry.", 403
 
+    # save Document specific data
     doc.title = data.get('title', doc.title)
-    #TODO save status in DocAccess instance, not Document itself
-    doc.status = data.get('status', doc.status)
-    #doc.text = data.get('text', doc.text)
     doc.cursor = data.get('cursor', doc.cursor)
-    doc.hidecontext = data.get('hidecontext', doc.hidecontext)
     links = data.get('links', {})
-    if links.get('normal') is not None:
-        doc.cached_ser = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('normal', [])]
     if links.get('sticky') is not None:
-        doc.sticky = [Link(url=d['url'], title=d['title'], description=d['description'])  for d in links.get('sticky', [])]
+        doc.sticky = links.get('sticky', [])
     if links.get('blacklist') is not None:
-        doc.blacklist = [Link(url=url)  for url in links.get('blacklist', [])]
+        doc.blacklist = links.get('blacklist', [])
     doc.put()
+
+    # save DocAccess specific data
+    put_access = False
+    if data.get('status') in ('active', 'archived'):
+        access.status = data.get('status')
+        put_access = True
+    if data.get('hidecontext'):
+        access.hidecontext = data.get('hidecontext')
+        put_access = True
+    if put_access: 
+        access.put()
+
     return "", 204
 
 @login_required
@@ -352,10 +380,14 @@ def get_document(doc_id):
     access = doc.grant(current_user, request.headers.get("accesstoken"))
     if not access:
         return "access denied, sorry.", 403
-    access.tick_seen()
 
     sess = access.create_session()
-    resp = jsonify(doc.api_dict())
+    docinfo = doc.api_dict()
+    docinfo.update({
+        'updated': time.mktime(access.last_change_at.timetuple()),
+        'hidecontext': access.hidecontext,
+        })
+    resp = jsonify(docinfo)
     resp.headers['Collab-Session-ID'] = sess['session_id']
     resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
     return resp
@@ -388,7 +420,7 @@ def doc_collaborators(doc_id):
         else:
             return "", 400
     else: # GET 
-        collabs = DocAccess.query(DocAccess.doc == doc.key).order(DocAccess.role, DocAccess.status)
+        collabs = ndb.get_multi(list(DocAccess.query(DocAccess.doc == doc.key).order(DocAccess.role, DocAccess.status).iter(keys_only=True)))
         res = [{"access_id": x.key.id(),
                 "role": x.role,
                 "status": x.status,
@@ -519,7 +551,6 @@ def sync_doc(doc_id):
             resp.status = "412"
             resp.headers['Collab-Session-ID'] = sess['session_id']
             resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-            access.tick_seen() 
             return resp
         elif not sess['user_id'] == current_user.key.id():
             return "not your sync session {0} != {1}".format(sess['user_id'], current_user.key.id()), 403
@@ -539,8 +570,8 @@ def sync_doc(doc_id):
                 doc.text = cached_doc['text']
                 doc.put_async()
                 access.last_change_at = datetime.now()
-                for d in deltas:
-                    access.deltalog.insert(0, DeltaLog(delta=d['delta'], timestamp=access.last_change_at))
+                #for d in deltas:
+                #    access.deltalog.insert(0, DeltaLog(delta=d['delta'], timestamp=access.last_change_at))
             else:
                 # CAS timestamp expired, try all over again
                 continue
@@ -548,7 +579,8 @@ def sync_doc(doc_id):
             # master doc not changed, only persist session
             sess.save()
 
-        access.tick_seen() 
+        access.last_access_at = datetime.now()
+        access.put()
         return jsonify(session_id=sess_id, deltas=sess['edit_stack'])
     return jsonify_err(400, "could not acquire lock for masterdoc")
 
@@ -558,8 +590,8 @@ def notify_sessions():
     doc = Document.get_by_id(doc_id)
     sess = SyncSession.fetch(sess_id)
     if not doc or not sess or not sess['user_id']:
-        #something went wrong...
-        return
+        #something went wrong, e.g. session timed out etc
+        return 'noop'
     user = User.get_by_id(sess['user_id'])
     msg = {"kind": "edit", 
            "doc_id": doc.key.id(), 
@@ -577,9 +609,26 @@ def notify_sessions():
 
 
 def schemamigration(ptr=0):
-    #import update_schema
-    #from google.appengine.ext import deferred
-    #deferred.defer(update_schema.UpdateSchema)
+    import update_schema
+    from google.appengine.ext import deferred
+    deferred.defer(update_schema.UpdateSchema)
+    return 'ok'
+
+
+def update_doc_stats():
+    doc_id = request.form.get('doc_id')
+    doc = Document.get_by_id(doc_id)
+
+    # update timestamps
+    last_da = DocAccess.query(DocAccess.doc == doc.key).order(-DocAccess.last_change_at).get()
+    if doc.last_update_at == last_da :
+        return 'skipped; already uptodate'
+    doc.last_update_at = last_da.last_change_at
+    doc.last_update_by = last_da.user
+
+    # update access-list
+    doc.access_list = [k for k in DocAccess.query(DocAccess.doc == doc.key).iter(keys_only=True)]
+    doc.put()
     return 'ok'
 
 
