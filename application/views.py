@@ -41,6 +41,16 @@ from .decorators import limit_free_plans, root_required
 from .email_templates import send_mail_tpl
 
 
+DA_ROLE_ORDER = {
+        'owner': '1',
+        'collab': '2',
+        }
+DA_STATUS_ORDER = {
+        'active': '1',
+        'invited': '2',
+        'archived': '3',
+        }
+
 
 base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
 
@@ -393,6 +403,21 @@ def get_document(doc_id):
     return resp
 
 
+@ndb.tasklet
+def fetch_collabinfo(da):
+    uid, name, email = None, None, da.email
+    if da.user:
+        user = yield da.user.get_async()
+        uid, name, email = user.key.id(), user.name, user.email
+    raise ndb.Return({"access_id": da.key.id(),
+            "role": da.role,
+            "status": da.status,
+            "created": time.mktime(da.created_at.timetuple()),
+            "user_id": uid,
+            "email": email,
+            "name": name,
+            })
+
 @login_required
 def doc_collaborators(doc_id):
     doc = Document.get_by_id(doc_id)
@@ -420,14 +445,8 @@ def doc_collaborators(doc_id):
         else:
             return "", 400
     else: # GET 
-        collabs = ndb.get_multi(list(DocAccess.query(DocAccess.doc == doc.key).order(DocAccess.role, DocAccess.status).iter(keys_only=True)))
-        res = [{"access_id": x.key.id(),
-                "role": x.role,
-                "status": x.status,
-                "user_id": x.user and x.user.id() or None,
-                "email": x.user and x.user.get().email or x.email,
-                "name": x.user and x.user.get().name or None,
-                } for x in collabs]
+        res = list(DocAccess.query(DocAccess.doc == doc.key).map(fetch_collabinfo))
+        res.sort(key=lambda c: u''.join([DA_ROLE_ORDER[c['role']], DA_STATUS_ORDER[c['status']], str(c['created'])]))
         return Response(json.dumps(res, indent=4), mimetype="application/json")
 
 
