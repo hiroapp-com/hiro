@@ -395,8 +395,7 @@ class DocAccess(ndb.Model):
         sess = SyncSession.create(self.doc.get().text, user_id=(self.user.id() if self.user else None))
         self.sync_sessions.append(sess['session_id'])
         self.last_access_at = datetime.now()
-        self.put()
-        return sess
+        return sess, self.put_async()
 
     def _post_put_hook(self, future):
         taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')

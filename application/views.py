@@ -314,6 +314,7 @@ def list_documents():
 
 
 @login_required
+@ndb.toplevel
 def create_document():
     #TODO sanitize & validate payload
     data = request.json
@@ -339,7 +340,7 @@ def create_document():
                              hidecontext=data.get('hidecontext', False),
                              last_access_at=datetime.now(),
                              last_change_at=datetime.now()) 
-    sess = da.create_session()
+    sess, _ = da.create_session()
     resp = jsonify(doc_id=doc_id.id())
     resp.status = '201'
     resp.headers['Collab-Session-ID'] = sess['session_id']
@@ -383,6 +384,7 @@ def edit_document(doc_id):
     return "", 204
 
 @login_required
+@ndb.toplevel
 def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
@@ -391,7 +393,7 @@ def get_document(doc_id):
     if not access:
         return "access denied, sorry.", 403
 
-    sess = access.create_session()
+    sess, _ = access.create_session()
     docinfo = doc.api_dict()
     docinfo.update({
         'updated': time.mktime(access.last_change_at.timetuple()),
@@ -565,11 +567,12 @@ def sync_doc(doc_id):
         if not sess:
             # session expired r not found, create new and request re-init on client side
             # TODO refactor and DRY out the whole sess-create and populate headers flow
-            sess = access.create_session()
+            sess, future = access.create_session()
             resp = jsonify(doc.api_dict())
             resp.status = "412"
             resp.headers['Collab-Session-ID'] = sess['session_id']
             resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
+            future.get_result() #wait for the access.put_async() to finish
             return resp
         elif not sess['user_id'] == current_user.key.id():
             return "not your sync session {0} != {1}".format(sess['user_id'], current_user.key.id()), 403
