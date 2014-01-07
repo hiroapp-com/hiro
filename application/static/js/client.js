@@ -3317,16 +3317,16 @@ var WPCLib = {
 				WPCLib.util.registerEvent(window,'popstate', function(e) { WPCLib.util.goback(e); });			
 			}			
 
-			// Prevent browser window elasticity ontouch devices
-			if ('ontouchstart' in document.documentElement) {
-				document.addEventListener('touchmove',function(e) {e.preventDefault();},false);			
-			}
+			// TODO REMOVE CLEANUP Prevent browser window elasticity ontouch devices
+			// if ('ontouchstart' in document.documentElement) {
+				// document.addEventListener('touchmove',function(e) {e.preventDefault();},false);			
+			// }
 
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {
 				WPCLib.canvas._init();
-				// Remove address bar on mobile browsers
-				window.scrollTo(0,1);
+				// TODO REMOVE CLEANUP Remove address bar on mobile browsers
+				// window.scrollTo(0,1);
 				// Load settings into dialog
 				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);  										  							
 			});		
@@ -4670,20 +4670,37 @@ var WPCLib = {
 
 			// Attach events to signup input fields on very small browser, this is the only way to handle browser quirks
 			// That prevent users from signing up
-			if (('ontouchstart' in document.documentElement) && frame.body.offsetHeight < 900 && !this.scrollhandlers) {
-				var su_i = frame.getElementById('signup_mail'),
-					su_p = frame.getElementById('signup_pwd'),
+			if (('ontouchstart' in document.documentElement) && frame.body.offsetHeight < 600 && !this.scrollhandlers) {
+				var su_f = frame.getElementById('signupform'),
 					su_s = frame.getElementById('signuperror'),
-					si_i = frame.getElementById('signin_mail'),
-					si_p = frame.getElementById('signin_pwd'),					
+					si_f = frame.getElementById('loginform'),					
 					si_s = frame.getElementById('loginerror');
 
 				// Abort if user is signed in and thus fields do not exist /settings HTML
-				if (!su_i || !si_i) return;
-				WPCLib.util.registerEvent(su_i, 'focus', function() { su_s.scrollIntoView(); });
-				WPCLib.util.registerEvent(su_p, 'touchend', function() { setTimeout(function() {su_s.scrollIntoView();su_p.focus()},100);  });				
-				WPCLib.util.registerEvent(si_i, 'focus', function() { si_s.scrollIntoView(); });
-				WPCLib.util.registerEvent(si_p, 'touchend', function() { setTimeout(function() {si_s.scrollIntoView();si_p.focus()},100);  });					
+				if (!su_f || !si_f) return;
+
+				// If on a very small browser the client didn't scroll down to the form 
+				// we fall back to force scroll the error div at the end into view
+				WPCLib.util.registerEvent(su_f, 'touchend', function() { setTimeout(function() {
+					if (frame.body.scrollTop == 0) {
+						if (navigator.appVersion.indexOf('CriOS') > -1) {						
+							su_s.scrollIntoView();
+						} else {
+							var el = frame.document.activeElement;							
+							if (el) el.scrollIntoView();
+						}
+					}
+				},300);});				
+				WPCLib.util.registerEvent(si_f, 'touchend', function() { setTimeout(function() {							
+					if (frame.body.scrollTop == 0) {						
+						if (navigator.appVersion.indexOf('CriOS') > -1) {
+							si_s.scrollIntoView();
+						} else {
+							var el = frame.document.activeElement;							
+							if (el) el.scrollIntoView();
+						}
+					} 					
+				},300);});					
 
 				// Prevent setting this twice, someday we should clean this up and deal with eventhandlers in consistent manner				
 				this.scrollhandlers = true;

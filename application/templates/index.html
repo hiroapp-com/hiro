@@ -94,7 +94,8 @@
 					<div class="footer">Secure sharing with the simplicity of Hiro</div>					
 				</div>	
 			</div>						
-			<div class="page" id="page">	
+			<div class="page" id="page">
+				<form>	
                 {% if doc %}
 				<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
 				<div class="content" id ="content">
@@ -108,6 +109,7 @@
 				</div>
 				{% endwith %}
                 {% endif %}
+            	</form>
 			</div>	
 			<div id="nicequote" style="display:none;">
 				<span class="quote">“One day I will find the right words, and they will be simple.”</span>
