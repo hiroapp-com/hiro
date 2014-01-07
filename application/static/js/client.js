@@ -3006,8 +3006,8 @@ var WPCLib = {
 			}	
 			if (this.links.length == 0 && showtip) {
 				var tip = document.createElement('div'), msg, l = WPCLib.canvas.text.length;
-				if (l<500) msg = 'Nothing found';
-				if (l>499) msg = 'Tip: Try to select a different part.';
+				if (l<100) msg = 'Nothing found';
+				if (l>99) msg = 'Try to select a different part.';
 				tip.className = 'tip';
 				tip.innerHTML = msg;
 				newresults.appendChild(tip);
