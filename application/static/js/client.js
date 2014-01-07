@@ -68,9 +68,17 @@ var WPCLib = {
 				    timeout: 10000,
 				    success: function(data) {
 						// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
-						if (!data.active && !data.archived) {							
-							f.newdoc();
-							return;
+						// or because we got invited via token
+						if (!data.active && !data.archived) {	
+							if (WPCLib.sharing.token) {
+								// If we have a token we just call loaddocand let it figure out the rest via url / token
+								WPCLib.canvas.loaddoc();
+								return;
+							} else {
+								// User just signed up without playing around, create first doc from server
+								f.newdoc();
+								return;
+							}					
 						}	
 						if (data.active) f.active = data.active;
 						if (data.archived) f.archived = data.archived;						
@@ -828,7 +836,7 @@ var WPCLib = {
 			if (!this.saved) this.savedoc();
 
 			// Redirect to loadlocal if id should be localdoc
-			if (docid == 'localdoc') {
+			if (docid == 'localdoc' && !token) {
 				var ld = localStorage.getItem('WPCdoc');
 				if (ld) {
 					this.loadlocal(JSON.parse(ld)); 
@@ -902,7 +910,7 @@ var WPCLib = {
 					// Show data on canvas
 					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
 					var content = document.getElementById(that.contentId);
-					if (!that.preloaded && content.value != data.text) {
+					if (content.value != data.text) {
 						content.value = data.text;					
 						// Reset the canvas size to document contents in the next 2 steps
 						content.style.height = 'auto';					
@@ -1649,7 +1657,7 @@ var WPCLib = {
                     	for (i=0,l=this.edits.length;i<l;i++) {
                     		// Remove the old & ACK'd local edit(s) from the stack
                     		if (this.edits[i] && this.edits[i].clientversion <= edit.clientversion) {                      			
-                    			this.edits.pop();
+                    			this.edits.splice(i,1);
                     		}	                 			
                     	} 
                     	// Apply the delta
