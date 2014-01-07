@@ -41,6 +41,16 @@ from .decorators import limit_free_plans, root_required
 from .email_templates import send_mail_tpl
 
 
+DA_ROLE_ORDER = {
+        'owner': '1',
+        'collab': '2',
+        }
+DA_STATUS_ORDER = {
+        'active': '1',
+        'invited': '2',
+        'archived': '3',
+        }
+
 
 base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
 
@@ -250,6 +260,35 @@ def settings():
 def test():
     return render_template('test.html')    
 
+@ndb.tasklet
+def fetch_docinfo(da):
+    doc = yield da.doc.get_async()
+    if doc.last_update_by:
+        if doc.last_update_by != current_user.key:
+            last_editor = yield doc.last_update_by.get_async()
+        else:
+            last_editor = current_user
+    last_update = None
+    if last_editor.key != current_user.key:
+        last_update = {
+            "updated": time.mktime(doc.last_update_at.timetuple()),
+            "name": last_editor.name if last_editor else None,
+            "email": last_editor.email if last_editor else None,
+            }
+    raise ndb.Return({ 
+           "id": da.doc.id(),
+           "title": doc.title,
+           "status": da.status,
+           "role": da.role,
+           "created": time.mktime(da.created_at.timetuple()),
+           "updated": time.mktime(da.last_change_at.timetuple()),
+           "shared": len(doc.access_list) > 1,
+           "unseen": last_editor.key != current_user.key and doc.last_update_at > da.last_access_at,
+           "last_doc_update": last_update
+           })
+
+
+
 @login_required
 def list_documents():
     group_by = request.args.get('group_by')
@@ -259,39 +298,10 @@ def list_documents():
     else:
         group_key = lambda d: d.get(group_by)
 
-    doc_accesses = ndb.get_multi(list(DocAccess.query(DocAccess.user == current_user.key).iter(keys_only=True)))
-    docs_fut = ndb.get_multi_async([da.doc for da in doc_accesses])
-    # first populate info we already have from doc-accesses, 
     docs = dict()
-    for da in doc_accesses:
-        docs[da.doc] = { 
-            "id": da.doc.id(),
-            "title": '',
-            "status": da.status,
-            "role": da.role,
-            "created": time.mktime(da.created_at.timetuple()),
-            "updated": time.mktime(da.last_change_at.timetuple()),
-            "shared": False,
-            "unseen": False,
-            "last_doc_update": None 
-            }
-
-    # next fill in all the (async-fetched) doc-data
-    for doc in (d.get_result() for d in docs_fut):
-        last_update = None
-        if doc.last_update_by and doc.last_update_by != current_user.key:
-            last_editor = doc.last_update_by.get() 
-            last_update = {
-                "updated": time.mktime(doc.last_update_at.timetuple()),
-                "name": last_editor.name if last_editor else None,
-                "email": last_editor.email if last_editor else None,
-                }
-        docs[doc.key].update({
-            "title": doc.title,
-            "shared": len(doc.access_list) > 1,
-            "unseen": doc.last_update_at > da.last_access_at,
-            "last_doc_update": last_update,
-            })
+    docs_fetcher = DocAccess.query(DocAccess.user == current_user.key).map(fetch_docinfo, limit=100)
+    for doc in docs_fetcher:
+        docs[doc['id']] = doc
 
     # sort and filter the output
     doclist = defaultdict(list)
@@ -304,6 +314,7 @@ def list_documents():
 
 
 @login_required
+@ndb.toplevel
 def create_document():
     #TODO sanitize & validate payload
     data = request.json
@@ -329,7 +340,7 @@ def create_document():
                              hidecontext=data.get('hidecontext', False),
                              last_access_at=datetime.now(),
                              last_change_at=datetime.now()) 
-    sess = da.create_session()
+    sess, _ = da.create_session()
     resp = jsonify(doc_id=doc_id.id())
     resp.status = '201'
     resp.headers['Collab-Session-ID'] = sess['session_id']
@@ -373,6 +384,7 @@ def edit_document(doc_id):
     return "", 204
 
 @login_required
+@ndb.toplevel
 def get_document(doc_id):
     doc = Document.get_by_id(doc_id)
     if not doc:
@@ -381,7 +393,7 @@ def get_document(doc_id):
     if not access:
         return "access denied, sorry.", 403
 
-    sess = access.create_session()
+    sess, _ = access.create_session()
     docinfo = doc.api_dict()
     docinfo.update({
         'updated': time.mktime(access.last_change_at.timetuple()),
@@ -392,6 +404,21 @@ def get_document(doc_id):
     resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
     return resp
 
+
+@ndb.tasklet
+def fetch_collabinfo(da):
+    uid, name, email = None, None, da.email
+    if da.user:
+        user = yield da.user.get_async()
+        uid, name, email = user.key.id(), user.name, user.email
+    raise ndb.Return({"access_id": da.key.id(),
+            "role": da.role,
+            "status": da.status,
+            "created": time.mktime(da.created_at.timetuple()),
+            "user_id": uid,
+            "email": email,
+            "name": name,
+            })
 
 @login_required
 def doc_collaborators(doc_id):
@@ -420,14 +447,8 @@ def doc_collaborators(doc_id):
         else:
             return "", 400
     else: # GET 
-        collabs = ndb.get_multi(list(DocAccess.query(DocAccess.doc == doc.key).order(DocAccess.role, DocAccess.status).iter(keys_only=True)))
-        res = [{"access_id": x.key.id(),
-                "role": x.role,
-                "status": x.status,
-                "user_id": x.user and x.user.id() or None,
-                "email": x.user and x.user.get().email or x.email,
-                "name": x.user and x.user.get().name or None,
-                } for x in collabs]
+        res = list(DocAccess.query(DocAccess.doc == doc.key).map(fetch_collabinfo))
+        res.sort(key=lambda c: u''.join([DA_ROLE_ORDER[c['role']], DA_STATUS_ORDER[c['status']], str(c['created'])]))
         return Response(json.dumps(res, indent=4), mimetype="application/json")
 
 
@@ -546,11 +567,12 @@ def sync_doc(doc_id):
         if not sess:
             # session expired r not found, create new and request re-init on client side
             # TODO refactor and DRY out the whole sess-create and populate headers flow
-            sess = access.create_session()
+            sess, future = access.create_session()
             resp = jsonify(doc.api_dict())
             resp.status = "412"
             resp.headers['Collab-Session-ID'] = sess['session_id']
             resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
+            future.get_result() #wait for the access.put_async() to finish
             return resp
         elif not sess['user_id'] == current_user.key.id():
             return "not your sync session {0} != {1}".format(sess['user_id'], current_user.key.id()), 403
