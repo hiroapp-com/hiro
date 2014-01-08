@@ -1528,13 +1528,13 @@ var WPCLib = {
                 statusbar.innerHTML = reason || 'Saving...';
 
                 // Post editstack to backend
-                $.ajax({
+                WPCLib.comm.ajax({
                     url: "/docs/"+WPCLib.canvas.docid+"/sync",
                     type: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
+                    payload: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
                     timeout: 8000,
-                    success: function(data,status,xhr) {
+                    success: function(req) {
+                    	var data = JSON.parse(req.response);
                         if (data.session_id != WPCLib.canvas.sync.sessionid) {
 	                        // Reset inflight variable
 	                        WPCLib.canvas.sync.inflight = false;                         	
@@ -1562,19 +1562,20 @@ var WPCLib = {
 					    // Check if were offline and switch back to normal state
 					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();                        	
                     },
-                    error: function(xhr,status,textStatus) {
+                    error: function(req) {
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;
 
   						// Go offline if request timed out
-						if (textStatus == 'timeout' || xhr.status == 0) {
+						if (req.status <= 0) {
 							WPCLib.sys.goneoffline();
 							return;
 						}						
 
                         // Retry if it was just a sync session timeout (20 mins)
-                        if (xhr.status == 412 || textStatus == 'Precondition Failed') {
-                        	var sv = xhr.responseJSON.text,
+                        if (req.status == 412) {
+                        	var data = JSON.parse(req.response),
+                        		sv = data.text,
                         	    lv = WPCLib.canvas.sync.shadow;
 
                         	// See if the client/server versions differ, build and apply patch if
@@ -1584,19 +1585,19 @@ var WPCLib = {
                         		WPCLib.canvas.sync.patch(delta);
                         	}    
 
-							WPCLib.canvas.sync.begin(sv,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"),true);
+							WPCLib.canvas.sync.begin(sv,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"),true);
                         	return;
                         }
 
                         // Log error if it wasn't a reconnect (see above)
-                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify([status,textStatus]));                        
+                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify(req));                        
 
                         // Move away from note if rights were revoked
-                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
-						if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
+                        if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
+						if (req.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
 						
 						// Try callback but navigate away once access is lost 
-						if (xhr.status == 403 || xhr.status == 404) {
+						if (req.status == 403 || req.status == 404) {
                         	// Prevent further sendedits
                         	WPCLib.canvas.sync.inflight = true;    
                         	setTimeout(function(){ WPCLib.canvas.sync.inflight = false; },2000);
@@ -1881,24 +1882,24 @@ var WPCLib = {
                 	if (frame) frame.parentNode.removeChild(frame);
 
 					// Request new session id & token from backend
-					$.ajax({
-						dataType: "json",
+					WPCLib.comm.ajax({
 						url: url,
-						success: function(data, textStatus, xhr) {	
-							text = data.text || '';
+						success: function(req) {	
+							var data = JSON.parse(req.response),
+								text = data.text || '';
 							// Make sure shadow etc equal what the user is seeing, otherwise update
 							// This is important if a Channel timed out and was reconnected hours later (eg device powered off)
 							// and thus the client never got informed of updates to the doc which would be overwritten by next addedit()
 							if (text != document.getElementById(WPCLib.canvas.contentId).value) WPCLib.canvas.set_text(text);
 							// Reconnect
-							WPCLib.canvas.sync.begin(text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));	
-							WPCLib.sys.log('Reconnecting sync with new sessionid & token ',[data,xhr]);
+							WPCLib.canvas.sync.begin(text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));	
+							WPCLib.sys.log('Reconnecting sync with new sessionid & token ',req);
 							WPCLib.canvas.sync.reconnecting = false;
 							// Also refresh doclist for version updates and file changes
 							WPCLib.folio.docs.loaddocs(true);							
 						},
-						error: function(data) {
-							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs. ' + JSON.stringify(data));
+						error: function(req) {
+							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs. ' + JSON.stringify(req));
 							// Check if we are online, otherwise avoid potential side effects
 							if (WPCLib.sys.online) WPCLib.folio.docs.loaddocs();	
 							WPCLib.canvas.sync.reconnecting = false;													
@@ -2087,13 +2088,12 @@ var WPCLib = {
 				this.el.insertBefore(d,this.el.firstChild);
 				input.nextSibling.style.display = 'none';				
 
-                $.ajax({
+                WPCLib.comm.ajax({
                 	// Post to backend
                     url: url,
                     type: "POST",
-                    contentType: "application/json; charset=UTF-8",
-                    data: JSON.stringify(payload),
-                    success: function(data) {    
+                    payload: JSON.stringify(payload),
+                    success: function() {    
                     	// Set UI               	
                     	input.value = '';
                     	input.focus();
@@ -2112,9 +2112,10 @@ var WPCLib = {
 		            	// Notify segment.io
 		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);                    	
                     },
-                    error: function(data) {
+                    error: function(req) {
+                    	var data = JSON.parse(req.response);
                     	// Show error 
-                    	input.nextSibling.innerHTML = data.responseText;
+                    	input.nextSibling.innerHTML = data;
 						input.nextSibling.style.display = 'block';	                    	
 						input.className = 'hiro error';                    	                     	
                     	input.focus();           
@@ -2142,13 +2143,12 @@ var WPCLib = {
 				u.splice(uid,1);
 				that.update();
 
-				$.ajax({
+				WPCLib.comm.ajax({
                 	// Post to backend
                     url: url,
                     type: "POST",
-                    contentType: "application/json; charset=UTF-8",
-                    data: JSON.stringify(payload),
-                    success: function(data) {  
+                    payload: JSON.stringify(payload),
+                    success: function() {  
                     	// Reload the doclist if user has removed herself
 						if (currentuser) { WPCLib.folio.docs.loaddocs(); WPCLib.ui.clearactions(); };
                     	// If there are no more users in the array anymore, reload folio list to remove sharing icon
@@ -2157,7 +2157,7 @@ var WPCLib = {
 							WPCLib.folio.docs.update();                  		
                     	}					                  	
                     },
-                    error: function(data) {
+                    error: function() {
                     	// Reset list display 
 						that.fetch();
                     }
@@ -2241,13 +2241,13 @@ var WPCLib = {
 
 				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
 				var url = '/docs/' +  WPCLib.canvas.docid + '/collaborators';
-				$.ajax({
+				WPCLib.comm.ajax({
                     url: url,
                     contentType: "json",
-                    success: function(data) {
+                    success: function(req) {
                     	// Set internal values and update visual display
                     	var that = WPCLib.sharing.accesslist;
-                    	that.users = data;
+                    	that.users = JSON.parse(req.response);
                         that.update();
                     }
                 });
@@ -2695,12 +2695,12 @@ var WPCLib = {
 
 		verifylinks: function(links) {
 			// Send links to server for verification
-            $.ajax({
+            WPCLib.comm.ajax({
                 url: "/relevant/verify",
                 type: "POST",
-                contentType: "application/json; charset=UTF-8",
-                data: JSON.stringify({ links:links }),
-                success: function(data) {
+                payload: JSON.stringify({ links:links }),
+                success: function(req) {
+                	var data = JSON.parse(req.response);
                 	WPCLib.sys.log('Verfified links: ',data);
 
                 	// Build a lookup object from our stickies
@@ -2737,7 +2737,7 @@ var WPCLib = {
 					WPCLib.context.clearunverified();	                    
 					WPCLib.canvas.savedoc();                    
                 },
-                error: function(data) {
+                error: function() {
                 	// Notifiy user
 					WPCLib.ui.statusflash('red',"Couldn't verify the links.",false);   
 					             	
@@ -2762,10 +2762,13 @@ var WPCLib = {
 			// Not in use, for testing only
 			string = string || (WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
 			document.getElementById(this.statusId).innerHTML = 'Analyzing...';
-			$.post('/analyze', {content: string}, 
-			function(data){
-	            WPCLib.context.chunksearch(data,chunktype);
-	        });
+			WPCLib.comm.ajax({
+				url: '/analyze', 
+				payload: JSON.stringify({"content":string}), 
+				success: function(req) {
+		            WPCLib.context.chunksearch(JSON.parse(req.response),chunktype);
+		        }
+		    });
 		},		
 
 		chunksearch: function(data,chunktype) {
@@ -2790,12 +2793,12 @@ var WPCLib = {
 			if (terms.length > 0) {
 				var postData = {terms: terms, use_shortening: true};
 				var that = this;						
-                $.ajax({
+                WPCLib.comm.ajax({
                     url: "/relevant",
                     type: "POST",
-                    contentType: "application/json; charset=UTF-8",
                     data: JSON.stringify(postData),
-                    success: function(data) {
+                    success: function(req) {
+                    	var data = JSON.parse(req.response)
                         WPCLib.context.storeresults(data.results);
                         WPCLib.context.renderresults();		             
                         document.getElementById(that.statusId).innerHTML = 'Ready.';
@@ -2830,14 +2833,15 @@ var WPCLib = {
 			ss = ss.trim();
 			if (ss.length > 0 && ss.split(' ').length == 1) {
 				// Search synonyms for single words
-				$.ajax({
+				WPCLib.comm.ajax({
 				    url: 'https://words.bighugelabs.com/api/2/' + that.synKey + '/' + ss + '/json',
 				    type: 'GET',
 				    dataType: "jsonp",
-				    success: function(data) {
+				    success: function(req) {
+				    	var data = JSON.parse(req.response);
 				    	if (!WPCLib.context.overquota) WPCLib.context.rendersynonyms(data,ss);				    	
 				    },
-				    error: function(data) {
+				    error: function() {
 				    	// Prevent error tracking by Sentry Raven
 				    }
 				});
@@ -2851,21 +2855,21 @@ var WPCLib = {
 			}
 
 			// Find context links from Yahoo BOSS						
-            $.ajax({
+            WPCLib.comm.ajax({
                 url: "/relevant",
                 type: "POST",
-                contentType: "application/json; charset=UTF-8",
-                data: JSON.stringify(payload),
-                error: function(data) {
-                	switch (data.status) {
+                payload: JSON.stringify(payload),
+                error: function(req) {
+                	switch (req.status) {
                 		case 402: 
                 			WPCLib.context.quotareached();
                 			break;
                 		default:
-                			WPCLib.sys.error(data);	
+                			WPCLib.sys.error(req.response);	
                 	}
                 },           
-                success: function(data) {
+                success: function(req) {
+                	var data = JSON.parse(req.response);
                     WPCLib.context.storeresults(data.results);
                     WPCLib.context.renderresults(showtip);		             
                     document.getElementById(that.statusId).innerHTML = 'Ready.';                   
@@ -3564,23 +3568,24 @@ var WPCLib = {
 				error.innerHTML = '';
 
 				// Send request to backend
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/register",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
-	                data: payload,
-					success: function(data) {
+	                payload: payload,
+					success: function(req) {
+						var data = JSON.parse(req.response)
 						WPCLib.sys.user.authed('register',data,'Email');												                    
 					},
-					error: function(xhr) {
+					error: function(req) {
 	                    button.innerHTML = "Create Account";
 	                    WPCLib.sys.user.authactive = false;						
-						if (xhr.status==500) {
+						if (req.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
 							return;
 						}
-						var et = JSON.parse(xhr.responseText); 
+						var et = JSON.parse(req.response); 
 	                    if (et.email) {
 	                    	val[0].className += ' error';
 	                    	val[0].nextSibling.innerHTML = et.email;
@@ -3620,23 +3625,23 @@ var WPCLib = {
 				val[1].nextSibling.innerHTML = '';				
 				error.innerHTML = '';					
 				// Send request to backend		
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/login",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
-	                data: payload,
-					success: function(data) {
-						WPCLib.sys.user.authed('login',data);						                    
+	                payload: payload,
+					success: function(req) {
+						WPCLib.sys.user.authed('login',JSON.parse(req.response));						                    
 					},
-					error: function(xhr) { 												
+					error: function(req) { 												
 	                    button.innerHTML = "Log-In";
 	                    WPCLib.sys.user.authactive = false;						
-						if (xhr.status==500) {
+						if (req.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
 							return;
 						}
-						var et = JSON.parse(xhr.responseText); 
+						var et = JSON.parse(req.response); 
 	                    if (et.email) {
 	                    	val[0].className += ' error';
 	                    	val[0].nextSibling.innerHTML = et.email[0];
@@ -3763,12 +3768,11 @@ var WPCLib = {
 
 				// Submit to backend
 				payload.name = name;				
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/me",
 	                type: "POST",
-	                contentType: "application/json; charset=UTF-8",
-	                data: JSON.stringify(payload),
-					success: function(xhr) {
+	                payload: JSON.stringify(payload),
+					success: function() {
 						button.innerHTML = 'Saved!';
 						WPCLib.sys.user.name = name;	
 		            	var payload2 = {};
@@ -3776,7 +3780,7 @@ var WPCLib = {
 		            	// Notify segment.io
 		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);						                    
 					},
-					error: function(xhr) {				
+					error: function() {				
 						input.focus();
 						button.innerHTML = 'Try again';	              		                    						                    
 					}										
@@ -3805,22 +3809,22 @@ var WPCLib = {
 				var payload = { email: email.value.toLowerCase().trim() };
 
 				// Send request to backend
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/reset_password",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
-	                data: payload,
+	                payload: payload,
 					success: function() {
 						error.innerHTML = 'Reset instructions sent, please check your email inbox.';	                    
 					},
-					error: function(xhr) {				
-						if (xhr.status==500) {
+					error: function(req) {				
+						if (req.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							return;
 						}
-						if (xhr.status==404) {
+						if (req.status==404) {
 							email.className += ' error';							
-							email.nextSibling.innerHTML = xhr.responseText;
+							email.nextSibling.innerHTML = req.responseText;
 							return;
 						}
 						error.innerHTML = "Old account, please <a href='mailto:hello@hiroapp.com?subject=Lost%20Password&body=Please%20send%20me%20a%20link%20to%20reset%20it.' target='_blank'>request a reset</a>.";						 
@@ -3885,16 +3889,15 @@ var WPCLib = {
 				button.innerHTML = 'Resetting...';
 				var payload = { password: pwd1.value };
 				var url = '/reset/'+this.resetToken;
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: url,
 	                type: "POST",
-	                contentType: "application/json; charset=UTF-8",
-	                data: JSON.stringify(payload),
-					success: function(data) {
-						WPCLib.sys.user.authed('reset',data);	                    
+	                payload: JSON.stringify(payload),
+					success: function(req) {
+						WPCLib.sys.user.authed('reset',JSON.parse(req.response));	                    
 					},
-					error: function(data) {               		                    
-						if (data.status = 404) {
+					error: function(req) {               		                    
+						if (req.status = 404) {
 							WPCLib.sys.user.redoTokenRequest = true;
 							button.innerHTML = 'Request New Reset';
 							pwd1.disabled = true;
@@ -3913,10 +3916,10 @@ var WPCLib = {
 			logout: function() {
 				// Simply log out user and reload window
 				WPCLib.ui.fade(document.body,-1,400);
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/logout",
 	                type: "POST",
-					success: function(data) {
+					success: function() {
 	                    window.location.href = '/';							                    
 					}									
 				});				
@@ -4063,12 +4066,12 @@ var WPCLib = {
 				// Get the data from the checkout above and post data to backend / cleanup ui 
 				var tier = (subscription.plan == "starter") ? 2 : 3;				
 				if (analytics) analytics.track('Upgraded (Paid Tier)',{oldTier:WPCLib.sys.user.level,newTier:tier});				
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/settings/plan",
 	                type: "POST",
-	                contentType: "application/json; charset=UTF-8",
-	                data: JSON.stringify(subscription),
-					success: function(data) {
+	                payload: JSON.stringify(subscription),
+					success: function(req) {
+						var data = JSON.parse(req.response);
 						document.getElementById('dialog').contentDocument.getElementById('checkoutbutton').innerHTML = "Upgrade";
 	                    WPCLib.sys.user.setStage(data.tier);	
 	                    WPCLib.sys.user.checkoutActive = false;	
@@ -4076,8 +4079,8 @@ var WPCLib = {
 	                    WPCLib.ui.hideDialog();				                    
 	                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!',true);						                    
 					},
-	                error: function(data) {
-						if (Raven) Raven.captureMessage ('Checkout gone wrong: '+JSON.stringify(data));		                	
+	                error: function(req) {
+						if (Raven) Raven.captureMessage ('Checkout gone wrong: '+JSON.stringify(req));		                	
 	                }					
 				});					
 			},
@@ -4095,12 +4098,12 @@ var WPCLib = {
 				// All styled, getting ready to downgrade
 				var payload = {plan:targetplan};
 				this.downgradeActive = true;
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/settings/plan",
 	                type: "POST",
-	                contentType: "application/json; charset=UTF-8",
-	                data: JSON.stringify(payload),
-					success: function(data) {
+	                payload: JSON.stringify(payload),
+					success: function(req) {
+						var data = JSON.parse(req.response);
 	                    WPCLib.sys.user.setStage(data.tier);	
 	                    WPCLib.sys.user.downgradeActive = false;	
 	                    WPCLib.ui.hideDialog();	                    
@@ -4128,7 +4131,22 @@ var WPCLib = {
 
 			var method = obj.type || 'GET',
 				async = obj.async || true,
-				contentType = obj.contentType || 'application/json; charset=UTF-8';		
+				contentType = obj.contentType || 'application/json; charset=UTF-8'
+				payload = obj.payload || '';	
+
+			// Build proper URL encoded string
+			if (obj.payload && contentType == 'application/x-www-form-urlencoded') {
+				// TODO: Move this into util once it's tested
+				var str = [];
+				for(var p in obj.payload) {
+					if (obj.payload.hasOwnProperty(p)) {
+						str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj.payload[p]));
+					}
+				}
+				payload = str.join("&");				
+			}	
+
+			console.log(payload);		
 
 			// Non Patch supporting devices, move to array check once we have more
 			// TODO findout which ones exactly
@@ -4155,7 +4173,7 @@ var WPCLib = {
 				}
 
 				// And off we go
-				req.send(obj.payload);
+				req.send(payload);
 
 			} catch(e) {
 				// Proper cleanup and logging

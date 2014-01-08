@@ -1,6 +1,6 @@
 <html style="overflow: hidden;">
 <head>
-	<script>var _wpc=window.parent.WPCLib,$=window.parent.$,analytics=window.parent.analytics;</script>
+	<script>var _wpc=window.parent.WPCLib,analytics=window.parent.analytics;</script>
     {{ get_asset('hiro_css') }}				
 	<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>    
 	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>		
@@ -48,20 +48,20 @@
 
 		<script type="text/javascript">
 		function facebooklogin() {
-			var WPFBbuttonHTML = 'Sign-In With <b>Facebook</b>';
+			var WPFBbuttonHTML = 'Sign-In With <b>Facebook</b>',
+				fbbuttons = document.getElementsByClassName('fb');
 			FB.getLoginStatus(function(response) {	
 			  if (response.status === 'connected') {
-				$.ajax({
+				_wpc.comm.ajax({
 					url: "/_cb/facebook",
 	                type: "POST",
-	                contentType: "application/json; charset=UTF-8",
-	                data: JSON.stringify(response.authResponse),
-					success: function(data) {
+	                payload: JSON.stringify(response.authResponse),
+					success: function(req) {
 	                    // All that needs to be done at this point
-	                    _wpc.sys.user.authed('login',data);									                    
+	                    _wpc.sys.user.authed('login',JSON.parse(req.response));									                    
 					},
-					error: function(data) {
-						_wpc.sys.error(data);									
+					error: function(req) {
+						_wpc.sys.error(req);									
 					}
 				});				    
 			  } else if (response.status === 'not_authorized') {
@@ -71,22 +71,21 @@
 			    } else {
 					FB.login(function(response) {
 					   if (response.authResponse) {
-							$.ajax({
+							_wpc.comm.ajax({
 								url: "/_cb/facebook",
 				                type: "POST",
-				                contentType: "application/json; charset=UTF-8",
-				                data: JSON.stringify(response.authResponse),
-								success: function(data) {
+				                payload: JSON.stringify(response.authResponse),
+								success: function(req) {
 				                    // All that needs to be done at this point
-				                    _wpc.sys.user.authed('register',data,'Facebook');									                    
+				                    _wpc.sys.user.authed('register',JSON.parse(req.response),'Facebook');									                    
 								},
-								error: function(data) {
-									_wpc.sys.error(data);									
+								error: function(req) {
+									_wpc.sys.error(req);									
 								}
 							});
 					   } else {
 					   	 // FB auth process aborted by user
-					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
+					     fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = (WPFBbuttonHTML);
 						_wpc.sys.error('Aborted FB login (Logged into Facebook)');					     
 					   }
 					},{scope: 'email'});
@@ -99,22 +98,21 @@
 			    } else {
 					FB.login(function(response) {
 					   if (response.authResponse) {
-							$.ajax({
+							_wpc.comm.ajax({
 								url: "/_cb/facebook",
 				                type: "POST",
-				                contentType: "application/json; charset=UTF-8",
-				                data: JSON.stringify(response.authResponse),
-								success: function(data) {
+				                payload: JSON.stringify(response.authResponse),
+								success: function(req) {
 				                    // All that needs to be done at this point
-				                    _wpc.sys.user.authed('login',data);									                    
+				                    _wpc.sys.user.authed('login',JSON.parse(req.response));
 								},
-								error: function(data) {
-									_wpc.sys.error(data);									
+								error: function(req) {
+									_wpc.sys.error(req);									
 								}
 							});
 					   } else {
 					   	 // FB auth process aborted by user
-					     $("#dialog").contents().find(".fb.wpcbutton").html(WPFBbuttonHTML);
+					     fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = WPFBbuttonHTML;
 						_wpc.sys.error('Aborted FB login (Not logged into Facebook)');						     
 					   }
 					},{scope: 'email'});
