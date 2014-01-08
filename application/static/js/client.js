@@ -938,17 +938,17 @@ var WPCLib = {
 					// Complete progress bar
 					WPCLib.ui.hprogress.done();					
 				},
-				error: function(xhr,status,textStatus) {
+				error: function(req) {					
 					// Complete progress bar
 					WPCLib.ui.hprogress.done(true);					
-					WPCLib.sys.error([xhr]);
+					WPCLib.sys.error(req);
 					// Set system status offline if we timed out	
-					if (textStatus == 'timeout') WPCLib.sys.goneoffline();	
+					if (req.status <= 0) WPCLib.sys.goneoffline();	
 					// Show notifications and reset token if we had one
-					if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
-					if (xhr.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.',true);															
+					if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
+					if (req.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.',true);															
 					// If the load fails because of access issues reset doclist
-					if (xhr.status == 403 || xhr.status == 404) {
+					if (req.status == 403 || req.status == 404) {
 						// Release preloaded to enable loaddocs to load any doc
 						WPCLib.canvas.preloaded = false;
                     	// Reload docs                  								
@@ -4113,6 +4113,7 @@ var WPCLib = {
 
 	// generic communication with backend
 	comm: {
+		successcodes: [200,201,204],
 		msXMLHttpServices: ['Msxml2.XMLHTTP','Microsoft.XMLHTTP'],
 		msXMLHttpService: '',
 
@@ -4168,14 +4169,14 @@ var WPCLib = {
 			if (req.readyState != 4) return;
 
 			// Map callbacks
-			// Override 204 edge case before (204 triggers onerror)
-			if (req.status == 204) {
-				req.onerror = obj.success(req,req.statusText,req.status);
-				req.onload = null;
-			} else {
-				if (!req.onerror) req.onerror = (obj.error) ? obj.error(req,req.statusText,req.status) : null;
-				if (!req.onload) req.onload = (obj.success) ? obj.success(req,req.statusText,req.status) : null;
-			}				
+			req.onload = function() {
+				if (WPCLib.comm.successcodes.indexOf(this.status) > -1) {				
+					obj.success(this,this.statusText,this.status)
+				} else {
+					obj.error(this,this.statusText,this.status)
+				}
+			}
+			req.onerror = function() { obj.error(this,this.statusText,this.status) };			
 
 			// Mark request for Garbage collection
 			req = null;	
