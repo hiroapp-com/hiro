@@ -263,18 +263,18 @@ def test():
 @ndb.tasklet
 def fetch_docinfo(da):
     doc = yield da.doc.get_async()
+    last_update = None
     if doc.last_update_by:
         if doc.last_update_by != current_user.key:
             last_editor = yield doc.last_update_by.get_async()
+            last_update = {
+                "updated": time.mktime(doc.last_update_at.timetuple()),
+                "name": last_editor.name if last_editor else None,
+                "email": last_editor.email if last_editor else None,
+                }
         else:
+            # currently not really used/needed 
             last_editor = current_user
-    last_update = None
-    if last_editor.key != current_user.key:
-        last_update = {
-            "updated": time.mktime(doc.last_update_at.timetuple()),
-            "name": last_editor.name if last_editor else None,
-            "email": last_editor.email if last_editor else None,
-            }
     raise ndb.Return({ 
            "id": da.doc.id(),
            "title": doc.title,
@@ -283,7 +283,7 @@ def fetch_docinfo(da):
            "created": time.mktime(da.created_at.timetuple()),
            "updated": time.mktime(da.last_change_at.timetuple()),
            "shared": len(doc.access_list) > 1,
-           "unseen": last_editor.key != current_user.key and doc.last_update_at > da.last_access_at,
+           "unseen": last_update is not None and doc.last_update_at > da.last_access_at,
            "last_doc_update": last_update
            })
 
