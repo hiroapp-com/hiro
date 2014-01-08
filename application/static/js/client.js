@@ -62,13 +62,13 @@ var WPCLib = {
 				// Start progres bar
 				if (!folioonly) WPCLib.ui.hprogress.begin();			
 
-				$.ajax({
-				    dataType: "json",
+				WPCLib.comm.ajax({
 				    url: '/docs/?group_by=status',
-				    timeout: 10000,
-				    success: function(data) {
+				    success: function(req) {
 						// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
 						// or because we got invited via token
+						var data = JSON.parse(req.response);
+
 						if (!data.active && !data.archived) {	
 							if (WPCLib.sharing.token) {
 								// If we have a token we just call loaddocand let it figure out the rest via url / token
@@ -108,9 +108,9 @@ var WPCLib = {
 					    // Check of were offline and switch back to normal state
 					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 				    },
-					error: function(xhr,textStatus) {
-						WPCLib.sys.error(xhr);	
-						if (textStatus == 'timeout' || xhr.status == 0) WPCLib.sys.goneoffline();					
+					error: function(req) {
+						WPCLib.sys.error(req);	
+						if (req.status <= 0) WPCLib.sys.goneoffline();					
 					}
 				});						
 			},
@@ -415,12 +415,12 @@ var WPCLib = {
 					file.created = WPCLib.util.now();				
 
 					// Get doc id from server
-					$.ajax({
+					WPCLib.comm.ajax({
 						url: "/docs/",
 		                type: "POST",
-		                contentType: "application/json; charset=UTF-8",
-		                data: JSON.stringify(file),
-						success: function(data, status, xhr) {
+		                payload: JSON.stringify(file),
+						success: function(req) {
+							var data = JSON.parse(req.response);
 		                    WPCLib.sys.log("backend issued doc id ", data.doc_id);
 
 							// Set params for local doc
@@ -432,7 +432,7 @@ var WPCLib = {
 							WPCLib.folio.docs.active[0].id = data.doc_id;	
 
 							// Start sync
-							WPCLib.canvas.sync.begin('',xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));                    								
+							WPCLib.canvas.sync.begin('',req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    								
 
 							// Update the document counter
 							WPCLib.ui.documentcounter();	
@@ -459,18 +459,18 @@ var WPCLib = {
 					file.id = '';
 					file.text = WPCLib.canvas.text;
 					// Get doc id from server
-					$.ajax({
+					WPCLib.comm.ajax({
 						url: "/docs/",
 		                type: "POST",
-		                contentType: "application/json; charset=UTF-8",
-		                data: JSON.stringify(file),
-						success: function(data, status, xhr) {
+		                payload: JSON.stringify(file),
+						success: function(req) {
+							var data = JSON.parse(req.response);
 		                    WPCLib.sys.log("move local to backend with new id ", data);
 		                    // Delete local item
 		                    localStorage.removeItem('WPCdoc')
 
 							// Start sync
-							WPCLib.canvas.sync.begin(WPCLib.canvas.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));   		                    
+							WPCLib.canvas.sync.begin(WPCLib.canvas.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));   		                    
 
 							// Set new id for former local doc
 							WPCLib.canvas.docid = data.doc_id;
@@ -542,12 +542,11 @@ var WPCLib = {
 				if (toarchive) document.getElementById(that.a_counterId).innerHTML = 'Archive (' + that.a_count + ')';
 
 				var payload = (toarchive) ? {'status':'archived'} : {'status':'active'};
-				$.ajax({
+				WPCLib.comm.ajax({
 					url: "/docs/"+a_id,
 	                type: "PATCH",
-	                contentType: "application/json; charset=UTF-8",
 	                data: JSON.stringify(payload),
-					success: function(data) {						
+					success: function() {						
 						that.update();					                   
 					}
 				});			
@@ -741,62 +740,29 @@ var WPCLib = {
 				// Save remotely, immediately indicate if this fails because we're offline
 				if ('onLine' in navigator && !navigator.onLine) WPCLib.sys.goneoffline();
 				WPCLib.sys.log('saving remotely: ', file);	
-				var u = "/docs/"+this.docid, ct = "application/json; charset=UTF-8";
+				var u = "/docs/"+this.docid;
 
-
-				// Jquery doesn't support patch requests in plenty of mobile browsers, TODO findout which ones exactly
-				if ( navigator.appVersion.indexOf('BB10') == -1 ) {
-					$.ajax({					
-						url: u,
-		                type: "PATCH",
-		                contentType: ct,
-		                data: JSON.stringify(file),
-						success: function(data) {
-		                    WPCLib.sys.log('Saved! ',data);
-							WPCLib.canvas.saved = true;	 
-							if (force) status.innerHTML = 'Saved.';
-							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
-						},
-						error: function(xhr,textStatus) {
-							WPCLib.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(xhr));	
-							if (textStatus == 'timeout') WPCLib.sys.goneoffline();		
-							// Move away from note if rights were revoked
-							else if (xhr.status == 404 || xhr.status == 404) {
-		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
-								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
-								WPCLib.folio.docs.loaddocs();								
-							} 										
-						}
-					});
-				} else if ($.ajax) {
-					$.ajax({					
-						url: u,
-		                type: "POST",
-		                contentType: ct,
-		                data: JSON.stringify(file),
-						success: function(data) {
-		                    WPCLib.sys.log('Saved! ',data);
-							WPCLib.canvas.saved = true;	 
-							if (force) status.innerHTML = 'Saved.';
-							if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();							
-						},
-						error: function(xhr,textStatus) {
-							WPCLib.sys.error('Savedoc POST returned error: ' + JSON.stringify(xhr));
-							if (textStatus == 'timeout') { WPCLib.sys.goneoffline(); }
-							// Move away from note if rights were revoked
-							else if (xhr.status == 404 || xhr.status == 404) {
-		                        if (xhr.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
-								if (xhr.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
-								WPCLib.folio.docs.loaddocs();								
-							}                       
-						}
-					});					
-				} else {
-					var x = new XMLHttpRequest();
-					x.open("PATCH", u);
-					x.setRequestHeader("Content-type",ct);
-					x.send(JSON.stringify(file));
-				}											
+				WPCLib.comm.ajax({					
+					url: u,
+	                type: "PATCH",
+	                payload: JSON.stringify(file),
+					success: function() {
+	                    WPCLib.sys.log('Doc saved!');
+						WPCLib.canvas.saved = true;	 
+						if (force) status.innerHTML = 'Saved.';
+						if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
+					},
+					error: function(req) {
+						WPCLib.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(req));	
+						if (req.status <= 0) WPCLib.sys.goneoffline();		
+						// Move away from note if rights were revoked
+						else if (req.status == 404 || req.status == 404) {
+	                        if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
+							if (req.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
+							WPCLib.folio.docs.loaddocs();								
+						} 										
+					}
+				});											
 			} else {
 				// Store doc locally 
 				
@@ -880,12 +846,11 @@ var WPCLib = {
 
 
 			// Load data onto canvas
-			$.ajax({
-				dataType: "json",
+			WPCLib.comm.ajax({
 				url: '/docs/'+docid,
 				headers: header,
-				timeout: 30000,
-				success: function(data, textStatus, xhr) {
+				success: function(req) {
+					var data = JSON.parse(req.response);
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
 					WPCLib.canvas.lastUpdated = data.updated;	
@@ -936,7 +901,7 @@ var WPCLib = {
 					that.preloaded = false;
 
 					// Initiate syncing of file
-					WPCLib.canvas.sync.begin(data.text,xhr.getResponseHeader("collab-session-id"),xhr.getResponseHeader("channel-id"));                    
+					WPCLib.canvas.sync.begin(data.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    
 
 					// If the document is shared then fetch the list of users who have access
 					if (data.shared) WPCLib.sharing.accesslist.fetch();
@@ -1664,31 +1629,35 @@ var WPCLib = {
                         continue;
                     }
 
+                    // Clean up local stack
                     if (this.edits) {
-                    	// If we get a normal response from the server and have the last edit in our stack
-                    	// This should be the most common case
                     	for (i=0,l=this.edits.length;i<l;i++) {
                     		// Remove the old & ACK'd local edit(s) from the stack
                     		if (this.edits[i] && this.edits[i].clientversion <= edit.clientversion) {                      			
                     			this.edits.splice(i,1);
                     		}	                 			
-                    	} 
-                    	// Apply the delta
-                    	this.patch(edit.delta);                  	
-                    	continue;
-                    } else if (this.remoteversion < edit.serverversion) {
-                        WPCLib.sys.log("TODO: server version ahead of client -- resync");
+                    	}                 	
+                    }
+
+                    // Handle edge cases
+                    if (this.remoteversion < edit.serverversion) {
+                        WPCLib.sys.error("TODO: server version ahead of client -- resync");
                         continue;
                     } else if (this.remoteversion > edit.serverversion) {
                         //dupe
-                        WPCLib.sys.log("dupe received");
+                        WPCLib.sys.error("TODO: Sync dupe received");
                         continue;
-                    } if (edit.clientversion > this.localversion) {
+                    } else if (edit.clientversion > this.localversion) {
                     	// Edge case: to be researched when this happens
-                        WPCLib.sys.log("TODO: client version mismatch -- resync");
-                        WPCLib.sys.log("cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
+                        WPCLib.sys.error("TODO: client version mismatch -- resync: cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
                         continue;
-                    }                     
+                    } 
+
+                	// Apply the delta if we didn't abort above
+                	this.patch(edit.delta);  
+
+	            	// Iterate remote version
+	            	this.remoteversion++;                 	                                        
                 }
             }, 
 
@@ -1698,10 +1667,7 @@ var WPCLib = {
             		regex = /^=[0-9]+$/,
             		oldtext = WPCLib.canvas.text,
             		oldcursor = WPCLib.canvas._getposition(),
-            		doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];              	
-
-            	// Iterate remote version
-            	this.remoteversion++;                 	           		
+            		doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];              	                	           		
 
             	// If the delta is just a confirmation, do nothing
             	if (regex.test(delta)) {
@@ -4146,7 +4112,108 @@ var WPCLib = {
 	},
 
 	// generic communication with backend
-	comm: {},
+	comm: {
+		msXMLHttpServices: ['Msxml2.XMLHTTP','Microsoft.XMLHTTP'],
+		msXMLHttpService: '',
+
+		ajax: function(obj) {
+			// Generic AJAX request handler
+			// Supports:
+			// Method: GET, POST, PATCH
+			// URL: Target URL
+			// Headers: HTTP Headers to be included
+			// Success: Success callback function
+			// Error: Error callback function
+
+			var method = obj.type || 'GET',
+				async = obj.async || true,
+				contentType = obj.contentType || 'application/json; charset=UTF-8';		
+
+			// Non Patch supporting devices, move to array check once we have more
+			// TODO findout which ones exactly
+			if (method == 'PATCH' && navigator.appVersion.indexOf('BB10') > -1) method = 'POST';
+
+			// Spawn new request object
+			var req = this.getreq();
+
+			try {				
+				// Set basic data
+				req.open(method, obj.url, async);
+				req.timeout = obj.timeout || 20000;	
+				
+				// Pass on state changes
+				if (async) req.onreadystatechange = function() { WPCLib.comm.responsehandler(this,obj); };	
+
+				// Set headers
+				req.setRequestHeader("Content-Type", contentType);
+				if (obj.headers) {
+					for (var key in obj.headers) {
+						// Cycle through header object
+						req.setRequestHeader(key, obj.headers[key]);
+					}
+				}
+
+				// And off we go
+				req.send(obj.payload);
+
+			} catch(e) {
+				// Proper cleanup and logging
+				WPCLib.sys.error(['AJAX Error: ',e]);
+			}
+
+		},
+
+		responsehandler: function(req,obj) {
+			// Handle response, for now we only handle complete requests
+			if (req.readyState != 4) return;
+
+			// Map callbacks
+			// Override 204 edge case before (204 triggers onerror)
+			if (req.status == 204) {
+				req.onerror = obj.success(req,req.statusText,req.status);
+				req.onload = null;
+			} else {
+				if (!req.onerror) req.onerror = (obj.error) ? obj.error(req,req.statusText,req.status) : null;
+				if (!req.onload) req.onload = (obj.success) ? obj.success(req,req.statusText,req.status) : null;
+			}				
+
+			// Mark request for Garbage collection
+			req = null;	
+		},
+
+		getreq: function() {
+			// Determines and returns proper cross browser xhr method
+			var req=null;
+			if (window.XMLHttpRequest) {
+				// Most browsers
+				try { req = new XMLHttpRequest(); }	catch(e) { WPCLib.sys.error(e) }
+			} else if (window.ActiveXObject) {
+				// MS ftw
+				if (this.msXMLHttpService) {	
+					// See if we already have determined the available MS service
+					try { req = new ActiveXObject(this.msXMLHttpService); }
+					catch(e) { WPCLib.sys.error(e) }
+				} else {
+					// Find it if not
+					for (var i=0, l=this.msXMLHttpServices.length; i<l; i++) {
+						try { 
+							req = new ActiveXObject(this.msXMLHttpServices[i]);
+							if (req) {
+								this.msXMLHttpService=this.msXMLHttpServices[i];
+								break;
+							}
+						}
+						catch(e) {}
+					}
+				}
+			}
+
+			// Return request object
+			return req;
+		}
+
+
+	},
 
 	// Generic utilities
 	util: {
