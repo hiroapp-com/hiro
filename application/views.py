@@ -660,6 +660,15 @@ def update_doc_stats():
     return 'ok'
 
 
+@root_required
+def _manual_intervention():
+    """ View to be used for any manual intervention (e.g. change a doc-text) that you 
+    wish to run LIVE. Add your code here, deploy to non-public version and call /_magick 
+    while being logged in as a root user. 
+    """
+    return "ok"
+
+
 
 
 def warmup():

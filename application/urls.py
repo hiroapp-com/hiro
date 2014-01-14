@@ -35,6 +35,7 @@ app.add_url_rule('/note/<doc_id>', 'note', view_func=views.note, methods=['GET']
 
 # super-user only realm, AAA pass required.
 #app.add_url_rule('/_schemamigration', 'schemamigration', view_func=views.schemamigration, methods=['GET'])
+app.add_url_rule('/_magick', '_manual_intervention', view_func=views._manual_intervention, methods=['GET'])
 
 # document store
 app.add_url_rule('/docs/', 'list_documents', view_func=views.list_documents, methods=['GET'])
