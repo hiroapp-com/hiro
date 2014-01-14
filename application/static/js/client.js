@@ -4144,9 +4144,7 @@ var WPCLib = {
 					}
 				}
 				payload = str.join("&");				
-			}	
-
-			console.log(payload);		
+			}		
 
 			// Non Patch supporting devices, move to array check once we have more
 			// TODO findout which ones exactly
@@ -4160,8 +4158,11 @@ var WPCLib = {
 				req.open(method, obj.url, async);
 				req.timeout = obj.timeout || 20000;	
 				
-				// Pass on state changes
-				if (async) req.onreadystatechange = function() { WPCLib.comm.responsehandler(this,obj); };	
+				// Pass on state changes and attach timeout event
+				if (async) {
+					req.onreadystatechange = function() { WPCLib.comm.responsehandler(this,obj); };
+					req.ontimeout = function() { obj.error(req,req.statusText,req.status); };						
+				}	
 
 				// Set headers
 				req.setRequestHeader("Content-Type", contentType);
@@ -4194,7 +4195,7 @@ var WPCLib = {
 					obj.error(this,this.statusText,this.status)
 				}
 			}
-			req.onerror = function() { obj.error(this,this.statusText,this.status) };			
+			req.onerror = function() { obj.error(this,this.statusText,this.status); };					
 
 			// Mark request for Garbage collection
 			req = null;	
