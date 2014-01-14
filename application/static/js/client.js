@@ -1582,7 +1582,6 @@ var WPCLib = {
                         	if (sv != lv) {
                         		// Build delta from 'old' local version and 'new' server version
                         		var delta = WPCLib.canvas.sync.delta(lv,sv);
-                        		console.log('Applying local, servcer, delta: ',lv,sv,delta);
                         		WPCLib.canvas.sync.patch(delta,true);
                         	}    
 
@@ -4157,17 +4156,29 @@ var WPCLib = {
 			if (method == 'PATCH' && navigator.appVersion.indexOf('BB10') > -1) method = 'POST';
 
 			// Spawn new request object
-			var req = this.getreq();
+			var req = this.getreq();	
 
 			try {				
 				// Set basic data
 				req.open(method, obj.url, async);
 				req.timeout = obj.timeout || 20000;	
 				
-				// Pass on state changes and attach timeout event
+				// Pass on state changes and attach event handlers
 				if (async) {
+					// This should work in all relevant browsers
 					req.onreadystatechange = function() { WPCLib.comm.responsehandler(this,obj); };
-					req.ontimeout = function() { obj.error(req,req.statusText,req.status); };						
+
+					// Here we have to get browser specific
+					if (typeof req.ontimeout != 'undefined') {						
+						req.ontimeout = function() { obj.error(req,req.statusText,req.status); };
+					} else {
+						// TODO: timeout fallback
+					}	
+					if (typeof req.onerror != 'undefined') {												
+						req.onerror = function() { obj.error(req,req.statusText,req.status); };	
+					} else {
+						req.addEventListener("error", function() { obj.error(req,req.statusText,req.status); }, false);						
+					}										
 				}	
 
 				// Set headers
@@ -4193,15 +4204,12 @@ var WPCLib = {
 			// Handle response, for now we only handle complete requests
 			if (req.readyState != 4) return;
 
-			// Map callbacks
-			req.onload = function() {
-				if (WPCLib.comm.successcodes.indexOf(this.status) > -1) {				
-					obj.success(this,this.statusText,this.status)
-				} else {
-					obj.error(this,this.statusText,this.status)
-				}
-			}
-			req.onerror = function() { obj.error(this,this.statusText,this.status); };					
+			// Execute callbacks	
+			if (WPCLib.comm.successcodes.indexOf(req.status) > -1) {				
+				obj.success(req,req.statusText,req.status)
+			} else {
+				obj.error(req,req.statusText,req.status)
+			}					
 
 			// Mark request for Garbage collection
 			req = null;	
@@ -4229,7 +4237,9 @@ var WPCLib = {
 								break;
 							}
 						}
-						catch(e) {}
+						catch(e) {
+							WPCLib.sys.error(e)
+						}
 					}
 				}
 			}
