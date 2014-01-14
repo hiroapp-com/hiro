@@ -1582,7 +1582,8 @@ var WPCLib = {
                         	if (sv != lv) {
                         		// Build delta from 'old' local version and 'new' server version
                         		var delta = WPCLib.canvas.sync.delta(lv,sv);
-                        		WPCLib.canvas.sync.patch(delta);
+                        		console.log('Applying local, servcer, delta: ',lv,sv,delta);
+                        		WPCLib.canvas.sync.patch(delta,true);
                         	}    
 
 							WPCLib.canvas.sync.begin(sv,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"),true);
@@ -1662,7 +1663,7 @@ var WPCLib = {
                 }
             }, 
 
-            patch: function(delta) {
+            patch: function(delta,shadowonly) {
             	// Create and apply a patch from the delta we got
             	var diffs, patch, merged,
             		regex = /^=[0-9]+$/,
@@ -1692,6 +1693,11 @@ var WPCLib = {
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
             		// Apply the patch & set new shadow
                     this.shadow = this.dmp.patch_apply(patch, this.shadow)[0];
+					if (shadowonly) {
+						// All set if it's only a shadow reset because of 412 etc						
+						this.sendedits('Syncing...');												
+						return;
+					}	                    
                     merged      = this.dmp.patch_apply(patch, oldtext)[0];
 	                WPCLib.sys.log("Patches successfully merged, replacing text");
 
@@ -1900,8 +1906,8 @@ var WPCLib = {
 						},
 						error: function(req) {
 							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs. ' + JSON.stringify(req));
-							// Check if we are online, otherwise avoid potential side effects
-							if (WPCLib.sys.online) WPCLib.folio.docs.loaddocs();	
+							// Check if user has access, otherwise avoid potential side effects
+							if (req.status == 404 || req.status == 403) WPCLib.folio.docs.loaddocs();	
 							WPCLib.canvas.sync.reconnecting = false;													
 						}
 					});		
