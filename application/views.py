@@ -505,7 +505,7 @@ def fetch_link(url):
     link = {"url" : url}
 
     # If URL doesn't have protocol, which fetch() needs
-    if not url.startswith('http:'):
+    if not url.startswith('http'):
         url = 'http://' + url;
 
     # Fetch URL via Appengine Fetch

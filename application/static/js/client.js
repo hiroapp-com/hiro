@@ -1691,12 +1691,7 @@ var WPCLib = {
 
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
             		// Apply the patch & set new shadow
-                    this.shadow = this.dmp.patch_apply(patch, this.shadow)[0];
-					if (shadowonly) {
-						// All set if it's only a shadow reset because of 412 etc						
-						this.sendedits('Syncing...');												
-						return;
-					}	                    
+                    this.shadow = this.dmp.patch_apply(patch, this.shadow)[0];                    
                     merged      = this.dmp.patch_apply(patch, oldtext)[0];
 	                WPCLib.sys.log("Patches successfully merged, replacing text");
 
