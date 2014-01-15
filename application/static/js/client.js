@@ -4421,7 +4421,11 @@ var WPCLib = {
 	        		// Some browser erratically block the title setting, so we make sure this happens here
 		        	document.title = ' ';
 					document.title = WPCLib.canvas.title || 'Untitled';	
-	        	},500);        	
+	        	},500); 
+
+	        	// Hack: Send edits in refocus to consider changes in old tab
+				WPCLib.canvas.sync.addedit(true,'Syncing...');	
+				        	       	
 	        } else {
 	        	// If the window blurs
 	        }
