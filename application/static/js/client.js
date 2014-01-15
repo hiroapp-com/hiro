@@ -1,5 +1,40 @@
+/*
+
+	Hiro client lib
+
+	Hiro.folio: Manages the document list and the left hand folio sidebar
+	Hiro.folio.docs: Internal doclist management
+
+	Hiro.canvas: The currently loaded document
+	Hiro.canvas.sync: Diff/patch of current document
+
+	Hiro.context: Search and right hand sidebar related functions
+
+	Hiro.sharing: Add/remove user access
+
+	Hiro.publish: Publish selections to various external services
+
+	Hiro.store: Data store abstraction that works online (Ajax/ws) and offline (localStorage)
+
+	Hiro.comm: Ajax, longpolling and websockets	
+	Hiro.comm.messaging: Abstracted send/receive message API	
+
+	Hiro.lib: External libraries like Facebook or analytics
+
+	Hiro.ui: Basic UI related functions like showing/hiding dialogs, sliding menu etc
+	Hiro.ui.swipe: Custom swipe functionality for touch devices
+	Hiro.ui.hprogres: Thin progress bar on very top of page
+
+	Hiro.sys: Core functionality like setup, logging etc
+	Hiro.sys.user: Internal user management and methods
+
+	Hiro.util: Utilities like event attachment, humanized timestamps etc
+
+*/
+
+
 var WPCLib = {
-	version: '0.0.1',
+	version: '1.10.3',
 
 	// Folio is the nav piece on the left, holding all file management pieces
 	folio: {
@@ -40,6 +75,18 @@ var WPCLib = {
 			    }			
 			});				
 		},
+
+		showSettings: function(section,field,event) {
+			// Show settings dialog
+			if (WPCLib.sys.user.level==0) {
+				if (!field) {
+					field = 'signup_mail';
+					section = 's_signup';
+				}
+				if (analytics) analytics.track('Sees Signup/Sign Screen');
+			} 
+			WPCLib.ui.showDialog(event,'',section,field);
+		},		
 
 		docs: {
 			// All Document List interactions in seperate namespace
@@ -105,13 +152,7 @@ var WPCLib = {
 						if (!WPCLib.sys.version) { WPCLib.sys.version = data.hiroversion; }
 						else if (WPCLib.sys.version != data.hiroversion) WPCLib.sys.upgradeavailable(data.hiroversion);				    
 
-					    // Check of were offline and switch back to normal state
-					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
-				    },
-					error: function(req) {
-						WPCLib.sys.error(req);	
-						if (req.status <= 0) WPCLib.sys.goneoffline();					
-					}
+				    }
 				});						
 			},
 
@@ -575,18 +616,6 @@ var WPCLib = {
 					this.archiveOpen = true;					
 				}				
 			}
-		},
-
-		showSettings: function(section,field,event) {
-			// Show settings dialog
-			if (WPCLib.sys.user.level==0) {
-				if (!field) {
-					field = 'signup_mail';
-					section = 's_signup';
-				}
-				if (analytics) analytics.track('Sees Signup/Sign Screen');
-			} 
-			WPCLib.ui.showDialog(event,'',section,field);
 		}
 	},	
 
@@ -738,7 +767,6 @@ var WPCLib = {
 			// backend saving, locally or remote
 			if (this.docid != 'localdoc' && WPCLib.sys.user.level > 0) {
 				// Save remotely, immediately indicate if this fails because we're offline
-				if ('onLine' in navigator && !navigator.onLine) WPCLib.sys.goneoffline();
 				WPCLib.sys.log('saving remotely: ', file);	
 				var u = "/docs/"+this.docid;
 
@@ -750,13 +778,11 @@ var WPCLib = {
 	                    WPCLib.sys.log('Doc saved!');
 						WPCLib.canvas.saved = true;	 
 						if (force) status.innerHTML = 'Saved.';
-						if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
 					},
 					error: function(req) {
-						WPCLib.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(req));	
-						if (req.status <= 0) WPCLib.sys.goneoffline();		
+						WPCLib.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(req));			
 						// Move away from note if rights were revoked
-						else if (req.status == 404 || req.status == 404) {
+						if (req.status == 404 || req.status == 404) {
 	                        if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
 							if (req.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
 							WPCLib.folio.docs.loaddocs();								
@@ -924,8 +950,6 @@ var WPCLib = {
 						WPCLib.context.renderresults();
 					} 
 					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';	
-					if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();
-
 
 					// Fetch collaborator list if we have collaborators
 					if (data.shared) {
@@ -942,8 +966,6 @@ var WPCLib = {
 					// Complete progress bar
 					WPCLib.ui.hprogress.done(true);					
 					WPCLib.sys.error(req);
-					// Set system status offline if we timed out	
-					if (req.status <= 0) WPCLib.sys.goneoffline();	
 					// Show notifications and reset token if we had one
 					if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
 					if (req.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.',true);															
@@ -1558,19 +1580,11 @@ var WPCLib = {
                         	WPCLib.canvas.sync.inflightcallback();
                         	WPCLib.canvas.sync.inflightcallback = null;
                         }	
-
-					    // Check if were offline and switch back to normal state
-					    if (WPCLib.sys.status != 'normal') WPCLib.sys.backonline();                        	
+                        	
                     },
                     error: function(req) {
                         // Reset inflight variable
-                        WPCLib.canvas.sync.inflight = false;
-
-  						// Go offline if request timed out
-						if (req.status <= 0) {
-							WPCLib.sys.goneoffline();
-							return;
-						}						
+                        WPCLib.canvas.sync.inflight = false;					
 
                         // Retry if it was just a sync session timeout (20 mins)
                         if (req.status == 412) {
@@ -3272,10 +3286,7 @@ var WPCLib = {
 		language: 'en-us',
 		saved: true,
 		settingsUrl: '/settings/',
-		settingsSection: '',
-		statusIcon: document.getElementById('switchview'),
-		normalStatus: document.getElementById('status'),
-		errorStatus: document.getElementById('errorstatus'),			
+		settingsSection: '',		
 
 		// Bootstrapping
 		initCalled: false,
@@ -3397,90 +3408,6 @@ var WPCLib = {
 					callback();
 				}
 			}
-		},
-
-		goneoffline: function() {
-			// Triggered if an AJAX requests return textStatus == timeout
-			if ('onLine' in navigator && !navigator.onLine) this.online = false;
-			this.status = 'offline';
-			var reason = (this.online) ? 'Server not available' : 'No internet connection',
-				es = this.errorStatus,
-				si = this.statusIcon;
-
-			// Visual updates
-			this.normalStatus.style.display = 'none';
-			es.style.display = 'block';
-			es.innerHTML = reason;
-			si.className = 'error';
-			si.innerHTML = '!';
-
-			// Abort progress bar
-			if (WPCLib.ui.hprogress.active) WPCLib.ui.hprogress.done(true);
-
-			// Stop here if we're already offline
-			if (!this.online) return;
-
-			// Log error (to be switched off again, just to see how often this happens)
-			this.error('Gone offline, ' + reason);
-
-			// Try reconnecting
-			this.tryreconnect();
-		},
-
-		reconnecttimer: null,
-		reconnectinterval: 1000,
-		tryreconnect: function() {
-			// Pings the doc API and checks if current document is latest and no newer version on the server
-			var that = WPCLib.sys, t = that.reconnectinterval;
-			if (!WPCLib.ui.windowfocused) {
-				// If the window is not focused break recursive check and resume as soon as window is focused again
-				WPCLib.util._focuscallback = that.tryreconnect;
-				return;
-			}
-
-			// Abort if we already have a timer
-			if (that.reconnecttimer) return;
-
-			// Repeat the check periodically
-			that.reconnecttimer = setTimeout(function(){
-				clearTimeout(that.reconnecttimer);
-				that.reconnecttimer = null;
-				that.tryreconnect();
-			},t);
-
-			// Increase reconnectinterval to up to one minute
-			that.reconnectinterval = (t > 60000) ? 60000 : t * 2;	
-
-			// Try reconnecting
-			WPCLib.canvas.sync.addedit(true,'Reconnecting...');						
-
-			// Log
-			that.log('Offline, attempting to reconnect', that.reconnecttimer)					
-		},		
-
-		backonline: function() {
-			// Swicth state back to online and update UI
-			if ('onLine' in navigator && navigator.onLine) this.online = true;			
-			if (this.status == 'normal') return;
-			this.status = 'normal';
-			var mo = WPCLib.context.show,
-				es = this.errorStatus,
-				si = this.statusIcon;			
-
-			// Visual updates
-			this.normalStatus.style.display = 'block';
-			es.style.display = 'none';
-			si.className = (mo) ? 'open' : '';			
-			si.innerHTML = (mo) ? '&#187;' : '&#171;';	
-
-			// Reset reconnecttimer
-			clearTimeout(this.reconnecttimer);
-			this.reconnecttimer = null;
-			this.reconnectinterval = 1000;
-
-			// Make sure we get the latest version from the server and reset the Channel API
-            WPCLib.canvas.sync.reconnect(null,true);			
-			WPCLib.canvas.sync.addedit(true,'Reconnecting...');		
 		},
 
 		error: function(data) {
@@ -4116,9 +4043,101 @@ var WPCLib = {
 
 	// generic communication with backend
 	comm: {
+		// Global stuff
+		online: true,
+
+		// xhr specific stettings
 		successcodes: [200,201,204],
 		msXMLHttpServices: ['Msxml2.XMLHTTP','Microsoft.XMLHTTP'],
 		msXMLHttpService: '',
+
+		// Dis- & reconnect
+		reconnecttimer: null,
+		reconnectinterval: 1000,
+		statusIcon: document.getElementById('switchview'),
+		normalStatus: document.getElementById('status'),
+		errorStatus: document.getElementById('errorstatus'),					
+
+		goneoffline: function() {
+			// Abort any progress bar
+			if (WPCLib.ui.hprogress.active) WPCLib.ui.hprogress.done(true);
+
+			// Stop here if we're already offline
+			if (!this.online) return;
+
+			this.online = false;
+			WPCLib.sys.status = 'offline';
+			var reason = (navigator.onLine) ? 'Not connected.' : 'No internet connection.',
+				es = this.errorStatus,
+				si = this.statusIcon;
+
+			// Visual updates
+			this.normalStatus.style.display = 'none';
+			es.style.display = 'block';
+			es.innerHTML = reason;
+			si.className = 'error';
+			si.innerHTML = '!';
+
+			// Log error (to be switched off again, just to see how often this happens)
+			WPCLib.sys.log('Gone offline, ' + reason);
+
+			// Try reconnecting
+			this.tryreconnect();
+		},
+
+		tryreconnect: function() {
+			// Pings the doc API and checks if current document is latest and no newer version on the server
+			var that = WPCLib.comm, t = that.reconnectinterval;
+			if (!WPCLib.ui.windowfocused) {
+				// If the window is not focused break recursive check and resume as soon as window is focused again
+				WPCLib.util._focuscallback = that.tryreconnect;
+				return;
+			}
+
+			// Abort if we already have a timer
+			if (that.reconnecttimer) return;
+
+			// Repeat the check periodically
+			that.reconnecttimer = setTimeout(function(){
+				clearTimeout(that.reconnecttimer);
+				that.reconnecttimer = null;
+				that.tryreconnect();
+			},t);
+
+			// Increase reconnectinterval to up to one minute
+			that.reconnectinterval = (t > 60000) ? 60000 : t * 2;	
+
+			// Try reconnecting
+			WPCLib.canvas.sync.addedit(true,'Reconnecting...');						
+
+			// Log
+			WPCLib.sys.log('Offline, attempting to reconnect', that.reconnecttimer)					
+		},		
+
+		backonline: function() {
+			// Switch state back to online and update UI			
+			if (this.online) return;
+			this.online = true;
+			WPCLib.sys.status = 'normal';
+			var mo = WPCLib.context.show,
+				es = this.errorStatus,
+				si = this.statusIcon;			
+
+			// Visual updates
+			this.normalStatus.style.display = 'block';
+			es.style.display = 'none';
+			si.className = (mo) ? 'open' : '';			
+			si.innerHTML = (mo) ? '&#187;' : '&#171;';	
+
+			// Reset reconnecttimer
+			clearTimeout(this.reconnecttimer);
+			this.reconnecttimer = null;
+			this.reconnectinterval = 1000;
+
+			// Make sure we get the latest version from the server and reset the Channel API
+            WPCLib.canvas.sync.reconnect(null,true);			
+			WPCLib.canvas.sync.addedit(true,'Reconnecting...');		
+		},		
 
 		ajax: function(obj) {
 			// Generic AJAX request handler
@@ -4128,6 +4147,7 @@ var WPCLib = {
 			// Headers: HTTP Headers to be included
 			// Success: Success callback function
 			// Error: Error callback function
+			if (!obj) return;
 
 			var method = obj.type || 'GET',
 				async = obj.async || true,
@@ -4147,7 +4167,7 @@ var WPCLib = {
 			}		
 
 			// Non Patch supporting devices, move to array check once we have more
-			// TODO findout which ones exactly
+			// TODO find out which ones exactly
 			if (method == 'PATCH' && navigator.appVersion.indexOf('BB10') > -1) method = 'POST';
 
 			// Spawn new request object
@@ -4165,14 +4185,23 @@ var WPCLib = {
 
 					// Here we have to get browser specific
 					if (typeof req.ontimeout != 'undefined') {						
-						req.ontimeout = function() { obj.error(req,req.statusText,req.status); };
+						req.ontimeout = function() { 
+							if (WPCLib.comm.online) WPCLib.comm.goneoffline();
+							if (obj.error) obj.error(req,req.statusText,req.status); 
+						};
 					} else {
 						// TODO: timeout fallback
 					}	
 					if (typeof req.onerror != 'undefined') {												
-						req.onerror = function() { obj.error(req,req.statusText,req.status); };	
+						req.onerror = function() { 
+							if (WPCLib.comm.online) WPCLib.comm.goneoffline();							
+							if (obj.error) obj.error(req,req.statusText,req.status); 
+						};	
 					} else {
-						req.addEventListener("error", function() { obj.error(req,req.statusText,req.status); }, false);						
+						req.addEventListener("error", function() { 
+							if (WPCLib.comm.online) WPCLib.comm.goneoffline();
+							if (obj.error) obj.error(req,req.statusText,req.status); 
+						}, false);						
 					}										
 				}	
 
@@ -4199,11 +4228,15 @@ var WPCLib = {
 			// Handle response, for now we only handle complete requests
 			if (req.readyState != 4) return;
 
+			// Handle on/offline
+			if (this.online && req.status < 100) this.goneoffline();
+			if (!this.online && req.status >= 100 && req.status != 500) this.backonline();			
+
 			// Execute callbacks	
 			if (WPCLib.comm.successcodes.indexOf(req.status) > -1) {				
-				obj.success(req,req.statusText,req.status)
+				if (obj.success) obj.success(req,req.statusText,req.status)
 			} else {
-				obj.error(req,req.statusText,req.status)
+				if (obj.error) obj.error(req,req.statusText,req.status)
 			}					
 
 			// Mark request for Garbage collection
@@ -4815,7 +4848,7 @@ var WPCLib = {
 						if (navigator.appVersion.indexOf('CriOS') > -1) {						
 							su_s.scrollIntoView();
 						} else {
-							var el = frame.document.activeElement;							
+							var el = frame.activeElement;							
 							if (el) el.scrollIntoView();
 						}
 					}
@@ -4825,7 +4858,7 @@ var WPCLib = {
 						if (navigator.appVersion.indexOf('CriOS') > -1) {
 							si_s.scrollIntoView();
 						} else {
-							var el = frame.document.activeElement;							
+							var el = frame.activeElement;							
 							if (el) el.scrollIntoView();
 						}
 					} 					
