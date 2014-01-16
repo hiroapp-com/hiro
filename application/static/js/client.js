@@ -1480,7 +1480,6 @@ var WPCLib = {
 			addedit: function(force,reason) {
 				// Add an edit to the edits array
 				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
-				reason = reason || 'Saving...';
 
 				// If we're inflight then wait for callback
 				if (this.inflight) {
@@ -1527,7 +1526,7 @@ var WPCLib = {
 			sendedits: function(reason) {
 				// Post current edits stack to backend and clear stack on success
 				var statusbar = document.getElementById(WPCLib.context.statusId);
-                if (this.edits.length == 0 || this.inflight) {
+                if (this.edits.length == 0 || this.inflight || WPCLib.canvas.docid == 'localdoc') {
                 	// if we do not have any edits or are currently inflight
                     return;
                 }
@@ -1547,7 +1546,7 @@ var WPCLib = {
                 // Set variable to prevent double sending
                 this.inflight = true;
                 WPCLib.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
-                statusbar.innerHTML = reason || 'Saving...';
+                if (reason) statusbar.innerHTML = reason || 'Saving...';
 
                 // Post editstack to backend
                 WPCLib.comm.ajax({
@@ -4186,21 +4185,18 @@ var WPCLib = {
 					// Here we have to get browser specific
 					if (typeof req.ontimeout != 'undefined') {						
 						req.ontimeout = function() { 
-							if (WPCLib.comm.online) WPCLib.comm.goneoffline();
-							if (obj.error) obj.error(req,req.statusText,req.status); 
+							WPCLib.comm.errorhandler(req,obj);
 						};
 					} else {
 						// TODO: timeout fallback
 					}	
 					if (typeof req.onerror != 'undefined') {												
-						req.onerror = function() { 
-							if (WPCLib.comm.online) WPCLib.comm.goneoffline();							
-							if (obj.error) obj.error(req,req.statusText,req.status); 
+						req.onerror = function() {						 
+							WPCLib.comm.errorhandler(req,obj); 
 						};	
 					} else {
-						req.addEventListener("error", function() { 
-							if (WPCLib.comm.online) WPCLib.comm.goneoffline();
-							if (obj.error) obj.error(req,req.statusText,req.status); 
+						req.addEventListener("error", function() { 						
+							WPCLib.comm.errorhandler(req,obj);
 						}, false);						
 					}										
 				}	
@@ -4228,19 +4224,43 @@ var WPCLib = {
 			// Handle response, for now we only handle complete requests
 			if (req.readyState != 4) return;
 
-			// Handle on/offline
-			if (this.online && req.status < 100) this.goneoffline();
-			if (!this.online && req.status >= 100 && req.status != 500) this.backonline();			
+			// Handle coming back online
+			if (!this.online && req.status && req.status >= 100 && req.status != 500) this.backonline();		
 
 			// Execute callbacks	
-			if (WPCLib.comm.successcodes.indexOf(req.status) > -1) {				
-				if (obj.success) obj.success(req,req.statusText,req.status)
-			} else {
-				if (obj.error) obj.error(req,req.statusText,req.status)
+			if (WPCLib.comm.successcodes.indexOf(req.status) > -1) {
+				// Success callback	
+				var callback = obj.success;			
+				if (callback && !obj.called) callback(req,req.statusText,req.status);
+
+				// Make sure we don't call anything else anymore
+				obj.called = true;
+				req.abort();
+				req = obj = null;					
+			} else {				
+				this.errorhandler(req,obj);
 			}					
 
 			// Mark request for Garbage collection
 			req = null;	
+		},
+
+		errorhandler: function(req,obj) {
+			// Deal with an error and kill the request
+			// Set system status offline
+			if (this.online && req.status < 100) this.goneoffline();	
+
+			// Abort if we have no callback or already called it		
+			if (!obj.error || obj.called) return;	
+			obj.called = true;	
+
+			// Callback
+			var callback = obj.error;
+			callback(req,req.statusText,req.status);
+
+			// Clean up
+			req.abort();
+			req = obj = null;
 		},
 
 		getreq: function() {
@@ -4457,7 +4477,7 @@ var WPCLib = {
 	        	},500); 
 
 	        	// Hack: Send edits in refocus to consider changes in old tab
-				WPCLib.canvas.sync.addedit(true,'Syncing...');	
+				WPCLib.canvas.sync.addedit(true);	
 				        	       	
 	        } else {
 	        	// If the window blurs
