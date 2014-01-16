@@ -1169,7 +1169,7 @@ var WPCLib = {
 				that.caretPosition = that._getposition()[1];		        
 
 		        // Save Document        
-                if (!WPCLib.canvas.sync.inited) { that.savedoc() } else { WPCLib.canvas.sync.addedit(); }
+                if (!WPCLib.canvas.sync.inited) { that.savedoc() } else { WPCLib.canvas.sync.addedit(false,'Saving...'); }
 	        }, 10);
 		},
 
@@ -1186,7 +1186,7 @@ var WPCLib = {
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
 				WPCLib.canvas._wordcount();	
-				if (WPCLib.sys.user.level > 0) WPCLib.canvas.sync.addedit(); 
+				if (WPCLib.sys.user.level > 0) WPCLib.canvas.sync.addedit(false,'Saving...'); 
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
@@ -1265,7 +1265,7 @@ var WPCLib = {
 				WPCLib.canvas._cleartypingtimer();				
 
 				// Add edit if user is logged in or save locally if not
-				if (WPCLib.canvas.sync.inited) WPCLib.canvas.sync.addedit();
+				if (WPCLib.canvas.sync.inited) WPCLib.canvas.sync.addedit(false,'Saving...');
 
 				// Save rest of doc if flag is set or user not logged in yet
 				if (save || lvl == 0) WPCLib.canvas.savedoc();	
@@ -1410,15 +1410,11 @@ var WPCLib = {
 			remoteversion: 0,
 			enabled: false,
 			sessionid: undefined,
-			connected: false,
-			channel: null,
-			channelToken: undefined,
-			socket: undefined,
 			inited: false,
 			latestcursor: 0,
 			previouscursor: 0,
 			keepalive: null,
-			keepaliveinterval: 300000,
+			keepaliveinterval: 300000,			
 
 			init: function(dmponly) {
 				// Abort if sync was already inited
@@ -1446,17 +1442,12 @@ var WPCLib = {
 				this.reset();
 
 				// Set internal values
-				this.channelToken = token;
+				WPCLib.comm.crap.channelToken = token;
                 this.sessionid = sessionid;
                 this.shadow = text;       
 
-                if (this.connected) { 
-                	// This will trigger a reconnect with the new token we set above
-                	this.socket.close();
-                } else { 
-                	// First time we just open the channel
-                	this.openchannel(token) 
-                };
+            	// Open new channel with token
+            	WPCLib.comm.crap.connect(token);                 
 
                 // If we have set the resend flag
                 if (resend) this.addedit(true,'Syncing...');
@@ -1539,10 +1530,6 @@ var WPCLib = {
                 	return;
                 }
 
-                // See if we're connected to Channel API and try to recover if not (precaution, case not seen yet)
-                // Do not open try to reopen channel if Channel API is blocked by plugin or similar
-                if (goog && !this.connected && this.channelToken) this.openchannel(this.channelToken);
-
                 // Set variable to prevent double sending
                 this.inflight = true;
                 WPCLib.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
@@ -1553,16 +1540,9 @@ var WPCLib = {
                     url: "/docs/"+WPCLib.canvas.docid+"/sync",
                     type: "POST",
                     payload: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
-                    timeout: 8000,
+                    timeout: 10000,
                     success: function(req) {
                     	var data = JSON.parse(req.response);
-                        if (data.session_id != WPCLib.canvas.sync.sessionid) {
-	                        // Reset inflight variable
-	                        WPCLib.canvas.sync.inflight = false;                         	
-                        	// If for some reason the session got out of sync we reset
-                            WPCLib.canvas.sync.reconnect(null,true);                           
-                            return;
-                        }
 
                         // Confirm
                 		statusbar.innerHTML = 'Saved.';                       
@@ -1753,172 +1733,6 @@ var WPCLib = {
 
 				// Return patch and simple string format
 				return this.dmp.diff_toDelta(d);
-			},
-
-			openchannel: function(token) {
-				// Open Appengine Channel or Diff match patch wasn't loaded yet
-				if (!goog || !goog.appengine.Channel || !this.dmp) {
-					// Retry if channel API isn't loaded yet
-					setTimeout(function(){
-						WPCLib.canvas.sync.openchannel(token);
-						return;
-					},500);
-				}
-
-				if (this.connected) {
-					// If we already have a proper connection then kill it
-					this.socket.close();
-					return;
-				}
-
-				if (token) {
-					// Store token if we should need it later					
-					this.channelToken = token;
-				} else {
-					// Try to recover with last known token if we don't have one
-					token = this.channelToken;
-					if (!this.channelToken) WPCLib.sys.error('Tried to connect but no channel token available');
-				}
-
-				// Do not try to create multiple sockets
-				if (this.socket) return;
-
-				// Create new instance of channel object
-                this.channel = new goog.appengine.Channel(token),
-                this.socket = this.channel.open();
-                this.socket.onopen = function() {
-                    WPCLib.sys.log("connected to channel api");
-                    WPCLib.canvas.sync.connected = true;
-                }
-                this.socket.onmessage = function(data) {
-                    WPCLib.canvas.sync.on_channel_message(JSON.parse(data.data));
-                }                
-                this.socket.onerror = function(data) {
-                    WPCLib.sys.log("ERROR connecting to channel api",data);                	
-                    if (!data.code || data.code == 400 || data.code == 401) {
-                    	// This is most likely either a timed out session or token, so we reset the whole sync stack
-                    	WPCLib.canvas.sync.reconnect(null,true);
-                    } else if (data.code == 0 || data.code == -1) {
-                    	// Damn, we or Channel API just went offline
-                    	WPCLib.sys.goneoffline();
-                    }                           	
-                }
-                this.socket.onclose = function(data) {
-                    WPCLib.sys.log("Channel closed.",data);
-					WPCLib.canvas.sync.channel = WPCLib.canvas.sync.socket = null;
-					WPCLib.canvas.sync.connected = false;	                    
-                    WPCLib.canvas.sync.reconnect(WPCLib.canvas.sync.channelToken);                 
-                }			
-			},		
-
-            on_channel_message: function(data) {
-            	// Receive and process notification of document update
-            	var el = WPCLib.folio.docs.lookup[data.doc_id], 
-            		ui = WPCLib.ui,
-            		ownupdate = (data.origin.session_id == WPCLib.canvas.sync.sessionid),
-            		ownuser = (data.origin.email == WPCLib.sys.user.email),
-            		name = data.origin.name || data.origin.email;
-
-            	// If the update was from our current session (same window)	
-            	if (ownupdate) return;	
-
-
-            	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
-            	if (!el) {
-            		WPCLib.folio.docs.loaddocs(true);
-            		return;
-            	}         		
-
-            	// Update internal timestamp & last editor values	
-            	if (ownuser) {
-            		el.updated = WPCLib.util.now();  
-            	} else {
-            		if (!el.last_doc_update) el.last_doc_update = {};
-            		el.last_doc_update.updated = WPCLib.util.now();
-            		el.last_doc_update.name = data.origin.name;  
-            		el.last_doc_update.email = data.origin.email;            		          		
-            	}              	
-
-                if (data.doc_id == WPCLib.canvas.docid) {
-                	// If the update is for the current document
-                	// As we don't have a "send/request blank" yet, we trigger a then blank diff
-                	// TODO: Think of a better way
-                    WPCLib.canvas.sync.addedit(true,'Syncing...');
-                    if (!ui.windowfocused && !ui.audioblurplayed && !ownuser) {
-                    	// Play sound
-                    	ui.playaudio('unseen',0.7);
-                    	ui.audioblurplayed = true;
-                    	// Add update message to notification function
-                    	var title = WPCLib.canvas.title || 'Untitled';
-                    	ui.tabnotify('Updated!');
-                    }
-                } else if (!ownuser && el && el.status == 'active') {
-                	// If the update is for an active (not archived) doc in folio thats not currently open
-                	// Update internal values and update display
-                	el.unseen = true;
-                	// Add message to notification function, sound is only triggered once by folio update
-                    var title = el.title || 'Untitled';                	
-                    if (!ui.windowfocused) ui.tabnotify(el.title + ' updated!');                	
-                }
-
-                // Display the updates in the DOM
-                WPCLib.folio.docs.update();                
-            },		
-
-            reconnecting: false,
-			reconnect: function(token,reset) {
-				// If the connection dropped or the user loaded a new document we start a new one
-				// Prevent multiple reconnects if we do a hard reset, or reconnecting if we are offline
-				if (this.reconnecting || WPCLib.sys.status != 'normal') return;
-				this.reconnecting = true;
-				// Create new connection
-				if (!reset) {
-					// Only restart the Channel API with existing token
-					WPCLib.sys.log('Reconnecting to Channel backend with token: ',token);					
-					this.openchannel(token);
-					this.reconnecting = false;			
-				} else {
-					// Request a new token and the reset the Channel as well
-					var docid = WPCLib.canvas.docid,					
-						url = '/docs/' + docid;
-
-					if (!docid) {
-						// If we don't even have a docid try to recover by reloading all docs
-						WPCLib.sys.error('SEVERE: Tried to reconnect Channel but still no docid, reloading docs');
-						WPCLib.folio.docs.loaddocs();
-						return;
-					}	
-
-					// Delete Channel API iframe
-					// as per https://code.google.com/p/googleappengine/issues/detail?id=4940
-                	var frame = document.getElementById('#wcs-iframe');
-                	if (frame) frame.parentNode.removeChild(frame);
-
-					// Request new session id & token from backend
-					WPCLib.comm.ajax({
-						url: url,
-						success: function(req) {	
-							var data = JSON.parse(req.response),
-								text = data.text || '';
-							// Make sure shadow etc equal what the user is seeing, otherwise update
-							// This is important if a Channel timed out and was reconnected hours later (eg device powered off)
-							// and thus the client never got informed of updates to the doc which would be overwritten by next addedit()
-							if (text != document.getElementById(WPCLib.canvas.contentId).value) WPCLib.canvas.set_text(text);
-							// Reconnect
-							WPCLib.canvas.sync.begin(text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));	
-							WPCLib.sys.log('Reconnecting sync with new sessionid & token ',req);
-							WPCLib.canvas.sync.reconnecting = false;
-							// Also refresh doclist for version updates and file changes
-							WPCLib.folio.docs.loaddocs(true);							
-						},
-						error: function(req) {
-							WPCLib.sys.error('SEVERE: Could not reset sync, error while fetching doc, reloading docs. ' + JSON.stringify(req));
-							// Check if user has access, otherwise avoid potential side effects
-							if (req.status == 404 || req.status == 403) WPCLib.folio.docs.loaddocs();	
-							WPCLib.canvas.sync.reconnecting = false;													
-						}
-					});		
-				}	
 			}
 		}
 	},	
@@ -4055,7 +3869,131 @@ var WPCLib = {
 		reconnectinterval: 1000,
 		statusIcon: document.getElementById('switchview'),
 		normalStatus: document.getElementById('status'),
-		errorStatus: document.getElementById('errorstatus'),					
+		errorStatus: document.getElementById('errorstatus'),
+
+		crap: {
+			// Aka Appengine Channel API, to be deprecated once we have dedicated sync server
+			connected: false,
+			channel: null,
+			channelToken: undefined,
+			socket: undefined,
+
+            connect: function(token) {
+            	// Called externally to start Channel session
+            	// Make sure to properly kill any old channel
+            	if (this.socket) {
+            		this.socket.close();
+     				setTimeout(function(){
+						WPCLib.comm.crap.connect(token);
+						return;
+					},500);       		
+            	}
+
+            	// Open channel
+            	this.openchannel(token);
+            },
+
+			openchannel: function(token) {
+				// Open Appengine Channel or Diff match patch wasn't loaded yet
+				if (!goog || !goog.appengine.Channel || !WPCLib.canvas.sync.dmp) {
+					// Retry if channel API isn't loaded yet
+					setTimeout(function(){
+						WPCLib.comm.crap.openchannel(token);
+						return;
+					},500);
+				}
+
+				if (token) {
+					// Store token if we should need it later					
+					this.channelToken = token;
+				} else {
+					// Try to recover with last known token if we don't have one
+					token = this.channelToken;
+					if (!this.channelToken) WPCLib.sys.error('Tried to connect but no channel token available');
+				}
+
+				// Do not try to create multiple sockets
+				if (this.socket) return;
+
+				// Create new instance of channel object
+                this.channel = new goog.appengine.Channel(token),
+                this.socket = this.channel.open();
+                this.socket.onopen = function() {
+                    WPCLib.sys.log("connected to channel api");
+                    WPCLib.comm.crap.connected = true;
+                }
+                this.socket.onmessage = function(data) {
+                    WPCLib.comm.crap.on_channel_message(JSON.parse(data.data));
+                }                
+                this.socket.onerror = function(data) {
+                    WPCLib.sys.error("ERROR connecting to channel api",data);                	
+					if (data.code == 0 || data.code == -1) {
+                    	// Damn, we or Channel API just went offline
+                    	WPCLib.sys.log('Channel API offline');
+                    	WPCLib.comm.goneoffline();
+                    }                           	
+                }
+                this.socket.onclose = function(data) {
+                    WPCLib.sys.log("Channel closed.",data);
+					WPCLib.comm.crap.channel = WPCLib.comm.crap.socket = null;
+					WPCLib.comm.crap.connected = false;	                                    
+                }			
+			},		
+
+            on_channel_message: function(data) {
+            	// Receive and process notification of document update
+            	var el = WPCLib.folio.docs.lookup[data.doc_id], 
+            		ui = WPCLib.ui,
+            		ownupdate = (data.origin.session_id == WPCLib.canvas.sync.sessionid),
+            		ownuser = (data.origin.email == WPCLib.sys.user.email),
+            		name = data.origin.name || data.origin.email;
+
+            	// If the update was from our current session (same window)	
+            	if (ownupdate) return;	
+
+
+            	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
+            	if (!el) {
+            		WPCLib.folio.docs.loaddocs(true);
+            		return;
+            	}         		
+
+            	// Update internal timestamp & last editor values	
+            	if (ownuser) {
+            		el.updated = WPCLib.util.now();  
+            	} else {
+            		if (!el.last_doc_update) el.last_doc_update = {};
+            		el.last_doc_update.updated = WPCLib.util.now();
+            		el.last_doc_update.name = data.origin.name;  
+            		el.last_doc_update.email = data.origin.email;            		          		
+            	}              	
+
+                if (data.doc_id == WPCLib.canvas.docid) {
+                	// If the update is for the current document
+                	// As we don't have a "send/request blank" yet, we trigger a then blank diff
+                	// TODO: Think of a better way
+                    WPCLib.canvas.sync.addedit(true,'Syncing...');
+                    if (!ui.windowfocused && !ui.audioblurplayed && !ownuser) {
+                    	// Play sound
+                    	ui.playaudio('unseen',0.7);
+                    	ui.audioblurplayed = true;
+                    	// Add update message to notification function
+                    	var title = WPCLib.canvas.title || 'Untitled';
+                    	ui.tabnotify('Updated!');
+                    }
+                } else if (!ownuser && el && el.status == 'active') {
+                	// If the update is for an active (not archived) doc in folio thats not currently open
+                	// Update internal values and update display
+                	el.unseen = true;
+                	// Add message to notification function, sound is only triggered once by folio update
+                    var title = el.title || 'Untitled';                	
+                    if (!ui.windowfocused) ui.tabnotify(el.title + ' updated!');                	
+                }
+
+                // Display the updates in the DOM
+                WPCLib.folio.docs.update();                
+            }
+		},					
 
 		goneoffline: function() {
 			// Abort any progress bar
@@ -4133,8 +4071,7 @@ var WPCLib = {
 			this.reconnecttimer = null;
 			this.reconnectinterval = 1000;
 
-			// Make sure we get the latest version from the server and reset the Channel API
-            WPCLib.canvas.sync.reconnect(null,true);			
+			// Make sure we get the latest version from the server and reset the Channel API			
 			WPCLib.canvas.sync.addedit(true,'Reconnecting...');		
 		},		
 
@@ -4773,7 +4710,7 @@ var WPCLib = {
 			if ( e.ctrlKey || e.metaKey ) {
 				if (k == 83) {
 					// Ctrl+s
-					WPCLib.canvas.sync.addedit();					
+					WPCLib.canvas.sync.addedit(false,'Saving...');					
 					WPCLib.canvas.savedoc(true);
 		    		e.preventDefault();											
 				}
