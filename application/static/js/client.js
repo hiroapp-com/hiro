@@ -109,13 +109,11 @@ var WPCLib = {
 				// Start progres bar
 				if (!folioonly) WPCLib.ui.hprogress.begin();			
 
-				WPCLib.comm.ajax({
+				WPCLib.store.handle({
 				    url: '/docs/?group_by=status',
-				    success: function(req) {
+				    success: function(req,data) {
 						// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
 						// or because we got invited via token
-						var data = JSON.parse(req.response);
-
 						if (!data.active && !data.archived) {	
 							if (WPCLib.sharing.token) {
 								// If we have a token we just call loaddocand let it figure out the rest via url / token
@@ -152,6 +150,10 @@ var WPCLib = {
 						if (!WPCLib.sys.version) { WPCLib.sys.version = data.hiroversion; }
 						else if (WPCLib.sys.version != data.hiroversion) WPCLib.sys.upgradeavailable(data.hiroversion);				    
 
+				    },
+				    error: function(req) {
+				    	// Refresh page if loaddocs throws 401 (user most likely logged out of system)
+				    	if (WPCLib.sys.user.level > 0 && (req.status == 401 || req.status == 403)) window.location.href = '/'; 
 				    }
 				});						
 			},
@@ -460,8 +462,7 @@ var WPCLib = {
 						url: "/docs/",
 		                type: "POST",
 		                payload: JSON.stringify(file),
-						success: function(req) {
-							var data = JSON.parse(req.response);
+						success: function(req,data) {
 		                    WPCLib.sys.log("backend issued doc id ", data.doc_id);
 
 							// Set params for local doc
@@ -504,8 +505,7 @@ var WPCLib = {
 						url: "/docs/",
 		                type: "POST",
 		                payload: JSON.stringify(file),
-						success: function(req) {
-							var data = JSON.parse(req.response);
+						success: function(req,data) {
 		                    WPCLib.sys.log("move local to backend with new id ", data);
 		                    // Delete local item
 		                    localStorage.removeItem('WPCdoc')
@@ -875,8 +875,7 @@ var WPCLib = {
 			WPCLib.comm.ajax({
 				url: '/docs/'+docid,
 				headers: header,
-				success: function(req) {
-					var data = JSON.parse(req.response);
+				success: function(req,data) {
 					WPCLib.canvas.docid = data.id;
 					WPCLib.canvas.created = data.created;
 					WPCLib.canvas.lastUpdated = data.updated;	
@@ -1481,25 +1480,28 @@ var WPCLib = {
 				// Abort if the string stayed the same or syncing is disabled
 				if (!force && (!this.enabled || c == s)) return;
 
-				// Build edit object, right now including Patch and simple diff string format, TODO Choose one
-				edit.delta = this.delta(s,c); 
-				edit.clientversion = this.localversion++;
-				edit.serverversion = this.remoteversion;
+				if (WPCLib.comm.online || this.edits.length == 0) {
+					// Build edit object, if we are offline we only build one to send instead of clogging array with endless edits
+					// Right now including Patch and simple diff string format, TODO Choose one
+					edit.delta = this.delta(s,c); 
+					edit.clientversion = this.localversion++;
+					edit.serverversion = this.remoteversion;
 
-                // Update last edit timestamp & folio display if text was changed
-                if (c != s) {
-                	var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];
-					if (doc) doc.updated = WPCLib.util.now(); 
-					WPCLib.folio.docs.update();
-                }				
+	                // Update last edit timestamp & folio display if text was changed
+	                if (c != s) {
+	                	var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];
+						if (doc) doc.updated = WPCLib.util.now(); 
+						WPCLib.folio.docs.update();
+	                }				
 
-				// Cursor handling
-				this.previouscursor = this.latestcursor;
-				edit.cursor = this.latestcursor = WPCLib.canvas.caretPosition; 
+					// Cursor handling
+					this.previouscursor = this.latestcursor;
+					edit.cursor = this.latestcursor = WPCLib.canvas.caretPosition; 
 
-				// Add edit to edits stack
-				this.edits.push(edit);
-				this.shadow = c;
+					// Add edit to edits stack
+					this.edits.push(edit);
+					this.shadow = c;
+				}
 
 				// Initiate sending of stack
 				this.sendedits(reason);
@@ -1517,8 +1519,8 @@ var WPCLib = {
 			sendedits: function(reason) {
 				// Post current edits stack to backend and clear stack on success
 				var statusbar = document.getElementById(WPCLib.context.statusId);
-                if (this.edits.length == 0 || this.inflight || WPCLib.canvas.docid == 'localdoc') {
-                	// if we do not have any edits or are currently inflight
+                if (this.edits.length == 0 || this.inflight || WPCLib.canvas.docid == 'localdoc' || WPCLib.sys.user.level == 0) {
+                	// if we do not have any edits, are currently inflight or user is not logged in yet
                     return;
                 }
 
@@ -1541,9 +1543,7 @@ var WPCLib = {
                     type: "POST",
                     payload: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
                     timeout: 10000,
-                    success: function(req) {
-                    	var data = JSON.parse(req.response);
-
+                    success: function(req,data) {
                         // Confirm
                 		statusbar.innerHTML = 'Saved.';                       
                         WPCLib.sys.log('Completed sync request successfully ',[JSON.stringify(data.deltas)]);
@@ -1561,14 +1561,13 @@ var WPCLib = {
                         }	
                         	
                     },
-                    error: function(req) {
+                    error: function(req,data) {
                         // Reset inflight variable
                         WPCLib.canvas.sync.inflight = false;					
 
                         // Retry if it was just a sync session timeout (20 mins)
                         if (req.status == 412) {
-                        	var data = JSON.parse(req.response),
-                        		sv = data.text,
+                        	var sv = data.text,
                         	    lv = WPCLib.canvas.sync.shadow;
 
                         	// See if the client/server versions differ, build and apply patch if
@@ -1590,7 +1589,7 @@ var WPCLib = {
 						if (req.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
 						
 						// Try callback but navigate away once access is lost 
-						if (req.status == 403 || req.status == 404) {
+						if (req.status == 401 || req.status == 403 || req.status == 404) {
                         	// Prevent further sendedits
                         	WPCLib.canvas.sync.inflight = true;    
                         	setTimeout(function(){ WPCLib.canvas.sync.inflight = false; },2000);
@@ -1939,8 +1938,7 @@ var WPCLib = {
 		            	// Notify segment.io
 		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);                    	
                     },
-                    error: function(req) {
-                    	var data = JSON.parse(req.response);
+                    error: function(req,data) {
                     	// Show error 
                     	input.nextSibling.innerHTML = data;
 						input.nextSibling.style.display = 'block';	                    	
@@ -2071,10 +2069,10 @@ var WPCLib = {
 				WPCLib.comm.ajax({
                     url: url,
                     contentType: "json",
-                    success: function(req) {
+                    success: function(req,data) {
                     	// Set internal values and update visual display
                     	var that = WPCLib.sharing.accesslist;
-                    	that.users = JSON.parse(req.response);
+                    	that.users = data;
                         that.update();
                     }
                 });
@@ -2526,8 +2524,7 @@ var WPCLib = {
                 url: "/relevant/verify",
                 type: "POST",
                 payload: JSON.stringify({ links:links }),
-                success: function(req) {
-                	var data = JSON.parse(req.response);
+                success: function(req,data) {
                 	WPCLib.sys.log('Verfified links: ',data);
 
                 	// Build a lookup object from our stickies
@@ -2592,8 +2589,8 @@ var WPCLib = {
 			WPCLib.comm.ajax({
 				url: '/analyze', 
 				payload: JSON.stringify({"content":string}), 
-				success: function(req) {
-		            WPCLib.context.chunksearch(JSON.parse(req.response),chunktype);
+				success: function(req,data) {
+		            WPCLib.context.chunksearch(data,chunktype);
 		        }
 		    });
 		},		
@@ -2624,8 +2621,7 @@ var WPCLib = {
                     url: "/relevant",
                     type: "POST",
                     data: JSON.stringify(postData),
-                    success: function(req) {
-                    	var data = JSON.parse(req.response)
+                    success: function(req,data) {
                         WPCLib.context.storeresults(data.results);
                         WPCLib.context.renderresults();		             
                         document.getElementById(that.statusId).innerHTML = 'Ready.';
@@ -2664,8 +2660,7 @@ var WPCLib = {
 				    url: 'https://words.bighugelabs.com/api/2/' + that.synKey + '/' + ss + '/json',
 				    type: 'GET',
 				    dataType: "jsonp",
-				    success: function(req) {
-				    	var data = JSON.parse(req.response);
+				    success: function(req,data) {
 				    	if (!WPCLib.context.overquota) WPCLib.context.rendersynonyms(data,ss);				    	
 				    },
 				    error: function() {
@@ -2695,8 +2690,7 @@ var WPCLib = {
                 			WPCLib.sys.error(req.response);	
                 	}
                 },           
-                success: function(req) {
-                	var data = JSON.parse(req.response);
+                success: function(req,data) {
                     WPCLib.context.storeresults(data.results);
                     WPCLib.context.renderresults(showtip);		             
                     document.getElementById(that.statusId).innerHTML = 'Ready.';                   
@@ -3093,7 +3087,6 @@ var WPCLib = {
 	// All system related vars & functions
 	sys: {
 		version: '',
-		online: true,
 		status: 'normal',
 		production: (window.location.href.indexOf('hiroapp') >= 0),
 		language: 'en-us',
@@ -3132,18 +3125,18 @@ var WPCLib = {
 				WPCLib.util.registerEvent(window,'popstate', function(e) { WPCLib.util.goback(e); });			
 			}			
 
-			// TODO REMOVE CLEANUP Prevent browser window elasticity ontouch devices
-			// if ('ontouchstart' in document.documentElement) {
-				// document.addEventListener('touchmove',function(e) {e.preventDefault();},false);			
-			// }
 
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {
+				// Init non critical elements
+				WPCLib.publish.init();
+				WPCLib.sharing.init();				
 				WPCLib.canvas._init();
-				// TODO REMOVE CLEANUP Remove address bar on mobile browsers
-				// window.scrollTo(0,1);
+				// Cehck if localStorage is supported
+				WPCLib.store.local = (window.localStorage) ? true : false;				
 				// Load settings into dialog
-				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl);  										  							
+				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl); 
+
 			});		
 
 			// Check for any hashed parameters
@@ -3166,8 +3159,6 @@ var WPCLib = {
 
 			// Init remaining parts
 			WPCLib.folio.init();
-			WPCLib.publish.init();
-			WPCLib.sharing.init();
 			this.initCalled=true;
 		},
 
@@ -3313,11 +3304,10 @@ var WPCLib = {
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
 	                payload: payload,
-					success: function(req) {
-						var data = JSON.parse(req.response)
+					success: function(req,data) {
 						WPCLib.sys.user.authed('register',data,'Email');												                    
 					},
-					error: function(req) {
+					error: function(req,data) {
 	                    button.innerHTML = "Create Account";
 	                    WPCLib.sys.user.authactive = false;						
 						if (req.status==500) {
@@ -3325,14 +3315,13 @@ var WPCLib = {
 							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
 							return;
 						}
-						var et = JSON.parse(req.response); 
-	                    if (et.email) {
+	                    if (data.email) {
 	                    	val[0].className += ' error';
-	                    	val[0].nextSibling.innerHTML = et.email;
+	                    	val[0].nextSibling.innerHTML = data.email;
 	                    }	
-	                    if (et.password) {
+	                    if (data.password) {
 	                    	val[1].className += ' error';	                    	
-	                    	val[1].nextSibling.innerHTML = et.password;  
+	                    	val[1].nextSibling.innerHTML = data.password;  
 	                    }	                 		                    						                    
 					}										
 				});	
@@ -3370,25 +3359,24 @@ var WPCLib = {
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
 	                payload: payload,
-					success: function(req) {
-						WPCLib.sys.user.authed('login',JSON.parse(req.response));						                    
+					success: function(req,data) {
+						WPCLib.sys.user.authed('login',data);						                    
 					},
-					error: function(req) { 												
+					error: function(req,data) { 												
 	                    button.innerHTML = "Log-In";
 	                    WPCLib.sys.user.authactive = false;						
 						if (req.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
 							return;
-						}
-						var et = JSON.parse(req.response); 
-	                    if (et.email) {
+						} 
+	                    if (data.email) {
 	                    	val[0].className += ' error';
-	                    	val[0].nextSibling.innerHTML = et.email[0];
+	                    	val[0].nextSibling.innerHTML = data.email[0];
 	                    }	
-	                    if (et.password) {
+	                    if (data.password) {
 	                    	val[1].className += ' error';	                    	
-	                    	val[1].nextSibling.innerHTML = et.password;  
+	                    	val[1].nextSibling.innerHTML = data.password;  
 	                    }	               		                                    
 					}										
 				});	
@@ -3633,8 +3621,8 @@ var WPCLib = {
 					url: url,
 	                type: "POST",
 	                payload: JSON.stringify(payload),
-					success: function(req) {
-						WPCLib.sys.user.authed('reset',JSON.parse(req.response));	                    
+					success: function(req,data) {
+						WPCLib.sys.user.authed('reset',data);	                    
 					},
 					error: function(req) {               		                    
 						if (req.status = 404) {
@@ -3810,8 +3798,7 @@ var WPCLib = {
 					url: "/settings/plan",
 	                type: "POST",
 	                payload: JSON.stringify(subscription),
-					success: function(req) {
-						var data = JSON.parse(req.response);
+					success: function(req,data) {
 						document.getElementById('dialog').contentDocument.getElementById('checkoutbutton').innerHTML = "Upgrade";
 	                    WPCLib.sys.user.setStage(data.tier);	
 	                    WPCLib.sys.user.checkoutActive = false;	
@@ -3842,8 +3829,7 @@ var WPCLib = {
 					url: "/settings/plan",
 	                type: "POST",
 	                payload: JSON.stringify(payload),
-					success: function(req) {
-						var data = JSON.parse(req.response);
+					success: function(req,data) {
 	                    WPCLib.sys.user.setStage(data.tier);	
 	                    WPCLib.sys.user.downgradeActive = false;	
 	                    WPCLib.ui.hideDialog();	                    
@@ -3852,6 +3838,120 @@ var WPCLib = {
 				});					
 			}
 		},
+	},
+
+	// Data absctraction layer for on/offline access
+	store: {
+		// Setup variables
+		local: undefined,
+		settypes: ['POST','PATCH'],
+
+		handle: function(obj) {
+			// Set data
+			if (WPCLib.comm.online) {
+				// Set flag that tells ajax to send data back to us so we can update the localstore
+				obj.updatelocal = true;
+				// All good, pass on to ajax
+				WPCLib.comm.ajax(obj);
+			} else {
+				// Use localstorage
+				if (!obj.url) return;
+
+				// Make key that works with localStorage
+				obj.url = this.makekey(obj.url);
+
+				if (obj.type && this.settypes.indexOf(obj.type) > -1) {
+					// We have to store something
+					this.setlocal(obj);
+				} else {
+					// We have to retrieve something
+					this.getlocal(obj);
+				}
+			}
+		},
+
+		makekey: function(url) {
+			// Convert URL to save localStore key 
+			var key = url;
+			if (key.indexOf('/') > -1) key = key.replace(/\//g,".");
+			key = key.split('?')[0];
+			key = 'hiro' + key;	
+			if (key.charAt(key.length - 1) == '.') key = key.slice(0,-1);
+			return key;		
+		},
+
+		setlocal: function(obj) {
+			// Store value in localstore
+			var key = obj.url,
+				value = obj.payload,
+				r = {};
+
+			// Prepare data
+			if (typeof value != 'string') value = JSON.stringify(value);
+
+			// Save locally	& execute callback	
+			WPCLib.sys.log('Saving in localstore: ',key,value);
+			try {
+				// Save
+				localStorage.setItem(key,value);
+
+				// Fill response object
+				if (obj.success) {
+					r.status = 200;
+					r.response = obj.payload;
+
+					// Return response obj
+					if (obj.success) obj.succes(r,obj.payload);
+				}
+			} catch(e) {
+				r.status = 500;
+				r.response = e;
+
+				// Return error object
+				if (obj.error) obj.error(r,e);				
+				WPCLib.sys.error(e);
+			}
+
+			// Execute callback			
+		},
+
+		updatelocal: function(url,value) {
+			// Save data returned from xhr call to localstorage to keep it up to date
+			key = this.makekey(url);	
+
+			// Update item			
+			try { localStorage.setItem(key,value); } catch(e) {	WPCLib.sys.error(e); };	
+			WPCLib.sys.log('Updating localstore: ',key,value);								
+		},
+
+		getlocal: function(obj) {
+			// Get value from localstore
+			var key = obj.url,
+				r = {};
+
+			// Get data
+			try {
+				var value = localStorage.getItem(key);
+				WPCLib.sys.log('Retrieved from localstore: ',key,value);				
+			} catch (e) {
+				WPCLib.sys.error(e);	
+				r.status = 500;
+				r.response = e;
+				if (obj.error) obj.error(r,e);	
+				return;		
+			}
+
+			// Build response object & execute callback		
+			if (value) {
+				r.response = value;					
+				r.status = 200;
+				if (obj.success) obj.success(r,JSON.parse(value))
+			} else {
+				r.status = 404;
+				if (obj.error) obj.error(r,undefined)
+			}		
+
+		}
 	},
 
 	// generic communication with backend
@@ -3928,9 +4028,9 @@ var WPCLib = {
                 this.socket.onerror = function(data) {
                     WPCLib.sys.error("ERROR connecting to channel api",data);                	
 					if (data.code == 0 || data.code == -1) {
-                    	// Damn, we or Channel API just went offline
+                    	// Damn, we or Channel API just went offline, verify by sending a sync to server
                     	WPCLib.sys.log('Channel API offline');
-                    	WPCLib.comm.goneoffline();
+                    	WPCLib.canvas.sync.addedit(true,'Syncing...');
                     }                           	
                 }
                 this.socket.onclose = function(data) {
@@ -4045,7 +4145,11 @@ var WPCLib = {
 			that.reconnectinterval = (t > 60000) ? 60000 : t * 2;	
 
 			// Try reconnecting
-			WPCLib.canvas.sync.addedit(true,'Reconnecting...');						
+			if (WPCLib.sys.user.level == 0) {
+
+			} else {
+				WPCLib.canvas.sync.addedit(true,'Reconnecting...');	
+			}						
 
 			// Log
 			WPCLib.sys.log('Offline, attempting to reconnect', that.reconnecttimer)					
@@ -4167,8 +4271,14 @@ var WPCLib = {
 			// Execute callbacks	
 			if (WPCLib.comm.successcodes.indexOf(req.status) > -1) {
 				// Success callback	
-				var callback = obj.success;			
-				if (callback && !obj.called) callback(req,req.statusText,req.status);
+				var callback = obj.success;
+				try { var data = (req.response) ? JSON.parse(req.response) : undefined; } catch (e) { };			
+				if (callback && !obj.called) callback(req,data);
+
+				// Send data back to localstore as well
+				if (obj.updatelocal) {
+					WPCLib.store.updatelocal(obj.url,req.response);
+				}
 
 				// Make sure we don't call anything else anymore
 				obj.called = true;
@@ -4193,7 +4303,8 @@ var WPCLib = {
 
 			// Callback
 			var callback = obj.error;
-			callback(req,req.statusText,req.status);
+			try { var data = (req.response) ? JSON.parse(req.response) : undefined; } catch(e) { };
+			callback(req,data);
 
 			// Clean up
 			req.abort();
