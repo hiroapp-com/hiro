@@ -38,9 +38,9 @@
 			<iframe src="/landing/" scrollbar="no" id="landing"></iframe>	
 		{% endif %}	
 
-		<div class="menu" onmouseover="WPCLib.ui.menuSlide(1,'',true);" id="folio">
+		<div class="menu" onmouseover="Hiro.ui.menuSlide(1,'',true);" id="folio">
 			<div class="menuheader">
-				<a href="#" class="newdoc" onclick="WPCLib.folio.docs.newdoc();"><b>+</b>&nbsp;New Note</a>
+				<a href="#" class="newdoc" onclick="Hiro.folio.docs.newdoc();"><b>+</b>&nbsp;New Note</a>
 			</div>
 			<div class="documents" id="doclist">
 				<span class="loading">Loading...</span>				
@@ -48,23 +48,23 @@
 			<div class="documents" id="archivelist"></div>				
 			<div class="menufooter">
 				<div class="logio login" id="logio">
-					<a href="#" class="button dark" onclick="WPCLib.sys.user.logio();return false;" title="Login">
+					<a href="#" class="button dark" onclick="Hiro.sys.user.logio();return false;" title="Login">
 						<span>Login</span>
 					</a>			
 				</div>
 				<div class="archive">
-					<a href="#" class="button dark settings" title="Settings" onclick="WPCLib.folio.showSettings();return false;" ontouchstart="WPCLib.folio.showSettings();return false;">
+					<a href="#" class="button dark settings" title="Settings" onclick="Hiro.folio.showSettings();return false;" ontouchstart="Hiro.folio.showSettings();return false;">
 						<span>Settings</span>
 					</a>					
-					<a href="#" class="panel dark archbutton" title="Archive" onclick="WPCLib.folio.docs.openarchive();return false;" ontouchstart="WPCLib.folio.docs.openarchive();return false;">
+					<a href="#" class="panel dark archbutton" title="Archive" onclick="Hiro.folio.docs.openarchive();return false;" ontouchstart="Hiro.folio.docs.openarchive();return false;">
 						<span id="a_counter">Archive</span>
 					</a>								
 				</div>	
 			</div>			
 		</div>
 		
-		<a href="#" onclick="WPCLib.context.switchview(); return false;" ontouchstart="WPCLib.context.switchview(); return false;" id="switchview" title="Switch sidebar on and off">&#187;</a>	
-		<div class="icon showmenu" onclick="WPCLib.ui.menuSwitch();" ontouchstart="WPCLib.ui.menuSwitch();return false;">Show Menu<div class="bubble red" id="updatebubble">8</div></div>			
+		<a href="#" onclick="Hiro.context.switchview(); return false;" ontouchstart="Hiro.context.switchview(); return false;" id="switchview" title="Switch sidebar on and off">&#187;</a>	
+		<div class="icon showmenu" onclick="Hiro.ui.menuSwitch();" ontouchstart="Hiro.ui.menuSwitch();return false;">Show Menu<div class="bubble red" id="updatebubble">8</div></div>			
 		<div class="canvas" id="canvas">
 			<div id="publish">
 				<div class="header"></div>
@@ -83,7 +83,7 @@
 					<a class="cancel" title="Cancel">Cancel</a>
 					<div class="title">Edit this note with others:</div>
 					<div id="s_actions">
-						<form action="javascript:void(0);" onsubmit="WPCLib.sharing.submit();"><input type="email" placeholder="E-Mail" class="hiro"><div class="error"></div><input type="submit" value="foo" class="ninja"></input></form>
+						<form action="javascript:void(0);" onsubmit="Hiro.sharing.submit();"><input type="email" placeholder="E-Mail" class="hiro"><div class="error"></div><input type="submit" value="foo" class="ninja"></input></form>
 						<a class="wpcbutton green">Invite</a>												
 					</div>	
 					<div class="footer">You can revoke access anytime</div>	
@@ -122,16 +122,16 @@
 			<div id="errorstatus" title="Can't connect to Hiro.&#013;Please do not close Hiro before you went back online &amp; saved, or your changes will be lost.">&nbsp;</div>			
 			<div class="results" id="results">	
 				<div id="msgresults"></div>
-				<div id="synresults" onclick="WPCLib.context.replacewithsynonym(event);"></div>				
+				<div id="synresults" onclick="Hiro.context.replacewithsynonym(event);"></div>				
 				<div id="wwwresults"></div>																		
 			</div>
 			<div class="upgrade" id="signupButton">
 				<small>Unlock more links and features:</small>
-				<a href="#" class="wpcbutton green" title="Unlock more results and other features" onclick="WPCLib.folio.showSettings();return false;">Sign Up ( Free! )</a>
+				<a href="#" class="wpcbutton green" title="Unlock more results and other features" onclick="Hiro.folio.showSettings();return false;">Sign Up ( Free! )</a>
 			</div>
 		</div>
 
-		<div id="modalShield" onclick="WPCLib.ui.hideDialog();">
+		<div id="modalShield" onclick="Hiro.ui.hideDialog();">
 			<div id="dialogWrapper">
 				<iframe id="dialog"></iframe>
 			</div>	
@@ -147,4 +147,4 @@
 	
         {{ get_asset('hiro_js') }}
         {{ profiler_includes|safe }}
-        <script type="text/javascript">window.analytics||(window.analytics=[]);{% if current_user.is_authenticated() %}WPCLib.canvas.preload();WPCLib.sys.user.setStage({{ current_user.tier }});{% else %}WPCLib.sys.user.setStage(0);{% endif %}WPCLib.sys.init();</script></body></html>
+        <script type="text/javascript">window.analytics||(window.analytics=[]);{% if current_user.is_authenticated() %}Hiro.canvas.preload();Hiro.sys.user.setStage({{ current_user.tier }});{% else %}Hiro.sys.user.setStage(0);{% endif %}Hiro.sys.init();</script></body></html>

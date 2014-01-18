@@ -33,7 +33,7 @@
 */
 
 
-var WPCLib = {
+var Hiro = {
 	version: '1.10.3',
 
 	// Folio is the nav piece on the left, holding all file management pieces
@@ -45,7 +45,7 @@ var WPCLib = {
 			// Basic Folio Setup
 
 			// Load list of documents from server or create localdoc if user is unknown			
-			if (WPCLib.sys.user.level==0) {
+			if (Hiro.sys.user.level==0) {
 				// See if we can find a local doc
 				var ld = localStorage.getItem('WPCdoc');
 				if (ld) {
@@ -59,18 +59,18 @@ var WPCLib = {
 			}
 
 			// Register "close folio" events to rest of the page
-			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.canvasId),'mouseover', WPCLib.ui.menuHide);
-			WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'touchstart', WPCLib.ui.menuHide);			
-			WPCLib.util.registerEvent(document.getElementById(WPCLib.context.id),'mouseover', WPCLib.ui.menuHide);	
+			Hiro.util.registerEvent(document.getElementById(Hiro.canvas.canvasId),'mouseover', Hiro.ui.menuHide);
+			Hiro.util.registerEvent(document.getElementById(Hiro.canvas.contentId),'touchstart', Hiro.ui.menuHide);			
+			Hiro.util.registerEvent(document.getElementById(Hiro.context.id),'mouseover', Hiro.ui.menuHide);	
 
 			// Register event that cancels the delayed opening of the menu if cursor leaves browser
-			WPCLib.util.registerEvent(document,'mouseout', function(e) {
+			Hiro.util.registerEvent(document,'mouseout', function(e) {
 			    e = e ? e : window.event;
 			    var from = e.relatedTarget || e.toElement;
 			    if (!from || from.nodeName == "HTML") {
-			    	if (WPCLib.ui.delayedtimeout) {
-			    		clearTimeout(WPCLib.ui.delayedtimeout);
-			    		WPCLib.ui.delayedtimeout = null;
+			    	if (Hiro.ui.delayedtimeout) {
+			    		clearTimeout(Hiro.ui.delayedtimeout);
+			    		Hiro.ui.delayedtimeout = null;
 			    	}
 			    }			
 			});				
@@ -78,14 +78,14 @@ var WPCLib = {
 
 		showSettings: function(section,field,event) {
 			// Show settings dialog
-			if (WPCLib.sys.user.level==0) {
+			if (Hiro.sys.user.level==0) {
 				if (!field) {
 					field = 'signup_mail';
 					section = 's_signup';
 				}
 				if (analytics) analytics.track('Sees Signup/Sign Screen');
 			} 
-			WPCLib.ui.showDialog(event,'',section,field);
+			Hiro.ui.showDialog(event,'',section,field);
 		},		
 
 		docs: {
@@ -103,21 +103,21 @@ var WPCLib = {
 
 			loaddocs: function(folioonly) {
 				// Get the list of documents from the server
-				var f = WPCLib.folio.docs,	
+				var f = Hiro.folio.docs,	
 					a = document.getElementById(this.a_counterId);	
 
 				// Start progres bar
-				if (!folioonly) WPCLib.ui.hprogress.begin();			
+				if (!folioonly) Hiro.ui.hprogress.begin();			
 
-				WPCLib.store.handle({
+				Hiro.store.handle({
 				    url: '/docs/?group_by=status',
 				    success: function(req,data) {
 						// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
 						// or because we got invited via token
 						if (!data.active && !data.archived) {	
-							if (WPCLib.sharing.token) {
+							if (Hiro.sharing.token) {
 								// If we have a token we just call loaddocand let it figure out the rest via url / token
-								WPCLib.canvas.loaddoc();
+								Hiro.canvas.loaddoc();
 								return;
 							} else {
 								// User just signed up without playing around, create first doc from server
@@ -133,27 +133,27 @@ var WPCLib = {
 						// also handling egde case: if a user logs in when sitting in front of an empty document
 						var doc = data.active[0];
 						if (data.archived && doc.updated < data.archived[0].updated) doc = data.archived[0];
-						if (!folioonly && data.active && doc.id != WPCLib.canvas.docid) {
-							WPCLib.canvas.loaddoc(doc.id,doc.title);
+						if (!folioonly && data.active && doc.id != Hiro.canvas.docid) {
+							Hiro.canvas.loaddoc(doc.id,doc.title);
 						}
 
 						// Update the document counter
-					    if (WPCLib.sys.user.level > 0) WPCLib.ui.documentcounter();	
+					    if (Hiro.sys.user.level > 0) Hiro.ui.documentcounter();	
 
 					    // Portfolio archive counter
 					    if (data.archived) {
-					    	var ac = WPCLib.folio.docs.a_count = data.archived.length;
+					    	var ac = Hiro.folio.docs.a_count = data.archived.length;
 					    	a.innerHTML = 'Archive (' + ac + ')';
 					    }	
 
 						// Check our Hiroversion and initiate upgradepopup if we have a newer one
-						if (!WPCLib.sys.version) { WPCLib.sys.version = data.hiroversion; }
-						else if (WPCLib.sys.version != data.hiroversion) WPCLib.sys.upgradeavailable(data.hiroversion);				    
+						if (!Hiro.sys.version) { Hiro.sys.version = data.hiroversion; }
+						else if (Hiro.sys.version != data.hiroversion) Hiro.sys.upgradeavailable(data.hiroversion);				    
 
 				    },
 				    error: function(req) {
 				    	// Refresh page if loaddocs throws 401 (user most likely logged out of system)
-				    	if (WPCLib.sys.user.level > 0 && (req.status == 401 || req.status == 403)) window.location.href = '/'; 
+				    	if (Hiro.sys.user.level > 0 && (req.status == 401 || req.status == 403)) window.location.href = '/'; 
 				    }
 				});						
 			},
@@ -161,7 +161,7 @@ var WPCLib = {
 			loadlocal: function(localdoc) {	
 				// Load locally saved document
 				var ld = JSON.parse(localdoc);					
-				WPCLib.sys.log('Localstorage doc found, loading ', ld);						
+				Hiro.sys.log('Localstorage doc found, loading ', ld);						
 				document.getElementById('landing').style.display = 'none';
 
 				// Render doc in folio
@@ -171,14 +171,14 @@ var WPCLib = {
 				this.update();
 
 				// Render doc on canvas
-				WPCLib.canvas.loadlocal(ld);
+				Hiro.canvas.loadlocal(ld);
 			},
 
 			_updatetimeout: null,	
 			update: function() {
 				// update the document list from the active / archive arrays
 				// We use absolute pointers as this can also be called as event handler
-				var that = WPCLib.folio.docs,
+				var that = Hiro.folio.docs,
 					act = that.active,
 					docs = document.getElementById(that.doclistId),				
 					arc = that.archived,
@@ -204,7 +204,7 @@ var WPCLib = {
 				// Add all elements & events to new DOM object
 				for (i=0,l=act.length;i<l;i++) {						
 					// Attach links to new active object
-					if (newdocs.firstChild && ((act[i].id == WPCLib.canvas.docid) || (!WPCLib.canvas.docid && urlid && urlid == act[i].id))) {
+					if (newdocs.firstChild && ((act[i].id == Hiro.canvas.docid) || (!Hiro.canvas.docid && urlid && urlid == act[i].id))) {
 						// If we: Already have a node we can insertbefore, doc[i] is the current doc or we have a url id that equals doc[i]
 						newdocs.insertBefore(that.renderlink(i,'active',act[i]), newdocs.firstChild);
 					} else { 
@@ -216,7 +216,7 @@ var WPCLib = {
 				if (arc) {
 					for (i=0,l=arc.length;i<l;i++) {	
 						// Attach links to new archive object
-						if (arc[i].id == WPCLib.canvas.docid && newarchive.firstChild) {
+						if (arc[i].id == Hiro.canvas.docid && newarchive.firstChild) {
 							newarchive.insertBefore(that.renderlink(i,'archive',arc[i]), newarchive.firstChild);
 						} else { 
 							newarchive.appendChild(that.renderlink(i,'archive',arc[i])); 
@@ -239,20 +239,20 @@ var WPCLib = {
 				if (this.unseenupdates > 0) {
 					bubble.innerHTML = this.unseenupdates;
 					bubble.style.display = 'block';
-					if (seen < this.unseenupdates && !WPCLib.ui.windowfocused) WPCLib.ui.playaudio('unseen',0.7);
+					if (seen < this.unseenupdates && !Hiro.ui.windowfocused) Hiro.ui.playaudio('unseen',0.7);
 				} else {
 					bubble.style.display = 'none';
 				}
 
 				// Kick off regular updates, only once
 				if (!this._updatetimeout) {
-					this._updatetimeout = setInterval(WPCLib.folio.docs.update,61000);
+					this._updatetimeout = setInterval(Hiro.folio.docs.update,61000);
 				}
 			},		
 
 			updatelookup: function() {
 				// Takes the two document arrays (active/archive) and creates a simple lookup reference object
-				// Usage: WPCLib.folio.docs.lookup['79asjdkl3'].title = 'Foo'
+				// Usage: Hiro.folio.docs.lookup['79asjdkl3'].title = 'Foo'
 				var docs = this.active.concat(this.archived);
 				this.lookup = {};
 				for (var i = 0, l = docs.length; i < l; i++) {
@@ -278,7 +278,7 @@ var WPCLib = {
 			renderlink: function(i,type,data) {
 				// Render active and archived document link
 				var item = (type=='active') ? this.active : this.archived,
-					lvl = WPCLib.sys.user.level,
+					lvl = Hiro.sys.user.level,
 					docid = item[i].id,
 					active = (type == 'active') ? true : false,
 					lastupdate = (data.last_doc_update && data.updated <= data.last_doc_update.updated) ? data.last_doc_update.updated : data.updated;
@@ -298,7 +298,7 @@ var WPCLib = {
 				var stats = document.createElement('small');
 
 				if (item[i].updated) {
-					var statline = WPCLib.util.humanizeTimestamp(lastupdate) + " ago";
+					var statline = Hiro.util.humanizeTimestamp(lastupdate) + " ago";
 					// Check if document was last updated by somebody else
 					// We also have to check the time difference including slight deviatian because our own updates are set by two different functions
 					if (data.last_doc_update) {
@@ -342,10 +342,10 @@ var WPCLib = {
 						var a = document.createElement('div');
 						a.className = 'archive';
 						if (active) {
-							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,true);});	
+							Hiro.util.registerEvent(a,'click', function(e) {Hiro.folio.docs.archive(e,true);});	
 							if (lvl==1) a.title = "Move to archive";
 						} else {
-							WPCLib.util.registerEvent(a,'click', function(e) {WPCLib.folio.docs.archive(e,false);});												
+							Hiro.util.registerEvent(a,'click', function(e) {Hiro.folio.docs.archive(e,false);});												
 						}								
 						d.appendChild(a);
 					}
@@ -353,17 +353,17 @@ var WPCLib = {
 
 				// Attach default events
 				var title = item[i].title || 'Untitled';			
-				WPCLib.folio.docs._events(d,docid,title,active);	
+				Hiro.folio.docs._events(d,docid,title,active);	
 
 				return d;			
 			},
 
 			_events: function(el,docid,title,active) {
 				// Attach events to doc links
-				WPCLib.util.registerEvent(el.firstChild,'click', function() {
-					WPCLib.folio.docs.moveup(docid,active);
-					WPCLib.canvas.loaddoc(docid, title);
-					WPCLib.ui.menuHide();																
+				Hiro.util.registerEvent(el.firstChild,'click', function() {
+					Hiro.folio.docs.moveup(docid,active);
+					Hiro.canvas.loaddoc(docid, title);
+					Hiro.ui.menuHide();																
 				});				
 			},
 
@@ -376,18 +376,18 @@ var WPCLib = {
 				// TODO Bruno get up to speed with callback scoping & call(), in the meantime a quickfix for edge case			
 				if (typeof this.active === 'undefined') return;				
 
-				if (WPCLib.sys.user.level == 0 && this.active.length!=0) {
-					WPCLib.sys.user.upgrade(1,WPCLib.folio.docs.newdoc);
+				if (Hiro.sys.user.level == 0 && this.active.length!=0) {
+					Hiro.sys.user.upgrade(1,Hiro.folio.docs.newdoc);
 					return;
 				}
-				if (this.active && WPCLib.sys.user.level == 1 && this.active.length >= 10) {
+				if (this.active && Hiro.sys.user.level == 1 && this.active.length >= 10) {
 					// If user has more than 10 docs
 					var own_counter = 0;
 					for (i=0,l=this.active.length;i<l;i++) {
 						if (this.active[i].role == 'owner') own_counter++;
 					}
 					if (own_counter > 10) {
-						WPCLib.sys.user.upgrade(2,WPCLib.folio.docs.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
+						Hiro.sys.user.upgrade(2,Hiro.folio.docs.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
 						return;	
 					}				
 				}
@@ -399,12 +399,12 @@ var WPCLib = {
 				this.creatingDoc = true;	
 
 				// Start the bar
-				WPCLib.ui.hprogress.begin();								
+				Hiro.ui.hprogress.begin();								
 
 				// Add a doc placeholder to the internal folio array
 				var doc = {};
 				doc.title = 'Untitled Note';
-				doc.created = WPCLib.util.now();
+				doc.created = Hiro.util.now();
 				doc.role = 'owner';
 				this.active.splice(0,0,doc);
 
@@ -415,7 +415,7 @@ var WPCLib = {
 
 				var ph = document.createElement('a');
 				ph.setAttribute('href','#');	
-				ph.setAttribute('onclick','WPCLib.ui.menuHide();return false;');	
+				ph.setAttribute('onclick','Hiro.ui.menuHide();return false;');	
 				var pht = document.createElement('span');
 				pht.className = 'doctitle';
 				pht.innerHTML = 'Creating new note...';	
@@ -428,62 +428,62 @@ var WPCLib = {
 				document.getElementById(this.doclistId).insertBefore(el,document.getElementById(this.doclistId).firstChild);
 
 				// Create the doc on the canvas
-				if (document.body.offsetWidth <= 900 && document.getElementById(WPCLib.context.id).style.display == "block") WPCLib.context.switchview();
-				WPCLib.canvas.newdoc();
-				WPCLib.ui.menuHide();
+				if (document.body.offsetWidth <= 900 && document.getElementById(Hiro.context.id).style.display == "block") Hiro.context.switchview();
+				Hiro.canvas.newdoc();
+				Hiro.ui.menuHide();
 
 				// Get/Set ID of new document
-				if ( WPCLib.sys.user.level==0) {
+				if ( Hiro.sys.user.level==0) {
 					// Anon user doc gets stored locally
 					var doc = document.getElementById('doc_creating');
-					WPCLib.sys.log('unknown user, setting up localstore ');
+					Hiro.sys.log('unknown user, setting up localstore ');
 
 					// Set params for local doc
-					WPCLib.canvas.docid = 'localdoc';
-					WPCLib.folio.docs.active[0].id = 'localdoc';
+					Hiro.canvas.docid = 'localdoc';
+					Hiro.folio.docs.active[0].id = 'localdoc';
 
 					// Save document & cleanup
 					doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 					doc.id = 'doc_localdoc';
 
 					// Complete bar
-					WPCLib.ui.hprogress.done();					
+					Hiro.ui.hprogress.done();					
 				} else {
 					// Request new document id
 					var doc = document.getElementById('doc_creating');
-					WPCLib.sys.log('known user, setting up remote store ');
+					Hiro.sys.log('known user, setting up remote store ');
 
 					// Submit timestamp for new doc id
 					var file = {};				
-					file.created = WPCLib.util.now();				
+					file.created = Hiro.util.now();				
 
 					// Get doc id from server
-					WPCLib.comm.ajax({
+					Hiro.comm.ajax({
 						url: "/docs/",
 		                type: "POST",
 		                payload: JSON.stringify(file),
 						success: function(req,data) {
-		                    WPCLib.sys.log("backend issued doc id ", data.doc_id);
+		                    Hiro.sys.log("backend issued doc id ", data.doc_id);
 
 							// Set params for local doc
-							WPCLib.canvas.docid = data.doc_id;
+							Hiro.canvas.docid = data.doc_id;
 
 							// Set folio values
 							if (doc.firstChild) doc.firstChild.firstChild.innerHTML = 'Untitled Note';
 							doc.id = 'doc_'+data;
-							WPCLib.folio.docs.active[0].id = data.doc_id;	
+							Hiro.folio.docs.active[0].id = data.doc_id;	
 
 							// Start sync
-							WPCLib.canvas.sync.begin('',req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    								
+							Hiro.canvas.sync.begin('',req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    								
 
 							// Update the document counter
-							WPCLib.ui.documentcounter();	
+							Hiro.ui.documentcounter();	
 
 							// Update folio
-							WPCLib.folio.docs.update();		
+							Hiro.folio.docs.update();		
 
 							// Complete bar
-							WPCLib.ui.hprogress.done();																			                    
+							Hiro.ui.hprogress.done();																			                    
 						}
 					});				
 				}
@@ -495,33 +495,33 @@ var WPCLib = {
 			movetoremote: function() {
 				// Moves a doc from localstorage to remote storage and clears localstorage
 				// Doublecheck here for future safety
-				if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {					
+				if (Hiro.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {					
 					// Strip id from file to get new one from backend
-					var file = WPCLib.canvas.builddoc();					
+					var file = Hiro.canvas.builddoc();					
 					file.id = '';
-					file.text = WPCLib.canvas.text;
+					file.text = Hiro.canvas.text;
 					// Get doc id from server
-					WPCLib.comm.ajax({
+					Hiro.comm.ajax({
 						url: "/docs/",
 		                type: "POST",
 		                payload: JSON.stringify(file),
 						success: function(req,data) {
-		                    WPCLib.sys.log("move local to backend with new id ", data);
+		                    Hiro.sys.log("move local to backend with new id ", data);
 		                    // Delete local item
 		                    localStorage.removeItem('WPCdoc')
 
 							// Start sync
-							WPCLib.canvas.sync.begin(WPCLib.canvas.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));   		                    
+							Hiro.canvas.sync.begin(Hiro.canvas.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));   		                    
 
 							// Set new id for former local doc
-							WPCLib.canvas.docid = data.doc_id;
+							Hiro.canvas.docid = data.doc_id;
 
 							// Get updated file list														
-							WPCLib.folio.docs.loaddocs(true);                 																
+							Hiro.folio.docs.loaddocs(true);                 																
 
 							// Edge Case: User had a document moved to the backend and also accesstoken waiting
-							if (WPCLib.sharing.token) {
-								WPCLib.canvas.loaddoc();
+							if (Hiro.sharing.token) {
+								Hiro.canvas.loaddoc();
 							}							
 						}
 					});
@@ -532,8 +532,8 @@ var WPCLib = {
 				// moves a specific doc to the top of the list based on it's id
 
 				// Find and remove itenm from list
-				var act = WPCLib.folio.docs.active;
-				var arc = WPCLib.folio.docs.archived;
+				var act = Hiro.folio.docs.active;
+				var arc = Hiro.folio.docs.archived;
 				var obj = {};
 				var bucket = (active) ? act : arc;
 				for (var i=0,l=bucket.length;i<l;i++) {
@@ -552,12 +552,12 @@ var WPCLib = {
 
 			archive: function(e,toarchive) {
 				// Move a current document to the archive, first abort if user has no account with archive
-				if (WPCLib.sys.user.level <= 1) {
-					WPCLib.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
+				if (Hiro.sys.user.level <= 1) {
+					Hiro.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
 					return;
 				}	
 
-				var that = WPCLib.folio.docs;				
+				var that = Hiro.folio.docs;				
 				var a_id = e.target.parentNode.id.substr(4);
 				var act = that.active;	
 				var arc = that.archived;
@@ -583,7 +583,7 @@ var WPCLib = {
 				if (toarchive) document.getElementById(that.a_counterId).innerHTML = 'Archive (' + that.a_count + ')';
 
 				var payload = (toarchive) ? {'status':'archived'} : {'status':'active'};
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 					url: "/docs/"+a_id,
 	                type: "PATCH",
 	                data: JSON.stringify(payload),
@@ -596,8 +596,8 @@ var WPCLib = {
 			openarchive: function() {
 				// Archive link
 				// Show signup screen if user has no appropriate tier
-				if (WPCLib.sys.user.level < 2) {
-					WPCLib.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
+				if (Hiro.sys.user.level < 2) {
+					Hiro.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
 					return;					
 				};	
 
@@ -659,70 +659,70 @@ var WPCLib = {
 			var el = document.getElementById(this.contentId);			
 			var p = document.getElementById(this.canvasId);
 			var t = document.getElementById(this.pageTitle);
-			var c = document.getElementById(WPCLib.context.id);	
-			var f = document.getElementById(WPCLib.folio.folioId);
+			var c = document.getElementById(Hiro.context.id);	
+			var f = document.getElementById(Hiro.folio.folioId);
 			// See if a selection is performed and narrow search to selection
-			WPCLib.util.registerEvent(p,'mouseup',this.textclick);							
-			WPCLib.util.registerEvent(el,'keydown',this.keyhandler);	
-			WPCLib.util.registerEvent(el,'keyup',this.update);	
+			Hiro.util.registerEvent(p,'mouseup',this.textclick);							
+			Hiro.util.registerEvent(el,'keydown',this.keyhandler);	
+			Hiro.util.registerEvent(el,'keyup',this.update);	
 
 			// Remember last caret position on blur
-			WPCLib.util.registerEvent(el,'blur',function(){
-				WPCLib.canvas.caretPosition = WPCLib.canvas._getposition()[0];
+			Hiro.util.registerEvent(el,'blur',function(){
+				Hiro.canvas.caretPosition = Hiro.canvas._getposition()[0];
 			});					
 
 			// Resizing of textarea
-			WPCLib.util.registerEvent(el,'keyup',this._resize);
-			WPCLib.util.registerEvent(el,'cut',this._copynpaste);	
-			WPCLib.util.registerEvent(el,'paste',this._copynpaste);
-			WPCLib.util.registerEvent(el,'drop',this._copynpaste);
+			Hiro.util.registerEvent(el,'keyup',this._resize);
+			Hiro.util.registerEvent(el,'cut',this._copynpaste);	
+			Hiro.util.registerEvent(el,'paste',this._copynpaste);
+			Hiro.util.registerEvent(el,'drop',this._copynpaste);
 
 			// Title events	
-			WPCLib.util.registerEvent(t,'change',this.evaluatetitle);
-			WPCLib.util.registerEvent(t,'keydown',this.evaluatetitle);
-			WPCLib.util.registerEvent(t,'keyup',this.evaluatetitle);			
-			WPCLib.util.registerEvent(t,'mouseover', this._showtitletip);
-			WPCLib.util.registerEvent(t,'mouseout', this._hidetitletip);
-			WPCLib.util.registerEvent(t,'focus', this._clicktitletip);			
-			WPCLib.util.registerEvent(t,'select', this._clicktitletip);	
-			WPCLib.util.registerEvent(t,'click', this._clicktitletip);		
+			Hiro.util.registerEvent(t,'change',this.evaluatetitle);
+			Hiro.util.registerEvent(t,'keydown',this.evaluatetitle);
+			Hiro.util.registerEvent(t,'keyup',this.evaluatetitle);			
+			Hiro.util.registerEvent(t,'mouseover', this._showtitletip);
+			Hiro.util.registerEvent(t,'mouseout', this._hidetitletip);
+			Hiro.util.registerEvent(t,'focus', this._clicktitletip);			
+			Hiro.util.registerEvent(t,'select', this._clicktitletip);	
+			Hiro.util.registerEvent(t,'click', this._clicktitletip);		
 
 			// We save the new title in the folio array but need to update the clickhandler without duplicating them
-			WPCLib.util.registerEvent(t,'blur', WPCLib.folio.docs.update);	
-			WPCLib.util.registerEvent(t,'keyup', WPCLib.folio.docs.update);			
+			Hiro.util.registerEvent(t,'blur', Hiro.folio.docs.update);	
+			Hiro.util.registerEvent(t,'keyup', Hiro.folio.docs.update);			
 
 			if ('ontouchstart' in document.documentElement) {
 				// Make sure the teaxtarea contents are scrollable on mobile devices
 				el.addEventListener('touchstart',function(e){
 					// Attach the swipe actions to canvas	
-					var cb = (WPCLib.ui.menuCurrPos != 0) ? null : WPCLib.context.switchview;			
-					WPCLib.ui.swipe.init(cb,WPCLib.ui.menuSwitch,e);					
+					var cb = (Hiro.ui.menuCurrPos != 0) ? null : Hiro.context.switchview;			
+					Hiro.ui.swipe.init(cb,Hiro.ui.menuSwitch,e);					
 				}, false);	
 				c.addEventListener('touchstart',function(e){
 					// Attach the swipe actions to context					
-					WPCLib.ui.swipe.init(null,WPCLib.context.switchview,e);					
+					Hiro.ui.swipe.init(null,Hiro.context.switchview,e);					
 				}, false);	
 				f.addEventListener('touchstart',function(e){
 					// Attach the swipe actions to context					
-					WPCLib.ui.swipe.init(WPCLib.ui.menuHide,null,e);					
+					Hiro.ui.swipe.init(Hiro.ui.menuHide,null,e);					
 				}, false);	
 				f.addEventListener('touchstart',function(e){
 					// Open menu when somebody touches the grea sidebar on the left on tablets etc					
-					if (WPCLib.ui.menuCurrPos == 0) WPCLib.ui.menuSwitch();				
+					if (Hiro.ui.menuCurrPos == 0) Hiro.ui.menuSwitch();				
 				}, false);				
 				// Make UI more stable with event listeners			
 				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);
 
 				// Cancel safariinit after enough time passed to focus textarea fast after that
-				if (this.safariinit) setTimeout( function() { WPCLib.canvas.safariinit = false; },5000);	
+				if (this.safariinit) setTimeout( function() { Hiro.canvas.safariinit = false; },5000);	
 
 				// Set defaulttitle to something more descriptive on touch devices
 				this.defaultTitle = 'Title';			
 
 			} else {
 				// click on the page puts focus on textarea
-				WPCLib.util.registerEvent(p,'click',function(){
-					if (!WPCLib.sharing.visible) document.getElementById(WPCLib.canvas.contentId).focus();
+				Hiro.util.registerEvent(p,'click',function(){
+					if (!Hiro.sharing.visible) document.getElementById(Hiro.canvas.contentId).focus();
 				});
 			}				
 
@@ -732,9 +732,9 @@ var WPCLib = {
 
         set_text: function(txt) {
         	// Set all internal values and visual updates in one go
-			WPCLib.canvas.text = document.getElementById(WPCLib.canvas.contentId).value = txt;
+			Hiro.canvas.text = document.getElementById(Hiro.canvas.contentId).value = txt;
             // Resize canvas
-            WPCLib.canvas._resize();               
+            Hiro.canvas._resize();               
         },
 
 		builddoc: function() {
@@ -746,11 +746,11 @@ var WPCLib = {
 			file.created = this.created;
 			file.last_updated = this.lastUpdated;
 			file.cursor = this.caretPosition;
-			file.hidecontext = !WPCLib.context.show;
+			file.hidecontext = !Hiro.context.show;
 			file.links = {};
-			file.links.sticky = WPCLib.context.sticky;
-			file.links.normal = WPCLib.context.links;
-			file.links.blacklist = WPCLib.context.blacklist;
+			file.links.sticky = Hiro.context.sticky;
+			file.links.normal = Hiro.context.links;
+			file.links.blacklist = Hiro.context.blacklist;
 			return file;			
 		},
 
@@ -759,33 +759,33 @@ var WPCLib = {
 			// Save the currently open document
 			// For now we only say a doc is updated once it's saved		
 			var status = document.getElementById('status');
-			if (WPCLib.context.overquota) force = true;
+			if (Hiro.context.overquota) force = true;
 			if (force) status.innerHTML = 'Saving...';
-			this.lastUpdated = WPCLib.util.now();
+			this.lastUpdated = Hiro.util.now();
 			var file = this.builddoc();		
 
 			// backend saving, locally or remote
-			if (this.docid != 'localdoc' && WPCLib.sys.user.level > 0) {
+			if (this.docid != 'localdoc' && Hiro.sys.user.level > 0) {
 				// Save remotely, immediately indicate if this fails because we're offline
-				WPCLib.sys.log('saving remotely: ', file);	
+				Hiro.sys.log('saving remotely: ', file);	
 				var u = "/docs/"+this.docid;
 
-				WPCLib.comm.ajax({					
+				Hiro.comm.ajax({					
 					url: u,
 	                type: "PATCH",
 	                payload: JSON.stringify(file),
 					success: function() {
-	                    WPCLib.sys.log('Doc saved!');
-						WPCLib.canvas.saved = true;	 
+	                    Hiro.sys.log('Doc saved!');
+						Hiro.canvas.saved = true;	 
 						if (force) status.innerHTML = 'Saved.';
 					},
 					error: function(req) {
-						WPCLib.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(req));			
+						Hiro.sys.error('Savedoc PATCH returned error: ' + JSON.stringify(req));			
 						// Move away from note if rights were revoked
 						if (req.status == 404 || req.status == 404) {
-	                        if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
-							if (req.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
-							WPCLib.folio.docs.loaddocs();								
+	                        if (req.status == 404) Hiro.ui.statusflash('red','Note not found.',true);
+							if (req.status == 403) Hiro.ui.statusflash('red','Access denied, sorry.',true);  
+							Hiro.folio.docs.loaddocs();								
 						} 										
 					}
 				});											
@@ -793,26 +793,26 @@ var WPCLib = {
 				// Store doc locally 
 				
 				// Add text to file object
-				file.text = WPCLib.canvas.text;
+				file.text = Hiro.canvas.text;
 
-				WPCLib.sys.log('saving locally: ', file);	
+				Hiro.sys.log('saving locally: ', file);	
 			    try { 
 					localStorage.setItem("WPCdoc", JSON.stringify(file));
 				} catch(e) {
 			        alert('Please sign up to safely store long notes.');
-			        WPCLib.sys.user.upgrade(1);
+			        Hiro.sys.user.upgrade(1);
 			    }				
-				WPCLib.canvas.saved = true;	
+				Hiro.canvas.saved = true;	
 				status.innerHTML = 'Saving...';	
 				setTimeout(function(){document.getElementById('status').innerHTML = 'Saved.'},350);							
 			}	
 			// Update last edited counter in folio
-			var docs = WPCLib.folio.docs;
-			var bucket = (docs.archived[0] && WPCLib.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];	
+			var docs = Hiro.folio.docs;
+			var bucket = (docs.archived[0] && Hiro.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];	
 
 			// Check if user didn't navigate away from archive and set last updated
-			if (file.id == bucket.id) bucket.updated = WPCLib.util.now();
-			WPCLib.folio.docs.update();					
+			if (file.id == bucket.id) bucket.updated = Hiro.util.now();
+			Hiro.folio.docs.update();					
 		},	
 
 		preload: function() {
@@ -825,7 +825,7 @@ var WPCLib = {
 		loaddoc: function(docid, title, addnohistory) {
 			// Load a specific document to the canvas
 			var mobile = (document.body.offsetWidth<=900),
-				header = {}, token = WPCLib.sharing.token,
+				header = {}, token = Hiro.sharing.token,
 				urlid = window.location.pathname.split('/')[2], that = this;		
 
 			// Final try to save doc, eg when connection wasn't available before				
@@ -836,13 +836,13 @@ var WPCLib = {
 				var ld = localStorage.getItem('WPCdoc');
 				if (ld) {
 					this.loadlocal(JSON.parse(ld)); 
-					WPCLib.ui.menuHide();					
+					Hiro.ui.menuHide();					
 				}
 				return;					
 			}
 
 			// Fall back to current docid if we didn't get one
-			docid = docid || WPCLib.canvas.docid;
+			docid = docid || Hiro.canvas.docid;
 
 			if (this.preloaded) {
 				// Override document id with url id if Flask did set preloaded flag
@@ -857,66 +857,66 @@ var WPCLib = {
 				header.accesstoken = token;
 				title = '';
 				// Remove token right away so it can't wreak havoc
-				WPCLib.sharing.token = '';
+				Hiro.sharing.token = '';
 			}
 
-			WPCLib.sys.log('loading doc id: ', [docid, header]);
+			Hiro.sys.log('loading doc id: ', [docid, header]);
 
 			// Start progress bar or increment
-			WPCLib.ui.hprogress.begin();
+			Hiro.ui.hprogress.begin();
 
 			// If we already know the title, we shorten the waiting time
 			if (title && !this.preloaded) document.getElementById(this.pageTitle).value = document.title = title;	
-			document.getElementById(WPCLib.context.statusId).value = 'Loading...';			
-			if (mobile && document.getElementById(WPCLib.context.id).style.display=='block') WPCLib.context.switchview();
+			document.getElementById(Hiro.context.statusId).value = 'Loading...';			
+			if (mobile && document.getElementById(Hiro.context.id).style.display=='block') Hiro.context.switchview();
 
 
 			// Load data onto canvas
-			WPCLib.comm.ajax({
+			Hiro.comm.ajax({
 				url: '/docs/'+docid,
 				headers: header,
 				success: function(req,data) {
-					WPCLib.canvas.docid = data.id;
-					WPCLib.canvas.created = data.created;
-					WPCLib.canvas.lastUpdated = data.updated;	
+					Hiro.canvas.docid = data.id;
+					Hiro.canvas.created = data.created;
+					Hiro.canvas.lastUpdated = data.updated;	
 
 					// Check if the document had unseen updates		
-					if (WPCLib.folio.docs.lookup[docid] && WPCLib.folio.docs.lookup[docid].unseen == true) {
+					if (Hiro.folio.docs.lookup[docid] && Hiro.folio.docs.lookup[docid].unseen == true) {
 						var el = document.getElementById('doc_' + docid);
 						if (el) {
 							var bubble = el.getElementsByClassName('bubble')[0];
 							if (bubble) bubble.style.display = 'none';
 						}
-						WPCLib.folio.docs.lookup[docid].unseen = false;
-						WPCLib.folio.docs.updateunseen(-1);
+						Hiro.folio.docs.lookup[docid].unseen = false;
+						Hiro.folio.docs.updateunseen(-1);
 					}		
 
 					// Reload folio if we had a token 
-					if (token) WPCLib.folio.docs.loaddocs(true);	
+					if (token) Hiro.folio.docs.loaddocs(true);	
 
 					// Update document list
-					WPCLib.folio.docs.update();		
+					Hiro.folio.docs.update();		
 
 					// Add object to history
-					if (!addnohistory) WPCLib.util.addhistory(data.id,data.title);				
+					if (!addnohistory) Hiro.util.addhistory(data.id,data.title);				
 
 					// Show data on canvas
-					if (!mobile && data.hidecontext == WPCLib.context.show) WPCLib.context.switchview();									
+					if (!mobile && data.hidecontext == Hiro.context.show) Hiro.context.switchview();									
 					var content = document.getElementById(that.contentId);
 					if (content.value != data.text) {
 						content.value = data.text;					
 						// Reset the canvas size to document contents in the next 2 steps
 						content.style.height = 'auto';					
-						WPCLib.canvas._resize();
+						Hiro.canvas._resize();
 					}	
 					that._setposition(data.cursor);
 
 					// If the title changed in the meantime or wasn't passed to loaddoc at all
 					if (!title || title != data.title) {
 						document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
-						if (title && WPCLib.folio.docs.lookup[docid]) {
-							WPCLib.folio.docs.lookup[docid].title = data.title;
-							WPCLib.folio.docs.update();
+						if (title && Hiro.folio.docs.lookup[docid]) {
+							Hiro.folio.docs.lookup[docid].title = data.title;
+							Hiro.folio.docs.update();
 						}	
 					}						
 
@@ -926,54 +926,54 @@ var WPCLib = {
 					that.preloaded = false;
 
 					// Initiate syncing of file
-					WPCLib.canvas.sync.begin(data.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    
+					Hiro.canvas.sync.begin(data.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    
 
 					// If the document is shared then fetch the list of users who have access
-					if (data.shared) WPCLib.sharing.accesslist.fetch();
+					if (data.shared) Hiro.sharing.accesslist.fetch();
 
 					// If body is empty show a quote
 					if (!data.text || data.text.length == 0) {
-						WPCLib.ui.fade(document.getElementById(that.quoteId),+1,300);	
-						WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'keydown',WPCLib.canvas._cleanwelcome);						
+						Hiro.ui.fade(document.getElementById(that.quoteId),+1,300);	
+						Hiro.util.registerEvent(document.getElementById(Hiro.canvas.contentId),'keydown',Hiro.canvas._cleanwelcome);						
 					} else {
-						WPCLib.canvas._removeblank();
+						Hiro.canvas._removeblank();
 					}	
 						
 					// Load links
-					WPCLib.context.wipe();	
-					WPCLib.context.clearresults();
-					WPCLib.context.sticky = data.links.sticky || [];
-					WPCLib.context.links = data.links.normal || [];
-					WPCLib.context.blacklist = data.links.blacklist || [];	
+					Hiro.context.wipe();	
+					Hiro.context.clearresults();
+					Hiro.context.sticky = data.links.sticky || [];
+					Hiro.context.links = data.links.normal || [];
+					Hiro.context.blacklist = data.links.blacklist || [];	
 					if (data.links.normal.length != 0 || data.links.sticky.length != 0) {
-						WPCLib.context.renderresults();
+						Hiro.context.renderresults();
 					} 
-					document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';	
+					document.getElementById(Hiro.context.statusId).innerHTML = 'Ready.';	
 
 					// Fetch collaborator list if we have collaborators
 					if (data.shared) {
-						WPCLib.sharing.accesslist.fetch();
+						Hiro.sharing.accesslist.fetch();
 					} else {
-						WPCLib.sharing.accesslist.users = [];
-						WPCLib.sharing.accesslist.update();
+						Hiro.sharing.accesslist.users = [];
+						Hiro.sharing.accesslist.update();
 					}	
 
 					// Complete progress bar
-					WPCLib.ui.hprogress.done();					
+					Hiro.ui.hprogress.done();					
 				},
 				error: function(req) {					
 					// Complete progress bar
-					WPCLib.ui.hprogress.done(true);					
-					WPCLib.sys.error(req);
+					Hiro.ui.hprogress.done(true);					
+					Hiro.sys.error(req);
 					// Show notifications and reset token if we had one
-					if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
-					if (req.status == 403 && token) WPCLib.ui.statusflash('red','Access denied, sorry.',true);															
+					if (req.status == 404) Hiro.ui.statusflash('red','Note not found.',true);
+					if (req.status == 403 && token) Hiro.ui.statusflash('red','Access denied, sorry.',true);															
 					// If the load fails because of access issues reset doclist
 					if (req.status == 403 || req.status == 404) {
 						// Release preloaded to enable loaddocs to load any doc
-						WPCLib.canvas.preloaded = false;
+						Hiro.canvas.preloaded = false;
                     	// Reload docs                  								
-                    	WPCLib.folio.docs.loaddocs();
+                    	Hiro.folio.docs.loaddocs();
                     }
 				}
 			});						
@@ -984,10 +984,10 @@ var WPCLib = {
 			document.getElementById(this.pageTitle).value = document.title = data.title;	
 			document.getElementById(this.contentId).value = data.text;
 			if (data.text) {
-				WPCLib.canvas._removeblank();
+				Hiro.canvas._removeblank();
 			} else {
-				WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);	
-				WPCLib.util.registerEvent(document.getElementById(WPCLib.canvas.contentId),'keydown',WPCLib.canvas._cleanwelcome);
+				Hiro.ui.fade(document.getElementById(this.quoteId),+1,300);	
+				Hiro.util.registerEvent(document.getElementById(Hiro.canvas.contentId),'keydown',Hiro.canvas._cleanwelcome);
 			}								
 			this._setposition(data.cursor);
 
@@ -997,12 +997,12 @@ var WPCLib = {
 			}				
 
 			// Load links
-			WPCLib.context.sticky = data.links.sticky || [];
-			WPCLib.context.links = data.links.normal || [];
-			WPCLib.context.blacklist = data.links.blacklist || [];	
-			WPCLib.context.renderresults();
-			if (WPCLib.context.show == data.hidecontext) WPCLib.context.switchview();
-			document.getElementById(WPCLib.context.statusId).innerHTML = 'Welcome back!';							
+			Hiro.context.sticky = data.links.sticky || [];
+			Hiro.context.links = data.links.normal || [];
+			Hiro.context.blacklist = data.links.blacklist || [];	
+			Hiro.context.renderresults();
+			if (Hiro.context.show == data.hidecontext) Hiro.context.switchview();
+			document.getElementById(Hiro.context.statusId).innerHTML = 'Welcome back!';							
 
 			// Set internal values	
 			this.text = data.text;	
@@ -1012,7 +1012,7 @@ var WPCLib = {
 			this.lastUpdated = data.last_updated;	
 
 			// Complete bar
-			WPCLib.ui.hprogress.done();									
+			Hiro.ui.hprogress.done();									
 		},
 
 		newdoc: function() {
@@ -1026,59 +1026,59 @@ var WPCLib = {
 			title.value = this.defaultTitle;
 			content.value = '';			
 			document.getElementById(this.quoteId).style.display = 'block';
-			WPCLib.ui.fade(document.getElementById(this.quoteId),+1,300);			
+			Hiro.ui.fade(document.getElementById(this.quoteId),+1,300);			
 			this.quoteShown = true;
 
-			WPCLib.context.clearresults();
-			document.getElementById(WPCLib.context.statusId).innerHTML = 'Ready.';
-			this.created = WPCLib.util.now();
+			Hiro.context.clearresults();
+			document.getElementById(Hiro.context.statusId).innerHTML = 'Ready.';
+			this.created = Hiro.util.now();
 
 			// Empty the link lists & internal values
 			this.title = '';
 			this.text = '';
-			WPCLib.context.wipe();	
-			WPCLib.context.clearresults();
+			Hiro.context.wipe();	
+			Hiro.context.clearresults();
 
-			WPCLib.util.registerEvent(content,'keydown',this._cleanwelcome);
+			Hiro.util.registerEvent(content,'keydown',this._cleanwelcome);
 			// If the landing page is loaded, don't pull the focus from it, bit expensive here, maybve add callback to newdoc later
-			if (WPCLib.sys.user.level==0 && document.getElementById('landing').style.display != 'none') {
+			if (Hiro.sys.user.level==0 && document.getElementById('landing').style.display != 'none') {
 				var el = document.getElementById('landing').contentDocument.getElementById('startwriting');
 				if (el) el.focus();
 			} else {
-				document.getElementById(WPCLib.canvas.contentId).focus();				
+				document.getElementById(Hiro.canvas.contentId).focus();				
 			} 
 
 			// Complete bar
-			WPCLib.ui.hprogress.done();											
+			Hiro.ui.hprogress.done();											
 		},
 
 
 		_titletiptimer: null,
 		_showtitletip: function() {	
 			// Show an encouraging title and indicitae that title can be changed here
-			WPCLib.canvas._titletiptimer = setTimeout(function(){
-				var title = document.getElementById(WPCLib.canvas.pageTitle);	
-				var tip = ('ontouchstart' in document.documentElement) ? '' : WPCLib.canvas.titleTip;
-				WPCLib.canvas.tempTitle = title.value;			
-				if (!title.value || title.value.length == 0 || title.value == "Untitled" || title.value == WPCLib.canvas.defaultTitle) title.value = tip;					
+			Hiro.canvas._titletiptimer = setTimeout(function(){
+				var title = document.getElementById(Hiro.canvas.pageTitle);	
+				var tip = ('ontouchstart' in document.documentElement) ? '' : Hiro.canvas.titleTip;
+				Hiro.canvas.tempTitle = title.value;			
+				if (!title.value || title.value.length == 0 || title.value == "Untitled" || title.value == Hiro.canvas.defaultTitle) title.value = tip;					
 			},200);								
 		},
 
 		_hidetitletip: function() {
 			// Revert title back to previous state
-			clearInterval(WPCLib.canvas._titletiptimer);
-			WPCLib.canvas._titletiptimer = null;
-			var title = document.getElementById(WPCLib.canvas.pageTitle);	
-			var tip = WPCLib.canvas.titleTip;	
+			clearInterval(Hiro.canvas._titletiptimer);
+			Hiro.canvas._titletiptimer = null;
+			var title = document.getElementById(Hiro.canvas.pageTitle);	
+			var tip = Hiro.canvas.titleTip;	
 			if (title.value==tip) {
-				title.value = WPCLib.canvas.tempTitle;
+				title.value = Hiro.canvas.tempTitle;
 			}
 		},
 
 		_clicktitletip: function(event) {
 			event.stopPropagation();
-			var title = document.getElementById(WPCLib.canvas.pageTitle);
-			if (title.value == WPCLib.canvas.titleTip || title.value == WPCLib.canvas.defaultTitle) title.value = '';	
+			var title = document.getElementById(Hiro.canvas.pageTitle);
+			if (title.value == Hiro.canvas.titleTip || title.value == Hiro.canvas.defaultTitle) title.value = '';	
 		},	
 
 		evaluatetitle: function(event) {
@@ -1087,7 +1087,7 @@ var WPCLib = {
 			var k = event.keyCode;
 		    if ( k == 13 || k == 40 ) {
 				event.preventDefault();
-		        WPCLib.canvas._setposition(0);
+		        Hiro.canvas._setposition(0);
 		    }
 
 			// Do not proceed to save if the shift,alt,strg or a navigational key is pressed	
@@ -1095,24 +1095,24 @@ var WPCLib = {
 			if (keys.indexOf(k) > -1) return;	
 
 			// Update internal values and Browser title			
-			WPCLib.canvas.title = document.title = this.value;
-			if (WPCLib.folio.docs.lookup[WPCLib.canvas.docid]) WPCLib.folio.docs.lookup[WPCLib.canvas.docid].title = this.value;
+			Hiro.canvas.title = document.title = this.value;
+			if (Hiro.folio.docs.lookup[Hiro.canvas.docid]) Hiro.folio.docs.lookup[Hiro.canvas.docid].title = this.value;
 			if (!this.value) document.title = 'Untitled';
 
 			// Visually update name in portfolio right away
-			var el = document.getElementById('doc_'+WPCLib.canvas.docid);			
+			var el = document.getElementById('doc_'+Hiro.canvas.docid);			
 			if (el) el.firstChild.firstChild.innerHTML = this.value;			
 
 			// Initiate save & search
-			WPCLib.canvas._settypingtimer(true);
+			Hiro.canvas._settypingtimer(true);
 		},
 
 		_cleanwelcome: function() {
 			// Remove welcome teaser etc which was loaded if document was blank
-			var el = document.getElementById(WPCLib.canvas.contentId);		
-			WPCLib.ui.fade(document.getElementById('nicequote'),-1,500);
-			WPCLib.util.releaseEvent(el,'keydown',WPCLib.canvas._cleanwelcome);
-			WPCLib.canvas.quoteShown = false;
+			var el = document.getElementById(Hiro.canvas.contentId);		
+			Hiro.ui.fade(document.getElementById('nicequote'),-1,500);
+			Hiro.util.releaseEvent(el,'keydown',Hiro.canvas._cleanwelcome);
+			Hiro.canvas.quoteShown = false;
 		},
 
 		_removeblank: function() {
@@ -1130,7 +1130,7 @@ var WPCLib = {
 			if (keys.indexOf(k) > -1) return;
 
 			// update function bound to page textarea, return to local canvas scope
-			WPCLib.canvas.evaluate();			
+			Hiro.canvas.evaluate();			
 		},		
 
 		_resize: function() {
@@ -1138,7 +1138,7 @@ var WPCLib = {
 			// TODO: Consider cut/copy/paste, fix padding/margin glitches
 			var w = document.body.offsetWidth,
 				midi = (w > 480 && w <900) ? true : false,
-		    	text = document.getElementById(WPCLib.canvas.contentId);   
+		    	text = document.getElementById(Hiro.canvas.contentId);   
 		    if (midi) {
 		    	text.style.height = (text.scrollHeight-100)+'px';
 		    } else {
@@ -1148,18 +1148,18 @@ var WPCLib = {
 
 		_copynpaste: function() {
 			// on copy and paste actions					
-	        window.setTimeout(WPCLib.canvas._resize, 0);
+	        window.setTimeout(Hiro.canvas._resize, 0);
 
 	        window.setTimeout(function(){
 	        	// Some browser fire c&p events with delay, without this we would copy the old values
-	        	var that = WPCLib.canvas, newtext = document.getElementById(that.contentId).value;
+	        	var that = Hiro.canvas, newtext = document.getElementById(that.contentId).value;
 
 	        	// See if there was newly added text
 	        	if (that.sync.dmp && that.text != newtext) {
 	        		// Send pasted text to link extraction
 	        		var diff = that.sync.dmp.diff_main(that.text, newtext);
 	        		diff = diff[1] || diff[0];
-	        		if (diff && diff[0] == 1) WPCLib.context.extractlinks(diff[1]);
+	        		if (diff && diff[0] == 1) Hiro.context.extractlinks(diff[1]);
 	        	}
 
 		        // Set internal variables
@@ -1168,7 +1168,7 @@ var WPCLib = {
 				that.caretPosition = that._getposition()[1];		        
 
 		        // Save Document        
-                if (!WPCLib.canvas.sync.inited) { that.savedoc() } else { WPCLib.canvas.sync.addedit(false,'Saving...'); }
+                if (!Hiro.canvas.sync.inited) { that.savedoc() } else { Hiro.canvas.sync.addedit(false,'Saving...'); }
 	        }, 10);
 		},
 
@@ -1178,21 +1178,21 @@ var WPCLib = {
 
 			// Tab key insert 5 whitespaces
 			if (k==9) {
-				WPCLib.canvas._replacekey(e,'tab');
+				Hiro.canvas._replacekey(e,'tab');
 				e.preventDefault();
 			}
 
 			// Space and return triggers brief analysis, also sends an edit to the internal sync stack
 			if (k==32||k==13||k==9) {
-				WPCLib.canvas._wordcount();	
-				if (WPCLib.sys.user.level > 0) WPCLib.canvas.sync.addedit(false,'Saving...'); 
+				Hiro.canvas._wordcount();	
+				if (Hiro.sys.user.level > 0) Hiro.canvas.sync.addedit(false,'Saving...'); 
 			}
 
 			// See if user uses arrow-up and jump to title if cursor is at position 0
 			if (k == 38) {
-				var p = WPCLib.canvas._getposition();
+				var p = Hiro.canvas._getposition();
 				if (p[0] == p[1] && p[0] == 0) {
-					document.getElementById(WPCLib.canvas.pageTitle).focus();
+					document.getElementById(Hiro.canvas.pageTitle).focus();
 				}
 			}	
 
@@ -1202,13 +1202,13 @@ var WPCLib = {
 		_replacekey: function(e,key) {
 			// Replace default key behavior with special actions
 			var pos = this._getposition()[1];		
-			var src = document.getElementById(WPCLib.canvas.contentId); 				
+			var src = document.getElementById(Hiro.canvas.contentId); 				
 			if (key == 'tab') {	
-	            WPCLib.util.stopEvent(e);				
-	            src.value = WPCLib.canvas.text = [src.value.slice(0, pos), '\t', src.value.slice(pos)].join('');
+	            Hiro.util.stopEvent(e);				
+	            src.value = Hiro.canvas.text = [src.value.slice(0, pos), '\t', src.value.slice(pos)].join('');
 	            // We have to do this as some browser jump to the end of the textarea for some strange reason		
 	            if (document.activeElement) document.activeElement.blur();
-	            WPCLib.canvas._setposition(pos+1);        
+	            Hiro.canvas._setposition(pos+1);        
 	        }        
 		},
 
@@ -1224,8 +1224,8 @@ var WPCLib = {
 			// count chars and execute on n char changes
 			this.newChars++;
 			if (this.newChars>=this.newCharThreshhold) {
-				WPCLib.sys.log('new chars typed: ',this.newChars);
-				// WPCLib.sys.savetext(this.text);
+				Hiro.sys.log('new chars typed: ',this.newChars);
+				// Hiro.sys.savetext(this.text);
 				this.newChars = 0;
 			};
 
@@ -1247,7 +1247,7 @@ var WPCLib = {
 			var cw = t.split(' ').length-1;
 			if (cw != this.wordcount) this.newWords++;
 			if (this.newWords>=this.newWordThreshhold) {
-				WPCLib.sys.log('new words');
+				Hiro.sys.log('new words');
 				this.newWords = 0;	
 			} 
 			this.wordcount = cw;
@@ -1258,21 +1258,21 @@ var WPCLib = {
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {	
 				// Clean up (and remove potential previous editor from docs array)
-				var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid],
-					lvl = WPCLib.sys.user.level;
+				var doc = Hiro.folio.docs.lookup[Hiro.canvas.docid],
+					lvl = Hiro.sys.user.level;
 				if (doc && doc.lastEditor) doc.lastEditor = null;
-				WPCLib.canvas._cleartypingtimer();				
+				Hiro.canvas._cleartypingtimer();				
 
 				// Add edit if user is logged in or save locally if not
-				if (WPCLib.canvas.sync.inited) WPCLib.canvas.sync.addedit(false,'Saving...');
+				if (Hiro.canvas.sync.inited) Hiro.canvas.sync.addedit(false,'Saving...');
 
 				// Save rest of doc if flag is set or user not logged in yet
-				if (save || lvl == 0) WPCLib.canvas.savedoc();	
+				if (save || lvl == 0) Hiro.canvas.savedoc();	
 
 				// Show searchtips if user isn't signed in yet
-				if (lvl == 0 && ((WPCLib.context.sticky.length + WPCLib.context.links.length) == 0)) {
-					var msg = (WPCLib.canvas.text.length > 500) ? 'Tip: You can also select a whole paragraph' : 'Select a word you typed to start a search';					
-						el = document.getElementById(WPCLib.context.wwwresultsId);
+				if (lvl == 0 && ((Hiro.context.sticky.length + Hiro.context.links.length) == 0)) {
+					var msg = (Hiro.canvas.text.length > 500) ? 'Tip: You can also select a whole paragraph' : 'Select a word you typed to start a search';					
+						el = document.getElementById(Hiro.context.wwwresultsId);
 						el.innerHTML = '<div class="tip">' + msg + '</div>';
 				} 				
 			},1000);
@@ -1288,15 +1288,15 @@ var WPCLib = {
 			// Debug logging of text, position etc
 			var log = document.getElementById('log');
 			var pos = this.caretPosition;
-			WPCLib.sys.log('Words: ' + this.wordcount + " Lines: " + this.linecount + " Pos: " + pos);			
+			Hiro.sys.log('Words: ' + this.wordcount + " Lines: " + this.linecount + " Pos: " + pos);			
 		},
 
 		textclick: function(event) {
 			// when text is clicked
-			var sel = WPCLib.canvas._getposition(),
+			var sel = Hiro.canvas._getposition(),
 				target = event.target || event.srcElement;
-			if (sel[0] != sel[1]) WPCLib.context.search(WPCLib.canvas.title,sel[2],true,true);
-			if (target.id == WPCLib.canvas.canvasId || target.id == WPCLib.canvas.contentId) WPCLib.ui.clearactions(null,true);
+			if (sel[0] != sel[1]) Hiro.context.search(Hiro.canvas.title,sel[2],true,true);
+			if (target.id == Hiro.canvas.canvasId || target.id == Hiro.canvas.contentId) Hiro.ui.clearactions(null,true);
 		},
 
 		_getposition: function() {
@@ -1334,7 +1334,7 @@ var WPCLib = {
 
 		_setposition: function(pos,force,retry) {			
 			// Set the cursor to a specified position
-			var el = document.getElementById(WPCLib.canvas.contentId),
+			var el = document.getElementById(Hiro.canvas.contentId),
 				al = document.activeElement,
 				touch = ('ontouchstart' in document.documentElement),
 				contentfocus = (el && al && el.id == al.id);		
@@ -1354,11 +1354,11 @@ var WPCLib = {
 
     		if (touch && (document.body.offsetWidth <= 480 || document.body.offsetHeight <= 480)) {
     			// Abort if doc is not empty or very short
-    			if (WPCLib.ui.menuCurrPos != 0 || (!force && el.value.length > 150)) return; 	
+    			if (Hiro.ui.menuCurrPos != 0 || (!force && el.value.length > 150)) return; 	
     			if (!force) {
 	    			// Delay in this case because of quirky new iOS, where instant focus does not work for some reason    				
 	    			setTimeout(function(){	    				
-	    				WPCLib.canvas._setposition(pos,true,true);
+	    				Hiro.canvas._setposition(pos,true,true);
 	    			},500);	
 	    			return;
     			} else if (!retry && !contentfocus) {
@@ -1378,8 +1378,8 @@ var WPCLib = {
 					// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
 					// TODO Bruno findout why, it's not about something else setting the focus elsewhere						
 					setTimeout( function(){						
-						if (WPCLib.ui.menuCurrPos!=0) return;
-						WPCLib.canvas.safariinit = false;						
+						if (Hiro.ui.menuCurrPos!=0) return;
+						Hiro.canvas.safariinit = false;						
 						el.focus();							
 						el.setSelectionRange(pos1,pos2);														
 					},1000);								
@@ -1422,7 +1422,7 @@ var WPCLib = {
 				// Create new diff_match_patch instance once all js is loaded, retry of not
 				if (!this.dmp && typeof diff_match_patch != 'function') {
 					setTimeout(function(){
-						WPCLib.canvas.sync.init(dmponly);
+						Hiro.canvas.sync.init(dmponly);
 					},100);
 					return;
 				}
@@ -1441,21 +1441,21 @@ var WPCLib = {
 				this.reset();
 
 				// Set internal values
-				WPCLib.comm.crap.channelToken = token;
+				Hiro.comm.crap.channelToken = token;
                 this.sessionid = sessionid;
                 this.shadow = text;       
 
             	// Open new channel with token
-            	WPCLib.comm.crap.connect(token);                 
+            	Hiro.comm.crap.connect(token);                 
 
                 // If we have set the resend flag
                 if (resend) this.addedit(true,'Syncing...');
 
 				// Initiate Keepalive
-				clearTimeout(WPCLib.canvas.sync.keepalive);				
+				clearTimeout(Hiro.canvas.sync.keepalive);				
 				this.keepalive = null;
 				this.keepalive = setTimeout(function(){
-					WPCLib.canvas.sync.addedit(true,'Syncing...');
+					Hiro.canvas.sync.addedit(true,'Syncing...');
 				},this.keepaliveinterval);                
 			},
 
@@ -1469,18 +1469,18 @@ var WPCLib = {
 
 			addedit: function(force,reason) {
 				// Add an edit to the edits array
-				var c = WPCLib.canvas.text, s = this.shadow, edit = {};
+				var c = Hiro.canvas.text, s = this.shadow, edit = {};
 
 				// If we're inflight then wait for callback
 				if (this.inflight) {
-					this.inflightcallback = WPCLib.canvas.sync.addedit;
+					this.inflightcallback = Hiro.canvas.sync.addedit;
 					return;
 				}	
 
 				// Abort if the string stayed the same or syncing is disabled
 				if (!force && (!this.enabled || c == s)) return;
 
-				if (WPCLib.comm.online || this.edits.length == 0) {
+				if (Hiro.comm.online || this.edits.length == 0) {
 					// Build edit object, if we are offline we only build one to send instead of clogging array with endless edits
 					// Right now including Patch and simple diff string format, TODO Choose one
 					edit.delta = this.delta(s,c); 
@@ -1489,14 +1489,14 @@ var WPCLib = {
 
 	                // Update last edit timestamp & folio display if text was changed
 	                if (c != s) {
-	                	var doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];
-						if (doc) doc.updated = WPCLib.util.now(); 
-						WPCLib.folio.docs.update();
+	                	var doc = Hiro.folio.docs.lookup[Hiro.canvas.docid];
+						if (doc) doc.updated = Hiro.util.now(); 
+						Hiro.folio.docs.update();
 	                }				
 
 					// Cursor handling
 					this.previouscursor = this.latestcursor;
-					edit.cursor = this.latestcursor = WPCLib.canvas.caretPosition; 
+					edit.cursor = this.latestcursor = Hiro.canvas.caretPosition; 
 
 					// Add edit to edits stack
 					this.edits.push(edit);
@@ -1507,10 +1507,10 @@ var WPCLib = {
 				this.sendedits(reason);
 
 				// Cleanup and reset Keepalive
-				clearTimeout(WPCLib.canvas.sync.keepalive);				
+				clearTimeout(Hiro.canvas.sync.keepalive);				
 				this.keepalive = null;
 				this.keepalive = setTimeout(function(){
-					WPCLib.canvas.sync.addedit(true,'Syncing...');
+					Hiro.canvas.sync.addedit(true,'Syncing...');
 				},this.keepaliveinterval);
 			},
 
@@ -1518,86 +1518,86 @@ var WPCLib = {
 			inflightcallback: null,
 			sendedits: function(reason) {
 				// Post current edits stack to backend and clear stack on success
-				var statusbar = document.getElementById(WPCLib.context.statusId);
-                if (this.edits.length == 0 || this.inflight || WPCLib.canvas.docid == 'localdoc' || WPCLib.sys.user.level == 0) {
+				var statusbar = document.getElementById(Hiro.context.statusId);
+                if (this.edits.length == 0 || this.inflight || Hiro.canvas.docid == 'localdoc' || Hiro.sys.user.level == 0) {
                 	// if we do not have any edits, are currently inflight or user is not logged in yet
                     return;
                 }
 
-                if (!WPCLib.canvas.docid) {
+                if (!Hiro.canvas.docid) {
                 	// If we don't have a docid yet try again later
                 	setTimeout( function(){
-                		WPCLib.canvas.sync.sendedits();
+                		Hiro.canvas.sync.sendedits();
                 	},500);
                 	return;
                 }
 
                 // Set variable to prevent double sending
                 this.inflight = true;
-                WPCLib.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
+                Hiro.sys.log('Starting sync with data: ',JSON.stringify(this.edits));
                 if (reason) statusbar.innerHTML = reason || 'Saving...';
 
                 // Post editstack to backend
-                WPCLib.comm.ajax({
-                    url: "/docs/"+WPCLib.canvas.docid+"/sync",
+                Hiro.comm.ajax({
+                    url: "/docs/"+Hiro.canvas.docid+"/sync",
                     type: "POST",
                     payload: JSON.stringify({"session_id": this.sessionid, "deltas": this.edits}),
                     timeout: 10000,
                     success: function(req,data) {
                         // Confirm
                 		statusbar.innerHTML = 'Saved.';                       
-                        WPCLib.sys.log('Completed sync request successfully ',[JSON.stringify(data.deltas)]);
+                        Hiro.sys.log('Completed sync request successfully ',[JSON.stringify(data.deltas)]);
 
                         // process the edit-stack received from the server
-                        WPCLib.canvas.sync.process(data.deltas);
+                        Hiro.canvas.sync.process(data.deltas);
 
                         // Reset inflight variable
-                        WPCLib.canvas.sync.inflight = false;                        
+                        Hiro.canvas.sync.inflight = false;                        
 
                         // Do callback if we have one
-                        if (WPCLib.canvas.sync.inflightcallback) {
-                        	WPCLib.canvas.sync.inflightcallback();
-                        	WPCLib.canvas.sync.inflightcallback = null;
+                        if (Hiro.canvas.sync.inflightcallback) {
+                        	Hiro.canvas.sync.inflightcallback();
+                        	Hiro.canvas.sync.inflightcallback = null;
                         }	
                         	
                     },
                     error: function(req,data) {
                         // Reset inflight variable
-                        WPCLib.canvas.sync.inflight = false;					
+                        Hiro.canvas.sync.inflight = false;					
 
                         // Retry if it was just a sync session timeout (20 mins)
                         if (req.status == 412) {
                         	var sv = data.text,
-                        	    lv = WPCLib.canvas.sync.shadow;
+                        	    lv = Hiro.canvas.sync.shadow;
 
                         	// See if the client/server versions differ, build and apply patch if
                         	if (sv != lv) {
                         		// Build delta from 'old' local version and 'new' server version
-                        		var delta = WPCLib.canvas.sync.delta(lv,sv);
-                        		WPCLib.canvas.sync.patch(delta,true);
+                        		var delta = Hiro.canvas.sync.delta(lv,sv);
+                        		Hiro.canvas.sync.patch(delta,true);
                         	}    
 
-							WPCLib.canvas.sync.begin(sv,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"),true);
+							Hiro.canvas.sync.begin(sv,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"),true);
                         	return;
                         }
 
                         // Log error if it wasn't a reconnect (see above)
-                        WPCLib.sys.error('Completed sync request with error ' + JSON.stringify(req));                        
+                        Hiro.sys.error('Completed sync request with error ' + JSON.stringify(req));                        
 
                         // Move away from note if rights were revoked
-                        if (req.status == 404) WPCLib.ui.statusflash('red','Note not found.',true);
-						if (req.status == 403) WPCLib.ui.statusflash('red','Access denied, sorry.',true);  
+                        if (req.status == 404) Hiro.ui.statusflash('red','Note not found.',true);
+						if (req.status == 403) Hiro.ui.statusflash('red','Access denied, sorry.',true);  
 						
 						// Try callback but navigate away once access is lost 
 						if (req.status == 401 || req.status == 403 || req.status == 404) {
                         	// Prevent further sendedits
-                        	WPCLib.canvas.sync.inflight = true;    
-                        	setTimeout(function(){ WPCLib.canvas.sync.inflight = false; },2000);
+                        	Hiro.canvas.sync.inflight = true;    
+                        	setTimeout(function(){ Hiro.canvas.sync.inflight = false; },2000);
                         	// Reload docs                  								
-                        	WPCLib.folio.docs.loaddocs();
-                        } else if (WPCLib.canvas.sync.inflightcallback) {
-                        	WPCLib.canvas.sync.inflightcallback();
-                        	WPCLib.canvas.sync.inflightcallback = null;
+                        	Hiro.folio.docs.loaddocs();
+                        } else if (Hiro.canvas.sync.inflightcallback) {
+                        	Hiro.canvas.sync.inflightcallback();
+                        	Hiro.canvas.sync.inflightcallback = null;
                         }
                     }
                 });				
@@ -1611,14 +1611,14 @@ var WPCLib = {
 
                     if (edit.force === true) {
                         // Something went wrong on the server, thus we reset everything
-                        WPCLib.sys.log("server enforces resync, complying");
+                        Hiro.sys.log("server enforces resync, complying");
                         this.shadow = edit.delta;
                         this.localversion = edit.clientversion;
                         this.remoteversion = edit.serverversion;
                         this.edits = [];
-                        WPCLib.canvas.set_text(edit.delta);    
-                        WPCLib.canvas._setposition(this.previouscursor,true);  
-                        WPCLib.sys.error('Server forced resync ' + JSON.stringify(edit));                                                               
+                        Hiro.canvas.set_text(edit.delta);    
+                        Hiro.canvas._setposition(this.previouscursor,true);  
+                        Hiro.sys.error('Server forced resync ' + JSON.stringify(edit));                                                               
                         continue;
                     }
 
@@ -1634,15 +1634,15 @@ var WPCLib = {
 
                     // Handle edge cases
                     if (this.remoteversion < edit.serverversion) {
-                        WPCLib.sys.error("TODO: server version ahead of client -- resync");
+                        Hiro.sys.error("TODO: server version ahead of client -- resync");
                         continue;
                     } else if (this.remoteversion > edit.serverversion) {
                         //dupe
-                        WPCLib.sys.error("TODO: Sync dupe received");
+                        Hiro.sys.error("TODO: Sync dupe received");
                         continue;
                     } else if (edit.clientversion > this.localversion) {
                     	// Edge case: to be researched when this happens
-                        WPCLib.sys.error("TODO: client version mismatch -- resync: cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
+                        Hiro.sys.error("TODO: client version mismatch -- resync: cv(server): " + edit.clientversion +" cv(client): " +this.localversion);
                         continue;
                     } 
 
@@ -1658,24 +1658,24 @@ var WPCLib = {
             	// Create and apply a patch from the delta we got
             	var diffs, patch, merged,
             		regex = /^=[0-9]+$/,
-            		oldtext = WPCLib.canvas.text,
-            		oldcursor = WPCLib.canvas._getposition(),
-            		doc = WPCLib.folio.docs.lookup[WPCLib.canvas.docid];              	                	           		
+            		oldtext = Hiro.canvas.text,
+            		oldcursor = Hiro.canvas._getposition(),
+            		doc = Hiro.folio.docs.lookup[Hiro.canvas.docid];              	                	           		
 
             	// If the delta is just a confirmation, do nothing
             	if (regex.test(delta)) {
-            		WPCLib.sys.log('No text changed');
+            		Hiro.sys.log('No text changed');
             		return;
             	} 	
 
                 // Update last edit timestamp & folio display
-				if (doc) doc.updated = WPCLib.util.now(); 
-				WPCLib.folio.docs.update();	            	
+				if (doc) doc.updated = Hiro.util.now(); 
+				Hiro.folio.docs.update();	            	
 
             	// Build diffs from the server delta
             	try { diffs = this.dmp.diff_fromDelta(this.shadow, delta) } 
             	catch(e) {
-            		WPCLib.sys.error('Something went wrong during patching:' + JSON.stringify(e));
+            		Hiro.sys.error('Something went wrong during patching:' + JSON.stringify(e));
             	}	          	
 
             	// Build patch from diffs
@@ -1685,13 +1685,13 @@ var WPCLib = {
             		// Apply the patch & set new shadow
                     this.shadow = this.dmp.patch_apply(patch, this.shadow)[0];                    
                     merged      = this.dmp.patch_apply(patch, oldtext)[0];
-	                WPCLib.sys.log("Patches successfully merged, replacing text");
+	                Hiro.sys.log("Patches successfully merged, replacing text");
 
 	                // Get current cursor position
-	                oldcursor = WPCLib.canvas._getposition();
+	                oldcursor = Hiro.canvas._getposition();
 
 	                // Set text
-	                WPCLib.canvas.set_text(merged); 
+	                Hiro.canvas.set_text(merged); 
 
 	                // Reset cursor   
 	                this.resetcursor(diffs,oldcursor);                                 
@@ -1713,7 +1713,7 @@ var WPCLib = {
             	}         	
 
             	// Force-set new position, this also fires resize
-            	WPCLib.canvas._setposition(range,true);
+            	Hiro.canvas._setposition(range,true);
             },           
 
 			delta: function(o,n) {
@@ -1745,30 +1745,30 @@ var WPCLib = {
 
 		init: function() {
 			// Bind basic events
-			WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('input')[0],'keydown', function(){
+			Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('input')[0],'keydown', function(){
 				this.className = 'hiro';
 				this.nextSibling.display = 'none';
 			});			
 			if ('ontouchstart' in document.documentElement) {
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'touchstart', function(event){
-					if (WPCLib.sharing.visible) return;
-					WPCLib.sharing.open(event,true);
+				Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'touchstart', function(event){
+					if (Hiro.sharing.visible) return;
+					Hiro.sharing.open(event,true);
 				});
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'touchstart', WPCLib.sharing.close);				
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'touchstart', WPCLib.sharing.submit);				
+				Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'touchstart', Hiro.sharing.close);				
+				Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'touchstart', Hiro.sharing.submit);				
 			} else {
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'mouseover', function(event) {
-					if (document.body.offsetWidth>480) WPCLib.sharing.open(event);
+				Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'mouseover', function(event) {
+					if (document.body.offsetWidth>480) Hiro.sharing.open(event);
 				});
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'click', function(event){				
-					if (WPCLib.sharing.visible) return;
-					WPCLib.sharing.open(event,true);
+				Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('div')[0],'click', function(event){				
+					if (Hiro.sharing.visible) return;
+					Hiro.sharing.open(event,true);
 				});
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'click', WPCLib.sharing.close);			
-				WPCLib.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'click', WPCLib.sharing.submit);
+				Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[0],'click', Hiro.sharing.close);			
+				Hiro.util.registerEvent(document.getElementById(this.id).getElementsByTagName('a')[1],'click', Hiro.sharing.submit);
 				// Register event that cancels the delayed opening of the options
-				WPCLib.util.registerEvent(document.getElementById(this.id),'mouseout', function() {
-					var that = WPCLib.sharing;
+				Hiro.util.registerEvent(document.getElementById(this.id),'mouseout', function() {
+					var that = Hiro.sharing;
 				    if (that.openTimeout && !that.visible) {
 					    clearTimeout(that.openTimeout);
 						that.openTimeout = null;
@@ -1779,44 +1779,44 @@ var WPCLib = {
 
 		open: function(event,forceopen) {
 			// Open the sharing snippet with a delayed timeout		
-			var that = WPCLib.sharing;			
+			var that = Hiro.sharing;			
 			if (event) {
 				event.preventDefault();
 				event.stopPropagation();
 			}	
 
 			// See if this or any other action popins are already visible
-			if (WPCLib.ui.actionsvisible && !forceopen) return;
+			if (Hiro.ui.actionsvisible && !forceopen) return;
 
 			// Get the latest list of people who have access
 			that.accesslist.fetch();			
 
 
 			if (forceopen) {
-				WPCLib.ui.clearactions();
+				Hiro.ui.clearactions();
 			} else if (!that.openTimeout) {
 				// Kick off timeout 				
 				// Add a slight delay
 				that.openTimeout = setTimeout(function(){								
-					var that = WPCLib.sharing;
+					var that = Hiro.sharing;
 					that.open();										
 					that.openTimeout = null;
 					clearTimeout(that.openTimeout);															
 				},150);				
 				return;
 			}
-			that.visible = WPCLib.ui.actionsvisible = true;				
+			that.visible = Hiro.ui.actionsvisible = true;				
 			var widget = document.getElementById('s_actions').parentNode;
 			widget.style.display = 'block';
 
 			// Set focus to input field
-			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0];		
+			var email = document.getElementById(Hiro.sharing.id).getElementsByTagName('input')[0];		
 			if (email) email.focus();				
 		},
 
 		close: function(event) {
 			// Close the sharing widget
-			var that = WPCLib.sharing,
+			var that = Hiro.sharing,
 				widget = document.getElementById('s_actions').parentNode,
 				input = document.getElementById('s_actions').getElementsByTagName('input')[0],
 				error = document.getElementById('s_actions').getElementsByTagName('div')[0];
@@ -1828,12 +1828,12 @@ var WPCLib = {
 				event.stopPropagation();
 			}				
 			
-			that.visible = WPCLib.ui.actionsvisible = false;
+			that.visible = Hiro.ui.actionsvisible = false;
 			widget.style.display = 'none';
 
 			// Set position or blur input
 			if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();
-			WPCLib.canvas._setposition();
+			Hiro.canvas._setposition();
 
 			// Remove error remains if we had one			
 			if (error && error.style.display != 'none' && error.className == 'error') {
@@ -1845,15 +1845,15 @@ var WPCLib = {
 
 		submit: function(event) {
 			// Submit form
-			var email = document.getElementById(WPCLib.sharing.id).getElementsByTagName('input')[0],
-				button = document.getElementById(WPCLib.sharing.id).getElementsByTagName('a')[1];
+			var email = document.getElementById(Hiro.sharing.id).getElementsByTagName('input')[0],
+				button = document.getElementById(Hiro.sharing.id).getElementsByTagName('a')[1];
 
 			if (event) {
 				event.preventDefault();
 				event.stopPropagation();
 			}			
-			if (WPCLib.sys.user.level < 1) {
-				WPCLib.sys.user.upgrade(1);
+			if (Hiro.sys.user.level < 1) {
+				Hiro.sys.user.upgrade(1);
 				return;			
 			}
 
@@ -1869,19 +1869,19 @@ var WPCLib = {
 			}
 
 			// Add invite
-			WPCLib.sharing.accesslist.add(email.value);
+			Hiro.sharing.accesslist.add(email.value);
 		},
 
 		applytoken: function(token) {
 			// Applies a token for a shared doc
 			// We handle loading the doc with token through the normal loaddoc
 			this.token = token;		
-			if (WPCLib.sys.user.level == 0) {
+			if (Hiro.sys.user.level == 0) {
 				// Load signup dialog if user isn't logged in
 				var frame = document.getElementById('dialog');
 				frame.onload = function() {		
 					// The if prevents the dialog from being loaded after login		
-					if (WPCLib.sys.user.level == 0) WPCLib.ui.showDialog(null,'','s_signup','signup_mail');					
+					if (Hiro.sys.user.level == 0) Hiro.ui.showDialog(null,'','s_signup','signup_mail');					
 				}
 			}
 		},
@@ -1893,7 +1893,7 @@ var WPCLib = {
 
 			add: function(email) {
 				// Add a user to the current editor list
-				var url = '/docs/' + WPCLib.canvas.docid + '/collaborators',
+				var url = '/docs/' + Hiro.canvas.docid + '/collaborators',
 					payload = {'email': email.trim() },
 					el = document.getElementById('s_actions'),
 					input = el.getElementsByTagName('input')[0],
@@ -1902,9 +1902,9 @@ var WPCLib = {
 					that = this, unshared = (that.users.length <= 1) ? true : false;
 
 				// Retry later if we don't have a docid yet
-				if (!WPCLib.canvas.docid) {
+				if (!Hiro.canvas.docid) {
 					setTimeout(function() {
-						WPCLib.sharing.accesslist.add(email);
+						Hiro.sharing.accesslist.add(email);
 						return;
 					},500);
 				}	
@@ -1914,7 +1914,7 @@ var WPCLib = {
 				this.el.insertBefore(d,this.el.firstChild);
 				input.nextSibling.style.display = 'none';				
 
-                WPCLib.comm.ajax({
+                Hiro.comm.ajax({
                 	// Post to backend
                     url: url,
                     type: "POST",
@@ -1928,15 +1928,15 @@ var WPCLib = {
                     	that.fetch();
                     	// If note was unshared at beginning of this function add shared flag & update list view                   	
                     	if (unshared) {
-							WPCLib.folio.docs.lookup[WPCLib.canvas.docid].shared = true;  
-							WPCLib.folio.docs.update();                  		
+							Hiro.folio.docs.lookup[Hiro.canvas.docid].shared = true;  
+							Hiro.folio.docs.update();                  		
                     	}
 
                     	// Notify segment.io
 		            	var payload2 = {};
 		            	payload2.sharing = true;
 		            	// Notify segment.io
-		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);                    	
+		            	if (analytics) analytics.identify(Hiro.sys.user.id, payload2);                    	
                     },
                     error: function(req,data) {
                     	// Show error 
@@ -1945,7 +1945,7 @@ var WPCLib = {
 						input.className = 'hiro error';                    	                     	
                     	input.focus();           
                     	button.innerHTML = 'Invite';
-                    	WPCLib.sys.error(data);
+                    	Hiro.sys.error(data);
                     	// Remove inviting placeholder
                     	d.parentNode.removeChild(d);
                     }
@@ -1956,9 +1956,9 @@ var WPCLib = {
 				// Remove a user from the current editor list
 				var target = event.target || event.srcElement,
 					uid = target.parentNode.id.split('_').pop(),
-					that = WPCLib.sharing.accesslist,
-					u = that.users, currentuser = (u[uid].email == WPCLib.sys.user.email),
-					url = '/docs/' + WPCLib.canvas.docid + '/collaborators', payload = {};
+					that = Hiro.sharing.accesslist,
+					u = that.users, currentuser = (u[uid].email == Hiro.sys.user.email),
+					url = '/docs/' + Hiro.canvas.docid + '/collaborators', payload = {};
 
 				// Build payload with access id
 				payload.access_id = u[uid].access_id;
@@ -1968,18 +1968,18 @@ var WPCLib = {
 				u.splice(uid,1);
 				that.update();
 
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
                 	// Post to backend
                     url: url,
                     type: "POST",
                     payload: JSON.stringify(payload),
                     success: function() {  
                     	// Reload the doclist if user has removed herself
-						if (currentuser) { WPCLib.folio.docs.loaddocs(); WPCLib.ui.clearactions(); };
+						if (currentuser) { Hiro.folio.docs.loaddocs(); Hiro.ui.clearactions(); };
                     	// If there are no more users in the array anymore, reload folio list to remove sharing icon
                     	if (u.length <= 1) {
-							WPCLib.folio.docs.lookup[WPCLib.canvas.docid].shared = false;  
-							WPCLib.folio.docs.update();                  		
+							Hiro.folio.docs.lookup[Hiro.canvas.docid].shared = false;  
+							Hiro.folio.docs.update();                  		
                     	}					                  	
                     },
                     error: function() {
@@ -2013,7 +2013,7 @@ var WPCLib = {
 			renderuser: function(user,i) {			
 				// Create a user DOM element and return it
 				var d, r, n,
-					currentuser = (user.email == WPCLib.sys.user.email),
+					currentuser = (user.email == Hiro.sys.user.email),
 					namestring = (user.name) ? user.name + ' (' + user.email + ')' : user.email,					
 					you = (this.users.length > 1) ? 'You' : 'Only you';
 
@@ -2031,9 +2031,9 @@ var WPCLib = {
 
 					// Attach events
 					if ('ontouchstart' in document.documentElement) {
-						r.setAttribute('ontouchstart',"WPCLib.sharing.accesslist.remove(event);");
+						r.setAttribute('ontouchstart',"Hiro.sharing.accesslist.remove(event);");
 					} else {
-						r.setAttribute('onclick',"WPCLib.sharing.accesslist.remove(event);");
+						r.setAttribute('onclick',"Hiro.sharing.accesslist.remove(event);");
 					}
 
 					d.appendChild(r);
@@ -2054,24 +2054,24 @@ var WPCLib = {
 			fetch: function() {
 				// Fetch the list of users with access
 				// Retry later if we don't have a docid yet
-				if (!WPCLib.canvas.docid) {
+				if (!Hiro.canvas.docid) {
 					setTimeout(function() {
-						WPCLib.sharing.accesslist.fetch();
+						Hiro.sharing.accesslist.fetch();
 						return;
 					},500);
 				}
 
 				// Do not do this on localdoc
-				if (WPCLib.sys.user.level == 0) return;
+				if (Hiro.sys.user.level == 0) return;
 
 				// Retrieve the list of people who have access, this is trigger by loaddoc and opening of the sharing widget
-				var url = '/docs/' +  WPCLib.canvas.docid + '/collaborators';
-				WPCLib.comm.ajax({
+				var url = '/docs/' +  Hiro.canvas.docid + '/collaborators';
+				Hiro.comm.ajax({
                     url: url,
                     contentType: "json",
                     success: function(req,data) {
                     	// Set internal values and update visual display
-                    	var that = WPCLib.sharing.accesslist;
+                    	var that = Hiro.sharing.accesslist;
                     	that.users = data;
                         that.update();
                     }
@@ -2153,10 +2153,10 @@ var WPCLib = {
 			// Authorize external API calls
 			gdrive: function() {
 				// Authorize Google Drive
-				var def = WPCLib.publish.actions.gdrive;
+				var def = Hiro.publish.actions.gdrive;
 				if (def.authed) return;	
 				// TODO: This callback triggers a non-click-event-stack popup -> Not seen the first		
-		        gapi.auth.authorize({'client_id': def.client_id, 'scope': def.scope, 'immediate': false},WPCLib.lib.collectResponse.google);				
+		        gapi.auth.authorize({'client_id': def.client_id, 'scope': def.scope, 'immediate': false},Hiro.lib.collectResponse.google);				
 			}
 		},
 
@@ -2168,17 +2168,17 @@ var WPCLib = {
 
 			// Bind basic events		
 			if ('ontouchstart' in document.documentElement) {
-				WPCLib.util.registerEvent(icon,'touchstart',function(event){
-					if (WPCLib.publish.visible) { WPCLib.publish.close(); return; } else { WPCLib.publish.open(event,true); }
+				Hiro.util.registerEvent(icon,'touchstart',function(event){
+					if (Hiro.publish.visible) { Hiro.publish.close(); return; } else { Hiro.publish.open(event,true); }
 				});				
 			} else {
-				WPCLib.util.registerEvent(icon,'mouseover',WPCLib.publish.open);
-				WPCLib.util.registerEvent(icon,'click',function(event){
-					if (WPCLib.publish.visible) { WPCLib.publish.close(); return; } else { WPCLib.publish.open(event,true); }
+				Hiro.util.registerEvent(icon,'mouseover',Hiro.publish.open);
+				Hiro.util.registerEvent(icon,'click',function(event){
+					if (Hiro.publish.visible) { Hiro.publish.close(); return; } else { Hiro.publish.open(event,true); }
 				});									
 				// Register event that cancels the delayed opening of the options
-				WPCLib.util.registerEvent(icon,'mouseout', function() {
-					var that = WPCLib.publish;
+				Hiro.util.registerEvent(icon,'mouseout', function() {
+					var that = Hiro.publish;
 				    if (that.openTimeout && !that.visible) {
 					    clearTimeout(that.openTimeout);
 						that.openTimeout = null;
@@ -2191,9 +2191,9 @@ var WPCLib = {
 
 		list: function() {
 			// Create a list of available actions
-			var actions = WPCLib.publish.actions;
-			var container = document.getElementById(WPCLib.publish.actionsId);
-			var level = WPCLib.sys.user.level;
+			var actions = Hiro.publish.actions;
+			var container = document.getElementById(Hiro.publish.actionsId);
+			var level = Hiro.sys.user.level;
 
 			// Empty current list
 			container.innerHTML = '';
@@ -2207,17 +2207,17 @@ var WPCLib = {
 					// Check necessary level and attach corresponding action	
 					if (level >= actions[action].level) {
 						if ('ontouchstart' in document.documentElement) {
-							a.setAttribute('ontouchstart',"WPCLib.publish.execute(event,'"+action+"');");
+							a.setAttribute('ontouchstart',"Hiro.publish.execute(event,'"+action+"');");
 						} else {
-							a.setAttribute('onclick',"WPCLib.publish.execute(event,'"+action+"');");
+							a.setAttribute('onclick',"Hiro.publish.execute(event,'"+action+"');");
 						}
 					} else {
 						if (level == 0) {
 							a.setAttribute('title','Signup to publish');								
-							a.setAttribute('onclick',"WPCLib.sys.user.upgrade(1);return false;");														
+							a.setAttribute('onclick',"Hiro.sys.user.upgrade(1);return false;");														
 						} else {
 							a.setAttribute('title','Upgrade');
-							a.setAttribute('onclick',"WPCLib.sys.user.forceupgrade(2,'<em>Upgrade now for </em><b>basic publishing</b>.');");					
+							a.setAttribute('onclick',"Hiro.sys.user.forceupgrade(2,'<em>Upgrade now for </em><b>basic publishing</b>.');");					
 						}
 					}
 
@@ -2229,10 +2229,10 @@ var WPCLib = {
 						} else {
 							a.setAttribute('ontouchstart','');
 						}
-						var sel = WPCLib.canvas._getposition();
-						var text = (sel[2].length > 0) ? sel[2] : document.getElementById(WPCLib.canvas.contentId).value;
+						var sel = Hiro.canvas._getposition();
+						var text = (sel[2].length > 0) ? sel[2] : document.getElementById(Hiro.canvas.contentId).value;
 						text = text.trim();					
-						a.setAttribute('href','mailto:?subject='+encodeURIComponent(document.getElementById(WPCLib.canvas.pageTitle).value)+'&body='+encodeURIComponent(text));
+						a.setAttribute('href','mailto:?subject='+encodeURIComponent(document.getElementById(Hiro.canvas.pageTitle).value)+'&body='+encodeURIComponent(text));
 					}
 
 					// Add to container
@@ -2244,26 +2244,26 @@ var WPCLib = {
 		open: function(event,forceopen) {
 			// Show the publish dialog
 			// Open the sharing snippet with a delayed timeout		
-			var that = WPCLib.publish;			
+			var that = Hiro.publish;			
 			if (event) {
 				event.preventDefault();
 				event.stopPropagation();
 			}			
 
 			// See if this or any other action popins are already visible
-			if (WPCLib.ui.actionsvisible && !forceopen) return;
+			if (Hiro.ui.actionsvisible && !forceopen) return;
 
 			// List services
 			that.list();		
 
 			// Close other actions
 			if (forceopen) {
-				WPCLib.ui.clearactions();
+				Hiro.ui.clearactions();
 			} else if (!that.openTimeout) {			
 				// Kick off timeout 
 				// Add a slight delay
 				that.openTimeout = setTimeout(function(){								
-					var that = WPCLib.publish;
+					var that = Hiro.publish;
 					that.open();										
 					that.openTimeout = null;
 					clearTimeout(that.openTimeout);															
@@ -2271,14 +2271,14 @@ var WPCLib = {
 				// Get the latest list of people who have access				
 				return;
 			}
-			that.visible = WPCLib.ui.actionsvisible = true;				
+			that.visible = Hiro.ui.actionsvisible = true;				
 			var widget = document.getElementById('p_actions').parentNode;
 			widget.style.display = 'block';	
 		},
 
 		close: function(event) {
 			// Hide the publish dialog
-			var that = WPCLib.publish;
+			var that = Hiro.publish;
 			// Check if we have a timeout and remove & abort if so 
 			if (!that.visible) return;
 			if (event) {
@@ -2287,9 +2287,9 @@ var WPCLib = {
 			}				
 			
 			var widget = document.getElementById('p_actions').parentNode;
-			that.visible = WPCLib.ui.actionsvisible = false;
+			that.visible = Hiro.ui.actionsvisible = false;
 			widget.style.display = 'none';
-			WPCLib.canvas._setposition();			
+			Hiro.canvas._setposition();			
 		},
 
 		execute: function(event,type) {
@@ -2298,14 +2298,14 @@ var WPCLib = {
 			if (event) {
 				event.preventDefault();
 				event.stopPropagation();
-				WPCLib.util.stopEvent(event);
+				Hiro.util.stopEvent(event);
 				var target = event.target || event.srcElement;				
 			}			
 
 			// Collect title and text, see if we have an active selection
-			var title = document.getElementById(WPCLib.canvas.pageTitle).value;
-			var sel = WPCLib.canvas._getposition();
-			var text = (sel[2].length > 0) ? sel[2] : document.getElementById(WPCLib.canvas.contentId).value;
+			var title = document.getElementById(Hiro.canvas.pageTitle).value;
+			var sel = Hiro.canvas._getposition();
+			var text = (sel[2].length > 0) ? sel[2] : document.getElementById(Hiro.canvas.contentId).value;
 			text = text.trim();
 
 			// Execute publishing depending on selected type
@@ -2354,14 +2354,14 @@ var WPCLib = {
 			// Push the text onto filepicker
 
 			// Find the right element where the click happened, show whats going on
-			var pos = WPCLib.publish.actions[service].id - 1;
+			var pos = Hiro.publish.actions[service].id - 1;
 			var target = event.target || event.srcElement;
-			var el = (target) ? target : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];
+			var el = (target) ? target : document.getElementById(Hiro.publish.id).getElementsByTagName('a')[pos];
 			el.className = 'action doing';
 			el.innerHTML = 'Publishing';					
 
 			// Prevent double clicks etc
-			WPCLib.publish.actions[service].publishing = true;
+			Hiro.publish.actions[service].publishing = true;
 
 			// Filepicker.io flow									
 			var options = {filename: title+'.txt',mimetype: 'text/plain'};			
@@ -2372,9 +2372,9 @@ var WPCLib = {
 				var frame = document.getElementById('dialog').contentDocument;
 				if (frame) {
 					frame.body.innerHTML = '';
-					WPCLib.ui.showDialog();					
+					Hiro.ui.showDialog();					
 				}				
-				var payload = {openTo: WPCLib.publish.actions[service].fpservicename};
+				var payload = {openTo: Hiro.publish.actions[service].fpservicename};
 				payload.services = ['DROPBOX','GOOGLE_DRIVE','BOX','SKYDRIVE','EVERNOTE'];	
 				payload.suggestedFilename = title;
 				payload.container = 'dialog';
@@ -2383,21 +2383,21 @@ var WPCLib = {
 				}										
 				filepicker.exportFile(data.url,payload,function(data){
 					// Yay, completed & successful
-					WPCLib.ui.hideDialog();
-			    	WPCLib.ui.statusflash('green','Published on your '+WPCLib.publish.actions[service].name+'.',true); 
-					WPCLib.publish.actions[service].publishing = false;
-					var el = (target) ? target : document.getElementById(WPCLib.publish.id).getElementsByTagName('a')[pos];	
+					Hiro.ui.hideDialog();
+			    	Hiro.ui.statusflash('green','Published on your '+Hiro.publish.actions[service].name+'.',true); 
+					Hiro.publish.actions[service].publishing = false;
+					var el = (target) ? target : document.getElementById(Hiro.publish.id).getElementsByTagName('a')[pos];	
 					el.className = 'action done';		
-					el.innerHTML = WPCLib.publish.actions[service].name;	
+					el.innerHTML = Hiro.publish.actions[service].name;	
 				},function(data){
 					// Some error occured while creating the file
-					WPCLib.publish.actions[service].publishing = false;						
-					// WPCLib.sys.error(data);	
+					Hiro.publish.actions[service].publishing = false;						
+					// Hiro.sys.error(data);	
 				});						
 			},function(data){
 				// Some error occured while creating the file
-				WPCLib.publish.actions[service].publishing = false;						
-				WPCLib.sys.error(data);	
+				Hiro.publish.actions[service].publishing = false;						
+				Hiro.sys.error(data);	
 			});				
 		}
 	},
@@ -2423,27 +2423,27 @@ var WPCLib = {
 
 		switchview: function() {
 			// show / hide searchbar
-			var c = document.getElementById(WPCLib.context.id);
-			var can = document.getElementById(WPCLib.canvas.canvasId);
+			var c = document.getElementById(Hiro.context.id);
+			var can = document.getElementById(Hiro.canvas.canvasId);
 			var sw = document.getElementById('switchview');
 			var mobile = (document.body.offsetWidth<=480);
 			var midi = (document.body.offsetWidth<=900);
-			var menu = WPCLib.ui.menuCurrPos * -1;
+			var menu = Hiro.ui.menuCurrPos * -1;
 			// Check if the context is supposed to be open (always start with closed context on mobile and never save changes)
 			if (mobile && document.activeElement) document.activeElement.blur();
-			if ((!midi&&WPCLib.context.show)||(midi&&c.style.display=='block')) {
+			if ((!midi&&Hiro.context.show)||(midi&&c.style.display=='block')) {
 				c.style.display = 'none';
 				can.className += " full";								
 				sw.innerHTML = '&#171;';
 				sw.className = ''
-				if (!mobile||!midi) WPCLib.context.show = false;
+				if (!mobile||!midi) Hiro.context.show = false;
 			} else {
 				c.style.display = 'block';
 				can.className = "canvas";			
 				sw.innerHTML = '&#187;';
 				sw.className = 'open'
 				if (!mobile||!midi) {
-					WPCLib.context.show = true;
+					Hiro.context.show = true;
 					c.style.left = 'auto';
 				}	
 			}
@@ -2469,9 +2469,9 @@ var WPCLib = {
 				this.links.length = 0;
 				this.renderresults();
 
-				var txt = (WPCLib.sys.user.level == 1) ?
-					'<a href="#" class="msg" onclick="WPCLib.sys.user.forceupgrade(2,\'<em>Upgrade now to enjoy </em><b>unlimited searches</b><em> and much more.</em>\'); return false;"><em>Upgrade now</em> for unlimited searches & more.</a>' :
-					'<a href="#" class="msg" onclick="WPCLib.sys.user.upgrade(1); return false;"><em>Sign up now</em> for more searches.</a>';
+				var txt = (Hiro.sys.user.level == 1) ?
+					'<a href="#" class="msg" onclick="Hiro.sys.user.forceupgrade(2,\'<em>Upgrade now to enjoy </em><b>unlimited searches</b><em> and much more.</em>\'); return false;"><em>Upgrade now</em> for unlimited searches & more.</a>' :
+					'<a href="#" class="msg" onclick="Hiro.sys.user.upgrade(1); return false;"><em>Sign up now</em> for more searches.</a>';
 				document.getElementById(this.msgresultsId).innerHTML = txt;
 			}
 		},
@@ -2520,15 +2520,15 @@ var WPCLib = {
 
 		verifylinks: function(links) {
 			// Send links to server for verification
-            WPCLib.comm.ajax({
+            Hiro.comm.ajax({
                 url: "/relevant/verify",
                 type: "POST",
                 payload: JSON.stringify({ links:links }),
                 success: function(req,data) {
-                	WPCLib.sys.log('Verfified links: ',data);
+                	Hiro.sys.log('Verfified links: ',data);
 
                 	// Build a lookup object from our stickies
-					var stickies = WPCLib.context.sticky, lookup = {};
+					var stickies = Hiro.context.sticky, lookup = {};
 					for (var i = 0, l = stickies.length; i < l; i++) {
 					    lookup[stickies[i].url] = stickies[i];			    
 					}   
@@ -2558,15 +2558,15 @@ var WPCLib = {
                     }
 
                     // Update display and save doc
-					WPCLib.context.clearunverified();	                    
-					WPCLib.canvas.savedoc();                    
+					Hiro.context.clearunverified();	                    
+					Hiro.canvas.savedoc();                    
                 },
                 error: function() {
                 	// Notifiy user
-					WPCLib.ui.statusflash('red',"Couldn't verify the links.",false);   
+					Hiro.ui.statusflash('red',"Couldn't verify the links.",false);   
 					             	
                 	// Remove all placeholder links
-                	WPCLib.context.clearunverified();
+                	Hiro.context.clearunverified();
                 }
             });
 		},
@@ -2584,13 +2584,13 @@ var WPCLib = {
 		analyze: function(string, chunktype) {
 			// Send text to server for analysis, returning text chunks
 			// Not in use, for testing only
-			string = string || (WPCLib.canvas.title + ', ' + WPCLib.canvas.text);
+			string = string || (Hiro.canvas.title + ', ' + Hiro.canvas.text);
 			document.getElementById(this.statusId).innerHTML = 'Analyzing...';
-			WPCLib.comm.ajax({
+			Hiro.comm.ajax({
 				url: '/analyze', 
 				payload: JSON.stringify({"content":string}), 
 				success: function(req,data) {
-		            WPCLib.context.chunksearch(data,chunktype);
+		            Hiro.context.chunksearch(data,chunktype);
 		        }
 		    });
 		},		
@@ -2617,13 +2617,13 @@ var WPCLib = {
 			if (terms.length > 0) {
 				var postData = {terms: terms, use_shortening: true};
 				var that = this;						
-                WPCLib.comm.ajax({
+                Hiro.comm.ajax({
                     url: "/relevant",
                     type: "POST",
                     data: JSON.stringify(postData),
                     success: function(req,data) {
-                        WPCLib.context.storeresults(data.results);
-                        WPCLib.context.renderresults();		             
+                        Hiro.context.storeresults(data.results);
+                        Hiro.context.renderresults();		             
                         document.getElementById(that.statusId).innerHTML = 'Ready.';
                     }
                 });				
@@ -2644,8 +2644,8 @@ var WPCLib = {
 			var string = (textonly) ? text : title + ' ' + text;		
 			var payload = {text: string};
 			var that = this;
-			var saved = WPCLib.canvas.saved;
-			var level = WPCLib.sys.user.level;
+			var saved = Hiro.canvas.saved;
+			var level = Hiro.sys.user.level;
 			document.getElementById(this.statusId).innerHTML = 'Searching...';				
 
 			// Handle short strings for synonym search, first find out how many words we have and clean up string
@@ -2656,20 +2656,20 @@ var WPCLib = {
 			ss = ss.trim();
 			if (ss.length > 0 && ss.split(' ').length == 1) {
 				// Search synonyms for single words
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 				    url: 'https://words.bighugelabs.com/api/2/' + that.synKey + '/' + ss + '/json',
 				    type: 'GET',
 				    dataType: "jsonp",
 				    success: function(req,data) {
-				    	if (!WPCLib.context.overquota) WPCLib.context.rendersynonyms(data,ss);				    	
+				    	if (!Hiro.context.overquota) Hiro.context.rendersynonyms(data,ss);				    	
 				    },
 				    error: function() {
 				    	// Prevent error tracking by Sentry Raven
 				    }
 				});
 				// Set the range of the documents to be replace to selection, or full document if it's only one word
-				var sel = WPCLib.canvas._getposition();
-				this.replacementrange = (sel[0] == sel[1]) ? [0,WPCLib.canvas.text.length,WPCLib.canvas.text] : sel;
+				var sel = Hiro.canvas._getposition();
+				this.replacementrange = (sel[0] == sel[1]) ? [0,Hiro.canvas.text.length,Hiro.canvas.text] : sel;
 				this.replacementword = ss;
 			} else {
 				this.replacementrange = [];
@@ -2677,22 +2677,22 @@ var WPCLib = {
 			}
 
 			// Find context links from Yahoo BOSS						
-            WPCLib.comm.ajax({
+            Hiro.comm.ajax({
                 url: "/relevant",
                 type: "POST",
                 payload: JSON.stringify(payload),
                 error: function(req) {
                 	switch (req.status) {
                 		case 402: 
-                			WPCLib.context.quotareached();
+                			Hiro.context.quotareached();
                 			break;
                 		default:
-                			WPCLib.sys.error(req.response);	
+                			Hiro.sys.error(req.response);	
                 	}
                 },           
                 success: function(req,data) {
-                    WPCLib.context.storeresults(data.results);
-                    WPCLib.context.renderresults(showtip);		             
+                    Hiro.context.storeresults(data.results);
+                    Hiro.context.renderresults(showtip);		             
                     document.getElementById(that.statusId).innerHTML = 'Ready.';                   
                 }
             });				
@@ -2726,7 +2726,7 @@ var WPCLib = {
 			var results = document.getElementById(this.synresultsId);
 			var newresults = results.cloneNode();
 			newresults.innerHTML = '';
-			WPCLib.sys.log('Synonyms: ',data);
+			Hiro.sys.log('Synonyms: ',data);
 
 			for (var synonyms in data) {
 				// create a generic element holding all data and add header	
@@ -2777,13 +2777,13 @@ var WPCLib = {
 			// Abort if user clicks anywhere else but a link
 			var target = event.target || event.srcElement;
 			if (!target || target.nodeName != 'A') return;
-			var source = WPCLib.canvas.text;
+			var source = Hiro.canvas.text;
 			var oldpos = this.replacementrange;
 			var oldword = this.replacementword;
 			var newword = target.innerHTML;
 
 			// replace internal and visual selection with new string
-			WPCLib.canvas.set_text(source.slice(0,oldpos[0]) + oldpos[2].replace(oldword,newword) + source.slice(oldpos[1]));
+			Hiro.canvas.set_text(source.slice(0,oldpos[0]) + oldpos[2].replace(oldword,newword) + source.slice(oldpos[1]));
 			
 			// update the replacementrange values		
 			this.replacementrange[1] = oldpos[1] + (newword.length - oldword.length);
@@ -2791,13 +2791,13 @@ var WPCLib = {
 
 			// Update selection
 			var newselection = [oldpos[0],this.replacementrange[1]];
-			WPCLib.canvas._setposition(newselection);
+			Hiro.canvas._setposition(newselection);
 
 			// update inetrnal value to new word
 			this.replacementword = newword;
 
 			// Save updated document
-			WPCLib.canvas.savedoc(true);			
+			Hiro.canvas.savedoc(true);			
 		},
 
 		renderresults: function(showtip) {
@@ -2818,7 +2818,7 @@ var WPCLib = {
 				newresults.appendChild(this._buildresult(links[i], false));
 			}	
 			if (this.links.length == 0 && showtip) {
-				var tip = document.createElement('div'), msg, l = WPCLib.canvas.text.length;
+				var tip = document.createElement('div'), msg, l = Hiro.canvas.text.length;
 				if (l<100) msg = 'Nothing found';
 				if (l>99) msg = 'Try to select a different part.';
 				tip.className = 'tip';
@@ -2836,7 +2836,7 @@ var WPCLib = {
 
 		_buildresult: function(data, sticky) {
 			var e = document.createElement('div');
-			var l = (WPCLib.sys.user.level < 2);
+			var l = (Hiro.sys.user.level < 2);
 			e.className = (sticky) ? 'result sticky' : 'result';
 
 			if (!sticky) {
@@ -2844,14 +2844,14 @@ var WPCLib = {
 				del.className = 'delete action';
 				del.setAttribute('href','#');
 				if (l) del.setAttribute('title','Delete (do not show this link again for this document)');				
-				del.setAttribute('onclick','WPCLib.context.blacklistLink(this); return false;');	
+				del.setAttribute('onclick','Hiro.context.blacklistLink(this); return false;');	
 				e.appendChild(del);	
 
 				var st = document.createElement('a');
 				st.className = 'stick action';
 				st.setAttribute('href','#');
 				if (l) st.setAttribute('title','Pin (save link with document)');				
-				st.setAttribute('onclick','WPCLib.context.makesticky(this); return false;');					
+				st.setAttribute('onclick','Hiro.context.makesticky(this); return false;');					
 				e.appendChild(st);							
 			}	
 
@@ -2860,7 +2860,7 @@ var WPCLib = {
 				us.className = 'unstick action';
 				us.setAttribute('href','#');
 				if (l) us.setAttribute('title','Unpin (stop saving this link with this document)');					
-				us.setAttribute('onclick','WPCLib.context.unstick(this); return false;');				
+				us.setAttribute('onclick','Hiro.context.unstick(this); return false;');				
 				e.appendChild(us);												
 			}						
 
@@ -2890,7 +2890,7 @@ var WPCLib = {
 			// Avoid full window wobbling & layout messup on touch devices
 			if ('ontouchstart' in document.documentElement) {
 				// If user level = 0 we have overflow: hidden anyway
-				if (WPCLib.sys.user.level!=0) e.addEventListener('touchmove',function(event){event.stopPropagation()},false);
+				if (Hiro.sys.user.level!=0) e.addEventListener('touchmove',function(event){event.stopPropagation()},false);
 				// Attach seperate class to avoid switch to have styles when finger flicks over
 				e.className += ' touch';				
 			}				
@@ -2914,13 +2914,13 @@ var WPCLib = {
 			}				
 
 			// Save document
-			WPCLib.canvas.savedoc();			
+			Hiro.canvas.savedoc();			
 		},
 
 		makesticky: function(el) {
 			// Make a link sticky
 			var result = el.parentNode;
-			// WPCLib.ui.fade(result,-1,300);
+			// Hiro.ui.fade(result,-1,300);
 
 			// Find URL and retrieve Link from linklist, remove and add to sticky array
 			var u = result.getElementsByTagName("a")[2].getAttribute("href");
@@ -2933,7 +2933,7 @@ var WPCLib = {
 			}
 
 			// Save document
-			WPCLib.canvas.savedoc();
+			Hiro.canvas.savedoc();
 		},
 
 		unstick: function(el) {
@@ -2954,7 +2954,7 @@ var WPCLib = {
 			}
 
 			// Save document
-			WPCLib.canvas.savedoc();						
+			Hiro.canvas.savedoc();						
 		}
 	},
 
@@ -2975,7 +2975,7 @@ var WPCLib = {
 			if (this.inited) return;
 
 			// kick off segment.io sequence, only on our domain 
-			if (WPCLib.sys.production) {
+			if (Hiro.sys.production) {
 				// Add raven ignore options so that our sentry error logger is not swamped with broken plugins
 				window.ravenOptions = {
 				    ignoreErrors: [
@@ -3077,23 +3077,23 @@ var WPCLib = {
 				}				
 			
 				// Identify user right away
-				var user = WPCLib.lib.user;
+				var user = Hiro.lib.user;
 				if (user && user.token) analytics.identify(user.token, user); 
 			},true);				
 
 			// Load facebook
 			this.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
-				window.fbAsyncInit = function() {	FB.init({appId : WPCLib.lib.externalkeys.facebook,status : true, xfbml : true}); };
+				window.fbAsyncInit = function() {	FB.init({appId : Hiro.lib.externalkeys.facebook,status : true, xfbml : true}); };
 			},true);
 
 			// Load Stripe
 			this.loadscript('https://js.stripe.com/v2/',undefined,function(){
-				Stripe.setPublishableKey(WPCLib.lib.externalkeys.stripe);
+				Stripe.setPublishableKey(Hiro.lib.externalkeys.stripe);
 			},true);		
 
 			// Load filepicker.io
 			this.loadscript('https://api.filepicker.io/v1/filepicker.js',undefined,function(){
-				filepicker.setKey(WPCLib.lib.filepickerKey);
+				filepicker.setKey(Hiro.lib.filepickerKey);
 			},true);						
 
 			// Prevent double loading
@@ -3137,15 +3137,15 @@ var WPCLib = {
 			// Extend user object
 			if (window.navigator.standalone) obj.mobileappinstalled = true;
 			if ('ontouchstart' in document.documentElement) obj.touchdevice = true;
-			if (WPCLib.sys.user.doccount > 0) obj.doccount = WPCLib.sys.user.doccount;
+			if (Hiro.sys.user.doccount > 0) obj.doccount = Hiro.sys.user.doccount;
 
 			// Set internal vars
-			if (obj.name) WPCLib.sys.user.name = obj.name;
-			if (obj.email) WPCLib.sys.user.email = obj.email;
+			if (obj.name) Hiro.sys.user.name = obj.name;
+			if (obj.email) Hiro.sys.user.email = obj.email;
 
 			// See if user is logged in via facebook and get name
 			// TODO: Remove after a few weeks
-			if (!obj.name) WPCLib.sys.user.getfirstname();	
+			if (!obj.name) Hiro.sys.user.getfirstname();	
 
 			// Track user
 			if (analytics.identify && typeof analytics.identify == 'function') analytics.identify(obj.token, obj);					
@@ -3174,7 +3174,7 @@ var WPCLib = {
 		init: function() {
 			// allow this only once			
 			if (this.initCalled) return;
-			WPCLib.ui.resolveAnimFrameAPI();
+			Hiro.ui.resolveAnimFrameAPI();
 
 			// Add startup event listeners for old & modern browser
 			if (document.addEventListener) {
@@ -3187,26 +3187,26 @@ var WPCLib = {
 			}
 
 			// Kick off tab or window active / background check
-			WPCLib.util.windowfocus();			
+			Hiro.util.windowfocus();			
 
 			// Add cross browser history event listener to enable back button
 			if (window.onpopstate) {
-				window.onpopstate = function(e) { WPCLib.util.goback(e); };			
+				window.onpopstate = function(e) { Hiro.util.goback(e); };			
 			} else {
-				WPCLib.util.registerEvent(window,'popstate', function(e) { WPCLib.util.goback(e); });			
+				Hiro.util.registerEvent(window,'popstate', function(e) { Hiro.util.goback(e); });			
 			}			
 
 
 			// Add events that should be called when DOM is ready to the setupTask queue
 			this.onstartup( function() {
 				// Init non critical elements
-				WPCLib.publish.init();
-				WPCLib.sharing.init();				
-				WPCLib.canvas._init();
+				Hiro.publish.init();
+				Hiro.sharing.init();				
+				Hiro.canvas._init();
 				// Cehck if localStorage is supported
-				WPCLib.store.local = (window.localStorage) ? true : false;				
+				Hiro.store.local = (window.localStorage) ? true : false;				
 				// Load settings into dialog
-				WPCLib.ui.loadDialog(WPCLib.sys.settingsUrl); 
+				Hiro.ui.loadDialog(Hiro.sys.settingsUrl); 
 
 			});		
 
@@ -3215,35 +3215,35 @@ var WPCLib = {
 			if (string.length > 1) {
 				var p = string.split(/=|&/);
 				if (p.indexOf('reset') > -1) {
-					WPCLib.sys.user.showreset(p[p.indexOf('reset') + 1]);
+					Hiro.sys.user.showreset(p[p.indexOf('reset') + 1]);
 				}
 				if (p.indexOf('token') > -1) {
-					WPCLib.sharing.applytoken(p[p.indexOf('token') + 1]);
+					Hiro.sharing.applytoken(p[p.indexOf('token') + 1]);
 				}				
 			} 
 
 			// Add keyboard shortcuts
-			WPCLib.util.registerEvent(document,'keydown', WPCLib.ui.keyboardshortcut);
+			Hiro.util.registerEvent(document,'keydown', Hiro.ui.keyboardshortcut);
 
 			// Setup hgrogress bar
-			WPCLib.ui.hprogress.init();
+			Hiro.ui.hprogress.init();
 
 			// Init remaining parts
-			WPCLib.folio.init();
+			Hiro.folio.init();
 			this.initCalled=true;
 		},
 
 		_DOMContentLoadedCallback: function() {
 			document.removeEventListener( 'DOMContentLoaded', this._DOMContentLoadedCallback, false);
 			document.removeEventListener( 'load', this._loadCallback, false);
-			WPCLib.sys._setup();
+			Hiro.sys._setup();
 		},
 		_onreadystatechangeCallback: function() {
 			// IE<9
 			if (document.readyState=='complete') {
 				document.detachEvent('onreadystatechange',  this._DOMContentLoadedCallback);
 				document.detachEvent( 'load', this._loadCallback);
-				this.setupTimer=window.setTimeout( function() { WPCLib.sys._setup(); }, 250 );
+				this.setupTimer=window.setTimeout( function() { Hiro.sys._setup(); }, 250 );
 			}
 			else {
 				return;
@@ -3258,7 +3258,7 @@ var WPCLib = {
 				document.detachEvent('onreadystatechange',  this._DOMContentLoadedCallback);
 				document.detachEvent( 'load', this._loadCallback);
 			}
-			WPCLib.sys._setup();
+			Hiro.sys._setup();
 		},	
 		_setup: function() {
 			if (this.setupTimer) {
@@ -3289,13 +3289,13 @@ var WPCLib = {
 			// Pipe errors into Sentry
 			var err = new Error();
 			var stacktrace = err.stack || arguments.callee.caller.toString();
-			if ('Raven' in window) Raven.captureMessage('General Error for version ' + WPCLib.sys.version + ': ' + JSON.stringify(data) + ', ' + stacktrace);
-			WPCLib.sys.log('Dang, something went wrong: ',data);
+			if ('Raven' in window) Raven.captureMessage('General Error for version ' + Hiro.sys.version + ': ' + JSON.stringify(data) + ', ' + stacktrace);
+			Hiro.sys.log('Dang, something went wrong: ',data);
 		},
 
 		log: function(msg,payload) {
 			// Log console if we're not on a production system
-			if (!WPCLib.sys.production) {
+			if (!Hiro.sys.production) {
 				console.log(msg,payload);
 			}
 		},
@@ -3314,19 +3314,19 @@ var WPCLib = {
 				// If major version numbers diverge
 				// Check if the user is typing and try again a little later to not freak them out
 				// Also make sure we do this only when everythings OK (eg offline users/servers do not reload with unsaved data)
-				if (WPCLib.canvas.typing || WPCLib.sys.status != 'normal') {
-					setTimeout(function(){WPCLib.sys.upgradeavailable(newversion)},15000);
+				if (Hiro.canvas.typing || Hiro.sys.status != 'normal') {
+					setTimeout(function(){Hiro.sys.upgradeavailable(newversion)},15000);
 					return;
 				}	
 
 				// If the doc isn't saved yet, rather save one time too often
-				if (!WPCLib.canvas.saved) WPCLib.canvas.savedoc(true);
+				if (!Hiro.canvas.saved) Hiro.canvas.savedoc(true);
 
 				// Trigger popup with location.reload button
-				WPCLib.ui.showDialog(null,'','s_upgrade');		
+				Hiro.ui.showDialog(null,'','s_upgrade');		
 
 				// Log to check how often this is used
-				WPCLib.sys.error('Forced upgrade triggered: ' + ov.toString() + ' to '+ nv.toString());		
+				Hiro.sys.error('Forced upgrade triggered: ' + ov.toString() + ' to '+ nv.toString());		
 			};
 		},
 
@@ -3370,17 +3370,17 @@ var WPCLib = {
 				error.innerHTML = '';
 
 				// Send request to backend
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 					url: "/register",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
 	                payload: payload,
 					success: function(req,data) {
-						WPCLib.sys.user.authed('register',data,'Email');												                    
+						Hiro.sys.user.authed('register',data,'Email');												                    
 					},
 					error: function(req,data) {
 	                    button.innerHTML = "Create Account";
-	                    WPCLib.sys.user.authactive = false;						
+	                    Hiro.sys.user.authactive = false;						
 						if (req.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
@@ -3413,8 +3413,8 @@ var WPCLib = {
 				if (event) event.preventDefault();
 
 				// Preparing everything
-				if (WPCLib.sys.user.authactive) return;
-				WPCLib.sys.user.authactive = true;				
+				if (Hiro.sys.user.authactive) return;
+				Hiro.sys.user.authactive = true;				
 				button.innerHTML ="Logging in...";
 
 				// Remove focus on mobiles
@@ -3425,17 +3425,17 @@ var WPCLib = {
 				val[1].nextSibling.innerHTML = '';				
 				error.innerHTML = '';					
 				// Send request to backend		
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 					url: "/login",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
 	                payload: payload,
 					success: function(req,data) {
-						WPCLib.sys.user.authed('login',data);						                    
+						Hiro.sys.user.authed('login',data);						                    
 					},
 					error: function(req,data) { 												
 	                    button.innerHTML = "Log-In";
-	                    WPCLib.sys.user.authactive = false;						
+	                    Hiro.sys.user.authactive = false;						
 						if (req.status==500) {
 							error.innerHTML = "Something went wrong, please try again.";
 							if (Raven) Raven.captureMessage('Signup error for: '+ payload.email);							
@@ -3461,16 +3461,16 @@ var WPCLib = {
 
 				FB.getLoginStatus(function(response) {	
 				  if (response.status === 'connected') {
-					WPCLib.comm.ajax({
+					Hiro.comm.ajax({
 						url: "/_cb/facebook",
 		                type: "POST",
 		                payload: JSON.stringify(response.authResponse),
 						success: function(req,data) {
 		                    // All that needs to be done at this point
-		                    WPCLib.sys.user.authed('login',data);									                    
+		                    Hiro.sys.user.authed('login',data);									                    
 						},
 						error: function(req) {
-							WPCLib.sys.error(req);									
+							Hiro.sys.error(req);									
 						}
 					});				    
 				  } else if (response.status === 'not_authorized') {
@@ -3480,22 +3480,22 @@ var WPCLib = {
 				    } else {
 						FB.login(function(response) {
 						   if (response.authResponse) {
-								WPCLib.comm.ajax({
+								Hiro.comm.ajax({
 									url: "/_cb/facebook",
 					                type: "POST",
 					                payload: JSON.stringify(response.authResponse),
 									success: function(req,data) {
 					                    // All that needs to be done at this point
-					                    WPCLib.sys.user.authed('register',data,'Facebook');									                    
+					                    Hiro.sys.user.authed('register',data,'Facebook');									                    
 									},
 									error: function(req) {
-										WPCLib.sys.error(req);									
+										Hiro.sys.error(req);									
 									}
 								});
 						   } else {
 						   	// FB auth process aborted by user
 						    fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = (WPFBbuttonHTML);
-							WPCLib.sys.error('Aborted FB login (Logged into Facebook)');					     
+							Hiro.sys.error('Aborted FB login (Logged into Facebook)');					     
 						   }
 						},{scope: 'email'});
 					}	
@@ -3507,22 +3507,22 @@ var WPCLib = {
 				    } else {
 						FB.login(function(response) {
 						   if (response.authResponse) {
-								WPCLib.comm.ajax({
+								Hiro.comm.ajax({
 									url: "/_cb/facebook",
 					                type: "POST",
 					                payload: JSON.stringify(response.authResponse),
 									success: function(req,data) {
 					                    // All that needs to be done at this point
-					                    WPCLib.sys.user.authed('login',data);
+					                    Hiro.sys.user.authed('login',data);
 									},
 									error: function(req) {
-										WPCLib.sys.error(req);									
+										Hiro.sys.error(req);									
 									}
 								});
 						   } else {
 						   	 // FB auth process aborted by user
 						     fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = WPFBbuttonHTML;
-							WPCLib.sys.error('Aborted FB login (Not logged into Facebook)');						     
+							Hiro.sys.error('Aborted FB login (Not logged into Facebook)');						     
 						   }
 						},{scope: 'email'});
 					}			
@@ -3533,40 +3533,40 @@ var WPCLib = {
 			authed: function(type, user, method) {
 				// On successfull backend auth the returned user-data 
 				// from the various endpoints and finishes up auth process
-            	WPCLib.sys.user.setStage(user.tier);
+            	Hiro.sys.user.setStage(user.tier);
             	this.justloggedin = true;   
 
             	// If we should still have the landingpage visible at this point
 				var landing = document.getElementById('landing');
-				if (landing) WPCLib.ui.fade(landing,-1,150);
+				if (landing) Hiro.ui.fade(landing,-1,150);
 
-            	if (WPCLib.canvas.docid=='localdoc' && !localStorage.getItem('WPCdoc')) {
+            	if (Hiro.canvas.docid=='localdoc' && !localStorage.getItem('WPCdoc')) {
             		// Remove empty document if user signs up / in right away            		
-            		WPCLib.folio.docs.active.length = 0;
+            		Hiro.folio.docs.active.length = 0;
             	}
 
                 // Check for and move any saved local docs to backend
-                if (WPCLib.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
-                	WPCLib.folio.docs.movetoremote();
+                if (Hiro.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
+                	Hiro.folio.docs.movetoremote();
                 } else {
 	                // Always load external docs as register endpoint can be used for existing login
-					WPCLib.folio.docs.loaddocs();	
+					Hiro.folio.docs.loaddocs();	
                 }	
 
                 // Render results to attach new scroll event handlers on mobile devices
                 if ('ontouchstart' in document.documentElement) {
-                	WPCLib.context.renderresults();
+                	Hiro.context.renderresults();
                 }
 
                 // See if we have a callback waitin
-                if (this.signinCallback) WPCLib.util.docallback(this.signinCallback);			
+                if (this.signinCallback) Hiro.util.docallback(this.signinCallback);			
 
                 // Suggest upgrade after initial registration or just hide dialog
                 if (user.tier==1 && type=='register') {
-                	WPCLib.ui.statusflash('green','Welcome, great to have you!',true);
+                	Hiro.ui.statusflash('green','Welcome, great to have you!',true);
                 	this.forceupgrade(2,'Unlock <b>more features</b><em> right away</em>?');
                 } else {
-                	WPCLib.ui.hideDialog();	
+                	Hiro.ui.hideDialog();	
                 }
 
                 // Track signup (only on register, we also only pass the method variable then)
@@ -3575,7 +3575,7 @@ var WPCLib = {
                 		// Submit the referring url of the registration session 
                 		// (hackish timeout to make sure we get proper user token from settings template, but works fine atm)
                 		var logreferrer = setTimeout(function(){
-                			analytics.identify(WPCLib.sys.user.id, {referrer: document.referrer});
+                			analytics.identify(Hiro.sys.user.id, {referrer: document.referrer});
                 		},2000);
                 	}
 	                if (type=='register' && method) {
@@ -3586,30 +3586,30 @@ var WPCLib = {
                 }
 
                 // Update document counter
-				WPCLib.ui.documentcounter();                
+				Hiro.ui.documentcounter();                
 
                 // Housekeeping, switch authactive off
-                WPCLib.sys.user.authactive = false;
+                Hiro.sys.user.authactive = false;
 			},
 
 			getfirstname: function() {
 				// Quick hack to get FB name (if we don't have one yet) of users that already signed in
-				if (WPCLib.sys.user.name) return;
+				if (Hiro.sys.user.name) return;
 				setTimeout(function(){
 					if (!FB) {
-						WPCLib.sys.user.getfirstname();
+						Hiro.sys.user.getfirstname();
 						return;
 					}					
 					FB.api('/me', function(response) {
-			            if (response.first_name && !WPCLib.sys.user.name) {
+			            if (response.first_name && !Hiro.sys.user.name) {
 			            	// Fetch name & build payload
-			            	WPCLib.sys.user.name = response.first_name;
+			            	Hiro.sys.user.name = response.first_name;
 			            	var payload = {};
 			            	payload.name = response.first_name;
 			            	// Notify segment.io
-			            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload);
+			            	if (analytics) analytics.identify(Hiro.sys.user.id, payload);
 			            	// Send to backend
-			            	WPCLib.sys.user.namesave(null,response.first_name)
+			            	Hiro.sys.user.namesave(null,response.first_name)
 			            }
 			        });
 				},10000);	
@@ -3618,7 +3618,7 @@ var WPCLib = {
 			nametype: function(event) {
 				// Onkeydown handler for Username input field in settings dialog
 				var target = event.target || event.srcElement;
-				if (target.value.length > 0 && target.value != WPCLib.sys.user.name) {
+				if (target.value.length > 0 && target.value != Hiro.sys.user.name) {
 					target.nextSibling.style.display = 'block';
 				} else {
 					target.nextSibling.style.display = 'none';					
@@ -3643,17 +3643,17 @@ var WPCLib = {
 
 				// Submit to backend
 				payload.name = name;				
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 					url: "/me",
 	                type: "POST",
 	                payload: JSON.stringify(payload),
 					success: function() {
 						button.innerHTML = 'Saved!';
-						WPCLib.sys.user.name = name;	
+						Hiro.sys.user.name = name;	
 		            	var payload2 = {};
 		            	payload2.name = name;
 		            	// Notify segment.io
-		            	if (analytics) analytics.identify(WPCLib.sys.user.id, payload2);						                    
+		            	if (analytics) analytics.identify(Hiro.sys.user.id, payload2);						                    
 					},
 					error: function() {				
 						input.focus();
@@ -3684,7 +3684,7 @@ var WPCLib = {
 				var payload = { email: email.value.toLowerCase().trim() };
 
 				// Send request to backend
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 					url: "/reset_password",
 	                type: "POST",
 	                contentType: "application/x-www-form-urlencoded",
@@ -3712,7 +3712,7 @@ var WPCLib = {
 			showreset: function(hash) {
 				// Perform basic checks and open reset menu
 				if (this.level != 0) {
-			    	WPCLib.ui.statusflash('green','Please log out to reset your password.',true); 	
+			    	Hiro.ui.statusflash('green','Please log out to reset your password.',true); 	
 			    	return;				
 				}
 
@@ -3723,7 +3723,7 @@ var WPCLib = {
 				var frame = document.getElementById('dialog');
 				frame.onload = function() {	
 					// The if prevents the dialog from being loaded after login		
-					if (WPCLib.sys.user.level == 0) WPCLib.ui.showDialog(null,'','s_reset','new_password');
+					if (Hiro.sys.user.level == 0) Hiro.ui.showDialog(null,'','s_reset','new_password');
 				}
 			},			
 
@@ -3740,7 +3740,7 @@ var WPCLib = {
 
 				if (this.redoTokenRequest) {
 					// If previous token submit got an error, switch view to requesting new token via mail and abort
-					WPCLib.ui.switchView(frame.getElementById('s_signin'));
+					Hiro.ui.switchView(frame.getElementById('s_signin'));
 					frame.getElementById('signup_mail').focus();					
 					return;
 				}
@@ -3764,16 +3764,16 @@ var WPCLib = {
 				button.innerHTML = 'Resetting...';
 				var payload = { password: pwd1.value };
 				var url = '/reset/'+this.resetToken;
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 					url: url,
 	                type: "POST",
 	                payload: JSON.stringify(payload),
 					success: function(req,data) {
-						WPCLib.sys.user.authed('reset',data);	                    
+						Hiro.sys.user.authed('reset',data);	                    
 					},
 					error: function(req) {               		                    
 						if (req.status = 404) {
-							WPCLib.sys.user.redoTokenRequest = true;
+							Hiro.sys.user.redoTokenRequest = true;
 							button.innerHTML = 'Request New Reset';
 							pwd1.disabled = true;
 							pwd2.disabled = true;
@@ -3784,14 +3784,14 @@ var WPCLib = {
 			},
 
 			logio: function() {
-				if (this.level==0) WPCLib.folio.showSettings('s_signin','signin_mail');				
+				if (this.level==0) Hiro.folio.showSettings('s_signin','signin_mail');				
 				else this.logout();
 			},	
 
 			logout: function() {
 				// Simply log out user and reload window
-				WPCLib.ui.fade(document.body,-1,400);
-				WPCLib.comm.ajax({
+				Hiro.ui.fade(document.body,-1,400);
+				Hiro.comm.ajax({
 					url: "/logout",
 	                type: "POST",
 					success: function() {
@@ -3805,10 +3805,10 @@ var WPCLib = {
 				// Show / hide features based on user level, it's OK if some of that can be tweaked via js for now
 				level = level || this.level;
 
-				var results = document.getElementById(WPCLib.context.resultsId);
-				var signupButton = document.getElementById(WPCLib.context.signupButtonId);
-				var logio = document.getElementById(WPCLib.folio.logioId);
-				var publish = document.getElementById(WPCLib.publish.id);
+				var results = document.getElementById(Hiro.context.resultsId);
+				var signupButton = document.getElementById(Hiro.context.signupButtonId);
+				var logio = document.getElementById(Hiro.folio.logioId);
+				var publish = document.getElementById(Hiro.publish.id);
 				switch(level) {
 					case 0:
 						signupButton.style.display = 'block';					
@@ -3829,7 +3829,7 @@ var WPCLib = {
 				switch(level) {
 					case 0:
 						// Init dmp library for link adding capabilities
-						if (!WPCLib.canvas.sync.inited) WPCLib.canvas.sync.init(true);	
+						if (!Hiro.canvas.sync.inited) Hiro.canvas.sync.init(true);	
 						break;				
 					case 1:
 					case 2:	
@@ -3844,16 +3844,16 @@ var WPCLib = {
 						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
 
 						// Init sync capabilities
-						if (!WPCLib.canvas.sync.inited) WPCLib.canvas.sync.init();	
+						if (!Hiro.canvas.sync.inited) Hiro.canvas.sync.init();	
 
 						// Kick of consitency checker 
                         // XXX(flo): disabled b/c weird gae-500
-						//WPCLib.folio.checkconsistency();				
+						//Hiro.folio.checkconsistency();				
 						break;	
 				}	
 
 				// Show correct upgrade/downgrade buttons
-				WPCLib.ui.setplans(level);			
+				Hiro.ui.setplans(level);			
 			},
 
 			upgrade: function(level,callback,reason,event) {
@@ -3862,7 +3862,7 @@ var WPCLib = {
 					// TODO Refactor dialog & login flow to enable callback without going spaghetti
 					if (!event) event = null;
 					this.signinCallback = callback;
-					WPCLib.ui.showDialog(event,'','s_signup','signup_mail');
+					Hiro.ui.showDialog(event,'','s_signup','signup_mail');
 					return;
 				}
 				if (this.level<level) this.forceupgrade(level,reason);
@@ -3880,11 +3880,11 @@ var WPCLib = {
 
 				// Make sure the parent node is set to block, bit redundant but working fine
 				if (!event) event = null;				
-				WPCLib.ui.showDialog(event,'','s_settings');	
-				WPCLib.ui.showDialog(event,'','s_plan');
+				Hiro.ui.showDialog(event,'','s_settings');	
+				Hiro.ui.showDialog(event,'','s_plan');
 
 				// Do the intended action that triggered upgrade, this confuses most users atm
-				// if (this.upgradeCallback) WPCLib.util.docallback(this.upgradeCallback);				
+				// if (this.upgradeCallback) Hiro.util.docallback(this.upgradeCallback);				
 			},
 
 			checkoutActive: false,
@@ -3922,14 +3922,14 @@ var WPCLib = {
 							} else {
 								frame.getElementById('checkout_error').innerHTML = response.error.message;
 							}
-							WPCLib.sys.user.checkoutActive = false;
+							Hiro.sys.user.checkoutActive = false;
 							checkoutbutton.innerHTML = "Try again";
 							if (Raven) Raven.captureMessage ('CC check gone wrong: '+JSON.stringify(response));							
 							return;
 						} else {
 							// add new stripe data to subscription object
 							subscription.stripeToken = response.id;		
-							WPCLib.sys.user._completecheckout(subscription);							
+							Hiro.sys.user._completecheckout(subscription);							
 						}				
 					});					
 				} else {
@@ -3940,18 +3940,18 @@ var WPCLib = {
 			_completecheckout: function(subscription) {
 				// Get the data from the checkout above and post data to backend / cleanup ui 
 				var tier = (subscription.plan == "starter") ? 2 : 3;				
-				if (analytics) analytics.track('Upgraded (Paid Tier)',{oldTier:WPCLib.sys.user.level,newTier:tier});				
-				WPCLib.comm.ajax({
+				if (analytics) analytics.track('Upgraded (Paid Tier)',{oldTier:Hiro.sys.user.level,newTier:tier});				
+				Hiro.comm.ajax({
 					url: "/settings/plan",
 	                type: "POST",
 	                payload: JSON.stringify(subscription),
 					success: function(req,data) {
 						document.getElementById('dialog').contentDocument.getElementById('checkoutbutton').innerHTML = "Upgrade";
-	                    WPCLib.sys.user.setStage(data.tier);	
-	                    WPCLib.sys.user.checkoutActive = false;	
+	                    Hiro.sys.user.setStage(data.tier);	
+	                    Hiro.sys.user.checkoutActive = false;	
 						if (document.activeElement) document.activeElement.blur();
-	                    WPCLib.ui.hideDialog();				                    
-	                    WPCLib.ui.statusflash('green','Sucessfully upgraded, thanks!',true);						                    
+	                    Hiro.ui.hideDialog();				                    
+	                    Hiro.ui.statusflash('green','Sucessfully upgraded, thanks!',true);						                    
 					},
 	                error: function(req) {
 						if (Raven) Raven.captureMessage ('Checkout gone wrong: '+JSON.stringify(req));		                	
@@ -3967,20 +3967,20 @@ var WPCLib = {
 				var box = (targetplan=="free") ? 0 : 1;
 				var button = boxes.getElementsByClassName('box')[box].getElementsByClassName('red')[0];
 				button.innerHTML = "Downgrading...";
-				if (analytics) analytics.track('Downgrades',{oldTier:WPCLib.sys.user.level,newTier:box});				
+				if (analytics) analytics.track('Downgrades',{oldTier:Hiro.sys.user.level,newTier:box});				
 
 				// All styled, getting ready to downgrade
 				var payload = {plan:targetplan};
 				this.downgradeActive = true;
-				WPCLib.comm.ajax({
+				Hiro.comm.ajax({
 					url: "/settings/plan",
 	                type: "POST",
 	                payload: JSON.stringify(payload),
 					success: function(req,data) {
-	                    WPCLib.sys.user.setStage(data.tier);	
-	                    WPCLib.sys.user.downgradeActive = false;	
-	                    WPCLib.ui.hideDialog();	                    
-	                    WPCLib.ui.statusflash('green','Downgraded, sorry to see you go.',true);					                    
+	                    Hiro.sys.user.setStage(data.tier);	
+	                    Hiro.sys.user.downgradeActive = false;	
+	                    Hiro.ui.hideDialog();	                    
+	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);					                    
 					}
 				});					
 			}
@@ -3995,11 +3995,11 @@ var WPCLib = {
 
 		handle: function(obj) {
 			// Get & set data
-			if (WPCLib.comm.online) {
+			if (Hiro.comm.online) {
 				// Set flag that tells ajax to send data back to us so we can update the localstore
 				obj.updatelocal = true;
 				// All good, pass on to ajax
-				WPCLib.comm.ajax(obj);
+				Hiro.comm.ajax(obj);
 			} else {
 				// Use localstorage
 				if (!obj.url) return;
@@ -4037,7 +4037,7 @@ var WPCLib = {
 			if (typeof value != 'string') value = JSON.stringify(value);
 
 			// Save locally	& execute callback	
-			WPCLib.sys.log('Saving in localstore: ',key,value);
+			Hiro.sys.log('Saving in localstore: ',key,value);
 			try {
 				// Save
 				localStorage.setItem(key,value);
@@ -4056,7 +4056,7 @@ var WPCLib = {
 
 				// Return error object
 				if (obj.error) obj.error(r,e);				
-				WPCLib.sys.error(e);
+				Hiro.sys.error(e);
 			}
 
 			// Execute callback			
@@ -4067,8 +4067,8 @@ var WPCLib = {
 			key = this.makekey(url);	
 
 			// Update item			
-			try { localStorage.setItem(key,value); } catch(e) {	WPCLib.sys.error(e); };	
-			WPCLib.sys.log('Updating localstore: ',key,value);								
+			try { localStorage.setItem(key,value); } catch(e) {	Hiro.sys.error(e); };	
+			Hiro.sys.log('Updating localstore: ',key,value);								
 		},
 
 		getlocal: function(obj) {
@@ -4079,9 +4079,9 @@ var WPCLib = {
 			// Get data
 			try {
 				var value = localStorage.getItem(key);
-				WPCLib.sys.log('Retrieved from localstore: ',key,value);				
+				Hiro.sys.log('Retrieved from localstore: ',key,value);				
 			} catch (e) {
-				WPCLib.sys.error(e);	
+				Hiro.sys.error(e);	
 				r.status = 500;
 				r.response = e;
 				if (obj.error) obj.error(r,e);	
@@ -4131,7 +4131,7 @@ var WPCLib = {
             	if (this.socket) {
             		this.socket.close();
      				setTimeout(function(){
-						WPCLib.comm.crap.connect(token);
+						Hiro.comm.crap.connect(token);
 						return;
 					},500);       		
             	}
@@ -4142,10 +4142,10 @@ var WPCLib = {
 
 			openchannel: function(token) {
 				// Open Appengine Channel or Diff match patch wasn't loaded yet
-				if (!goog || !goog.appengine.Channel || !WPCLib.canvas.sync.dmp) {
+				if (!goog || !goog.appengine.Channel || !Hiro.canvas.sync.dmp) {
 					// Retry if channel API isn't loaded yet
 					setTimeout(function(){
-						WPCLib.comm.crap.openchannel(token);
+						Hiro.comm.crap.openchannel(token);
 						return;
 					},500);
 				}
@@ -4156,7 +4156,7 @@ var WPCLib = {
 				} else {
 					// Try to recover with last known token if we don't have one
 					token = this.channelToken;
-					if (!this.channelToken) WPCLib.sys.error('Tried to connect but no channel token available');
+					if (!this.channelToken) Hiro.sys.error('Tried to connect but no channel token available');
 				}
 
 				// Do not try to create multiple sockets
@@ -4166,33 +4166,33 @@ var WPCLib = {
                 this.channel = new goog.appengine.Channel(token),
                 this.socket = this.channel.open();
                 this.socket.onopen = function() {
-                    WPCLib.sys.log("connected to channel api");
-                    WPCLib.comm.crap.connected = true;
+                    Hiro.sys.log("connected to channel api");
+                    Hiro.comm.crap.connected = true;
                 }
                 this.socket.onmessage = function(data) {
-                    WPCLib.comm.crap.on_channel_message(JSON.parse(data.data));
+                    Hiro.comm.crap.on_channel_message(JSON.parse(data.data));
                 }                
                 this.socket.onerror = function(data) {
-                    WPCLib.sys.error("ERROR connecting to channel api",data);                	
+                    Hiro.sys.error("ERROR connecting to channel api",data);                	
 					if (data.code == 0 || data.code == -1) {
                     	// Damn, we or Channel API just went offline, verify by sending a sync to server
-                    	WPCLib.sys.log('Channel API offline');
-                    	WPCLib.canvas.sync.addedit(true,'Syncing...');
+                    	Hiro.sys.log('Channel API offline');
+                    	Hiro.canvas.sync.addedit(true,'Syncing...');
                     }                           	
                 }
                 this.socket.onclose = function(data) {
-                    WPCLib.sys.log("Channel closed.",data);
-					WPCLib.comm.crap.channel = WPCLib.comm.crap.socket = null;
-					WPCLib.comm.crap.connected = false;	                                    
+                    Hiro.sys.log("Channel closed.",data);
+					Hiro.comm.crap.channel = Hiro.comm.crap.socket = null;
+					Hiro.comm.crap.connected = false;	                                    
                 }			
 			},		
 
             on_channel_message: function(data) {
             	// Receive and process notification of document update
-            	var el = WPCLib.folio.docs.lookup[data.doc_id], 
-            		ui = WPCLib.ui,
-            		ownupdate = (data.origin.session_id == WPCLib.canvas.sync.sessionid),
-            		ownuser = (data.origin.email == WPCLib.sys.user.email),
+            	var el = Hiro.folio.docs.lookup[data.doc_id], 
+            		ui = Hiro.ui,
+            		ownupdate = (data.origin.session_id == Hiro.canvas.sync.sessionid),
+            		ownuser = (data.origin.email == Hiro.sys.user.email),
             		name = data.origin.name || data.origin.email;
 
             	// If the update was from our current session (same window)	
@@ -4201,31 +4201,31 @@ var WPCLib = {
 
             	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
             	if (!el) {
-            		WPCLib.folio.docs.loaddocs(true);
+            		Hiro.folio.docs.loaddocs(true);
             		return;
             	}         		
 
             	// Update internal timestamp & last editor values	
             	if (ownuser) {
-            		el.updated = WPCLib.util.now();  
+            		el.updated = Hiro.util.now();  
             	} else {
             		if (!el.last_doc_update) el.last_doc_update = {};
-            		el.last_doc_update.updated = WPCLib.util.now();
+            		el.last_doc_update.updated = Hiro.util.now();
             		el.last_doc_update.name = data.origin.name;  
             		el.last_doc_update.email = data.origin.email;            		          		
             	}              	
 
-                if (data.doc_id == WPCLib.canvas.docid) {
+                if (data.doc_id == Hiro.canvas.docid) {
                 	// If the update is for the current document
                 	// As we don't have a "send/request blank" yet, we trigger a then blank diff
                 	// TODO: Think of a better way
-                    WPCLib.canvas.sync.addedit(true,'Syncing...');
+                    Hiro.canvas.sync.addedit(true,'Syncing...');
                     if (!ui.windowfocused && !ui.audioblurplayed && !ownuser) {
                     	// Play sound
                     	ui.playaudio('unseen',0.7);
                     	ui.audioblurplayed = true;
                     	// Add update message to notification function
-                    	var title = WPCLib.canvas.title || 'Untitled';
+                    	var title = Hiro.canvas.title || 'Untitled';
                     	ui.tabnotify('Updated!');
                     }
                 } else if (!ownuser && el && el.status == 'active') {
@@ -4238,19 +4238,19 @@ var WPCLib = {
                 }
 
                 // Display the updates in the DOM
-                WPCLib.folio.docs.update();                
+                Hiro.folio.docs.update();                
             }
 		},					
 
 		goneoffline: function() {
 			// Abort any progress bar
-			if (WPCLib.ui.hprogress.active) WPCLib.ui.hprogress.done(true);
+			if (Hiro.ui.hprogress.active) Hiro.ui.hprogress.done(true);
 
 			// Stop here if we're already offline
 			if (!this.online) return;
 
 			this.online = false;
-			WPCLib.sys.status = 'offline';
+			Hiro.sys.status = 'offline';
 			var reason = (navigator.onLine) ? 'Not connected.' : 'No internet connection.',
 				es = this.errorStatus,
 				si = this.statusIcon;
@@ -4263,7 +4263,7 @@ var WPCLib = {
 			si.innerHTML = '!';
 
 			// Log error (to be switched off again, just to see how often this happens)
-			WPCLib.sys.log('Gone offline, ' + reason);
+			Hiro.sys.log('Gone offline, ' + reason);
 
 			// Try reconnecting
 			this.tryreconnect();
@@ -4271,10 +4271,10 @@ var WPCLib = {
 
 		tryreconnect: function() {
 			// Pings the doc API and checks if current document is latest and no newer version on the server
-			var that = WPCLib.comm, t = that.reconnectinterval;
-			if (!WPCLib.ui.windowfocused) {
+			var that = Hiro.comm, t = that.reconnectinterval;
+			if (!Hiro.ui.windowfocused) {
 				// If the window is not focused break recursive check and resume as soon as window is focused again
-				WPCLib.util._focuscallback = that.tryreconnect;
+				Hiro.util._focuscallback = that.tryreconnect;
 				return;
 			}
 
@@ -4292,22 +4292,22 @@ var WPCLib = {
 			that.reconnectinterval = (t > 60000) ? 60000 : t * 2;	
 
 			// Try reconnecting
-			if (WPCLib.sys.user.level == 0) {
+			if (Hiro.sys.user.level == 0) {
 
 			} else {
-				WPCLib.canvas.sync.addedit(true,'Reconnecting...');	
+				Hiro.canvas.sync.addedit(true,'Reconnecting...');	
 			}						
 
 			// Log
-			WPCLib.sys.log('Offline, attempting to reconnect', that.reconnecttimer)					
+			Hiro.sys.log('Offline, attempting to reconnect', that.reconnecttimer)					
 		},		
 
 		backonline: function() {
 			// Switch state back to online and update UI			
 			if (this.online) return;
 			this.online = true;
-			WPCLib.sys.status = 'normal';
-			var mo = WPCLib.context.show,
+			Hiro.sys.status = 'normal';
+			var mo = Hiro.context.show,
 				es = this.errorStatus,
 				si = this.statusIcon;			
 
@@ -4323,7 +4323,7 @@ var WPCLib = {
 			this.reconnectinterval = 1000;
 
 			// Make sure we get the latest version from the server and reset the Channel API			
-			WPCLib.canvas.sync.addedit(true,'Reconnecting...');		
+			Hiro.canvas.sync.addedit(true,'Reconnecting...');		
 		},		
 
 		ajax: function(obj) {
@@ -4368,23 +4368,23 @@ var WPCLib = {
 				// Pass on state changes and attach event handlers
 				if (async) {
 					// This should work in all relevant browsers
-					req.onreadystatechange = function() { WPCLib.comm.responsehandler(this,obj); };
+					req.onreadystatechange = function() { Hiro.comm.responsehandler(this,obj); };
 
 					// Here we have to get browser specific
 					if (typeof req.ontimeout != 'undefined') {						
 						req.ontimeout = function() { 
-							WPCLib.comm.errorhandler(req,obj);
+							Hiro.comm.errorhandler(req,obj);
 						};
 					} else {
 						// TODO: timeout fallback
 					}	
 					if (typeof req.onerror != 'undefined') {												
 						req.onerror = function() {						 
-							WPCLib.comm.errorhandler(req,obj); 
+							Hiro.comm.errorhandler(req,obj); 
 						};	
 					} else {
 						req.addEventListener("error", function() { 						
-							WPCLib.comm.errorhandler(req,obj);
+							Hiro.comm.errorhandler(req,obj);
 						}, false);						
 					}										
 				}	
@@ -4403,7 +4403,7 @@ var WPCLib = {
 
 			} catch(e) {
 				// Proper cleanup and logging
-				WPCLib.sys.error(['AJAX Error: ',e]);
+				Hiro.sys.error(['AJAX Error: ',e]);
 			}
 
 		},
@@ -4416,7 +4416,7 @@ var WPCLib = {
 			if (!this.online && req.status && req.status >= 100 && req.status != 500) this.backonline();		
 
 			// Execute callbacks	
-			if (WPCLib.comm.successcodes.indexOf(req.status) > -1) {
+			if (Hiro.comm.successcodes.indexOf(req.status) > -1) {
 				// Success callback	
 				var callback = obj.success;
 				try { var data = (req.response) ? JSON.parse(req.response) : undefined; } catch (e) { };			
@@ -4424,7 +4424,7 @@ var WPCLib = {
 
 				// Send data back to localstore as well
 				if (obj.updatelocal) {
-					WPCLib.store.updatelocal(obj.url,req.response);
+					Hiro.store.updatelocal(obj.url,req.response);
 				}
 
 				// Make sure we don't call anything else anymore
@@ -4463,13 +4463,13 @@ var WPCLib = {
 			var req=null;
 			if (window.XMLHttpRequest) {
 				// Most browsers
-				try { req = new XMLHttpRequest(); }	catch(e) { WPCLib.sys.error(e) }
+				try { req = new XMLHttpRequest(); }	catch(e) { Hiro.sys.error(e) }
 			} else if (window.ActiveXObject) {
 				// MS ftw
 				if (this.msXMLHttpService) {	
 					// See if we already have determined the available MS service
 					try { req = new ActiveXObject(this.msXMLHttpService); }
-					catch(e) { WPCLib.sys.error(e) }
+					catch(e) { Hiro.sys.error(e) }
 				} else {
 					// Find it if not
 					for (var i=0, l=this.msXMLHttpServices.length; i<l; i++) {
@@ -4481,7 +4481,7 @@ var WPCLib = {
 							}
 						}
 						catch(e) {
-							WPCLib.sys.error(e)
+							Hiro.sys.error(e)
 						}
 					}
 				}
@@ -4526,7 +4526,7 @@ var WPCLib = {
 
 			// Test if we have an id & supported history in the first place
 			if (history && 'pushState' in history && data && data.id) {
-				WPCLib.canvas.loaddoc(data.id,data.title,true);
+				Hiro.canvas.loaddoc(data.id,data.title,true);
 			}	
 		},
 
@@ -4597,7 +4597,7 @@ var WPCLib = {
 	   				obj.detachEvent('on'+eventType.toLowerCase(), handler);
 				}
 				catch(e) {
-					WPCLib.sys.log('',e);
+					Hiro.sys.log('',e);
 				}
 			}
 			else {
@@ -4621,12 +4621,12 @@ var WPCLib = {
 
 		windowfocus: function() {
 		    var hidden = "hidden";
-		    var that = WPCLib.util;
+		    var that = Hiro.util;
 
 		    // Standards:
 		    if ('focus' in window && 'blur' in window) {
-				WPCLib.util.registerEvent(window, 'focus', that._focuschanged);	 
-				WPCLib.util.registerEvent(window, 'blur', that._focuschanged);				   	
+				Hiro.util.registerEvent(window, 'focus', that._focuschanged);	 
+				Hiro.util.registerEvent(window, 'blur', that._focuschanged);				   	
 		    }
 		    else if (hidden in document)
 		        document.addEventListener("visibilitychange", that._focuschanged);
@@ -4648,31 +4648,31 @@ var WPCLib = {
 		_focuschanged: function(e) {
 	        var v = true, h = false, eMap = {focus:v, focusin:v, pageshow:v, blur:h, focusout:h, pagehide:h};
 	        e = e || window.event;
-	        var focus = WPCLib.ui.windowfocused = (e.type in eMap) ? eMap[e.type] : ((WPCLib.ui.windowfocused) ? false : true); 
-	        if (focus && WPCLib.util._focuscallback) {
+	        var focus = Hiro.ui.windowfocused = (e.type in eMap) ? eMap[e.type] : ((Hiro.ui.windowfocused) ? false : true); 
+	        if (focus && Hiro.util._focuscallback) {
 	        	// If we added a focuscallback, run and clear it if we regain focus
-	        	WPCLib.util._focuscallback();
-	        	WPCLib.util._focuscallback = null;	        	
+	        	Hiro.util._focuscallback();
+	        	Hiro.util._focuscallback = null;	        	
 	        }
 	        // Do things on change
 	        if (focus) {
 	        	// If the window gets focused
 	        	// Reset values
-	        	WPCLib.ui.audioblurplayed = false;
+	        	Hiro.ui.audioblurplayed = false;
 
 	        	// Clean up stuff that happens while we where blurred
-	        	WPCLib.ui.tabnotify();
+	        	Hiro.ui.tabnotify();
 	        	setTimeout(function(){
 					// Don't do this for unregistered users
-					if (WPCLib.sys.user.level == 0) return;  
+					if (Hiro.sys.user.level == 0) return;  
 					    		
 	        		// Some browser erratically block the title setting, so we make sure this happens here
 		        	document.title = ' ';
-					document.title = WPCLib.canvas.title || 'Untitled';	
+					document.title = Hiro.canvas.title || 'Untitled';	
 	        	},500); 
 
 	        	// Hack: Send edits in refocus to consider changes in old tab
-				WPCLib.canvas.sync.addedit(true);	
+				Hiro.canvas.sync.addedit(true);	
 				        	       	
 	        } else {
 	        	// If the window blurs
@@ -4762,7 +4762,7 @@ var WPCLib = {
 			init: function() {
 			    // Determine proper render style
 			    var s = document.body.style,
-			    	v = WPCLib.ui.vendorprefix = ('WebkitTransform' in s) ? 'Webkit' :
+			    	v = Hiro.ui.vendorprefix = ('WebkitTransform' in s) ? 'Webkit' :
 	                    ('MozTransform' in s) ? 'Moz' :
 	                    ('msTransform' in s) ? 'ms' :
 	                    ('OTransform' in s) ? 'O' : '';
@@ -4779,7 +4779,7 @@ var WPCLib = {
 			    }
 
 				// Start loading bar on init
-				WPCLib.ui.hprogress.begin();			    
+				Hiro.ui.hprogress.begin();			    
 			},
 
 			begin: function() {
@@ -4791,8 +4791,8 @@ var WPCLib = {
 				this.active = true;
 
 				// Fade in
-				WPCLib.ui.hprogress.bar.style.display = 'block';
-				WPCLib.ui.hprogress.bar.style.opacity = 1;							
+				Hiro.ui.hprogress.bar.style.display = 'block';
+				Hiro.ui.hprogress.bar.style.opacity = 1;							
 
 				// Set initial treshhold
 				this.progress = 0.15;
@@ -4813,7 +4813,7 @@ var WPCLib = {
 
 				// Repeat
 				setTimeout(function(){
-					WPCLib.ui.hprogress.autoinc();
+					Hiro.ui.hprogress.autoinc();
 				},300);
 			},
 
@@ -4834,7 +4834,7 @@ var WPCLib = {
 				this.progress = 1;
 				this._setbarcss(1);
 				setTimeout(function(){
-					WPCLib.ui.hprogress.bar.style.opacity = 0.15;				
+					Hiro.ui.hprogress.bar.style.opacity = 0.15;				
 				},300);						
 
 				// if we had an error we change the color to red and fade out later
@@ -4842,9 +4842,9 @@ var WPCLib = {
 
 				// Renove remains and get ready again
 				setTimeout(function(){
-					WPCLib.ui.hprogress.bar.style.display = 'none';
-					if (error) WPCLib.ui.hprogress.bar.style.background = '#3c6198';						
-					WPCLib.ui.hprogress.active = false;					
+					Hiro.ui.hprogress.bar.style.display = 'none';
+					if (error) Hiro.ui.hprogress.bar.style.background = '#3c6198';						
+					Hiro.ui.hprogress.active = false;					
 				},500);					
 			},
 
@@ -4852,7 +4852,7 @@ var WPCLib = {
 				// Sets the CSS of the progress bar
 				var pos = (-1 + pos) * 100,
 					s = this.renderstyle,
-					vendor = WPCLib.ui.vendorprefix.toLowerCase(),
+					vendor = Hiro.ui.vendorprefix.toLowerCase(),
 					v, tf = (vendor) ? vendor + 'Transform' : 'transform';
 
 				// Complete vendor prefix string
@@ -4876,16 +4876,16 @@ var WPCLib = {
 		tabnotifyTimeout: null,
 		tabnotify: function(msg) {
 			// Cycles a que of notifictaions if tab is not focused and changes favicon
-			var ui = WPCLib.ui, pool = ui.tabnotifyMessages;
+			var ui = Hiro.ui, pool = ui.tabnotifyMessages;
 
 			// This can only happen for registered users
-			if (WPCLib.sys.user.level == 0) return;
+			if (Hiro.sys.user.level == 0) return;
 
 			if (ui.windowfocused) {
 				// Cancel all actions and reset state								
 				clearTimeout(ui.tabnotifyTimeout);
 				ui.tabnotifyTimeout = null;
-				document.title = WPCLib.canvas.title || 'Untitled';					
+				document.title = Hiro.canvas.title || 'Untitled';					
 				ui.setfavicon('normal');	
 				ui.tabnotifyMessages = [];	
 				ui.tabnotifyOn = false;		
@@ -4904,13 +4904,13 @@ var WPCLib = {
 			var pos = pool.indexOf(msg),
 				nextpos = (pos + 1 == pool.length) ? 0 : ++pos,
 				next = pool[nextpos],
-				updates = WPCLib.folio.docs.unseenupdates;
+				updates = Hiro.folio.docs.unseenupdates;
 			if (pool.length == 1) {
 				// If we only have one message, we cycle title between doc title and message
-				document.title = (document.title == next) ? WPCLib.canvas.title || 'Untitled' : next;
+				document.title = (document.title == next) ? Hiro.canvas.title || 'Untitled' : next;
 			} else {
 				// If we have multiple we cycle between them, and change the single Updated to proper title
-				if (next == 'Updated!') pool[nextpos] = ( WPCLib.canvas.title || 'Untitled' ) + ' updated!';
+				if (next == 'Updated!') pool[nextpos] = ( Hiro.canvas.title || 'Untitled' ) + ' updated!';
 				document.title = ( updates != 0) ? '(' + updates + ') ' + next : next;				
 			}
 
@@ -4923,7 +4923,7 @@ var WPCLib = {
 				// We send the current msg to the function so it can easily pick the next from the array
 				clearTimeout(ui.tabnotifyTimeout);
 				ui.tabnotifyTimeout = null;				
-				WPCLib.ui.tabnotify(next);
+				Hiro.ui.tabnotify(next);
 			},1000);
 
 		},
@@ -4964,17 +4964,17 @@ var WPCLib = {
 
 		keyboardshortcut: function(e) {
 			// Simple event listener for keyboard shortcuts	
-			var k = e.keyCode, that = WPCLib.ui;		
+			var k = e.keyCode, that = Hiro.ui;		
 			if ( e.ctrlKey || e.metaKey ) {
 				if (k == 83) {
 					// Ctrl+s
-					WPCLib.canvas.sync.addedit(false,'Saving...');					
-					WPCLib.canvas.savedoc(true);
+					Hiro.canvas.sync.addedit(false,'Saving...');					
+					Hiro.canvas.savedoc(true);
 		    		e.preventDefault();											
 				}
 				if (k == 78) {
 					// Ctrl + N, this doesn't work in Chrome as chrome does not allow access to ctrl+n 
-					WPCLib.folio.docs.newdoc();	
+					Hiro.folio.docs.newdoc();	
 		    		e.preventDefault();									
 				}					
 		    }
@@ -4985,8 +4985,8 @@ var WPCLib = {
 
 		clearactions: function(event,textclick) {
 			// Hides the action tabs (next to tile, right side) if any are open						
-			if (WPCLib.sharing.visible) WPCLib.sharing.close();
-			if (WPCLib.publish.visible) WPCLib.publish.close();			
+			if (Hiro.sharing.visible) Hiro.sharing.close();
+			if (Hiro.publish.visible) Hiro.publish.close();			
 		},
 
 		loadDialog: function(url) {
@@ -5002,7 +5002,7 @@ var WPCLib = {
 			var s = document.getElementById(this.modalShieldId),
 				d = document.getElementById(this.dialogWrapperId),
 				frame = document.getElementById('dialog').contentDocument;			
-			if (event) WPCLib.util.stopEvent(event);
+			if (event) Hiro.util.stopEvent(event);
 
 			// Close menu if left open
 			if (this.menuCurrPos!=0) this.menuHide();			
@@ -5022,7 +5022,7 @@ var WPCLib = {
 			// show a specific section and / or focus on a specific field
 			if (section) {
 				var el = frame.getElementById(section);
-				WPCLib.ui.switchView(el);
+				Hiro.ui.switchView(el);
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
 					if (document.activeElement) document.activeElement.blur();
@@ -5036,13 +5036,13 @@ var WPCLib = {
 			}	
 
 			// Recenter on window size changes
-			WPCLib.util.registerEvent(window, 'resize', this._centerDialog);
+			Hiro.util.registerEvent(window, 'resize', this._centerDialog);
 			if(!('ontouchstart' in document.documentElement)) this.dialogTimer = window.setInterval(this._centerDialog, 200);
 
 			// Attach clean error styling (red border) on all inputs, only if we load settings
 			var inputs = frame.getElementsByTagName('input'), inputtypes = ['email','password','text'];
 			for (i=0,l=inputs.length;i<l;i++) {
-				if (inputtypes.indexOf(inputs[i].type) > -1) WPCLib.util.registerEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);			
+				if (inputtypes.indexOf(inputs[i].type) > -1) Hiro.util.registerEvent(inputs[i], 'keyup', Hiro.ui.inputhandler);			
 			}		
 
 			// Attach events to signup input fields on very small browser, this is the only way to handle browser quirks
@@ -5058,7 +5058,7 @@ var WPCLib = {
 
 				// If on a very small browser the client didn't scroll down to the form 
 				// we fall back to force scroll the error div at the end into view
-				WPCLib.util.registerEvent(su_f, 'touchend', function() { setTimeout(function() {
+				Hiro.util.registerEvent(su_f, 'touchend', function() { setTimeout(function() {
 					if (frame.body.scrollTop == 0) {
 						if (navigator.appVersion.indexOf('CriOS') > -1) {						
 							su_s.scrollIntoView();
@@ -5068,7 +5068,7 @@ var WPCLib = {
 						}
 					}
 				},300);});				
-				WPCLib.util.registerEvent(si_f, 'touchend', function() { setTimeout(function() {							
+				Hiro.util.registerEvent(si_f, 'touchend', function() { setTimeout(function() {							
 					if (frame.body.scrollTop == 0) {						
 						if (navigator.appVersion.indexOf('CriOS') > -1) {
 							si_s.scrollIntoView();
@@ -5114,7 +5114,7 @@ var WPCLib = {
 			if (this.dialogTimer) {
 				window.clearInterval(this.dialogTimer);
 				this.dialogTimer=null;
-				WPCLib.util.releaseEvent(window, 'resize', this._centerDialog);				
+				Hiro.util.releaseEvent(window, 'resize', this._centerDialog);				
 			}
 
 			// Hide shield & dialog
@@ -5126,7 +5126,7 @@ var WPCLib = {
 
 
 			// Put focus back on document 
-			if (!('ontouchstart' in document.documentElement)) WPCLib.canvas._setposition();
+			if (!('ontouchstart' in document.documentElement)) Hiro.canvas._setposition();
 
 			// If we do not have the settings dialog, load this one back in and abort ebfore doing settings specific stuff
 			if (!document.getElementById('dialog').contentDocument || document.getElementById('dialog').contentDocument.location.href.split('/')[3] != 'settings') {
@@ -5137,16 +5137,16 @@ var WPCLib = {
 			// Remove input field handlers
 			var inputs = frame.contentDocument.getElementsByTagName('input'), inputtypes = ['email','password','text'];
 			for (i=0,l=inputs.length;i<l;i++) {
-				if (inputtypes.indexOf(inputs[i].type) > -1) WPCLib.util.releaseEvent(inputs[i], 'keyup', WPCLib.ui.inputhandler);					
+				if (inputtypes.indexOf(inputs[i].type) > -1) Hiro.util.releaseEvent(inputs[i], 'keyup', Hiro.ui.inputhandler);					
 			}					
 
 			// reset the frame
-			if (WPCLib.sys.user.justloggedin) {
+			if (Hiro.sys.user.justloggedin) {
 				frame.src = frame.src;
-				WPCLib.sys.user.justloggedin = false;
+				Hiro.sys.user.justloggedin = false;
 			} else {
 				// Depending on user level switch to register or account overview
-				if (WPCLib.sys.user.level==0) {
+				if (Hiro.sys.user.level==0) {
 					this.switchView(frame.contentDocument.getElementById('s_login'));
 					this.switchView(frame.contentDocument.getElementById('s_signup'));				
 				} else {
@@ -5184,12 +5184,12 @@ var WPCLib = {
 			if (!container) {
 				// We do not have a reliable settings dialog onload on all browsers (yet) so we retry until it's there
 				setTimeout(function(){
-					WPCLib.ui.setplans(level);
+					Hiro.ui.setplans(level);
 				},250);
 				return;				
 			}
 			var boxes = container.getElementsByClassName('box');
-			if (!level) level = WPCLib.sys.user.level;
+			if (!level) level = Hiro.sys.user.level;
 
 			// Set all buttons to display none & reset content first
 			var buttons = container.getElementsByTagName('a');
@@ -5244,7 +5244,7 @@ var WPCLib = {
 			var cc_num = frame.getElementById('cc_number'); 
 			// Not optimal, as this dependend on the HTML not changing
 			var forced = (frame.getElementById('s_checkout').getElementsByClassName('header')[1].style.display=="none") ? true : false;
-			WPCLib.sys.user.upgradeto = plan;			
+			Hiro.sys.user.upgradeto = plan;			
 			if (plan == 'starter') {
 				frame.getElementById('cc_desc').value = startdesc;
 				frame.getElementById('cc_desc').setAttribute('title','');				
@@ -5263,15 +5263,15 @@ var WPCLib = {
 		},
 
 		_centerDialog: function() {
-			var s = document.getElementById(WPCLib.ui.modalShieldId);
-			var d = document.getElementById(WPCLib.ui.dialogWrapperId);
+			var s = document.getElementById(Hiro.ui.modalShieldId);
+			var d = document.getElementById(Hiro.ui.dialogWrapperId);
 			d.style.left= Math.floor((s.offsetWidth - d.offsetWidth)/2-10) +'px';
 			d.style.top= Math.floor((s.offsetHeight - d.offsetHeight)/2-10) +'px';
 		},
 
 		menuSwitch: function() {	
 			// Handler for elements acting as open and close trigger
-			var mp = WPCLib.ui.menuCurrPos;
+			var mp = Hiro.ui.menuCurrPos;
 
 			if (mp==0) {
 				// Menu is completely to the left, so we open it
@@ -5281,11 +5281,11 @@ var WPCLib = {
 				}	
 
 				// Open left folio menu
-				WPCLib.ui.menuSlide(1);
+				Hiro.ui.menuSlide(1);
 			}	
 			if (mp!=0) {
 				// Close left folio menu
-				WPCLib.ui.menuSlide(-1);
+				Hiro.ui.menuSlide(-1);
 			}	
 		},
 
@@ -5298,7 +5298,7 @@ var WPCLib = {
 			if (delayed && !this.delayedtimeout && this.menuCurrPos == 0 ) {
 				// Add a slight delay
 				this.delayedtimeout = setTimeout(function(){					
-					var that = WPCLib.ui;
+					var that = Hiro.ui;
 					that.delayedtimeout = null;
 					that.menuSlide(direction,'',false);					
 				},55);
@@ -5306,18 +5306,18 @@ var WPCLib = {
 			}
 
 			// Abort if menu is currently moving
-			if (WPCLib.ui.menuSlideCurrDirection != 0) return;	
+			if (Hiro.ui.menuSlideCurrDirection != 0) return;	
 
 			// Hide sharing dialog
-			if (direction == 1) WPCLib.ui.clearactions();				
+			if (direction == 1) Hiro.ui.clearactions();				
 
 			var startTime, duration, x0, x1, dx, ref;
 			var canvas = document.getElementById('canvas');
 			var context = document.getElementById('context');
 			var switcher = document.getElementById('switchview');		
 			var title = document.getElementById('pageTitle');		
-			var publish = document.getElementById(WPCLib.publish.id);	
-			var sharing = document.getElementById(WPCLib.sharing.id);					
+			var publish = document.getElementById(Hiro.publish.id);	
+			var sharing = document.getElementById(Hiro.sharing.id);					
 			var screenwidth = document.body.offsetWidth;
 			var distance = ((screenwidth-50)<this.menuSlideSpan) ? (screenwidth-50) : this.menuSlideSpan;
 			
@@ -5386,12 +5386,12 @@ var WPCLib = {
 		},
 
 		menuHide: function(event) {
-			var that = WPCLib.ui;			
+			var that = Hiro.ui;			
 			if (that.delayedtimeout) {
 				clearInterval(that.delayedtimeout);
 				that.delayedtimeout = null;
 			}	
-			if (('ontouchstart' in document.documentElement) && WPCLib.ui.menuCurrPos != 0) {
+			if (('ontouchstart' in document.documentElement) && Hiro.ui.menuCurrPos != 0) {
 				// Prevent delayed dragging of menu or setting focus
 				if (event) event.preventDefault();
 			}			
@@ -5411,15 +5411,15 @@ var WPCLib = {
 			callback_right: null, 
 
 			init: function(left,right,e) {
-				if (WPCLib.ui.menuCurrPos > 0 && WPCLib.ui.menuCurrPos < 200) return;		
+				if (Hiro.ui.menuCurrPos > 0 && Hiro.ui.menuCurrPos < 200) return;		
 	    		if (e.touches.length == 1) {
-	    			var that = WPCLib.ui.swipe, el = e.target;
+	    			var that = Hiro.ui.swipe, el = e.target;
 	    			that.callback_left = left;	
 	    			that.callback_right = right;		    			    			
 	    			that.start_x = e.touches[0].pageX;
 	    			that.start_y = e.touches[0].pageY;
 	    			that.active = true;
-					el.addEventListener('touchmove', WPCLib.ui.swipe.move, false);
+					el.addEventListener('touchmove', Hiro.ui.swipe.move, false);
 	    			setTimeout(function(){
 	    				that.active = false;
 						that.callback_left = null;
@@ -5429,7 +5429,7 @@ var WPCLib = {
 	    		}
 			},
 			move: function(e) {
-				var that = WPCLib.ui.swipe;
+				var that = Hiro.ui.swipe;
 	    		if (that.active) {   			
 		    	 	var x = e.touches[0].pageX;
 		    		var y = e.touches[0].pageY;
@@ -5451,9 +5451,9 @@ var WPCLib = {
 			},
 
 			cancel: function(el) {
-				var that = WPCLib.ui.swipe;
+				var that = Hiro.ui.swipe;
 				if (!that.start_x) return;
-				el.removeEventListener('touchmove', WPCLib.ui.swipe.move);
+				el.removeEventListener('touchmove', Hiro.ui.swipe.move);
 				that.start_x = null;
 				that.active = false;			
 			}
@@ -5485,7 +5485,7 @@ var WPCLib = {
 			}
 
 			// Always blur mobile inputs if focus is not on canvas
-			if ('ontouchstart' in document.documentElement && document.activeElement && document.activeElement.id != WPCLib.canvas.contentId) {
+			if ('ontouchstart' in document.documentElement && document.activeElement && document.activeElement.id != Hiro.canvas.contentId) {
 				if (document.activeElement) document.activeElement.blur();
 			} 
 		},
@@ -5511,14 +5511,14 @@ var WPCLib = {
 
 		documentcounter: function() {
 			// Updates the field in the settings with the current plan & document count
-			var val, level = WPCLib.sys.user.level, upgradelink; 
+			var val, level = Hiro.sys.user.level, upgradelink; 
 			var target = (document.getElementById('dialog').contentDocument) ? document.getElementById('dialog').contentDocument.getElementById('s_account') : null;
-			var doccount = WPCLib.sys.user.doccount = (WPCLib.folio.docs.archived.length > 0) ? WPCLib.folio.docs.archived.length + WPCLib.folio.docs.active.length : WPCLib.folio.docs.active.length;
+			var doccount = Hiro.sys.user.doccount = (Hiro.folio.docs.archived.length > 0) ? Hiro.folio.docs.archived.length + Hiro.folio.docs.active.length : Hiro.folio.docs.active.length;
 			
 			if (!target) {
 				// If the settings dialog is not loaded yet try again later 
 				setTimeout(function(){
-					WPCLib.ui.documentcounter();			
+					Hiro.ui.documentcounter();			
 				},500);					
 			} else {
 				// If the user level is 0 we dont have the form yet
@@ -5541,7 +5541,7 @@ var WPCLib = {
 						break;		
 				}
 				val = val + ((document.body.offsetWidth>480) ? ' plan: ' : ': ');				
-				if (WPCLib.folio.docs.active) val = val + doccount;
+				if (Hiro.folio.docs.active) val = val + doccount;
 
 				// See if we have plan limits or mobile device
 				if (level < 2) val = val + ' of 10';
