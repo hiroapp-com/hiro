@@ -3051,35 +3051,12 @@ var Hiro = {
 			this.loadscript('/_ah/channel/jsapi','channel_api',null,true,100);		
 
 			// Load Analytics
-			this.loadscript('https://d2dq2ahtl5zl1z.cloudfront.net/analytics.js/v1/64nqb1cgw1/analytics.min.js',undefined,function(){
-				// A list of all the methods in analytics.js that we want to stub.
-				window.analytics.methods = ['identify', 'track', 'trackLink', 'trackForm',
-				'trackClick', 'trackSubmit', 'page', 'pageview', 'ab', 'alias', 'ready',
-				'group', 'on', 'once', 'off'];
-
-				// Define a factory to create queue stubs. These are placeholders for the
-				// "real" methods in analytics.js so that you never have to wait for the library
-				// to load asynchronously to actually track things. The `method` is always the
-				// first argument, so we know which method to replay the call into.
-				window.analytics.factory = function (method) {
-				  return function () {
-				    var args = Array.prototype.slice.call(arguments);
-				    args.unshift(method);
-				    window.analytics.push(args);
-				    return window.analytics;
-				  };
-				};
-
-				// For each of our methods, generate a queueing method.
-				for (var i = 0; i < window.analytics.methods.length; i++) {
-				  var method = window.analytics.methods[i];
-				  window.analytics[method] = window.analytics.factory(method);
-				}				
-			
-				// Identify user right away
-				var user = Hiro.lib.user;
-				if (user && user.token) analytics.identify(user.token, user); 
-			},true);				
+			setTimeout(function(){
+				window.analytics.methods=["identify","track","trackLink","trackForm","trackClick","trackSubmit","page","pageview","ab","alias","ready","group","on","once","off"],window.analytics.factory=function(t){return function(){var a=Array.prototype.slice.call(arguments);return a.unshift(t),window.analytics.push(a),window.analytics}};for(var i=0;i<window.analytics.methods.length;i++){var method=window.analytics.methods[i];window.analytics[method]=window.analytics.factory(method)}window.analytics.load=function(t){var a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=("https:"===document.location.protocol?"https://":"http://")+"d2dq2ahtl5zl1z.cloudfront.net/analytics.js/v1/"+t+"/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(a,n)},window.analytics.SNIPPET_VERSION="2.0.8",
+				window.analytics.load("64nqb1cgw1");
+				// Identify user if user data is already loaded (eg Hiro loaded authed) 
+				if (Hiro.lib.user) analytics.identify(Hiro.lib.user.token,Hiro.lib.user);
+			},1000);
 
 			// Load facebook
 			this.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
@@ -3150,8 +3127,8 @@ var Hiro = {
 			// TODO: Remove after a few weeks
 			if (!obj.name) Hiro.sys.user.getfirstname();	
 
-			// Track user
-			if (analytics.identify && typeof analytics.identify == 'function') analytics.identify(obj.token, obj);					
+			// Identify user if loguser is called after everything is loaded (eg logging in after initial load) 
+			if (analytics.identify && typeof analytics.identify == 'function') analytics.identify(obj.token, obj);							
 
 			// Set user object
 			this.user = obj;
