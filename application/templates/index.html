@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-	    <title>{% if doc %}{{ doc.title or 'Unitled' }}{% else %}Hiro. Notes With Friends.{% endif %}</title>
+	    <title>{% if doc %}{{ doc.title or 'Untitled' }}{% else %}Hiro. Notes With Friends.{% endif %}</title>
         <meta name="description" content="From ideas for your business to party preparations: Hiro is the easiest way to stay organized throughout the day." />
         <meta name="keywords" content="Hiro, notes, notepad, notes with firends, shared notes, notetaking, evernote, simplenote, shared notes, writing, writing app, word processor, text, text editor" />
         <meta name="title" content="Hiro. Notes With Friends." />	    
@@ -147,4 +147,4 @@
 	
         {{ get_asset('hiro_js') }}
         {{ profiler_includes|safe }}
-        <script type="text/javascript">window.analytics||(window.analytics=[]);{% if current_user.is_authenticated() %}Hiro.canvas.preload();Hiro.sys.user.setStage({{ current_user.tier }});{% else %}Hiro.sys.user.setStage(0);{% endif %}Hiro.sys.init();</script></body></html>
+        <script type="text/javascript">window.analytics||(window.analytics=[]);{% if current_user.is_authenticated() %}Hiro.canvas.preload();{% endif %}Hiro.sys.init({{ current_user.tier or '0' }});</script></body></html>

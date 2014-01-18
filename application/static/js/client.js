@@ -909,7 +909,6 @@ var Hiro = {
 						content.style.height = 'auto';					
 						Hiro.canvas._resize();
 					}	
-					that._setposition(data.cursor);
 
 					// If the title changed in the meantime or wasn't passed to loaddoc at all
 					if (!title || title != data.title) {
@@ -927,6 +926,9 @@ var Hiro = {
 
 					// Initiate syncing of file
 					Hiro.canvas.sync.begin(data.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    
+
+					// Set position, try to make this mroe realibale on mobiles
+					that._setposition(data.cursor);					
 
 					// If the document is shared then fetch the list of users who have access
 					if (data.shared) Hiro.sharing.accesslist.fetch();
@@ -3054,9 +3056,12 @@ var Hiro = {
 			setTimeout(function(){
 				window.analytics.methods=["identify","track","trackLink","trackForm","trackClick","trackSubmit","page","pageview","ab","alias","ready","group","on","once","off"],window.analytics.factory=function(t){return function(){var a=Array.prototype.slice.call(arguments);return a.unshift(t),window.analytics.push(a),window.analytics}};for(var i=0;i<window.analytics.methods.length;i++){var method=window.analytics.methods[i];window.analytics[method]=window.analytics.factory(method)}window.analytics.load=function(t){var a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=("https:"===document.location.protocol?"https://":"http://")+"d2dq2ahtl5zl1z.cloudfront.net/analytics.js/v1/"+t+"/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(a,n)},window.analytics.SNIPPET_VERSION="2.0.8",
 				window.analytics.load("64nqb1cgw1");
+				window.analytics.page();
 				// Identify user if user data is already loaded (eg Hiro loaded authed) 
-				if (Hiro.lib.user && Hiro.sys.production) analytics.identify(Hiro.lib.user.token,Hiro.lib.user);
-			},1000);
+				if (Hiro.lib.user && Hiro.sys.production) {
+					analytics.identify(Hiro.sys.user.id,Hiro.lib.user);
+				};	
+			},3000);
 
 			// Load facebook
 			this.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
@@ -3111,7 +3116,7 @@ var Hiro = {
 			},delay);					
 		},
 
-		loguser: function(obj) {
+		loguser: function(id,obj) {
 			// Log user and set internal variables
 
 			// Extend user object
@@ -3122,13 +3127,14 @@ var Hiro = {
 			// Set internal vars
 			if (obj.name) Hiro.sys.user.name = obj.name;
 			if (obj.email) Hiro.sys.user.email = obj.email;
+			if (id) Hiro.sys.user.id = id;
 
 			// See if user is logged in via facebook and get name
 			// TODO: Remove after a few weeks
 			if (!obj.name) Hiro.sys.user.getfirstname();	
 
 			// Identify user if loguser is called after everything is loaded (eg logging in after initial load) 
-			if (analytics.identify && typeof analytics.identify == 'function' && Hiro.sys.production) analytics.identify(obj.token, obj);							
+			if (analytics.identify && typeof analytics.identify == 'function' && Hiro.sys.production) analytics.identify(Hiro.sys.user.id, obj);							
 
 			// Set user object
 			this.user = obj;
@@ -3151,10 +3157,13 @@ var Hiro = {
 		setupTasks: [],
 		setupTimer: null,
 
-		init: function() {
+		init: function(tier) {
 			// allow this only once			
 			if (this.initCalled) return;
 			Hiro.ui.resolveAnimFrameAPI();
+
+			// Set internal values
+			this.user.setStage(tier);	
 
 			// Add startup event listeners for old & modern browser
 			if (document.addEventListener) {
@@ -3538,7 +3547,7 @@ var Hiro = {
                 	Hiro.context.renderresults();
                 }
 
-                // See if we have a callback waitin
+                // See if we have a callback waiting
                 if (this.signinCallback) Hiro.util.docallback(this.signinCallback);			
 
                 // Suggest upgrade after initial registration or just hide dialog
@@ -3826,14 +3835,11 @@ var Hiro = {
 						// Init sync capabilities
 						if (!Hiro.canvas.sync.inited) Hiro.canvas.sync.init();	
 
-						// Kick of consitency checker 
-                        // XXX(flo): disabled b/c weird gae-500
-						//Hiro.folio.checkconsistency();				
-						break;	
-				}	
+						// Set plans dialog
+						Hiro.ui.setplans(level);
 
-				// Show correct upgrade/downgrade buttons
-				Hiro.ui.setplans(level);			
+						break;	
+				}				
 			},
 
 			upgrade: function(level,callback,reason,event) {
@@ -3873,7 +3879,6 @@ var Hiro = {
 				if (analytics) analytics.track('Initiates Checkout');				
 				// handles the complete checkout flow from stripe and our backend
 				var frame = document.getElementById('dialog').contentDocument;
-				var Stripe = document.getElementById('dialog').contentWindow.Stripe;
 				if (this.checkoutActive) return;
 
 				// Preparation 
@@ -5165,11 +5170,10 @@ var Hiro = {
 				// We do not have a reliable settings dialog onload on all browsers (yet) so we retry until it's there
 				setTimeout(function(){
 					Hiro.ui.setplans(level);
-				},250);
+				},500);
 				return;				
 			}
 			var boxes = container.getElementsByClassName('box');
-			if (!level) level = Hiro.sys.user.level;
 
 			// Set all buttons to display none & reset content first
 			var buttons = container.getElementsByTagName('a');
