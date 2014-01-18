@@ -11,7 +11,7 @@
         {% if not current_user.is_authenticated() %}
 		<div id="s_login">
 			<div id="s_signup" style="display:none;">
-				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';facebooklogin();return false;">Sign-In With&nbsp;<b>Facebook</b></a>
+				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';_wpc.sys.user.facebooklogin();return false;">Sign-In With&nbsp;<b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="signupform" action="javascript:void(0);">
 					<input type="email" placeholder="E-Mail" id="signup_mail"></input><div class="error"></div>					
@@ -23,7 +23,7 @@
 				<a class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin'));">Already have an account?</a>			
 			</div>	
 			<div id="s_signin" style="display:none;">
-				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing In...';facebooklogin();return false;">Log-In With&nbsp;<b>Facebook</b></a>
+				<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing In...';_wpc.sys.user.facebooklogin();return false;">Log-In With&nbsp;<b>Facebook</b></a>
 				<div class="divider"><span class="or">or</span></div>
 				<form id="loginform" action="javascript:void(0);">
 					<input type="email" placeholder="E-Mail" id="signin_mail"></input><div class="error"></div>
@@ -45,82 +45,6 @@
 				<a href="#" class="small" onclick="_wpc.ui.switchView(document.getElementById('s_signin')); return false;">Login with old password.</a>								
 			</div>			
 		</div>	
-
-		<script type="text/javascript">
-		function facebooklogin() {
-			var WPFBbuttonHTML = 'Sign-In With <b>Facebook</b>',
-				fbbuttons = document.getElementsByClassName('fb');
-			FB.getLoginStatus(function(response) {	
-			  if (response.status === 'connected') {
-				_wpc.comm.ajax({
-					url: "/_cb/facebook",
-	                type: "POST",
-	                payload: JSON.stringify(response.authResponse),
-					success: function(req) {
-	                    // All that needs to be done at this point
-	                    _wpc.sys.user.authed('login',JSON.parse(req.response));									                    
-					},
-					error: function(req) {
-						_wpc.sys.error(req);									
-					}
-				});				    
-			  } else if (response.status === 'not_authorized') {
-			    if (window.navigator.standalone) {
-			    	// On mobile devices with potentially no popups we do a classic flow
-			    	window.parent.location = '/connect/facebook?next=/';
-			    } else {
-					FB.login(function(response) {
-					   if (response.authResponse) {
-							_wpc.comm.ajax({
-								url: "/_cb/facebook",
-				                type: "POST",
-				                payload: JSON.stringify(response.authResponse),
-								success: function(req) {
-				                    // All that needs to be done at this point
-				                    _wpc.sys.user.authed('register',JSON.parse(req.response),'Facebook');									                    
-								},
-								error: function(req) {
-									_wpc.sys.error(req);									
-								}
-							});
-					   } else {
-					   	 // FB auth process aborted by user
-					     fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = (WPFBbuttonHTML);
-						_wpc.sys.error('Aborted FB login (Logged into Facebook)');					     
-					   }
-					},{scope: 'email'});
-				}	
-			  } else {
-			  	// User not signed in to Facebook, so on touch devices we use redirect the window and otehrwise open a popup
-			    if (window.navigator.standalone) {
-			    	// On mobile devices with potentially no popups we do a classic flow
-			    	window.parent.location = '/connect/facebook?next=/';
-			    } else {
-					FB.login(function(response) {
-					   if (response.authResponse) {
-							_wpc.comm.ajax({
-								url: "/_cb/facebook",
-				                type: "POST",
-				                payload: JSON.stringify(response.authResponse),
-								success: function(req) {
-				                    // All that needs to be done at this point
-				                    _wpc.sys.user.authed('login',JSON.parse(req.response));
-								},
-								error: function(req) {
-									_wpc.sys.error(req);									
-								}
-							});
-					   } else {
-					   	 // FB auth process aborted by user
-					     fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = WPFBbuttonHTML;
-						_wpc.sys.error('Aborted FB login (Not logged into Facebook)');						     
-					   }
-					},{scope: 'email'});
-				}			
-			  }
-			});
-		}
-		</script>
         {% endif %}
 
 		<div id="s_settings" {% if not current_user.is_authenticated() %}style="display:none;"{% endif %}>
@@ -302,30 +226,23 @@
 
 		</div>	
 	</div>
-	<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
 	<script type="text/javascript">
-		// Set stripe key
-  		Stripe.setPublishableKey('{{ config.STRIPE_PUBLIC_KEY }}');
   		// Various startup functions
+  		{% if current_user.is_authenticated() %}
+  		_wpc.lib.loguser({
+			token: '{{ current_user.token }}',
+			email: '{{ current_user.email }}',
+			plan: '{{ current_user.plan }}',
+			created: '{{ current_user.signup_at_ts }}',
+			name: '{{ current_user.name }}'
+  		});
+   		{% endif %}	  		
   		_wpc.ui.setplans();
   		_wpc.lib.init();
-  		{% if current_user.is_authenticated() %}  		
-  			var _wpcsiou = {
-			    email            : '{{ current_user.email }}',
-			    subscriptionPlan : '{{ current_user.plan }}',
-			    created: {{ current_user.signup_at_ts }} 
-			}, name = '{{ current_user.name }}';
-			if (window.navigator.standalone) _wpcsiou.mobileappinstalled = true;
-			if ('ontouchstart' in document.documentElement) _wpcsiou.touchdevice = true;
-			if (_wpc.sys.user.doccount > 0) _wpcsiou.doccount = _wpc.sys.user.doccount;	
-			if (name) _wpcsiou.name = _wpc.sys.user.name = name;	
-	  		// init segment io
-			analytics.identify('{{ current_user.token }}', _wpcsiou);  
-			_wpc.sys.user.id = '{{ current_user.token }}';
-			_wpc.sys.user.email = _wpcsiou.email;
-			// TODO: Remove after a few weeks
-			if (!name) _wpc.sys.user.getfirstname();
-		{% endif %}			
+  		_wpc.lib.defer({
+  			facebook: '{{ config.FACEBOOK_APP_ID }}',
+  			stripe: '{{ config.STRIPE_PUBLIC_KEY }}'  			
+  		});  								
 	</script>
 </body>
 </html>	

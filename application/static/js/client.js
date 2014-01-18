@@ -2961,30 +2961,19 @@ var WPCLib = {
 	// External libraries & extensions
 	lib: {
 		inited: false,
+		deferinited: false,
+		user: null,
+
 		// Stash list of auth responses here
-		googleResponse: null,
 		facebookResponse: null,
+
 		// API Keys
+		externalkeys: null,
 		filepickerKey: 'AET013tWeSnujBckVPeLqz',		
 
-		collectResponse: {
-			google: function(response) {
-				// Didn't figure out how to do callbacks with initial response
-				WPCLib.lib.googleResponse = response;	
-				// Let publishing actions know where good to go
-				if (response && !response.error) {
-					var gd = WPCLib.publish.actions.gdrive;
-					gd.authed = true;
-					// See if we have any callback waiting
-					if (gd.callback) gd.callback();
-					// Manually fire the upload, TODO Bruno: Switch that to proper callbacks
-					WPCLib.publish.execute(null,'gdrive');
-				}
-			}
-		},
-
-		init: function() {
+		init: function(obj) {
 			if (this.inited) return;
+
 			// kick off segment.io sequence, only on our domain 
 			if (WPCLib.sys.production) {
 				// Add raven ignore options so that our sentry error logger is not swamped with broken plugins
@@ -3030,57 +3019,139 @@ var WPCLib = {
 				      // /metrics\.itunes\.apple\.com\.edgesuite\.net\//i
 				    ]
 				};	
-
-				// Load all libs handeled by segment.io (Intercom, Google Analytics, Sentry)	
-				analytics.load("64nqb1cgw1");
 			}	
 
-			// Mount & init facebook
-			(function(d, s, id){
-			 var js, fjs = d.getElementsByTagName(s)[0];
-			 if (d.getElementById(id)) {return;}
-			 js = d.createElement(s); js.id = id;
-			 js.src = "https://connect.facebook.net/en_US/all.js";
-			 fjs.parentNode.insertBefore(js, fjs);
-			}(document, 'script', 'facebook-jssdk'));	
-
-
-			// Init Google APIs
-			//  (function() {
-			//    var gd = document.createElement('script'); gd.type = 'text/javascript'; gd.async = true;
-			//    gd.src = 'https://apis.google.com/js/client.js?onload=handleClientLoad';
-			//    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(gd, s);
-			//  })();		
-
-			// Load filepicker.io
-			(function(a){if(window.filepicker){return}var b=a.createElement("script");b.type="text/javascript";b.async=!0;b.src=("https:"===a.location.protocol?"https:":"http:")+"//api.filepicker.io/v1/filepicker.js";var c=a.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c);var d={};d._queue=[];var e="pick,pickMultiple,pickAndStore,read,write,writeUrl,export,convert,store,storeUrl,remove,stat,setKey,constructWidget,makeDropPane".split(",");var f=function(a,b){return function(){b.push([a,arguments])}};for(var g=0;g<e.length;g++){d[e[g]]=f(e[g],d._queue)}window.filepicker=d})(document); 
-			filepicker.setKey(this.filepickerKey);
-
-			// Add trim to prototype
-			if (!String.prototype.trim) {
-			  String.prototype.trim = function () {
-			    return this.replace(/^\s+|\s+$/g, '');
-			  };
-			}	
-
-			// Load Googles Diff Match Patch and Channel API
+			// Load Googles Diff Match Patch
 			(function(d, s, id){
 				var js, fjs = d.getElementsByTagName(s)[0];
 				if (d.getElementById(id)) {return;}
 				js = d.createElement(s); js.id = id;
 				js.src = "/static/js/diff_match_patch.js";
 				fjs.parentNode.insertBefore(js, fjs);
-			}(document, 'script', 'diff_match_patch'));	
+			}(document, 'script', 'diff_match_patch'));				
 
-			(function(d, s, id){
-				var js, fjs = d.getElementsByTagName(s)[0];
-				if (d.getElementById(id)) {return;}
-				js = d.createElement(s); js.id = id;
-				js.src = "/_ah/channel/jsapi";
-				fjs.parentNode.insertBefore(js, fjs);
-			}(document, 'script', 'channel_api'));										
+			// Add trim to prototype
+			if (!String.prototype.trim) {
+			  String.prototype.trim = function () {
+			    return this.replace(/^\s+|\s+$/g, '');
+			  };
+			}										
 
 			this.inited = true;
+		},
+
+		defer: function(obj) {
+			// Deferred loading of non essential scripts
+			if (this.deferinited) return;
+
+			// Store keys from Flask
+			this.externalkeys = obj;
+
+			// Load Channel API
+			this.loadscript('/_ah/channel/jsapi','channel_api',null,true);		
+
+			// Load Analytics
+			this.loadscript('https://d2dq2ahtl5zl1z.cloudfront.net/analytics.js/v1/64nqb1cgw1/analytics.min.js',undefined,function(){
+				// A list of all the methods in analytics.js that we want to stub.
+				window.analytics.methods = ['identify', 'track', 'trackLink', 'trackForm',
+				'trackClick', 'trackSubmit', 'page', 'pageview', 'ab', 'alias', 'ready',
+				'group', 'on', 'once', 'off'];
+
+				// Define a factory to create queue stubs. These are placeholders for the
+				// "real" methods in analytics.js so that you never have to wait for the library
+				// to load asynchronously to actually track things. The `method` is always the
+				// first argument, so we know which method to replay the call into.
+				window.analytics.factory = function (method) {
+				  return function () {
+				    var args = Array.prototype.slice.call(arguments);
+				    args.unshift(method);
+				    window.analytics.push(args);
+				    return window.analytics;
+				  };
+				};
+
+				// For each of our methods, generate a queueing method.
+				for (var i = 0; i < window.analytics.methods.length; i++) {
+				  var method = window.analytics.methods[i];
+				  window.analytics[method] = window.analytics.factory(method);
+				}				
+			
+				// Identify user right away
+				var user = WPCLib.lib.user;
+				if (user && user.token) analytics.identify(user.token, user); 
+			},true);				
+
+			// Load facebook
+			this.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
+				window.fbAsyncInit = function() {	FB.init({appId : WPCLib.lib.externalkeys.facebook,status : true, xfbml : true}); };
+			},true);
+
+			// Load Stripe
+			this.loadscript('https://js.stripe.com/v2/',undefined,function(){
+				Stripe.setPublishableKey(WPCLib.lib.externalkeys.stripe);
+			},true);		
+
+			// Load filepicker.io
+			this.loadscript('https://api.filepicker.io/v1/filepicker.js',undefined,function(){
+				filepicker.setKey(WPCLib.lib.filepickerKey);
+			},true);						
+
+			// Prevent double loading
+			this.deferinited = true;					
+		},
+
+		loadscript: function(url,id,callback,defer) {
+			// Generic script loader
+			if (!url) return;	
+
+			setTimeout(function(){
+				var d = document, t = 'script',
+					o = d.createElement(t),
+					s = d.getElementsByTagName(t)[0];
+
+				// Set DOM node params	
+				o.type="text/javascript"
+				o.src = url;
+				o.async = true;
+				if (defer) o.defer = true;
+				if (id) o.id = id;
+				// Attach callback
+				if (callback) { s.addEventListener('load', function (e) {
+					try { callback(null, e); } 
+					catch (e) {
+						// Sometimes the clalback executes before the script is ready
+						setTimeout( function(e) {
+							callback(null, e); 
+						},300);	
+					}
+				}, false); }
+
+				// Insert into DOM
+				s.parentNode.insertBefore(o, s);
+			},1000);					
+		},
+
+		loguser: function(obj) {
+			// Log user and set internal variables
+
+			// Extend user object
+			if (window.navigator.standalone) obj.mobileappinstalled = true;
+			if ('ontouchstart' in document.documentElement) obj.touchdevice = true;
+			if (WPCLib.sys.user.doccount > 0) obj.doccount = WPCLib.sys.user.doccount;
+
+			// Set internal vars
+			if (obj.name) WPCLib.sys.user.name = obj.name;
+			if (obj.email) WPCLib.sys.user.email = obj.email;
+
+			// See if user is logged in via facebook and get name
+			// TODO: Remove after a few weeks
+			if (!obj.name) WPCLib.sys.user.getfirstname();	
+
+			// Track user
+			if (analytics.identify && typeof analytics.identify == 'function') analytics.identify(obj.token, obj);					
+
+			// Set user object
+			this.user = obj;
 		}
 	},
 
@@ -3382,6 +3453,82 @@ var WPCLib = {
 				});	
 				return false;
 			},
+
+			facebooklogin: function() {
+				var msg = 'Sign-In With <b>Facebook</b>',
+					frame = document.getElementById('dialog').contentDocument,
+					buttons = frame.getElementsByClassName('fb');
+
+				FB.getLoginStatus(function(response) {	
+				  if (response.status === 'connected') {
+					WPCLib.comm.ajax({
+						url: "/_cb/facebook",
+		                type: "POST",
+		                payload: JSON.stringify(response.authResponse),
+						success: function(req,data) {
+		                    // All that needs to be done at this point
+		                    WPCLib.sys.user.authed('login',data);									                    
+						},
+						error: function(req) {
+							WPCLib.sys.error(req);									
+						}
+					});				    
+				  } else if (response.status === 'not_authorized') {
+				    if (window.navigator.standalone) {
+				    	// On mobile devices with potentially no popups we do a classic flow
+				    	window.location = '/connect/facebook?next=/';
+				    } else {
+						FB.login(function(response) {
+						   if (response.authResponse) {
+								WPCLib.comm.ajax({
+									url: "/_cb/facebook",
+					                type: "POST",
+					                payload: JSON.stringify(response.authResponse),
+									success: function(req,data) {
+					                    // All that needs to be done at this point
+					                    WPCLib.sys.user.authed('register',data,'Facebook');									                    
+									},
+									error: function(req) {
+										WPCLib.sys.error(req);									
+									}
+								});
+						   } else {
+						   	// FB auth process aborted by user
+						    fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = (WPFBbuttonHTML);
+							WPCLib.sys.error('Aborted FB login (Logged into Facebook)');					     
+						   }
+						},{scope: 'email'});
+					}	
+				  } else {
+				  	// User not signed in to Facebook, so on touch devices we use redirect the window and otehrwise open a popup
+				    if (window.navigator.standalone) {
+				    	// On mobile devices with potentially no popups we do a classic flow
+				    	window.location = '/connect/facebook?next=/';
+				    } else {
+						FB.login(function(response) {
+						   if (response.authResponse) {
+								WPCLib.comm.ajax({
+									url: "/_cb/facebook",
+					                type: "POST",
+					                payload: JSON.stringify(response.authResponse),
+									success: function(req,data) {
+					                    // All that needs to be done at this point
+					                    WPCLib.sys.user.authed('login',data);
+									},
+									error: function(req) {
+										WPCLib.sys.error(req);									
+									}
+								});
+						   } else {
+						   	 // FB auth process aborted by user
+						     fbbuttons[0].innerHTML = fbbuttons[1].innerHTML = WPFBbuttonHTML;
+							WPCLib.sys.error('Aborted FB login (Not logged into Facebook)');						     
+						   }
+						},{scope: 'email'});
+					}			
+				  }
+				});
+			},			
 
 			authed: function(type, user, method) {
 				// On successfull backend auth the returned user-data 
@@ -3847,7 +3994,7 @@ var WPCLib = {
 		settypes: ['POST','PATCH'],
 
 		handle: function(obj) {
-			// Set data
+			// Get & set data
 			if (WPCLib.comm.online) {
 				// Set flag that tells ajax to send data back to us so we can update the localstore
 				obj.updatelocal = true;
