@@ -3048,7 +3048,7 @@ var Hiro = {
 			this.externalkeys = obj;
 
 			// Load Channel API
-			this.loadscript('/_ah/channel/jsapi','channel_api',null,true);		
+			this.loadscript('/_ah/channel/jsapi','channel_api',null,true,100);		
 
 			// Load Analytics
 			this.loadscript('https://d2dq2ahtl5zl1z.cloudfront.net/analytics.js/v1/64nqb1cgw1/analytics.min.js',undefined,function(){
@@ -3089,19 +3089,22 @@ var Hiro = {
 			// Load Stripe
 			this.loadscript('https://js.stripe.com/v2/',undefined,function(){
 				Stripe.setPublishableKey(Hiro.lib.externalkeys.stripe);
-			},true);		
+			},true,3000);		
 
 			// Load filepicker.io
 			this.loadscript('https://api.filepicker.io/v1/filepicker.js',undefined,function(){
 				filepicker.setKey(Hiro.lib.filepickerKey);
-			},true);						
+			},true,2000);						
 
 			// Prevent double loading
 			this.deferinited = true;					
 		},
 
-		loadscript: function(url,id,callback,defer) {
+		loadscript: function(url,id,callback,defer,delay) {
 			// Generic script loader
+			var delay = delay || 1000;
+
+			// Abort if we have no url
 			if (!url) return;	
 
 			setTimeout(function(){
@@ -3116,7 +3119,7 @@ var Hiro = {
 				if (defer) o.defer = true;
 				if (id) o.id = id;
 				// Attach callback
-				if (callback) { s.addEventListener('load', function (e) {
+				if (callback) { o.addEventListener('load', function (e) {
 					try { callback(null, e); } 
 					catch (e) {
 						// Sometimes the clalback executes before the script is ready
@@ -3128,7 +3131,7 @@ var Hiro = {
 
 				// Insert into DOM
 				s.parentNode.insertBefore(o, s);
-			},1000);					
+			},delay);					
 		},
 
 		loguser: function(obj) {
