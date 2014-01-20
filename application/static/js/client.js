@@ -586,7 +586,7 @@ var Hiro = {
 				Hiro.comm.ajax({
 					url: "/docs/"+a_id,
 	                type: "PATCH",
-	                data: JSON.stringify(payload),
+	                payload: JSON.stringify(payload),
 					success: function() {						
 						that.update();					                   
 					}
@@ -712,6 +712,14 @@ var Hiro = {
 				}, false);				
 				// Make UI more stable with event listeners			
 				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);
+
+				// var measure = window.innerHeight + " by " + screen.height;
+				// alert(measure);
+				var measure = 'height=' + window.innerHeight + 'device-height,width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+				document.getElementById('viewport').setAttribute('content', measure);
+
+				// Remove addressbar etc on mobile
+				// window.scrollTo(0,1);	
 
 				// Cancel safariinit after enough time passed to focus textarea fast after that
 				if (this.safariinit) setTimeout( function() { Hiro.canvas.safariinit = false; },5000);	
@@ -2622,7 +2630,7 @@ var Hiro = {
                 Hiro.comm.ajax({
                     url: "/relevant",
                     type: "POST",
-                    data: JSON.stringify(postData),
+                    payload: JSON.stringify(postData),
                     success: function(req,data) {
                         Hiro.context.storeresults(data.results);
                         Hiro.context.renderresults();		             
@@ -3061,7 +3069,7 @@ var Hiro = {
 				if (Hiro.lib.user && Hiro.sys.production) {
 					analytics.identify(Hiro.sys.user.id,Hiro.lib.user);
 				};	
-			},3000);
+			},1000);
 
 			// Load facebook
 			this.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
@@ -3176,7 +3184,7 @@ var Hiro = {
 			}
 
 			// Kick off tab or window active / background check
-			Hiro.util.windowfocus();			
+			Hiro.util.windowfocus();		
 
 			// Add cross browser history event listener to enable back button
 			if (window.onpopstate) {
@@ -3585,6 +3593,7 @@ var Hiro = {
 				// Quick hack to get FB name (if we don't have one yet) of users that already signed in
 				if (Hiro.sys.user.name) return;
 				setTimeout(function(){
+					// TODO: This strangely sometimes returns "FB is undefined" in Chrome 32, maybe blocker plugin
 					if (!FB) {
 						Hiro.sys.user.getfirstname();
 						return;
@@ -5032,6 +5041,7 @@ var Hiro = {
 
 			// Attach events to signup input fields on very small browser, this is the only way to handle browser quirks
 			// That prevent users from signing up
+			/*)
 			if (('ontouchstart' in document.documentElement) && frame.body.offsetHeight < 600 && !this.scrollhandlers) {
 				var su_f = frame.getElementById('signupform'),
 					su_s = frame.getElementById('signuperror'),
@@ -5066,7 +5076,7 @@ var Hiro = {
 
 				// Prevent setting this twice, someday we should clean this up and deal with eventhandlers in consistent manner				
 				this.scrollhandlers = true;
-			}			
+			}	*/		
 
 			// Set internal value
 			this.dialogOpen = true;
@@ -5114,10 +5124,16 @@ var Hiro = {
 			if (!('ontouchstart' in document.documentElement)) Hiro.canvas._setposition();
 
 			// If we do not have the settings dialog, load this one back in and abort ebfore doing settings specific stuff
-			if (!document.getElementById('dialog').contentDocument || document.getElementById('dialog').contentDocument.location.href.split('/')[3] != 'settings') {
+			try {
+				if (!document.getElementById('dialog').contentDocument || document.getElementById('dialog').contentDocument.location.href.split('/')[3] != 'settings') {
+					frame.src = '/settings/';
+					return;
+				}
+			} catch(e) {
+				// On some browsers we can't access the document when it's from filepicker or others, so we reload anyway
 				frame.src = '/settings/';
-				return;
-			}		
+				return;				
+			}	
 
 			// Remove input field handlers
 			var inputs = frame.contentDocument.getElementsByTagName('input'), inputtypes = ['email','password','text'];
