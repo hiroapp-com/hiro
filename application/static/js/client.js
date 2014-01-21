@@ -713,8 +713,8 @@ var Hiro = {
 				// Make UI more stable with event listeners			
 				document.getElementById('page').addEventListener('touchmove',function(e){e.stopPropagation();},false);
 
-				// var measure = window.innerHeight + " by " + screen.height;
-				// alert(measure);
+				// Setting the viewport height has a lot of benefits regarding the bugs we dealt with 
+				// (eg signup input field not scrolling into view, blocked input fields etc)
 				var measure = 'height=' + window.innerHeight + 'device-height,width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 				document.getElementById('viewport').setAttribute('content', measure);
 
@@ -776,7 +776,14 @@ var Hiro = {
 			if (this.docid != 'localdoc' && Hiro.sys.user.level > 0) {
 				// Save remotely, immediately indicate if this fails because we're offline
 				Hiro.sys.log('saving remotely: ', file);	
-				var u = "/docs/"+this.docid;
+				var u = "/docs/"+this.docid,
+					doc = Hiro.folio.docs.lookup[Hiro.canvas.docid];
+
+				// Reset "by x" in folio if we have one
+				if (doc && doc.last_doc_update) {
+					doc.last_doc_update = undefined;
+					Hiro.folio.docs.update();
+				}	
 
 				Hiro.comm.ajax({					
 					url: u,
@@ -1477,9 +1484,9 @@ var Hiro = {
 			},
 
 
-			addedit: function(force,reason) {
+			addedit: function(force,reason,ownupdate) {
 				// Add an edit to the edits array
-				var c = Hiro.canvas.text, s = this.shadow, edit = {};
+				var c = Hiro.canvas.text, s = this.shadow, edit = {}; 				
 
 				// If we're inflight then wait for callback
 				if (this.inflight) {
@@ -1500,7 +1507,7 @@ var Hiro = {
 	                // Update last edit timestamp & folio display if text was changed
 	                if (c != s) {
 	                	var doc = Hiro.folio.docs.lookup[Hiro.canvas.docid];
-						if (doc) doc.updated = Hiro.util.now(); 
+						if (doc) doc.updated = Hiro.util.now();	
 						Hiro.folio.docs.update();
 	                }				
 
@@ -4190,7 +4197,13 @@ var Hiro = {
             		name = data.origin.name || data.origin.email;
 
             	// If the update was from our current session (same window)	
-            	if (ownupdate) return;	
+            	if (ownupdate) {
+					if (el.last_doc_update) {
+						el.last_doc_update = undefined; 
+                		Hiro.folio.docs.update();						 
+					}	            		
+            		return;	
+            	}	
 
 
             	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
@@ -4201,7 +4214,8 @@ var Hiro = {
 
             	// Update internal timestamp & last editor values	
             	if (ownuser) {
-            		el.updated = Hiro.util.now();  
+            		el.updated = Hiro.util.now(); 
+					if (el.last_doc_update) el.last_doc_update = undefined;            		 
             	} else {
             		if (!el.last_doc_update) el.last_doc_update = {};
             		el.last_doc_update.updated = Hiro.util.now();
