@@ -1896,7 +1896,7 @@ var Hiro = {
 			Hiro.sharing.accesslist.add(email.value);
 		},
 
-		applytoken: function(token) {
+		applytoken: function(token,email) {
 			// Applies a token for a shared doc
 			// We handle loading the doc with token through the normal loaddoc
 			this.token = token;		
@@ -1905,7 +1905,14 @@ var Hiro = {
 				var frame = document.getElementById('dialog');
 				frame.onload = function() {		
 					// The if prevents the dialog from being loaded after login		
-					if (Hiro.sys.user.level == 0) Hiro.ui.showDialog(null,'','s_signup','signup_mail');					
+					if (Hiro.sys.user.level == 0) {
+						if (email) {
+							frame.contentDocument.getElementById('signup_mail').value = email;
+							Hiro.ui.showDialog(null,'','s_signup','signup_pwd');
+						} else {
+							Hiro.ui.showDialog(null,'','s_signup','signup_mail');
+						}
+					}						
 				}
 			}
 		},
@@ -3229,7 +3236,8 @@ var Hiro = {
 					Hiro.sys.user.showreset(p[p.indexOf('reset') + 1]);
 				}
 				if (p.indexOf('token') > -1) {
-					Hiro.sharing.applytoken(p[p.indexOf('token') + 1]);
+					var email = (p.indexOf('email') > -1) ? p[p.indexOf('email') + 1] : undefined; 
+					Hiro.sharing.applytoken(p[p.indexOf('token') + 1],email);
 				}				
 			} 
 
