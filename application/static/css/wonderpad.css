@@ -659,7 +659,6 @@ a.wpcbutton:hover {
 
   .canvas .page .content textarea, .canvas.full .page .content textarea {
     position: absolute;
-    width: auto;
     height: auto;
     top: 0;
     left: 0;
@@ -673,6 +672,8 @@ a.wpcbutton:hover {
     color: #333; 
     padding: 45px 12px 2px 12px;    
     background-color: #fff;
+    box-sizing: border-box;
+    width: 100%;    
   } 
 
   .canvas #nicequote {
@@ -750,7 +751,8 @@ a.wpcbutton:hover {
 
   .canvas .page .content textarea, .canvas.full .page .content textarea {
     position: absolute;
-    width: auto;
+    width: 100%;
+    box-sizing: border-box;
     height: auto;
     top: 0;
     left: 0;
