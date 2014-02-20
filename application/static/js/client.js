@@ -36,32 +36,54 @@
 var Hiro = {
 	version: '1.10.3',
 
-	// Folio is the nav piece on the left, holding all file management pieces
+	// Folio is the nav piece on the left, and holding all docs' metadata internally
 	folio: {
-		folioId: 'folio',
-		logioId: 'logio',	
+		// DOM elements
+		el_folio: document.getElementById('folio'),
+		el_logio: document.getElementById('logio'),
+		el_doclist: document.getElementById('doclist'),
+		el_counter: document.getElementById('a_counter'),
+		el_archive: document.getElementById('archivelist'),			
+		el_updatebubble: document.getElementById('updatebubble'),
+
+		// Number of archived docs
+		archived: 0,
+		archiveOpen: false,
+		unseenupdates: 0,		
+
+		// Array of docs
+		docs: [],
+		// Lookup object. Usage: Hiro.folio.lookup[<docid>]
+		lookup: {},
+
+		// Last server sync timestamp
+		lastsync: 0,
+		// Time to live in ms, how long before we request a new version from the server to make sure we're in sync
+		ttl: 0,
+
+		// Timer for display update
+		updatetimeout: null,		
 
 		init: function() {
 			// Basic Folio Setup
-
 			// Load list of documents from server or create localdoc if user is unknown			
 			if (Hiro.sys.user.level==0) {
 				// See if we can find a local doc
 				var ld = localStorage.getItem('WPCdoc');
 				if (ld) {
-					this.docs.loadlocal(ld);
+					this.loadlocal(ld);
 				} else {
-					document.getElementById(this.docs.doclistId).innerHTML='';
-					this.docs.newdoc();
+					this.el_doclist.innerHTML='';
+					this.newdoc();
 				}
 			} else {
-				this.docs.loaddocs();
+				this.loaddocs();
 			}
 
 			// Register "close folio" events to rest of the page
 			Hiro.util.registerEvent(document.getElementById(Hiro.canvas.canvasId),'mouseover', Hiro.ui.menuHide);
-			Hiro.util.registerEvent(document.getElementById(Hiro.canvas.contentId),'touchstart', Hiro.ui.menuHide);			
-			Hiro.util.registerEvent(document.getElementById(Hiro.context.id),'mouseover', Hiro.ui.menuHide);	
+			Hiro.util.registerEvent(document.getElementById(Hiro.context.id),'mouseover', Hiro.ui.menuHide);			
+			Hiro.util.registerEvent(document.getElementById(Hiro.canvas.contentId),'touchstart', Hiro.ui.menuHide);				
 
 			// Register event that cancels the delayed opening of the menu if cursor leaves browser
 			Hiro.util.registerEvent(document,'mouseout', function(e) {
@@ -73,7 +95,37 @@ var Hiro = {
 			    		Hiro.ui.delayedtimeout = null;
 			    	}
 			    }			
-			});				
+			});	
+
+			// Attach delegated event handler to document list
+			Hiro.util.registerEvent(this.el_doclist,'click',Hiro.folio.docclick);
+			Hiro.util.registerEvent(this.el_archive,'click',Hiro.folio.docclick);						
+		},
+
+		docclick: function(e) {
+			// Clickhandler, this happens if a user clicks on a doc in the folio
+			var target = e.relatedTarget || e.toElement,
+				docid = target.id || target.parentNode.id || target.parentNode.parentNode.id;
+
+			// Stop default behaviour first
+			Hiro.util.stopEvent(e);	
+
+			// Strip doc_ from id
+			docid = docid.slice(-12);	
+
+			// If click was on archive then change status and return
+			if (target.className == 'archive') {
+				Hiro.folio.archive(docid);
+				return;
+			}					
+
+			// Close menu
+			Hiro.ui.menuHide();								
+
+			// Loaddoc and reset order of array
+			if (docid != Hiro.canvas.docid) {
+				Hiro.canvas.loaddoc(docid, Hiro.folio.lookup[docid].title);
+			}				
 		},
 
 		showSettings: function(section,field,event) {
@@ -88,534 +140,485 @@ var Hiro = {
 			Hiro.ui.showDialog(event,'',section,field);
 		},		
 
-		docs: {
-			// All Document List interactions in seperate namespace
-			doclistId: 'doclist',
-			active: [],
-			archived: [],
-			a_counterId: 'a_counter',
-			a_count: 0,
-			archiveId: 'archivelist',
-			archiveOpen: false,
-			// Generic lookup object to easily change object properties in active/archive arrays
-			lookup: {},
-			unseenupdates: 0,
+		loaddocs: function(folioonly) {
+			// Get the list of documents from the server
+			var that = this;
 
-			loaddocs: function(folioonly) {
-				// Get the list of documents from the server
-				var f = Hiro.folio.docs,	
-					a = document.getElementById(this.a_counterId);	
+			// Start progres bar
+			if (!folioonly) Hiro.ui.hprogress.begin();			
 
-				// Start progres bar
-				if (!folioonly) Hiro.ui.hprogress.begin();			
-
-				Hiro.store.handle({
-				    url: '/docs/?group_by=status',
-				    success: function(req,data) {
-						// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
-						// or because we got invited via token
-						if (!data.active && !data.archived) {	
-							if (Hiro.sharing.token) {
-								// If we have a token we just call loaddocand let it figure out the rest via url / token
-								Hiro.canvas.loaddoc();
-								return;
-							} else {
-								// User just signed up without playing around, create first doc from server
-								f.newdoc();
-								return;
-							}					
-						}	
-						if (data.active) f.active = data.active;
-						if (data.archived) f.archived = data.archived;						
-						f.update();
-
-						// load top doc if not already on canvas (or on first load when the doc is preloaded and we have no internal values yet) 
-						// also handling egde case: if a user logs in when sitting in front of an empty document
-						var doc = data.active[0];
-						if (data.archived && doc.updated < data.archived[0].updated) doc = data.archived[0];
-						if (!folioonly && data.active && doc.id != Hiro.canvas.docid) {
-							Hiro.canvas.loaddoc(doc.id,doc.title);
-						}
-
-						// Update the document counter
-					    if (Hiro.sys.user.level > 0) Hiro.ui.documentcounter();	
-
-					    // Portfolio archive counter
-					    if (data.archived) {
-					    	var ac = Hiro.folio.docs.a_count = data.archived.length;
-					    	a.innerHTML = 'Archive (' + ac + ')';
-					    }	
-
-						// Check our Hiroversion and initiate upgradepopup if we have a newer one
-						if (!Hiro.sys.version) { Hiro.sys.version = data.hiroversion; }
-						else if (Hiro.sys.version != data.hiroversion) Hiro.sys.upgradeavailable(data.hiroversion);				    
-
-				    },
-				    error: function(req) {
-				    	// Refresh page if loaddocs throws 401 (user most likely logged out of system)
-				    	if (Hiro.sys.user.level > 0 && (req.status == 401 || req.status == 403)) window.location.href = '/'; 
-				    }
-				});						
-			},
-
-			loadlocal: function(localdoc) {	
-				// Load locally saved document
-				var ld = JSON.parse(localdoc);					
-				Hiro.sys.log('Localstorage doc found, loading ', ld);						
-				document.getElementById('landing').style.display = 'none';
-
-				// Render doc in folio
-				this.active.push(ld);
-				// Fix for different namings in frontend/backend
-				this.active[0].updated = ld.last_updated;
-				this.update();
-
-				// Render doc on canvas
-				Hiro.canvas.loadlocal(ld);
-			},
-
-			_updatetimeout: null,	
-			update: function() {
-				// update the document list from the active / archive arrays
-				// We use absolute pointers as this can also be called as event handler
-				var that = Hiro.folio.docs,
-					act = that.active,
-					docs = document.getElementById(that.doclistId),				
-					arc = that.archived,
-					archive = document.getElementById(that.archiveId),
-					bubble = document.getElementById('updatebubble'),
-					wastebin = document.getElementById('wastebin'),
-					seen = this.unseenupdates, urlid = window.location.pathname.split('/')[2];		
-
-				// Update our lookup object
-				that.updatelookup();
-
-				// Clone and reset containing divs
-				if (docs) {
-					var newdocs = docs.cloneNode();
-					newdocs.innerHTML = '';
-				}	
-				if (archive) {
-					var newarchive = archive.cloneNode();					
-					newarchive.innerHTML = '';
-				}	
-				this.unseenupdates = 0;	
-
-				// Add all elements & events to new DOM object
-				for (i=0,l=act.length;i<l;i++) {						
-					// Attach links to new active object
-					if (newdocs.firstChild && ((act[i].id == Hiro.canvas.docid) || (!Hiro.canvas.docid && urlid && urlid == act[i].id))) {
-						// If we: Already have a node we can insertbefore, doc[i] is the current doc or we have a url id that equals doc[i]
-						newdocs.insertBefore(that.renderlink(i,'active',act[i]), newdocs.firstChild);
-					} else { 
-						newdocs.appendChild(that.renderlink(i,'active',act[i])); 
-					};																
-					// iterate unseen doc counter except for document to be loaded
-					if (act[i].unseen && act[i].shared && i != 0) this.unseenupdates++;					    
-				}
-				if (arc) {
-					for (i=0,l=arc.length;i<l;i++) {	
-						// Attach links to new archive object
-						if (arc[i].id == Hiro.canvas.docid && newarchive.firstChild) {
-							newarchive.insertBefore(that.renderlink(i,'archive',arc[i]), newarchive.firstChild);
-						} else { 
-							newarchive.appendChild(that.renderlink(i,'archive',arc[i])); 
-						};													    
-					}					
-				}	
-
-				// Check if something changed, otherwise discard to wastebin and abort
-				if (document.isEqualNode && docs.isEqualNode(newdocs)) {
-					wastebin.appendChild(newdocs);
-					wastebin.innerHTML = '';
-					return;
-				}			
-
-				// Switch current DOM object with new one
-				docs.parentNode.replaceChild(newdocs, docs);
-				if (archive) archive.parentNode.replaceChild(newarchive, archive);
-
-				// Show bubble if we have unseen updates
-				if (this.unseenupdates > 0) {
-					bubble.innerHTML = this.unseenupdates;
-					bubble.style.display = 'block';
-					if (seen < this.unseenupdates && !Hiro.ui.windowfocused) Hiro.ui.playaudio('unseen',0.7);
-				} else {
-					bubble.style.display = 'none';
-				}
-
-				// Kick off regular updates, only once
-				if (!this._updatetimeout) {
-					this._updatetimeout = setInterval(Hiro.folio.docs.update,61000);
-				}
-			},		
-
-			updatelookup: function() {
-				// Takes the two document arrays (active/archive) and creates a simple lookup reference object
-				// Usage: Hiro.folio.docs.lookup['79asjdkl3'].title = 'Foo'
-				var docs = this.active.concat(this.archived);
-				this.lookup = {};
-				for (var i = 0, l = docs.length; i < l; i++) {
-				    this.lookup[docs[i].id] = docs[i];			    
-				}
-			},
-
-			updateunseen: function(increment) {
-				// Updates the small visible counter (red bubble next to showmenu icon) and internal values
-				// A negative value substracts one from the counter, a positive resets counter to value
-				var i = this.unseenupdates = (increment < 0) ? this.unseenupdates + increment : increment;
-				var b = document.getElementById('updatebubble');
-				if (i = 0) {
-					b.style.display = 'none';
-					return;
-				}
-				if (i > 1) {
-					b.innerHTML = i;
-					b.style.display = 'block';
-				}
-			},
-
-			renderlink: function(i,type,data) {
-				// Render active and archived document link
-				var item = (type=='active') ? this.active : this.archived,
-					lvl = Hiro.sys.user.level,
-					docid = item[i].id,
-					active = (type == 'active') ? true : false,
-					lastupdate = (data.last_doc_update && data.updated <= data.last_doc_update.updated) ? data.last_doc_update.updated : data.updated;
-
-				var d = document.createElement('div');
-				d.className = 'document';
-				d.setAttribute('id','doc_'+docid);
-
-				var link = document.createElement('a');
-				link.setAttribute('onclick','return false;');
-				link.setAttribute('href','/note/'+docid);	
-
-				var t = document.createElement('span');
-				t.className = 'doctitle';
-				t.innerHTML = item[i].title || 'Untitled Note';
-
-				var stats = document.createElement('small');
-
-				if (item[i].updated) {
-					var statline = Hiro.util.humanizeTimestamp(lastupdate) + " ago";
-					// Check if document was last updated by somebody else
-					// We also have to check the time difference including slight deviatian because our own updates are set by two different functions
-					if (data.last_doc_update) {
-						statline = statline + ' by ' + (data.last_doc_update.name || data.last_doc_update.email); 
-					}					
-					stats.appendChild(document.createTextNode(statline));
-				} else {
-					stats.appendChild(document.createTextNode('Not saved yet'))							
-				}	
-	
-
-				link.appendChild(t);
-				link.appendChild(stats);
-
-				if (data.shared) {
-					// Add sharing icon to document and change class to shared
-					var s = document.createElement('div');
-					s.className = 'sharing';
-					var tooltip = 'Shared with others';	
-					if (data.unseen) {
-						// Show that document has unseen updates
-						var sn = document.createElement('div');
-						sn.className = "bubble red";
-						sn.innerHTML = '*';
-						link.appendChild(sn);
-						tooltip = tooltip + ', just updated';					
-					}			
-					s.setAttribute('title',tooltip);	
-					link.appendChild(s);
-					d.className = 'document shared';					
-				}
-
-
-				d.appendChild(link);	
-
-				if (('ontouchstart' in document.documentElement)&&l >= 1) {
-					d.addEventListener('touchmove',function(event){event.stopPropagation()},false);				
-				} else {
-					// Add archive link, only on non touch devices
-					if (lvl>=1) {
-						var a = document.createElement('div');
-						a.className = 'archive';
-						if (active) {
-							Hiro.util.registerEvent(a,'click', function(e) {Hiro.folio.docs.archive(e,true);});	
-							if (lvl==1) a.title = "Move to archive";
+			Hiro.store.handle({
+			    url: '/docs/',
+			    success: function(req,data) {
+					// See if we have any docs and load to internal model, otherwise create a new one (signup with no localdoc)
+					// or because we got invited via token
+					if (!data.documents) {	
+						if (Hiro.sharing.token) {
+							// If we have a token we just call loaddocand let it figure out the rest via url / token
+							Hiro.canvas.loaddoc();
+							return;
 						} else {
-							Hiro.util.registerEvent(a,'click', function(e) {Hiro.folio.docs.archive(e,false);});												
-						}								
-						d.appendChild(a);
+							// User just signed up without playing around, create first doc from server
+							that.newdoc();
+							return;
+						}					
+					} else {
+						that.docs = data.documents;
+					}							
+					that.update();
+
+					// load top doc if not already on canvas (or on first load when the doc is preloaded and we have no internal values yet) 
+					var doc = data.documents[0];
+					if (!folioonly && data.documents && doc.id != Hiro.canvas.docid) {
+						Hiro.canvas.loaddoc(doc.id,doc.title);
 					}
-				}	
 
-				// Attach default events
-				var title = item[i].title || 'Untitled';			
-				Hiro.folio.docs._events(d,docid,title,active);	
+					// Update the document counter
+				    if (Hiro.sys.user.level > 0) Hiro.folio.documentcounter();	
 
-				return d;			
-			},
+					// Check our Hiroversion and initiate upgradepopup if we have a newer one
+					if (!Hiro.sys.version) { Hiro.sys.version = data.hiroversion; }
+					else if (Hiro.sys.version != data.hiroversion) Hiro.sys.upgradeavailable(data.hiroversion);				    
 
-			_events: function(el,docid,title,active) {
-				// Attach events to doc links
-				Hiro.util.registerEvent(el.firstChild,'click', function() {
-					Hiro.folio.docs.moveup(docid,active);
-					Hiro.canvas.loaddoc(docid, title);
-					Hiro.ui.menuHide();																
-				});				
-			},
+			    },
+			    error: function(req) {
+			    	// Refresh page if loaddocs throws 401 (user most likely logged out of system)
+			    	if (Hiro.sys.user.level > 0 && (req.status == 401 || req.status == 403)) window.location.href = '/'; 
+			    }
+			});						
+		},
 
-			creatingDoc: false,
-			newdoc: function() {
-				// Initiate the creation of a new document
-				// Avoid creating multiple docs at once and check for user level
-				if (this.creatingDoc == true) return;
+		loadlocal: function(localdoc) {	
+			// Load locally saved document
+			var ld = JSON.parse(localdoc);					
+			Hiro.sys.log('Localstorage doc found, loading ', ld);						
+			document.getElementById('landing').style.display = 'none';
 
-				// TODO Bruno get up to speed with callback scoping & call(), in the meantime a quickfix for edge case			
-				if (typeof this.active === 'undefined') return;				
+			// Render doc in folio
+			this.docs.push(ld);
 
-				if (Hiro.sys.user.level == 0 && this.active.length!=0) {
-					Hiro.sys.user.upgrade(1,Hiro.folio.docs.newdoc);
-					return;
-				}
-				if (this.active && Hiro.sys.user.level == 1 && this.active.length >= 10) {
-					// If user has more than 10 docs
-					var own_counter = 0;
-					for (i=0,l=this.active.length;i<l;i++) {
-						if (this.active[i].role == 'owner') own_counter++;
-					}
-					if (own_counter > 10) {
-						Hiro.sys.user.upgrade(2,Hiro.folio.docs.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
-						return;	
-					}				
-				}
+			// Fix for different namings in frontend/backend
+			this.docs[0].updated = ld.last_updated;
+			this.update();
 
-				// Check if the archive is open, otherwise switch view
-				if (this.archiveOpen) this.openarchive();
+			// Render doc on canvas
+			Hiro.canvas.loadlocal(ld);
+		},
+	
+		update: function() {
+			// update the document list from the active / archive arrays
+			// We use absolute pointers as this can also be called as event handler
+			var that = Hiro.folio,			
+				wastebin = document.getElementById('wastebin'),
+				seen = this.unseenupdates, 
+				urlid = window.location.pathname.split('/')[2];	
 
-				// All good to go
-				this.creatingDoc = true;	
+			// Kick off regular updates, only once
+			if (!that.updatetimeout) {
+				that.updatetimeout = setInterval(Hiro.folio.update,61000);
+			}					
 
-				// Start the bar
-				Hiro.ui.hprogress.begin();								
+			// Update our lookup object
+			that.updatelookup();
 
-				// Add a doc placeholder to the internal folio array
-				var doc = {};
-				doc.title = 'Untitled Note';
-				doc.created = Hiro.util.now();
-				doc.role = 'owner';
-				this.active.splice(0,0,doc);
+			// Create placeholder divs
+			var newdocs = document.createElement('div'),
+				newarchive = document.createElement('div');
 
-				// Render a placeholder until we get the OK from the server
-				var el = document.createElement('div');
-				el.className = 'document';	
-				el.setAttribute('id','doc_creating');
+			that.unseenupdates = that.archived = 0;	
 
-				var ph = document.createElement('a');
-				ph.setAttribute('href','#');	
-				ph.setAttribute('onclick','Hiro.ui.menuHide();return false;');	
-				var pht = document.createElement('span');
-				pht.className = 'doctitle';
-				pht.innerHTML = 'Creating new note...';	
-				var phs = document.createElement('small');
-				phs.appendChild(document.createTextNode("Right now"))
-				ph.appendChild(pht);
-				ph.appendChild(phs);
-				el.appendChild(ph);
-
-				document.getElementById(this.doclistId).insertBefore(el,document.getElementById(this.doclistId).firstChild);
-
-				// Create the doc on the canvas
-				if (document.body.offsetWidth <= 900 && document.getElementById(Hiro.context.id).style.display == "block") Hiro.context.switchview();
-				Hiro.canvas.newdoc();
-				Hiro.ui.menuHide();
-
-				// Get/Set ID of new document
-				if ( Hiro.sys.user.level==0) {
-					// Anon user doc gets stored locally
-					var doc = document.getElementById('doc_creating');
-					Hiro.sys.log('unknown user, setting up localstore ');
-
-					// Set params for local doc
-					Hiro.canvas.docid = 'localdoc';
-					Hiro.folio.docs.active[0].id = 'localdoc';
-
-					// Save document & cleanup
-					doc.firstChild.firstChild.innerHTML = 'Untitled Note';
-					doc.id = 'doc_localdoc';
-
-					// Complete bar
-					Hiro.ui.hprogress.done();					
+			// Add all elements & events to new DOM object, count elements in same step
+			for (i=0,l=that.docs.length;i<l;i++) {	
+				if (that.docs[i].status == 'active') {
+					newdocs.appendChild(that.renderlink(that.docs[i].id)); 														
+					// iterate unseen doc counter except for document to be loaded
+					if (that.docs[i].unseen && that.docs[i].shared && i != 0) that.unseenupdates++;	
 				} else {
-					// Request new document id
-					var doc = document.getElementById('doc_creating');
-					Hiro.sys.log('known user, setting up remote store ');
+					newarchive.appendChild(that.renderlink(that.docs[i].id));
+					that.archived++;
+				}								    
+			}
+			
+			// Check if something changed, otherwise discard to wastebin and abort
+			if (that.el_doclist.innerHTML == newdocs.innerHTML && that.el_archive.innerHTML == newarchive.innerHTML) {
+				wastebin.appendChild(newdocs);
+				wastebin.innerHTML = '';
+				return;
+			}			
 
-					// Submit timestamp for new doc id
-					var file = {};				
-					file.created = Hiro.util.now();				
+			// Switch current DOM object with new one
+			that.el_doclist.innerHTML = newdocs.innerHTML;
+			if (that.el_archive) that.el_archive.innerHTML = newarchive.innerHTML;	
 
-					// Get doc id from server
-					Hiro.comm.ajax({
-						url: "/docs/",
-		                type: "POST",
-		                payload: JSON.stringify(file),
-						success: function(req,data) {
-		                    Hiro.sys.log("backend issued doc id ", data.doc_id);
+			// Update the document counter
+			that.documentcounter();									
 
-							// Set params for local doc
-							Hiro.canvas.docid = data.doc_id;
+			// Show bubble if we have unseen updates
+			if (that.unseenupdates > 0) {
+				that.el_updatebubble.innerHTML = that.unseenupdates;
+				that.el_updatebubble.style.display = 'block';
+				if (seen < that.unseenupdates && !Hiro.ui.windowfocused) Hiro.ui.playaudio('unseen',0.7);
+			} else {
+				that.el_updatebubble.style.display = 'none';
+			}
+		},		
 
-							// Set folio values
-							if (doc.firstChild) doc.firstChild.firstChild.innerHTML = 'Untitled Note';
-							doc.id = 'doc_'+data;
-							Hiro.folio.docs.active[0].id = data.doc_id;	
+		updatelookup: function() {
+			// Takes the two document arrays (active/archive) and creates a simple lookup reference object
+			// Usage: Hiro.folio.lookup['79asjdkl3'].title = 'Foo'
+			this.lookup = {};
+			for (var i = 0, l = this.docs.length; i < l; i++) {
+			    this.lookup[this.docs[i].id] = this.docs[i];			    
+			}
+		},
 
-							// Start sync
-							Hiro.canvas.sync.begin('',req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    								
 
-							// Update the document counter
-							Hiro.ui.documentcounter();	
+		updateunseen: function(increment) {
+			// Updates the small visible counter (red bubble next to showmenu icon) and internal values
+			// A negative value substracts one from the counter, a positive resets counter to value
+			var i = this.unseenupdates = (increment < 0) ? this.unseenupdates + increment : increment;;
+			if (i = 0) {
+				this.el_updatebubble.style.display = 'none';
+				return;
+			}
+			if (i > 1) {
+				this.el_updatebubble.innerHTML = i;
+				this.el_updatebubble.style.display = 'block';
+			}
+		},
 
-							// Update folio
-							Hiro.folio.docs.update();		
+		renderlink: function(docid) {
+			// Render active and archived document link
+			var lvl = Hiro.sys.user.level,
+				doc = this.lookup[docid],
+				lastupdate = (doc.last_doc_update && doc.updated <= doc.last_doc_update.updated) ? doc.last_doc_update.updated : doc.updated;
 
-							// Complete bar
-							Hiro.ui.hprogress.done();																			                    
-						}
-					});				
+			var d = document.createElement('div');
+			d.className = 'document';
+			d.setAttribute('id','doc_'+doc.id);
+
+			var link = document.createElement('a');
+			link.setAttribute('href','/note/'+doc.id);	
+
+			var t = document.createElement('span');
+			t.className = 'doctitle';
+			t.innerHTML = doc.title || 'Untitled Note';
+
+			var stats = document.createElement('small');
+
+			if (doc.updated) {
+				var statline = Hiro.util.humanizeTimestamp(lastupdate) + " ago";
+				// Check if document was last updated by somebody else
+				// We also have to check the time difference including slight deviatian because our own updates are set by two different functions
+				if (doc.last_doc_update) {
+					statline = statline + ' by ' + (doc.last_doc_update.name || doc.last_doc_update.email); 
+				}					
+				stats.appendChild(document.createTextNode(statline));
+			} else {
+				stats.appendChild(document.createTextNode('Not saved yet'))							
+			}	
+
+
+			link.appendChild(t);
+			link.appendChild(stats);
+
+			if (doc.shared) {
+				// Add sharing icon to document and change class to shared
+				var s = document.createElement('div');
+				s.className = 'sharing';
+				var tooltip = 'Shared with others';	
+				if (doc.unseen) {
+					// Show that document has unseen updates
+					var sn = document.createElement('div');
+					sn.className = "bubble red";
+					sn.innerHTML = '*';
+					link.appendChild(sn);
+					tooltip = tooltip + ', just updated';					
+				}			
+				s.setAttribute('title',tooltip);	
+				link.appendChild(s);
+				d.className = 'document shared';					
+			}
+
+			d.appendChild(link);	
+
+			// Add archive icons
+			if ( lvl >= 1) {
+				var a = document.createElement('div');
+				a.className = 'archive';
+				if (doc.status == 'active' && lvl == 1) a.title = "Move to archive";						
+				d.appendChild(a);
+			}			
+
+			return d;			
+		},
+
+		documentcounter: function() {
+			// Updates the field in the settings with the current plan & document count
+			var val, level = Hiro.sys.user.level, upgradelink, 
+				target = (document.getElementById('dialog').contentDocument) ? document.getElementById('dialog').contentDocument.getElementById('s_account') : null,
+				doccount = Hiro.sys.user.doccount = Hiro.folio.docs.length,
+				archivecount = Hiro.folio.archived;
+
+
+			// Visual archive updates
+			if (archivecount > 0 && !this.archiveOpen) {
+				this.el_counter.innerHTML = 'Archive (' + archivecount + ')';			
+			}	
+			
+			if (!target) {
+				// If the settings dialog is not loaded yet try again later 
+				setTimeout(function(){
+					Hiro.folio.documentcounter();			
+				},500);					
+			} else {
+				// If the user level is 0 we dont have the form yet
+				if (level==0 || !target.getElementsByTagName('input')[2]) return;
+				upgradelink = target.getElementsByTagName('input')[2].nextSibling;
+				// Get the plan name
+				switch (level) {
+					case 0:
+					case 1:
+						val = 'Basic';
+						upgradelink.style.display = 'block';
+						break;
+					case 2:
+						val = 'Advanced';
+						upgradelink.style.display = 'block';					
+						break;
+					case 3:
+						val = 'Pro';
+						upgradelink.style.display = 'none';					
+						break;		
 				}
+				val = val + ((document.body.offsetWidth>480) ? ' plan: ' : ': ');				
+				if (Hiro.folio.docs) val = val + doccount;
 
-				// Get ready for the creation of new documents
-				this.creatingDoc = false;
-			},
+				// See if we have plan limits or mobile device
+				if (level < 2) val = val + ' of 10';
+				
+				target.getElementsByTagName('input')[3].value = val + ' notes';
+			}
+		},
+		
 
-			movetoremote: function() {
-				// Moves a doc from localstorage to remote storage and clears localstorage
-				// Doublecheck here for future safety
-				if (Hiro.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {					
-					// Strip id from file to get new one from backend
-					var file = Hiro.canvas.builddoc();					
-					file.id = '';
-					file.text = Hiro.canvas.text;
-					// Get doc id from server
-					Hiro.comm.ajax({
-						url: "/docs/",
-		                type: "POST",
-		                payload: JSON.stringify(file),
-						success: function(req,data) {
-		                    Hiro.sys.log("move local to backend with new id ", data);
-		                    // Delete local item
-		                    localStorage.removeItem('WPCdoc')
+		creatingDoc: false,
+		newdoc: function() {
+			// Initiate the creation of a new document
+			// Avoid creating multiple docs at once and check for user level
+			if (this.creatingDoc == true) return;
+		
+			// Show login dialog if user wants to create a second doc
+			if (Hiro.sys.user.level == 0 && this.docs.length != 0) {
+				Hiro.sys.user.upgrade(1,Hiro.folio.newdoc);
+				return;
+			}
 
-							// Start sync
-							Hiro.canvas.sync.begin(Hiro.canvas.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));   		                    
-
-							// Set new id for former local doc
-							Hiro.canvas.docid = data.doc_id;
-
-							// Get updated file list														
-							Hiro.folio.docs.loaddocs(true);                 																
-
-							// Edge Case: User had a document moved to the backend and also accesstoken waiting
-							if (Hiro.sharing.token) {
-								Hiro.canvas.loaddoc();
-							}							
-						}
-					});
+			// Count how many docs a user is a owner of
+			if (this.docs && Hiro.sys.user.level == 1 && this.docs.length >= 10) {
+				// If user has more than 10 docs
+				var own_counter = 0;
+				for (i=0,l=this.active.length;i<l;i++) {
+					if (this.active[i].role == 'owner') own_counter++;
 				}
-			},
-
-			moveup: function(docid,active) {
-				// moves a specific doc to the top of the list based on it's id
-
-				// Find and remove itenm from list
-				var act = Hiro.folio.docs.active;
-				var arc = Hiro.folio.docs.archived;
-				var obj = {};
-				var bucket = (active) ? act : arc;
-				for (var i=0,l=bucket.length;i<l;i++) {
-					if (bucket[i].id != docid) continue;
-					obj = bucket[i];
-					bucket.splice(i,1);
-					break;					
-				}
-
-				// Sort array by last edit
-				bucket.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
-
-				// Insert item at top of array and redraw list
-				bucket.unshift(obj);			
-			},
-
-			archive: function(e,toarchive) {
-				// Move a current document to the archive, first abort if user has no account with archive
-				if (Hiro.sys.user.level <= 1) {
-					Hiro.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
-					return;
-				}	
-
-				var that = Hiro.folio.docs;				
-				var a_id = e.target.parentNode.id.substr(4);
-				var act = that.active;	
-				var arc = that.archived;
-				var obj = {};
-				var source = (toarchive) ? act : arc;
-				var target = (toarchive) ? arc : act;				
-
-				for (var i=0,l=source.length;i<l;i++) {
-					// Iterate through active docs and remove the one to be archived
-					if (source[i].id != a_id) continue;
-					obj = source[i];					
-					source.splice(i,1);
-					break;					
-				}
-
-				// Insert in archive and sort by updated. Should we sort by date archived here?
-				target.unshift(obj);						
-				target.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
-
-				// Render new list right away for snappiness
-				that.update();	
-				that.a_count++;
-				if (toarchive) document.getElementById(that.a_counterId).innerHTML = 'Archive (' + that.a_count + ')';
-
-				var payload = (toarchive) ? {'status':'archived'} : {'status':'active'};
-				Hiro.comm.ajax({
-					url: "/docs/"+a_id,
-	                type: "PATCH",
-	                payload: JSON.stringify(payload),
-					success: function() {						
-						that.update();					                   
-					}
-				});			
-			},
-
-			openarchive: function() {
-				// Archive link
-				// Show signup screen if user has no appropriate tier
-				if (Hiro.sys.user.level < 2) {
-					Hiro.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
-					return;					
-				};	
-
-				var act = document.getElementById(this.doclistId);
-				var arc = document.getElementById(this.archiveId);
-				var but = document.getElementById(this.a_counterId);
-				if (act.style.display=='none') {
-					act.style.display = 'block';
-					arc.style.display = 'none';
-					but.innerHTML = 'Archive (' + this.a_count + ')';
-					this.archiveOpen = false;
-				} else {
-					act.style.display = 'none';
-					arc.style.display = 'block';	
-					but.innerHTML = 'Close Archive';
-					this.archiveOpen = true;					
+				if (own_counter > 10) {
+					Hiro.sys.user.upgrade(2,Hiro.folio.newdoc,'Upgrade<em> now</em> for <b>unlimited notes</b><em> &amp; much more.</em>');
+					return;	
 				}				
 			}
+
+			// Check if the archive is open, otherwise switch view
+			if (this.archiveOpen) this.openarchive();
+
+			// All good to go
+			this.creatingDoc = true;	
+
+			// Start the bar
+			Hiro.ui.hprogress.begin();								
+
+			// Add a doc placeholder to the internal folio array
+			var doc = {};
+			doc.title = 'Untitled Note';
+			doc.created = Hiro.util.now();
+			doc.role = 'owner';
+			doc.status = 'active';
+			this.docs.splice(0,0,doc);
+
+			// Render a placeholder until we get the OK from the server
+			var el = document.createElement('div');
+			el.className = 'document';	
+			el.setAttribute('id','doc_creating');
+
+			var ph = document.createElement('a');
+			ph.setAttribute('href','#');	
+			var pht = document.createElement('span');
+			pht.className = 'doctitle';
+			pht.innerHTML = 'Creating new note...';	
+			var phs = document.createElement('small');
+			phs.appendChild(document.createTextNode("Right now"))
+			ph.appendChild(pht);
+			ph.appendChild(phs);
+			el.appendChild(ph);
+
+			this.el_doclist.insertBefore(el,this.el_doclist.firstChild);
+
+			// Create the doc on the canvas
+			if (document.body.offsetWidth <= 900 && document.getElementById(Hiro.context.id).style.display == "block") Hiro.context.switchview();
+			Hiro.canvas.newdoc();
+			Hiro.ui.menuHide();
+
+			// Get/Set ID of new document
+			if ( Hiro.sys.user.level==0) {
+				// Anon user doc gets stored locally
+				var doc = document.getElementById('doc_creating');
+				Hiro.sys.log('unknown user, setting up localstore ');
+
+				// Set params for local doc
+				Hiro.canvas.docid = 'localdoc';
+				this.docs[0].id = 'localdoc';
+
+				// Save document & cleanup
+				doc.firstChild.firstChild.innerHTML = 'Untitled Note';
+				doc.id = 'doc_localdoc';
+
+				// Complete bar
+				Hiro.ui.hprogress.done();					
+			} else {
+				// Request new document id
+				var doc = document.getElementById('doc_creating');
+				Hiro.sys.log('known user, setting up remote store ');
+
+				// Submit timestamp for new doc id
+				var file = {};				
+				file.created = Hiro.util.now();				
+
+				// Get doc id from server
+				Hiro.comm.ajax({
+					url: "/docs/",
+	                type: "POST",
+	                payload: JSON.stringify(file),
+					success: function(req,data) {
+	                    Hiro.sys.log("backend issued doc id ", data.doc_id);
+
+						// Set params for local doc
+						Hiro.canvas.docid = data.doc_id;
+
+						// Set folio values
+						Hiro.folio.docs[0].id = data.doc_id;	
+
+						// Start sync
+						Hiro.canvas.sync.begin('',req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    								
+
+						// Update folio
+						Hiro.folio.update();		
+
+						// Complete bar
+						Hiro.ui.hprogress.done();																			                    
+					}
+				});				
+			}
+
+			// Get ready for the creation of new documents
+			this.creatingDoc = false;
+		},
+
+		movetoremote: function() {
+			// Moves a doc from localstorage to remote storage and clears localstorage
+			// Doublecheck here for future safety
+			if (Hiro.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {					
+				// Strip id from file to get new one from backend
+				var file = Hiro.canvas.builddoc();					
+				file.id = '';
+				file.text = Hiro.canvas.text;
+				// Get doc id from server
+				Hiro.comm.ajax({
+					url: "/docs/",
+	                type: "POST",
+	                payload: JSON.stringify(file),
+					success: function(req,data) {
+	                    Hiro.sys.log("move local to backend with new id ", data);
+	                    // Delete local item
+	                    localStorage.removeItem('WPCdoc')
+
+						// Start sync
+						Hiro.canvas.sync.begin(Hiro.canvas.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));   		                    
+
+						// Set new id for former local doc
+						Hiro.canvas.docid = data.doc_id;
+
+						// Get updated file list														
+						Hiro.folio.loaddocs(true);                 																
+
+						// Edge Case: User had a document moved to the backend and also accesstoken waiting
+						if (Hiro.sharing.token) {
+							Hiro.canvas.loaddoc();
+						}							
+					}
+				});
+			}
+		},
+
+		moveup: function(docid) {
+			// moves a specific doc to the top of the list based on it's id
+			// Find and remove item from list
+			for (var i=0,l=this.docs.length;i<l;i++) {
+				if (this.docs[i].id != docid) continue;
+				this.docs.splice(i,1);
+				break;					
+			}
+
+			// Sort array by last edit
+			this.docs.sort(function(a,b) {return (a.updated > b.updated) ? -1 : ((b.updated > a.updated) ? 1 : 0);} );
+
+			// Insert item at top of array and redraw list
+			this.docs.unshift(this.lookup[docid]);	
+
+			// Update display
+			this.update();		
+		},
+
+		archive: function(docid) {
+			// Move a current document to the archive, first abort if user has no account with archive
+			if (Hiro.sys.user.level <= 1) {
+				Hiro.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
+				return;
+			}	
+
+			var newstatus = (this.lookup[docid].status == 'active') ? 'archived' : 'active';			
+
+			// Set internal value
+			this.lookup[docid].status = newstatus;
+
+			// Render new list right away for snappiness
+			this.update();	
+
+			var payload = {'status': newstatus};
+			Hiro.comm.ajax({
+				url: "/docs/" + docid,
+                type: "PATCH",
+                payload: JSON.stringify(payload),
+			});			
+		},
+
+		openarchive: function() {
+			// Archive link
+			// Show signup screen if user has no appropriate tier
+			if (Hiro.sys.user.level < 2) {
+				Hiro.sys.user.upgrade(2,'','<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; much more.</em>');
+				return;					
+			};	
+
+			if (this.el_doclist.style.display=='none') {
+				this.el_doclist.style.display = 'block';
+				this.el_archive.style.display = 'none';
+				this.el_counter.innerHTML = 'Archive (' + this.archived + ')';
+				this.archiveOpen = false;
+			} else {
+				this.el_doclist.style.display = 'none';
+				this.el_archive.style.display = 'block';	
+				this.el_counter.innerHTML = 'Close Archive';
+				this.archiveOpen = true;					
+			}				
 		}
 	},	
 
@@ -660,7 +663,7 @@ var Hiro = {
 			var p = document.getElementById(this.canvasId);
 			var t = document.getElementById(this.pageTitle);
 			var c = document.getElementById(Hiro.context.id);	
-			var f = document.getElementById(Hiro.folio.folioId);
+			var f = Hiro.folio.el_folio;
 			// See if a selection is performed and narrow search to selection
 			Hiro.util.registerEvent(p,'mouseup',this.textclick);							
 			Hiro.util.registerEvent(el,'keydown',this.keyhandler);	
@@ -688,8 +691,8 @@ var Hiro = {
 			Hiro.util.registerEvent(t,'click', this._clicktitletip);		
 
 			// We save the new title in the folio array but need to update the clickhandler without duplicating them
-			Hiro.util.registerEvent(t,'blur', Hiro.folio.docs.update);	
-			Hiro.util.registerEvent(t,'keyup', Hiro.folio.docs.update);			
+			Hiro.util.registerEvent(t,'blur', Hiro.folio.update);	
+			Hiro.util.registerEvent(t,'keyup', Hiro.folio.update);			
 
 			if ('ontouchstart' in document.documentElement) {
 				// Make sure the teaxtarea contents are scrollable on mobile devices
@@ -777,12 +780,12 @@ var Hiro = {
 				// Save remotely, immediately indicate if this fails because we're offline
 				Hiro.sys.log('saving remotely: ', file);	
 				var u = "/docs/"+this.docid,
-					doc = Hiro.folio.docs.lookup[Hiro.canvas.docid];
+					doc = Hiro.folio.lookup[Hiro.canvas.docid];
 
 				// Reset "by x" in folio if we have one
 				if (doc && doc.last_doc_update) {
 					doc.last_doc_update = undefined;
-					Hiro.folio.docs.update();
+					Hiro.folio.update();
 				}	
 
 				Hiro.comm.ajax({					
@@ -800,12 +803,13 @@ var Hiro = {
 						if (req.status == 404 || req.status == 404) {
 	                        if (req.status == 404) Hiro.ui.statusflash('red','Note not found.',true);
 							if (req.status == 403) Hiro.ui.statusflash('red','Access denied, sorry.',true);  
-							Hiro.folio.docs.loaddocs();								
+							Hiro.folio.loaddocs();								
 						} 										
 					}
 				});											
 			} else {
 				// Store doc locally 
+				file.status = 'active';
 				
 				// Add text to file object
 				file.text = Hiro.canvas.text;
@@ -821,13 +825,10 @@ var Hiro = {
 				status.innerHTML = 'Saving...';	
 				setTimeout(function(){document.getElementById('status').innerHTML = 'Saved.'},350);							
 			}	
-			// Update last edited counter in folio
-			var docs = Hiro.folio.docs;
-			var bucket = (docs.archived[0] && Hiro.folio.docs.archiveOpen) ? docs.archived[0] : docs.active[0];	
 
 			// Check if user didn't navigate away from archive and set last updated
-			if (file.id == bucket.id) bucket.updated = Hiro.util.now();
-			Hiro.folio.docs.update();					
+			Hiro.folio.lookup[Hiro.canvas.docid].updated = Hiro.util.now();
+			Hiro.folio.update();					
 		},	
 
 		preload: function() {
@@ -863,7 +864,10 @@ var Hiro = {
 				// Override document id with url id if Flask did set preloaded flag
 				// Intentionally works only on /note/<note-id> URLs
 				docid = urlid || docid;
-			}		
+			}
+
+			// Move document we want to load to top of folio and rerender
+			Hiro.folio.moveup(docid);		
 
 			// If we have an active accesstoken, we override all previous setting
 			if (token) {
@@ -896,21 +900,18 @@ var Hiro = {
 					Hiro.canvas.lastUpdated = data.updated;	
 
 					// Check if the document had unseen updates		
-					if (Hiro.folio.docs.lookup[docid] && Hiro.folio.docs.lookup[docid].unseen == true) {
+					if (Hiro.folio.lookup[docid] && Hiro.folio.lookup[docid].unseen == true) {
 						var el = document.getElementById('doc_' + docid);
 						if (el) {
 							var bubble = el.getElementsByClassName('bubble')[0];
 							if (bubble) bubble.style.display = 'none';
 						}
-						Hiro.folio.docs.lookup[docid].unseen = false;
-						Hiro.folio.docs.updateunseen(-1);
+						Hiro.folio.lookup[docid].unseen = false;
+						Hiro.folio.updateunseen(-1);
 					}		
 
 					// Reload folio if we had a token 
-					if (token) Hiro.folio.docs.loaddocs(true);	
-
-					// Update document list
-					Hiro.folio.docs.update();		
+					if (token) Hiro.folio.loaddocs(true);			
 
 					// Add object to history
 					if (!addnohistory) Hiro.util.addhistory(data.id,data.title);				
@@ -928,9 +929,9 @@ var Hiro = {
 					// If the title changed in the meantime or wasn't passed to loaddoc at all
 					if (!title || title != data.title) {
 						document.getElementById(that.pageTitle).value = document.title = data.title || 'Untitled';
-						if (title && Hiro.folio.docs.lookup[docid]) {
-							Hiro.folio.docs.lookup[docid].title = data.title;
-							Hiro.folio.docs.update();
+						if (title && Hiro.folio.lookup[docid]) {
+							Hiro.folio.lookup[docid].title = data.title;
+							Hiro.folio.update();
 						}	
 					}						
 
@@ -990,7 +991,7 @@ var Hiro = {
 						// Release preloaded to enable loaddocs to load any doc
 						Hiro.canvas.preloaded = false;
                     	// Reload docs                  								
-                    	Hiro.folio.docs.loaddocs();
+                    	Hiro.folio.loaddocs();
                     }
 				}
 			});						
@@ -1113,7 +1114,7 @@ var Hiro = {
 
 			// Update internal values and Browser title			
 			Hiro.canvas.title = document.title = this.value;
-			if (Hiro.folio.docs.lookup[Hiro.canvas.docid]) Hiro.folio.docs.lookup[Hiro.canvas.docid].title = this.value;
+			if (Hiro.folio.lookup[Hiro.canvas.docid]) Hiro.folio.lookup[Hiro.canvas.docid].title = this.value;
 			if (!this.value) document.title = 'Untitled';
 
 			// Visually update name in portfolio right away
@@ -1275,7 +1276,7 @@ var Hiro = {
 			if (this.typingTimer) clearTimeout(this.typingTimer);
 			this.typingTimer = setTimeout(function() {	
 				// Clean up (and remove potential previous editor from docs array)
-				var doc = Hiro.folio.docs.lookup[Hiro.canvas.docid],
+				var doc = Hiro.folio.lookup[Hiro.canvas.docid],
 					lvl = Hiro.sys.user.level;
 				if (doc && doc.lastEditor) doc.lastEditor = null;
 				Hiro.canvas._cleartypingtimer();				
@@ -1506,9 +1507,9 @@ var Hiro = {
 
 	                // Update last edit timestamp & folio display if text was changed
 	                if (c != s) {
-	                	var doc = Hiro.folio.docs.lookup[Hiro.canvas.docid];
+	                	var doc = Hiro.folio.lookup[Hiro.canvas.docid];
 						if (doc) doc.updated = Hiro.util.now();	
-						Hiro.folio.docs.update();
+						Hiro.folio.update();
 	                }				
 
 					// Cursor handling
@@ -1611,7 +1612,7 @@ var Hiro = {
                         	Hiro.canvas.sync.inflight = true;    
                         	setTimeout(function(){ Hiro.canvas.sync.inflight = false; },2000);
                         	// Reload docs                  								
-                        	Hiro.folio.docs.loaddocs();
+                        	Hiro.folio.loaddocs();
                         } else if (Hiro.canvas.sync.inflightcallback) {
                         	Hiro.canvas.sync.inflightcallback();
                         	Hiro.canvas.sync.inflightcallback = null;
@@ -1677,7 +1678,7 @@ var Hiro = {
             		regex = /^=[0-9]+$/,
             		oldtext = Hiro.canvas.text,
             		oldcursor = Hiro.canvas._getposition(),
-            		doc = Hiro.folio.docs.lookup[Hiro.canvas.docid];              	                	           		
+            		doc = Hiro.folio.lookup[Hiro.canvas.docid];              	                	           		
 
             	// If the delta is just a confirmation, do nothing
             	if (regex.test(delta)) {
@@ -1687,7 +1688,7 @@ var Hiro = {
 
                 // Update last edit timestamp & folio display
 				if (doc) doc.updated = Hiro.util.now(); 
-				Hiro.folio.docs.update();	            	
+				Hiro.folio.update();	            	
 
             	// Build diffs from the server delta
             	try { diffs = this.dmp.diff_fromDelta(this.shadow, delta) } 
@@ -1945,8 +1946,8 @@ var Hiro = {
                     	that.fetch();
                     	// If note was unshared at beginning of this function add shared flag & update list view                   	
                     	if (unshared) {
-							Hiro.folio.docs.lookup[Hiro.canvas.docid].shared = true;  
-							Hiro.folio.docs.update();                  		
+							Hiro.folio.lookup[Hiro.canvas.docid].shared = true;  
+							Hiro.folio.update();                  		
                     	}
 
                     	// Notify segment.io
@@ -1992,11 +1993,11 @@ var Hiro = {
                     payload: JSON.stringify(payload),
                     success: function() {  
                     	// Reload the doclist if user has removed herself
-						if (currentuser) { Hiro.folio.docs.loaddocs(); Hiro.ui.clearactions(); };
+						if (currentuser) { Hiro.folio.loaddocs(); Hiro.ui.clearactions(); };
                     	// If there are no more users in the array anymore, reload folio list to remove sharing icon
                     	if (u.length <= 1) {
-							Hiro.folio.docs.lookup[Hiro.canvas.docid].shared = false;  
-							Hiro.folio.docs.update();                  		
+							Hiro.folio.lookup[Hiro.canvas.docid].shared = false;  
+							Hiro.folio.update();                  		
                     	}					                  	
                     },
                     error: function() {
@@ -3546,15 +3547,15 @@ var Hiro = {
 
             	if (Hiro.canvas.docid=='localdoc' && !localStorage.getItem('WPCdoc')) {
             		// Remove empty document if user signs up / in right away            		
-            		Hiro.folio.docs.active.length = 0;
+            		Hiro.folio.docs.length = 0;
             	}
 
                 // Check for and move any saved local docs to backend
                 if (Hiro.canvas.docid=='localdoc' && localStorage.getItem('WPCdoc')) {
-                	Hiro.folio.docs.movetoremote();
+                	Hiro.folio.movetoremote();
                 } else {
 	                // Always load external docs as register endpoint can be used for existing login
-					Hiro.folio.docs.loaddocs();	
+					Hiro.folio.loaddocs();	
                 }	
 
                 // Render results to attach new scroll event handlers on mobile devices
@@ -3587,10 +3588,7 @@ var Hiro = {
 	                } else if (type == 'login' || type == 'reset') {
 	                	analytics.track('Logs back in');
 	                }	                	
-                }
-
-                // Update document counter
-				Hiro.ui.documentcounter();                
+                }              
 
                 // Housekeeping, switch authactive off
                 Hiro.sys.user.authactive = false;
@@ -3809,11 +3807,10 @@ var Hiro = {
 			setStage: function(level) {
 				// Show / hide features based on user level, it's OK if some of that can be tweaked via js for now
 				level = level || this.level;
+				var results = document.getElementById(Hiro.context.resultsId),
+					signupButton = document.getElementById(Hiro.context.signupButtonId),
+					publish = document.getElementById(Hiro.publish.id);
 
-				var results = document.getElementById(Hiro.context.resultsId);
-				var signupButton = document.getElementById(Hiro.context.signupButtonId);
-				var logio = document.getElementById(Hiro.folio.logioId);
-				var publish = document.getElementById(Hiro.publish.id);
 				switch(level) {
 					case 0:
 						signupButton.style.display = 'block';					
@@ -3844,9 +3841,9 @@ var Hiro = {
 						results.style.marginRight = '1px';
 						results.style.paddingRight = '2px';						
 						signupButton.style.display = 'none';
-						logio.className = 'logio logout';
-						logio.getElementsByTagName('a')[0].title = 'Logout';
-						logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
+						Hiro.folio.el_logio.className = 'logio logout';
+						Hiro.folio.el_logio.getElementsByTagName('a')[0].title = 'Logout';
+						Hiro.folio.el_logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
 
 						// Init sync capabilities
 						if (!Hiro.canvas.sync.inited) Hiro.canvas.sync.init();	
@@ -4174,7 +4171,7 @@ var Hiro = {
                     Hiro.comm.crap.on_channel_message(JSON.parse(data.data));
                 }                
                 this.socket.onerror = function(data) {
-                    Hiro.sys.error("ERROR connecting to channel api",data);                	
+                    Hiro.sys.error("ERROR connecting to channel api" + JSON.stringify(data));                	
 					if (data.code == 0 || data.code == -1) {
                     	// Damn, we or Channel API just went offline, verify by sending a sync to server
                     	Hiro.sys.log('Channel API offline');
@@ -4190,7 +4187,7 @@ var Hiro = {
 
             on_channel_message: function(data) {
             	// Receive and process notification of document update
-            	var el = Hiro.folio.docs.lookup[data.doc_id], 
+            	var el = Hiro.folio.lookup[data.doc_id], 
             		ui = Hiro.ui,
             		ownupdate = (data.origin.session_id == Hiro.canvas.sync.sessionid),
             		ownuser = (data.origin.email == Hiro.sys.user.email),
@@ -4200,7 +4197,7 @@ var Hiro = {
             	if (ownupdate) {
 					if (el.last_doc_update) {
 						el.last_doc_update = undefined; 
-                		Hiro.folio.docs.update();						 
+                		Hiro.folio.update();						 
 					}	            		
             		return;	
             	}	
@@ -4208,7 +4205,7 @@ var Hiro = {
 
             	// Nice trick: If we can't find the docid, the message is for a doc we don't know (yet), so we update the list
             	if (!el) {
-            		Hiro.folio.docs.loaddocs(true);
+            		Hiro.folio.loaddocs(true);
             		return;
             	}         		
 
@@ -4246,7 +4243,7 @@ var Hiro = {
                 }
 
                 // Display the updates in the DOM
-                Hiro.folio.docs.update();                
+                Hiro.folio.update();                
             }
 		},					
 
@@ -4619,11 +4616,12 @@ var Hiro = {
 			if (!e) return;
 			if (e.preventDefault) {
 				e.preventDefault();
+			} else {
+				e.returnValue = false;
 			}
 			if (e.stopPropagation) {
 				e.stopPropagation();
-			}
-			e.returnValue = false;
+			} 
 			e.cancelBubble = true;
 		},
 
@@ -4912,7 +4910,7 @@ var Hiro = {
 			var pos = pool.indexOf(msg),
 				nextpos = (pos + 1 == pool.length) ? 0 : ++pos,
 				next = pool[nextpos],
-				updates = Hiro.folio.docs.unseenupdates;
+				updates = Hiro.folio.unseenupdates;
 			if (pool.length == 1) {
 				// If we only have one message, we cycle title between doc title and message
 				document.title = (document.title == next) ? Hiro.canvas.title || 'Untitled' : next;
@@ -4982,7 +4980,7 @@ var Hiro = {
 				}
 				if (k == 78) {
 					// Ctrl + N, this doesn't work in Chrome as chrome does not allow access to ctrl+n 
-					Hiro.folio.docs.newdoc();	
+					Hiro.folio.newdoc();	
 		    		e.preventDefault();									
 				}					
 		    }
@@ -5521,47 +5519,6 @@ var Hiro = {
 			setTimeout(function(){
 				status.style.color = '#999';				
 			},5000);
-		},
-
-		documentcounter: function() {
-			// Updates the field in the settings with the current plan & document count
-			var val, level = Hiro.sys.user.level, upgradelink; 
-			var target = (document.getElementById('dialog').contentDocument) ? document.getElementById('dialog').contentDocument.getElementById('s_account') : null;
-			var doccount = Hiro.sys.user.doccount = (Hiro.folio.docs.archived.length > 0) ? Hiro.folio.docs.archived.length + Hiro.folio.docs.active.length : Hiro.folio.docs.active.length;
-			
-			if (!target) {
-				// If the settings dialog is not loaded yet try again later 
-				setTimeout(function(){
-					Hiro.ui.documentcounter();			
-				},500);					
-			} else {
-				// If the user level is 0 we dont have the form yet
-				if (level==0 || !target.getElementsByTagName('input')[2]) return;
-				upgradelink = target.getElementsByTagName('input')[2].nextSibling;
-				// Get the plan name
-				switch (level) {
-					case 0:
-					case 1:
-						val = 'Basic';
-						upgradelink.style.display = 'block';
-						break;
-					case 2:
-						val = 'Advanced';
-						upgradelink.style.display = 'block';					
-						break;
-					case 3:
-						val = 'Pro';
-						upgradelink.style.display = 'none';					
-						break;		
-				}
-				val = val + ((document.body.offsetWidth>480) ? ' plan: ' : ': ');				
-				if (Hiro.folio.docs.active) val = val + doccount;
-
-				// See if we have plan limits or mobile device
-				if (level < 2) val = val + ' of 10';
-				
-				target.getElementsByTagName('input')[3].value = val + ' notes';
-			}
 		},
 
 		fade: function(element, direction, duration, callback) {
