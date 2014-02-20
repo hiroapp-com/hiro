@@ -682,11 +682,7 @@ a.wpcbutton:hover {
   }  
 
   #switchview {
-    margin-right: 0;
-    top: 0;
-    padding-right: 19px;
-    padding-top: 14px;
-    padding-bottom: 0;  
+    display: none;
   }
 
   #switchview.error {
@@ -694,10 +690,12 @@ a.wpcbutton:hover {
   }  
 
   #switchview.open {
+    display: block;
     margin-right: 0;
     top: 4px;
     padding-right: 20px;
     padding-top: 13px;
+    padding-bottom: 0;      
   }
 }
 
@@ -962,7 +960,7 @@ a.wpcbutton:hover {
 
 @media (max-width: 480px) {
   #sharing, .canvas.full #sharing {
-    top: 46px;
+    top: 12px;
     margin-right: 0; 
     position: fixed;
     z-index: 2950;
@@ -1178,41 +1176,8 @@ a.wpcbutton:hover {
 
 @media (max-width: 480px) {
   #publish, .canvas.full #publish {
-    top: 40px;
-    margin-right: 0; 
-    position: fixed;
-  }
-  #publish .header {
-    background-size: 30px auto;  
-    background-position: 18px 2px;
-    height: 45px;
-    width: 60px;
-    position: absolute;
-    top: 39px;
-    right: 0;  
-    z-index: 2900;   
-  }      
-  #publish .actions a.action {
-    background-size: 30px auto; 
-    background-position: right -55px;  
-    margin-right: 25px;  
-  }  
-  #publish .actions {
-    right: -3px; 
-    top: 8px; 
-    padding-top: 39px;
-  }  
-  #publish .actions .title em {
     display: none;
   }
-
-  #publish .actions .footer {
-    margin-right: 26px;
-  } 
-}
-
-@media (min-width: 481px) {
-  
 }
 
 /* ------ Context Bar ------*/

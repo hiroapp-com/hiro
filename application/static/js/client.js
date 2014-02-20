@@ -488,6 +488,12 @@ var Hiro = {
 				var doc = document.getElementById('doc_creating');
 				Hiro.sys.log('known user, setting up remote store ');
 
+				// Clear sharing userlist if we had one
+				if (Hiro.sharing.accesslist.users.length > 0) {
+					Hiro.sharing.accesslist.users.length = 0;
+					Hiro.sharing.accesslist.update();	
+				}				
+
 				// Submit timestamp for new doc id
 				var file = {};				
 				file.created = Hiro.util.now();				
