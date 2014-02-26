@@ -135,9 +135,9 @@ var Hiro = {
 					field = 'signup_mail';
 					section = 's_signup';
 				}
-				if (analytics) analytics.track('Sees Signup/Sign Screen');
+				if (analytics && typeof analytics.track == 'function') analytics.track('Sees Signup/Sign Screen');
 			} 
-			Hiro.ui.showDialog(event,'',section,field);
+			Hiro.ui.showDialog('',section,field);
 		},		
 
 		loaddocs: function(folioonly) {
@@ -343,7 +343,7 @@ var Hiro = {
 			d.appendChild(link);	
 
 			// Add archive icons
-			if ( lvl >= 1) {
+			if (!('ontouchstart' in document.documentElement) && lvl >= 1) {
 				var a = document.createElement('div');
 				a.className = 'archive';
 				if (doc.status == 'active' && lvl == 1) a.title = "Move to archive";						
@@ -727,15 +727,8 @@ var Hiro = {
 				var measure = 'height=' + window.innerHeight + 'device-height,width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 				document.getElementById('viewport').setAttribute('content', measure);
 
-				// Remove addressbar etc on mobile
-				// window.scrollTo(0,1);	
-
 				// Cancel safariinit after enough time passed to focus textarea fast after that
-				if (this.safariinit) setTimeout( function() { Hiro.canvas.safariinit = false; },5000);	
-
-				// Set defaulttitle to something more descriptive on touch devices
-				this.defaultTitle = 'Title';			
-
+				if (this.safariinit) setTimeout( function() { Hiro.canvas.safariinit = false; },5000);			
 			} else {
 				// click on the page puts focus on textarea
 				Hiro.util.registerEvent(p,'click',function(){
@@ -950,7 +943,7 @@ var Hiro = {
 					Hiro.canvas.sync.begin(data.text,req.getResponseHeader("collab-session-id"),req.getResponseHeader("channel-id"));                    
 
 					// Set position, try to make this mroe realibale on mobiles
-					that._setposition(data.cursor);					
+					that._setposition(data.cursor);			
 
 					// If the document is shared then fetch the list of users who have access
 					if (data.shared) Hiro.sharing.accesslist.fetch();
@@ -1398,19 +1391,8 @@ var Hiro = {
 
     		// Set the position    		
     		if (el.setSelectionRange) {
-				if (window.navigator.standalone && this.safariinit) {		
-					// Mobile standalone safari needs the delay, because it puts the focus on the body shortly after window.onload
-					// TODO Bruno findout why, it's not about something else setting the focus elsewhere						
-					setTimeout( function(){						
-						if (Hiro.ui.menuCurrPos!=0) return;
-						Hiro.canvas.safariinit = false;						
-						el.focus();							
-						el.setSelectionRange(pos1,pos2);														
-					},1000);								
-				} else {
-					el.focus();													
-					el.setSelectionRange(pos1,pos2);																																		
-				}     									
+				el.focus();													
+				el.setSelectionRange(pos1,pos2);																																		   									
     		} else if (el.createTextRange) {
         		var range = el.createTextRange();
         		range.collapse(true);
@@ -1908,9 +1890,9 @@ var Hiro = {
 					if (Hiro.sys.user.level == 0) {
 						if (email) {
 							frame.contentDocument.getElementById('signup_mail').value = email;
-							Hiro.ui.showDialog(null,'','s_signup','signup_pwd');
+							Hiro.ui.showDialog('','s_signup','signup_pwd');
 						} else {
-							Hiro.ui.showDialog(null,'','s_signup','signup_mail');
+							Hiro.ui.showDialog('','s_signup','signup_mail');
 						}
 					}						
 				}
@@ -3247,6 +3229,9 @@ var Hiro = {
 			// Setup hgrogress bar
 			Hiro.ui.hprogress.init();
 
+			// Set defaulttitle to something more descriptive on touch devices
+			if ('ontouchstart' in document.documentElement) Hiro.canvas.defaultTitle = 'Title';				
+
 			// Init remaining parts
 			Hiro.folio.init();
 			this.initCalled=true;
@@ -3342,7 +3327,7 @@ var Hiro = {
 				if (!Hiro.canvas.saved) Hiro.canvas.savedoc(true);
 
 				// Trigger popup with location.reload button
-				Hiro.ui.showDialog(null,'','s_upgrade');		
+				Hiro.ui.showDialog('','s_upgrade');		
 
 				// Log to check how often this is used
 				Hiro.sys.error('Forced upgrade triggered: ' + ov.toString() + ' to '+ nv.toString());		
@@ -3740,7 +3725,7 @@ var Hiro = {
 				var frame = document.getElementById('dialog');
 				frame.onload = function() {	
 					// The if prevents the dialog from being loaded after login		
-					if (Hiro.sys.user.level == 0) Hiro.ui.showDialog(null,'','s_reset','new_password');
+					if (Hiro.sys.user.level == 0) Hiro.ui.showDialog('','s_reset','new_password');
 				}
 			},			
 
@@ -3869,13 +3854,11 @@ var Hiro = {
 				}				
 			},
 
-			upgrade: function(level,callback,reason,event) {
+			upgrade: function(level,callback,reason) {
 				if (this.level==0) {
 					// If user is not loggedin yet we show the regsitration first
-					// TODO Refactor dialog & login flow to enable callback without going spaghetti
-					if (!event) event = null;
 					this.signinCallback = callback;
-					Hiro.ui.showDialog(event,'','s_signup','signup_mail');
+					Hiro.ui.showDialog('','s_signup','signup_mail');
 					return;
 				}
 				if (this.level<level) this.forceupgrade(level,reason);
@@ -3893,8 +3876,8 @@ var Hiro = {
 
 				// Make sure the parent node is set to block, bit redundant but working fine
 				if (!event) event = null;				
-				Hiro.ui.showDialog(event,'','s_settings');	
-				Hiro.ui.showDialog(event,'','s_plan');
+				Hiro.ui.showDialog('','s_settings');	
+				Hiro.ui.showDialog('','s_plan');
 
 				// Do the intended action that triggered upgrade, this confuses most users atm
 				// if (this.upgradeCallback) Hiro.util.docallback(this.upgradeCallback);				
@@ -5017,12 +5000,11 @@ var Hiro = {
 		},
 
 		scrollhandlers: false,
-		showDialog: function(event,url,section,field,width,height) {
+		showDialog: function(url,section,field,width,height) {
 			// Show a modal popup 
 			var s = document.getElementById(this.modalShieldId),
 				d = document.getElementById(this.dialogWrapperId),
 				frame = document.getElementById('dialog').contentDocument;			
-			if (event) Hiro.util.stopEvent(event);
 
 			// Close menu if left open
 			if (this.menuCurrPos!=0) this.menuHide();			
@@ -5039,70 +5021,28 @@ var Hiro = {
 			// load url into iframe, only if we need a special URL, otherwise it's preloaded on init
 			if (url) this.loadDialog(url);
 
+			// Attach clean error styling (red border) on all inputs, only if we load settings
+			var inputs = frame.getElementsByTagName('input'), inputtypes = ['email','password','text'];
+			for (i=0,l=inputs.length;i<l;i++) {
+				if (inputtypes.indexOf(inputs[i].type) > -1) Hiro.util.registerEvent(inputs[i], 'keyup', Hiro.ui.inputhandler);			
+			}				
+
 			// show a specific section and / or focus on a specific field
 			if (section) {
 				var el = frame.getElementById(section);
 				Hiro.ui.switchView(el);
 				// Supports either a field id or finds the first input if boolean is provided	
 				if (field) {
-					if (document.activeElement) document.activeElement.blur();
-					// On some mobile browser the input field is frozen if we don't focus the iframe first	
-					// iOS 7 input fields freeze if they are autofocused & then touched, thus no autofocus on touch devices for now 			 
-					// if ('ontouchstart' in document.documentElement) document.getElementById('dialog').contentWindow.focus();								
+					if (document.activeElement) document.activeElement.blur();							
 					if (typeof field == 'boolean') el = el.getElementsByTagName('input')[0];													
 					if (typeof field == 'string') el = frame.getElementById(field);
-					if (el && !('ontouchstart' in document.documentElement)) el.focus();																
+					if (el) el.focus();																
 				}					
 			}	
 
 			// Recenter on window size changes
 			Hiro.util.registerEvent(window, 'resize', this._centerDialog);
-			if(!('ontouchstart' in document.documentElement)) this.dialogTimer = window.setInterval(this._centerDialog, 200);
-
-			// Attach clean error styling (red border) on all inputs, only if we load settings
-			var inputs = frame.getElementsByTagName('input'), inputtypes = ['email','password','text'];
-			for (i=0,l=inputs.length;i<l;i++) {
-				if (inputtypes.indexOf(inputs[i].type) > -1) Hiro.util.registerEvent(inputs[i], 'keyup', Hiro.ui.inputhandler);			
-			}		
-
-			// Attach events to signup input fields on very small browser, this is the only way to handle browser quirks
-			// That prevent users from signing up
-			/*)
-			if (('ontouchstart' in document.documentElement) && frame.body.offsetHeight < 600 && !this.scrollhandlers) {
-				var su_f = frame.getElementById('signupform'),
-					su_s = frame.getElementById('signuperror'),
-					si_f = frame.getElementById('loginform'),					
-					si_s = frame.getElementById('loginerror');
-
-				// Abort if user is signed in and thus fields do not exist /settings HTML
-				if (!su_f || !si_f) return;
-
-				// If on a very small browser the client didn't scroll down to the form 
-				// we fall back to force scroll the error div at the end into view
-				Hiro.util.registerEvent(su_f, 'touchend', function() { setTimeout(function() {
-					if (frame.body.scrollTop == 0) {
-						if (navigator.appVersion.indexOf('CriOS') > -1) {						
-							su_s.scrollIntoView();
-						} else {
-							var el = frame.activeElement;							
-							if (el) el.scrollIntoView();
-						}
-					}
-				},300);});				
-				Hiro.util.registerEvent(si_f, 'touchend', function() { setTimeout(function() {							
-					if (frame.body.scrollTop == 0) {						
-						if (navigator.appVersion.indexOf('CriOS') > -1) {
-							si_s.scrollIntoView();
-						} else {
-							var el = frame.activeElement;							
-							if (el) el.scrollIntoView();
-						}
-					} 					
-				},300);});					
-
-				// Prevent setting this twice, someday we should clean this up and deal with eventhandlers in consistent manner				
-				this.scrollhandlers = true;
-			}	*/		
+			this.dialogTimer = window.setInterval(this._centerDialog, 200);		
 
 			// Set internal value
 			this.dialogOpen = true;

@@ -1888,9 +1888,9 @@ body#settingsPage a.close:hover {
   opacity: 0.6;
 }
 
-body#settingsPage form#signupform input, body#settingsPage form#loginform input {
+form#signupform input, form#loginform input {
  -webkit-user-select: text; 
- -webkit-touch-callout: none;
+ -webkit-touch-callout: text;
 }
 
 body#settingsPage input.error {
@@ -2351,6 +2351,10 @@ body#settingsPage input#cc_number.error {
     margin-top: 58px;    
   }
 
+  #s_login form {
+    margin-top: 18px;
+  }
+
   #s_login a.fb {
     font-size: 20px;
     padding-top: 8px;
@@ -2377,7 +2381,7 @@ body#settingsPage input#cc_number.error {
   }  
 
   #s_settings form .ioption.upgradelink {
-    top: 214px;
+    top: 215px;
     right: 18px;
   } 
 
@@ -2428,7 +2432,7 @@ body#settingsPage input#cc_number.error {
     padding: 19px 16px 15px 16px;    
   }
 
-  .accountdetails .divider {
+  .accountdetails .divider, #s_login .divider {
     margin-top: 10px;
   }
 
