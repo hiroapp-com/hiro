@@ -40,6 +40,12 @@ handlers:
   expiration: "1d"   
   secure: always  
 
+- url: /og.png
+  static_files: application/static/img/og.png
+  upload: application/static/img/og.png
+  expiration: "1d"   
+  secure: always   
+
 - url: /apple-touch-icon-precomposed.png
   static_files: application/static/img/apple-touch-icon-precomposed.png
   upload: application/static/img/apple-touch-icon-precomposed.png 
