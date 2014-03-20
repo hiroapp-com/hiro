@@ -394,9 +394,11 @@ a.wpcbutton:hover {
 .menu .menufooter a.archive {
   position: absolute;
   top: 2px;
-  left: 51px;
+  left: 50px;
   text-decoration: none;
   color: #bbb;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .menu .menufooter a.archive:hover {
@@ -1950,9 +1952,10 @@ body#settingsPage input#cc_number.error {
   cursor: pointer;
   background-image: url(../img/icons.png);
   background-repeat: no-repeat;
-  background-size: 108px auto;  
-  background-position: 5px -121px;   
+  background-size: 90px auto;  
+  background-position: 6px -98px;   
   opacity: 0.4;
+  display: block;
 }
 
 #s_settings form .logout:hover {  
