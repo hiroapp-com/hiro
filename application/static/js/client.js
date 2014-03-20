@@ -56,11 +56,6 @@ var Hiro = {
 		// Lookup object. Usage: Hiro.folio.lookup[<docid>]
 		lookup: {},
 
-		// Last server sync timestamp
-		lastsync: 0,
-		// Time to live in ms, how long before we request a new version from the server to make sure we're in sync
-		ttl: 0,
-
 		// Timer for display update
 		updatetimeout: null,		
 
@@ -102,6 +97,23 @@ var Hiro = {
 			Hiro.util.registerEvent(this.el_archive,'click',Hiro.folio.docclick);						
 		},
 
+		bootstrap: function() {
+			// Build initial state on first visit or login
+		},		
+
+		paint: function() {
+			// (Re)render current doclist into DOM
+
+		},
+
+		set: function(source,id,property,value,verb) {
+			// source: user or server
+			// id: document id
+			// property: no shit sherlock
+			// value: see above
+			// verb (optional): action to be done eg in collaboratorslist (add/remove) 
+		},
+
 		docclick: function(e) {
 			// Clickhandler, this happens if a user clicks on a doc in the folio
 			var target = e.relatedTarget || e.toElement,
@@ -126,7 +138,7 @@ var Hiro = {
 			if (docid != Hiro.canvas.docid) {
 				Hiro.canvas.loaddoc(docid, Hiro.folio.lookup[docid].title);
 			}				
-		},
+		},		
 
 		showSettings: function(section,field,event) {
 			// Show settings dialog
@@ -724,7 +736,7 @@ var Hiro = {
 
 				// Setting the viewport height has a lot of benefits regarding the bugs we dealt with 
 				// (eg signup input field not scrolling into view, blocked input fields etc)
-				var measure = 'height=' + window.innerHeight + 'device-height,width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+				var measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 				document.getElementById('viewport').setAttribute('content', measure);
 
 				// Cancel safariinit after enough time passed to focus textarea fast after that
@@ -1741,6 +1753,50 @@ var Hiro = {
 			}
 		}
 	},	
+
+	sync: {
+		// Object of not yet synced updates
+		updates: {},
+		// Queue of to be sent/confirmed messages
+		queue: [],
+		// Last server sync timestamp
+		lastsync: 0,	
+		// Is the local datastructure saved locally? 
+		persisted: false,
+
+		buildqueue: {
+			// Take update object and transform it into queue messages
+		},
+
+		send: function() {
+			// Transmit current queue
+		},
+
+		incoming: function(message) {
+			// Handler for incoming messages
+		},
+
+		ds: {
+			// Differential sync components
+		},
+
+		socket: {
+			// Lean websocket API
+		},
+
+		longpolling: {
+			// Longpolling fallback
+		},
+
+		ajax: {
+			// Generic AJAX API
+		},
+
+		store: {
+			// Localstorage abstraction
+		}
+
+	},
 
 	sharing: {
 		// Share a Note with other users
@@ -3840,9 +3896,9 @@ var Hiro = {
 						results.style.marginRight = '1px';
 						results.style.paddingRight = '2px';						
 						signupButton.style.display = 'none';
-						Hiro.folio.el_logio.className = 'logio logout';
-						Hiro.folio.el_logio.getElementsByTagName('a')[0].title = 'Logout';
-						Hiro.folio.el_logio.getElementsByTagName('span')[0].innerHTML = 'Logout';	
+						Hiro.folio.el_logio.className = 'logio settings';
+						Hiro.folio.el_logio.title = 'Settings';
+						Hiro.folio.el_logio.innerHTML = 'Settings';	
 
 						// Init sync capabilities
 						if (!Hiro.canvas.sync.inited) Hiro.canvas.sync.init();	
