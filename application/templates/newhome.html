@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+	    <title>{% if doc %}{{ doc.title or 'Untitled' }}{% else %}Hiro{% endif %}</title>
+        <meta name="description" content="From ideas for your business to party preparations: Hiro is the easiest way to stay organized throughout the day." />
+        <meta name="keywords" content="Hiro, notes, notepad, notes with firends, shared notes, notetaking, evernote, simplenote, shared notes, writing, writing app, word processor, text, text editor" />
+        <meta name="title" content="{% if doc %}{{ doc.title or 'Untitled' }}{% else %}Hiro{% endif %}" />	    
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="mobile-web-app-capable" content="yes" />		
+		<meta name="apple-touch-fullscreen" content="yes" />
+		<meta name="apple-mobile-web-app-title" content="Hiro" />	
+		<meta name="mobile-web-app-title" content="Hiro" />			
+		<meta name="viewport" id="viewport" content="height=device-height,width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no"/>
+		<meta property="og:site_name" content="Hiro" />
+        <meta property="og:title" content="Hiro" />
+        <meta property="og:url" content="https://www.hiroapp.com" />
+        <meta property="og:image" content="https://www.hiroapp.com/og.png" />
+        <meta property="og:type" content="website" />
+        <meta property="og:description" content="From ideas for your business to party preparations: Hiro is the easiest way to stay organized throughout the day." />
+        {{ get_asset('hiro_css') }}
+		<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png"/>	
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">		
+		<link rel="canonical" href="https://www.hiroapp.com"/>	
+		<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
+        <script type="text/javascript" src="/_ah/channel/jsapi"></script>
+		<script type="text/javascript">try{Typekit.load();}catch(e){}</script>		
+        <style type="text/css">
+            /* limbo! */
+            {{ current_user.custom_css }}
+        </style>
+	</head>
+	<body>
+
+		<div id="fb-root"></div>		
+
+		{% if not current_user.is_authenticated() %}
+			<iframe src="/landing/" scrollbar="no" id="landing"></iframe>	
+		{% endif %}	
+
+		<div class="menu" onmouseover="Hiro.ui.menuSlide(1,'',true);" id="folio">
+			<div class="menuheader">
+				<a href="#" class="newdoc" onclick="Hiro.folio.newdoc();"><b>+</b>&nbsp; New Note</a>
+			</div>
+			<div class="documents" id="doclist">
+				<span class="loading">Loading...</span>				
+			</div>	
+			<div class="documents" id="archivelist"></div>				
+			<div class="menufooter">
+				<a href="#" class="logio login" id="logio" title="Login" onclick="Hiro.folio.showSettings();return false;" ontouchstart="Hiro.folio.showSettings();return false;" title="Login">
+					<span>Login</span>
+				</a>						
+				<a href="#" class="archive" title="Archive" id="a_counter" onclick="Hiro.folio.openarchive();return false;" ontouchstart="Hiro.folio.openarchive();return false;">
+					Archive
+				</a>								
+			</div>			
+		</div>
+		
+		<a href="#" onclick="Hiro.context.switchview(); return false;" ontouchstart="Hiro.context.switchview(); return false;" id="switchview" title="Switch sidebar on and off">&#187;</a>	
+		<div class="icon showmenu" onclick="Hiro.ui.menuSwitch();" ontouchstart="Hiro.ui.menuSwitch();return false;">Show Menu<div class="bubble red" id="updatebubble">8</div></div>			
+		<div class="canvas" id="canvas">
+			<div id="publish">
+				<div class="header"></div>
+				<div class="actions">
+					<div class="title">Publish<em>&nbsp;to Cloud</em>:</div>
+					<div id="p_actions"></div>
+					<div class="footer">Tip: Select some text to publish only that part</div>
+				</div>	
+			</div>	
+			<div id="sharing">
+				<div class="header">	
+					<div id="collabcounter"></div>
+					<div class="icon"></div>								
+				</div>
+				<div class="actions">
+					<a class="cancel" title="Cancel">Cancel</a>
+					<div class="title">Edit this note with others:</div>
+					<div id="s_actions">
+						<form action="javascript:void(0);" onsubmit="Hiro.sharing.submit();"><input type="email" placeholder="E-Mail" class="hiro"><div class="error"></div><input type="submit" value="foo" class="ninja"></input></form>
+						<a class="wpcbutton green">Invite</a>												
+					</div>	
+					<div class="footer">You can revoke access anytime</div>	
+					<div class="title light">People who have access:</div>
+					<div class="users" id="accesslist">
+						<div class="user">Only you</div>
+					</div>					
+					<div class="footer">Secure sharing with the simplicity of Hiro</div>					
+				</div>	
+			</div>						
+			<div class="page" id="page">
+				<form>	
+                {% if doc %}
+				<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
+				<div class="content" id ="content">
+					<textarea placeholder="Just write" id="pageContent">{{ doc.text or '' }}</textarea>
+				</div>
+                {% else %}
+				{% with doc = current_user.latest_doc %}										
+				<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
+				<div class="content" id ="content">
+					<textarea placeholder="Just write" id="pageContent">{{ doc.text or '' }}</textarea>
+				</div>
+				{% endwith %}
+                {% endif %}
+            	</form>
+			</div>	
+			<div id="nicequote" style="display:none;">
+				<span class="quote">“One day I will find the right words, and they will be simple.”</span>
+				<small>– Jack Kerouac, The Dharma Bums</small>
+			</div>	
+		</div>
+		
+		<div class="context" id="context">
+			<div id="status">&nbsp;</div>
+			<div id="errorstatus" title="Can't connect to Hiro.&#013;Please do not close Hiro before you went back online &amp; saved, or your changes will be lost.">&nbsp;</div>			
+			<div class="results" id="results">	
+				<div id="msgresults"></div>
+				<div id="synresults" onclick="Hiro.context.replacewithsynonym(event);"></div>				
+				<div id="wwwresults"></div>																		
+			</div>
+			<div class="upgrade" id="signupButton">
+				<small>Access your notes from any device:</small>
+				<a href="#" class="wpcbutton green" title="Access your notes from any device" onclick="Hiro.folio.showSettings();return false;">Sign Up ( Free! )</a>
+			</div>
+		</div>
+
+		<div id="modalShield" onclick="Hiro.ui.hideDialog();">
+			<div id="dialogWrapper">
+				<iframe id="dialog"></iframe>
+			</div>	
+		</div>	
+
+		<div id="hprogress">
+			<div class="bar" role="bar">
+				<div class="peg"></div>
+			</div>
+		</div>
+
+		<div id="wastebin"></div>
+	
+        {{ get_asset('hiro_js') }}
+        {{ profiler_includes|safe }}
+        <script type="text/javascript">window.analytics||(window.analytics=[]);{% if current_user.is_authenticated() %}Hiro.canvas.preload();{% endif %}Hiro.sys.init({{ current_user.tier or '0' }});</script></body></html>

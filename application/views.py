@@ -229,6 +229,9 @@ def change_plan():
 def home():
     return render_template('index.html')
 
+def newhome():
+    return render_template('newhome.html')
+
 def note(doc_id):
     doc = Document.get_by_id(doc_id)
     if doc and not doc.grant(current_user):
