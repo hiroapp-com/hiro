@@ -3,15 +3,18 @@
 	Hiro client lib
 
 	Hiro.folio: Manages the document list and the left hand folio sidebar
-	Hiro.folio.notes: Local data 
 
 	Hiro.canvas: The currently loaded document
-	Hiro.canvas.sync: Diff/patch of current document
 	Hiro.canvas.context: Search and right hand sidebar related functions
 
 	Hiro.apps: Generic plugin setup 
 	Hiro.apps.sharing: Sharing plugin
 	Hiro.apps.publish: Publish selections to various external services
+
+	Hiro.data: Core datamodel incl setter & getter & eventhandler
+		store: unique store id, also seperate localstorage JSON string
+		key: supports direct access to all object levels, eg foo.bar.baz
+		value: arbitrary js objects
 
 	Hiro.sync: Data synchronization with local and remote APIs
 	Hiro.sync.ws: Websocket client
@@ -25,7 +28,7 @@
 	Hiro.ui.hprogres: Thin progress bar on very top of page
 
 	Hiro.sys: Core functionality like setup, logging etc
-	Hiro.sys.user: Internal user management, contactlist and methods
+	Hiro.sys.user: Internal user management
 
 	Hiro.lib: External libraries like Facebook or analytics	
 
@@ -75,6 +78,9 @@ var Hiro = {
 
 			// Setup other app parts
 			Hiro.folio.init();
+
+			// Make sure we don't fire twice
+			this.inited = true;
 		}
 	},
 
@@ -132,7 +138,7 @@ var Hiro = {
 			// If the event is fired
 			fire: function(event,element,handler,delay) {
 				if (event.type === 'touchstart') {
-					// If its a touch event, we turn this into a fastbutton without delay, but spatial limitation					
+					// If its a touch event, we turn this into a fastbutton without delay (but spatial limitation)					
 					Hiro.ui.fastbutton.fire(event,handler);
 				} else if (event.type === 'mouseover') {
 					// If we already listen to this element but moved to a different subnode do nothing
