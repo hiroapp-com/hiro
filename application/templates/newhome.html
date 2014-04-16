@@ -43,14 +43,14 @@
 		</div>
 
 		<div id="folio">
-			<a href="#" class="newdoc" onclick="Hiro.folio.newdoc();"><b>+</b>&nbsp; New Note</a>
+			<a class="newdoc"><b>+</b>&nbsp; New Note</a>
 			<div class="documents" id="doclist">
 				<span class="loading">Loading...</span>				
 			</div>				
 			<div class="documents" id="archivelist"></div>
 			<div class="footer">
-				<a href="#" class="logio login" id="logio" title="Login">Login</a>						
-				<a href="#" class="archive" id="archive" title="Archive">Archive</a>								
+				<a class="logio login" id="logio" title="Login">Login</a>						
+				<a class="archive" id="archive" title="Archive">Archive</a>								
 			</div>
 		</div>
 			
@@ -92,4 +92,4 @@
 	
         {{ get_asset('new_js') }}
         {{ profiler_includes|safe }}
-        <script type="text/javascript">window.analytics||(window.analytics=[]);{% if current_user.is_authenticated() %}Hiro.canvas.preload();{% endif %}Hiro.sys.init({{ current_user.tier or '0' }});</script></body></html>
+        <script type="text/javascript">window.analytics||(window.analytics=[]);Hiro.sys.init({{ current_user.tier or '0' }});</script></body></html>
