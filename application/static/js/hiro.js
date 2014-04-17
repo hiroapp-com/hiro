@@ -100,7 +100,8 @@ var Hiro = {
 
 			// Setup other app parts
 			Hiro.folio.init();
-			Hiro.canvas.init();			
+			Hiro.canvas.init();
+			Hiro.ui.init();			
 
 			// Make sure we don't fire twice
 			this.inited = true;
@@ -111,12 +112,47 @@ var Hiro = {
 	ui: {
 		// General properties
 		touch: ('ontouchstart' in document.documentElement),
+		wastebin: document.getElementById('wastebin'),
+
+		// Browser specific properties
+		vendors: ['webkit','moz','o','ms'],
+		opacity: '',		
 
 		// Folio open/close properties
 		slidewidth: 300,
 		slideduration: 200,
 		slidepos: 0,
-		slidedirection: 0,		
+		slidedirection: 0,	
+
+		// Setup and browser capability testing
+		init: function() {
+			var style = this.wastebin.style,
+				v = this.vendors;
+
+			// Determine CSS opacity property
+			if (style.opacity !== undefined) this.opacity = 'opacity';
+			else {
+				for (var i = 0, l = v.length; i < l; i++) {
+					var v = v[i] + 'Opacity';
+					if (style[v] !== undefined) {
+						this.opacity = v;
+						break;
+					}
+				}
+			}
+
+			// Set vendor specific global animationframe property
+			if (!window.requestAnimationFrame) {
+				for (var i=0, l = v.length; i < l; i++) {
+					var v = v[i], r = window[v + 'RequestAnimationFrame'];
+					if (r) {
+						window.requestAnimationFrame = r;
+						window.cancelAnimationFrame = window[v + 'CancelAnimationFrame'] ||	window[v + 'CancelRequestAnimationFrame'];
+						break;
+					}
+				}
+			}			
+		},
 
 		// Slide folio: 1 to open, -1 to close
 		slidefolio: function(direction) {
@@ -145,7 +181,9 @@ var Hiro = {
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
 
-			// Easing function (quad), see TODO Bruno: Find source when back online
+			// Easing function (quad), see 
+			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
+			// Overview / demos: http://easings.net/
 			function ease(t, b, c, d) {
 				if ((t/=d/2) < 1) return c/2*t*t + b;
 				return -c/2 * ((--t)*(t-2) - 1) + b;
@@ -176,11 +214,9 @@ var Hiro = {
 					Hiro.folio.open = (direction > 0) ? true : false;
 					_this.direction = 0;
 					_this.slidetimer = 0;
-				} else if (window.requestAnimationFrame) {
-					_this.slidetimer = requestAnimationFrame(step);
-				} else {
-					_this.slidetimer = setTimeout(step, 20);
-				}
+				} 
+				else if (window.requestAnimationFrame) _this.slidetimer = requestAnimationFrame(step);
+				else _this.slidetimer = setTimeout(step, 20);
 			}
 
 			// Kick off stepping loop
@@ -205,7 +241,7 @@ var Hiro = {
 			// If the initial event is fired
 			fire: function(event,handler) {
 				if (event.type === 'click') {
-					// If the evnt is a click event we just execute the handler and quit
+					// If the event is a click event we just execute the handler and quit
 					handler(event);					
 				} else if (event.type === 'touchstart') {
 					// In this case we attach a touchend event to wait for and set the start coordinates
@@ -238,10 +274,9 @@ var Hiro = {
 
 			// If the event is fired
 			fire: function(event,element,handler,delay) {
-				if (event.type === 'touchstart') {
-					// If its a touch event, we turn this into a fastbutton without delay (but spatial limitation)					
-					Hiro.ui.fastbutton.fire(event,handler);
-				} else if (event.type === 'mouseover') {
+				// If its a touch event, we turn this into a fastbutton without delay (but spatial limitation)				
+				if (event.type === 'touchstart') Hiro.ui.fastbutton.fire(event,handler);				
+				else if (event.type === 'mouseover') {
 					// If we already listen to this element but moved to a different subnode do nothing
 					if (element === this.element) return;
 					// Initiate the delayed event firing
@@ -256,10 +291,9 @@ var Hiro = {
 					}, delay);
 					// Register mouseout event to clean things up once we leave target area
 					Hiro.util.registerEvent(element,'mouseout', Hiro.ui.touchy.boundschecker);				
-				} else {
-					// Log error to see if any browsers fire unknown events
-					Hiro.sys.error('Touchy triggered unknown event: ', event);
-				}
+				} 
+				// Log error to see if any browsers fire unknown events				
+				else Hiro.sys.error('Touchy triggered unknown event: ', event);
 			},
 
 			// Abort current touchy session if we leave target DOM area
@@ -289,12 +323,8 @@ var Hiro = {
 
 		// Cross browser event registration
 		registerEvent: function(obj, eventType, handler) {
-			if (obj.addEventListener) {
-				obj.addEventListener(eventType.toLowerCase(), handler, false);
-			}
-			else if (obj.attachEvent) {
-				obj.attachEvent('on'+eventType.toLowerCase(), handler);
-			}
+			if (obj.addEventListener) obj.addEventListener(eventType.toLowerCase(), handler, false);
+			else if (obj.attachEvent) obj.attachEvent('on'+eventType.toLowerCase(), handler);
 			else {
 				var et=eventType.toUpperCase();
 				if ((obj.Event) && (obj.Event[et]) && (obj.captureEvents)) obj.captureEvents(Event[et]);
@@ -304,18 +334,11 @@ var Hiro = {
 
 		// Cross browser event removal
 		releaseEvent: function(obj, eventType, handler) {
-			if (obj.removeEventListener) {
-				obj.removeEventListener(eventType.toLowerCase(), handler, false);
-			}
+			if (obj.removeEventListener) obj.removeEventListener(eventType.toLowerCase(), handler, false);
 			else if (obj.detachEvent) {
-				try {
-	   				obj.detachEvent('on'+eventType.toLowerCase(), handler);
-				}
-				catch(e) {
-					Hiro.sys.log('',e);
-				}
-			}
-			else {
+				try { obj.detachEvent('on'+eventType.toLowerCase(), handler); }
+				catch(e) { Hiro.sys.log('',e); }
+			} else {
 				var et=eventType.toUpperCase();
 				if ((obj.Event) && (obj.Event[et]) && (obj.releaseEvents)) obj.releaseEvents(Event[et]);
 				et='on'+eventType.toLowerCase();
@@ -326,14 +349,9 @@ var Hiro = {
 		// Cross browser default event prevention
 		stopEvent: function(e) {
 			if (!e) return;
-			if (e.preventDefault) {
-				e.preventDefault();
-			} else {
-				e.returnValue = false;
-			}
-			if (e.stopPropagation) {
-				e.stopPropagation();
-			} 
+			if (e.preventDefault) e.preventDefault();
+			else e.returnValue = false;
+			if (e.stopPropagation) e.stopPropagation();
 			e.cancelBubble = true;
 		}		
 	}
