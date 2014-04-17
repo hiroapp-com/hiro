@@ -164,14 +164,16 @@ var Hiro = {
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
-			tier = tier || Hiro.sys.user.data.tier || 0;
+			//tier = tier || Hiro.sys.user.data.tier || 0;
 			switch(tier) {
 				case 0:
-					this.el_signin.style.display = 'inline-block';
+					this.el_signin.style.display = 'block';
 					this.el_settings.style.display = this.el_archive.style.display = 'none';
+					break;
 				case 1:
 					this.el_signin.style.display = 'none';
-					this.el_settings.style.display = this.el_archive.style.display = 'inline-block';
+					this.el_settings.style.display = this.el_archive.style.display = 'block';
+					break;
 			}
 		},
 
@@ -244,6 +246,64 @@ var Hiro = {
 			step();							
 
 		},
+
+		// Fade a DOM element in or out via opacity changes, 1 top fade in, -1 to fade out
+		fade: function(element, direction, duration) {
+			var a0 = parseFloat((a0 === undefined || a0 === '') ? ((direction < 0) ? 1 : 0) : this.getopacity(element)),
+				a1 = (direction < 0) ? 0 : 1,
+				da = a1 - a0,
+				duration = duration || 1000,
+				start = new Date().getTime(), 
+				_this = this;
+
+			// Step through the animation
+			function step() {
+				var dt = new Date().getTime() - start, done = false;
+
+				// We're done or time expired
+				if (dt >= duration) {
+					dt = duration;
+					done = true;
+				}					
+
+				// Change opacity
+				element.style[_this.opacity] = a0 + da * dt / duration;
+
+				// Keep stepping or clean up
+				if (done) {
+					if (element._fadeDirection < 0) element.style.display = 'none';					
+					element._fadeDirection = 0;
+					delete element._fadeTimer;
+					delete element._fadeDirection;
+				}
+				else if (window.requestAnimationFrame) element._fadeTimer = requestAnimationFrame(step);
+				else element._fadeTimer = setTimeout(step, 20);
+			}
+		
+			// Abort if we already reached max opacity or are currently fading
+			if ((element._fadeDirection == direction) || (a0 == 0 && direction < 0) || (a0 == 1 && direction > 0)) return;
+		
+			// Compute / set internal values
+			duration = duration * Math.abs(da);
+			console.log(a0,a1);
+			element._fadeDirection = direction;
+
+			// Make sure the element is visible when fading in starting at 0 visibility
+			if (direction > 0) {
+				element.style.display='block';
+				if (!a0) element.style[this.opacity]=0;
+			} 
+
+			// DO IT!
+			step();			
+		},		
+
+		// Prgrammatically get Opacity of an element via property resolved on init or 2 common fallbacks
+		getopacity: function(element) {
+			if (this.opacity && element.style[this.opacity] !==undefined ) return element.style[this.opacity];
+			if (element.currentStyle) return element.currentStyle["opacity"];
+			if (window.getComputedStyle) return window.getComputedStyle(element,null).getPropertyValue("opacity");
+		},		
 
 		// Handle clicks depending on device (mouse or touch)
 		fastbutton: {
