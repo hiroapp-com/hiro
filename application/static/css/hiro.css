@@ -1,7 +1,6 @@
 html,
 body,
-#folio,
-#canvas {
+#folio {
   height: 100%;
   margin: 0;
 }
@@ -169,7 +168,7 @@ a.hirobutton:hover {
 
 
 #canvas {
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
   margin-left: 50px;

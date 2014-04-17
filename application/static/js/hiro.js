@@ -45,15 +45,15 @@ var Hiro = {
 		// States
 		open: false,
 		// DOM IDs
-		id: 'folio',
+		el_root: 'folio',
 
 		// Init folio
 		init: function() {
-			var el = document.getElementById(this.id);
+			var el = document.getElementById(this.el_root);
 
 			// Event setup
 			Hiro.ui.fastbutton.attach(el,Hiro.folio.folioclick);
-			Hiro.ui.touchy.attach(el,Hiro.folio.foliotouch,300);			
+			Hiro.ui.touchy.attach(el,Hiro.folio.foliotouch,55);			
 		},
 
 		// If the user clicked somewhere in the folio
@@ -63,8 +63,30 @@ var Hiro = {
 
 		// If the user hovered over the folio with mouse/finger
 		foliotouch: function(event) {
-			console.log('Touched this!', event, this.open)
+			// Open the folio
+			if (!Hiro.folio.open) Hiro.ui.slidefolio(1);
 		}
+	},
+
+	// The white page, including the all elements like apps and the sidebar
+	canvas: {
+		// DOM IDs
+		el_root: 'canvas',
+
+		// Init canvas
+		init: function() {
+			var el = document.getElementById(this.el_root);
+
+			// Event setup
+			Hiro.ui.touchy.attach(el,Hiro.canvas.canvastouch,55);			
+		},
+
+		// If the user hovers over the canvas
+		canvastouch: function(event) {
+			// Close the folio if it should be open
+			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
+		}		
+
 	},
 
 	// Core system functionality
@@ -78,6 +100,7 @@ var Hiro = {
 
 			// Setup other app parts
 			Hiro.folio.init();
+			Hiro.canvas.init();			
 
 			// Make sure we don't fire twice
 			this.inited = true;
@@ -86,6 +109,84 @@ var Hiro = {
 
 	// All things ui. Click it, touch it, fix it, show it.
 	ui: {
+		// General properties
+		touch: ('ontouchstart' in document.documentElement),
+
+		// Folio open/close properties
+		slidewidth: 300,
+		slideduration: 200,
+		slidepos: 0,
+		slidedirection: 0,		
+
+		// Slide folio: 1 to open, -1 to close
+		slidefolio: function(direction) {
+			// Catch cases where sliding makes no sense
+			if ((direction < 0 && this.slidepos === 0) ||  
+				(direction > 0 && this.slidepos > 100) ||
+				(this.slidedirection != 0))
+				return;
+
+			// Local vars
+			var el = document.getElementById(Hiro.canvas.el_root),
+				// Make sure we always have 50px on the right, even on narrow devices
+				maxwidth = (document.body.offsetWidth - 50),
+				distance = (maxwidth < this.slidewidth) ? maxwidth : this.slidewidth,
+				// Start value
+				x0 = this.slidepos,	
+				// Target value
+				x1 = (direction < 0) ? 0 : distance,
+				// Distance to be achieved
+				dx = x1 - x0;
+				// Ideal easing duration
+				duration = this.slideduration / distance * Math.abs(dx);
+				start = new Date().getTime();
+				_this = this;		
+
+			// Remove keyboard if we open the menu on touch devices
+			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
+
+			// Easing function (quad), see TODO Bruno: Find source when back online
+			function ease(t, b, c, d) {
+				if ((t/=d/2) < 1) return c/2*t*t + b;
+				return -c/2 * ((--t)*(t-2) - 1) + b;
+			}
+
+			// Step through frames
+			function step() {
+
+				var dt = new Date().getTime() - start, 
+				    v = _this.slidepos = x0 + Math.round(ease(dt, 0, dx, duration)),
+				    done = false;
+
+				// All set or damn, we took too long
+				if (dt >= duration) {
+					dt = duration;
+					done = true;
+					// Make sure that in the last step we jump to the target position
+					v = _this.slidepos = x1;
+				} 
+
+				// Change DOM CSS values
+				el.style.left = v + 'px';
+				el.style.right = (v*-1)+'px';
+						
+				// If we still have time we step on each possible frame in modern browser or fall back in others											
+				if (done) {
+					// Timessssup
+					Hiro.folio.open = (direction > 0) ? true : false;
+					_this.direction = 0;
+					_this.slidetimer = 0;
+				} else if (window.requestAnimationFrame) {
+					_this.slidetimer = requestAnimationFrame(step);
+				} else {
+					_this.slidetimer = setTimeout(step, 20);
+				}
+			}
+
+			// Kick off stepping loop
+			step();							
+
+		},
 
 		// Handle clicks depending on device (mouse or touch)
 		fastbutton: {
@@ -98,7 +199,7 @@ var Hiro = {
 				// Always attach click event
 				Hiro.util.registerEvent(element,'click', function(e) {Hiro.ui.fastbutton.fire(e,handler)});
 				// Optionally attach touchstart event for touch devices
-				if ('ontouchstart' in document.documentElement) Hiro.util.registerEvent(element,'touchstart', function(e) {Hiro.ui.fastbutton.fire(e,handler)});
+				if (Hiro.ui.touch) Hiro.util.registerEvent(element,'touchstart', function(e) {Hiro.ui.fastbutton.fire(e,handler)});
 			},
 
 			// If the initial event is fired
@@ -132,7 +233,7 @@ var Hiro = {
 				// Always attach mouse event
 				Hiro.util.registerEvent(element,'mouseover', function(e) {Hiro.ui.touchy.fire(e,element,handler,delay)});
 				// Attach touchstart event for touch devices
-				if ('ontouchstart' in document.documentElement)	Hiro.util.registerEvent(element,'touchstart', function(e) {Hiro.ui.touchy.fire(e,element,handler,delay)});
+				if (Hiro.ui.touch) Hiro.util.registerEvent(element,'touchstart', function(e) {Hiro.ui.touchy.fire(e,element,handler,delay)});
 			},
 
 			// If the event is fired
