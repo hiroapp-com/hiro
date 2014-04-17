@@ -101,7 +101,7 @@ var Hiro = {
 			// Setup other app parts
 			Hiro.folio.init();
 			Hiro.canvas.init();
-			Hiro.ui.init();			
+			Hiro.ui.init(tier);			
 
 			// Make sure we don't fire twice
 			this.inited = true;
@@ -112,7 +112,12 @@ var Hiro = {
 	ui: {
 		// General properties
 		touch: ('ontouchstart' in document.documentElement),
-		wastebin: document.getElementById('wastebin'),
+
+		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
+		el_wastebin: document.getElementById('wastebin'),
+		el_archive: document.getElementById('archive'),
+		el_signin: document.getElementById('signin'),
+		el_settings: document.getElementById('settings'),
 
 		// Browser specific properties
 		vendors: ['webkit','moz','o','ms'],
@@ -125,9 +130,12 @@ var Hiro = {
 		slidedirection: 0,	
 
 		// Setup and browser capability testing
-		init: function() {
-			var style = this.wastebin.style,
+		init: function(tier) {
+			var style = this.el_wastebin.style,
 				v = this.vendors;
+
+			// Set up UI according to user level
+			this.setstage(tier);	
 
 			// Determine CSS opacity property
 			if (style.opacity !== undefined) this.opacity = 'opacity';
@@ -152,6 +160,19 @@ var Hiro = {
 					}
 				}
 			}			
+		},
+
+		// Setup UI according to account level where 0 = anon
+		setstage: function(tier) {
+			tier = tier || Hiro.sys.user.data.tier || 0;
+			switch(tier) {
+				case 0:
+					this.el_signin.style.display = 'inline-block';
+					this.el_settings.style.display = this.el_archive.style.display = 'none';
+				case 1:
+					this.el_signin.style.display = 'none';
+					this.el_settings.style.display = this.el_archive.style.display = 'inline-block';
+			}
 		},
 
 		// Slide folio: 1 to open, -1 to close

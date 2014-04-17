@@ -131,15 +131,27 @@ a.hirobutton:hover {
   width: 450px;
 }
 
+#folio a {
+  color: #ddd;
+  font-size: 18px;
+  font-weight: 400;
+  text-decoration: none; 
+  cursor: pointer;
+}
+
+#folio a:hover {
+  color: #fff;
+} 
+
 #showmenu {
   position: fixed;
   background: url(../img/icons.png) no-repeat;
   background-size: 108px auto;
   background-position: -27px -151px;;
-  left: 0px;
-  top: 0px;
-  height: 45px;
-  width: 40px; 
+  left: 0;
+  top: 0;
+  height: 50px;
+  width: 50px; 
   z-index: 2200;
 }
 
@@ -148,6 +160,72 @@ a.hirobutton:hover {
   text-indent: 0;
   bottom: 3px;
   right: 0;
+} 
+
+#newnote {
+  display: inline-block;
+  margin: 10px 0 0 50px;
+  padding: 6px 50px 6px 0;
+}
+
+#folio .documents {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  bottom: 50px;
+  width: 340px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; 
+}
+
+#folio .documents .loading {
+  margin-left: 50px; 
+}
+
+#folio .footer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 340px;
+}
+
+#folio .footer a {
+  opacity: 0.7;
+  display: none;
+  color: #fff;
+}
+
+#folio .footer a:hover {
+  opacity: 1;
+}
+
+#folio .footer a.signin, #folio .footer a.archive {
+  background-image: url(../img/icons.2.png);
+  background-repeat: no-repeat;
+  background-size: 108px auto;
+  padding: 10px 10px 15px 50px;
+} 
+
+#folio .footer a.icon {
+  background-image: url(../img/icons.2.png);
+  background-repeat: no-repeat;
+  background-size: 108px auto;
+  float: right;
+  width: 50px;
+  height: 50px;  
+} 
+
+#folio .footer a.signin {
+  background-position: -68px -156px;
+}
+
+#folio .footer a.archive {
+  background-position: -68px -73px;
+}
+
+#folio .footer a.settings {
+  background-position: -26px -72px;
 }
 
 @media (max-width: 480px) {
