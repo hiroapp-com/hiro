@@ -11,10 +11,11 @@
 	Hiro.apps.sharing: Sharing plugin
 	Hiro.apps.publish: Publish selections to various external services
 
-	Hiro.data: Core datamodel incl setter & getter & eventhandler
+	Hiro.store: Core datamodel incl setter & getter & eventhandler
 		store: unique store id, also seperate localstorage JSON string
 		key: supports direct access to all object levels, eg foo.bar.baz
 		value: arbitrary js objects
+		source: Where the update is coming from (client/server)
 
 	Hiro.sync: Data synchronization with local and remote APIs
 	Hiro.sync.ws: Websocket client
@@ -56,12 +57,6 @@ var Hiro = {
 			Hiro.ui.touchy.attach(el,Hiro.folio.foliotouch,55);			
 		},
 
-		// Fetch current data from server
-		fromserver: function() {
-			var payload = {"name": "client-ehlo"};
-			Hiro.sync.tx(payload);
-		},
-
 		// If the user clicked somewhere in the folio
 		folioclick: function(event) {
 			console.log('Yes, the folio',event);
@@ -71,7 +66,18 @@ var Hiro = {
 		foliotouch: function(event) {
 			// Open the folio
 			if (!Hiro.folio.open) Hiro.ui.slidefolio(1);
-		}
+		},
+
+		// Rerender data
+		update: function() {
+			var data = Hiro.data.get(folio);
+			console.log(data);
+		},
+
+		// Build DOM objects and add to current DOM
+		paint: function() {
+
+		}		
 	},
 
 	// The white page, including the all elements like apps and the sidebar
@@ -93,6 +99,110 @@ var Hiro = {
 			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
 		}		
 
+	},
+
+	// Local data, model and persitence
+	data: {
+		// Object holding all data
+		stores: {},
+
+		// Config
+		enabled: undefined,
+		unsaved: [],
+		saving: false,
+		timeout: null,
+		maxinterval: 3000,
+		dynamicinterval: 100,
+
+		// Set local data
+		set: function(store,key,value,source,type) {
+			type = type || 'UPDATE';
+
+			// Create store if it doesn't exist yet
+			if (!this.stores[store]) this.stores[store] = undefined;
+
+			// Set key TODO: Find a good generic mechanism for creating keys further down the hierarchy
+			if (key) { this.stores[store][key] = value; } else {this.stores[store] = value};
+
+			// Add store to currently unsaved data
+			if (this.unsaved.indexOf(store) < 0) this.unsaved.push(store);
+
+			// Update localstore
+			this.persist();
+		},
+
+		// Return data from local client
+		get: function(store,key) {
+			if (key && this.stores[store][key]) {
+				return this.stores[store][key];
+			} else if (this.stores[store]) {
+				return this.stores[store];
+			} else {
+				this.fromdisk(store,key);
+			}
+		},
+
+		// Request data from persistence layer
+		fromdisk: function(store,key) {
+			var data,
+				store = 'Hiro.' + store;
+
+			// Get data
+			try {
+				data = localStorage.getItem(store);			
+			} catch (e) {
+				Hiro.sys.error('Error retrieving data from localstore',e);		
+			}
+
+			// Fetch key or return complete object
+			data = JSON.parse(data);
+			if (key && data[key]) {
+				return data[key];
+			} else {
+				return data;
+			}			
+		},
+
+		// Persist data to localstorage
+		persist: function() {
+			// Do not run multiple saves
+			if (this.saving) return;
+			var start, end, dur;
+			this.saving = true;
+
+			// Start timer
+			start = new Date().getTime(); 
+
+			// Cycle through unsaved stores
+			for (var i = 0, l = this.unsaved.length; i < l; i++) {
+				var key = this.unsaved[i],
+					value = this.stores[key];	
+
+				// Write data into localStorage	
+				try {
+					localStorage.setItem('Hiro.' + key,value);
+				} catch(e) {		
+					Hiro.sys.error('Datastore error',e);
+				}							
+			}
+
+			// Empty array
+			this.unsaved = [];
+
+			// Measure duration
+			end = new Date().getTime(); 
+			dur = (end - start);
+
+			// Set new value if system is significantly slower than our default interval
+			this.dynamicinterval = ((dur * 50) < this.maxinterval ) ? dur * 50 || 50 : this.maxinterval;
+
+			// Trigger next save to browsers abilities
+			this.timeout = setTimeout(function(){
+				Hiro.data.saving = false;
+				// Rerun persist if new changes happened
+				if (Hiro.data.unsaved.length > 0) Hiro.data.persist();
+			},this.dynamicinterval);
+		}
 	},
 
 	// Connecting local and server state
@@ -167,6 +277,11 @@ var Hiro = {
 			if (data.name == 'session-create') {
 				// Set internal value		
 				this.sid = data.sid;
+
+				// Overwrite local store with server state
+				Hiro.data.set('folio','',data.session.folio.val,'s');
+				Hiro.data.set('notes','',data.session.notes,'s');				
+				Hiro.data.set('user','',data.session.folio.val.User,'s');
 
 				// Log
 				Hiro.sys.log('New session created',data);
