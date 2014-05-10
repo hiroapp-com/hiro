@@ -56,6 +56,12 @@ var Hiro = {
 			Hiro.ui.touchy.attach(el,Hiro.folio.foliotouch,55);			
 		},
 
+		// Fetch current data from server
+		fromserver: function() {
+			var payload = {"name": "client-ehlo"};
+			Hiro.sync.tx(payload);
+		},
+
 		// If the user clicked somewhere in the folio
 		folioclick: function(event) {
 			console.log('Yes, the folio',event);
@@ -93,8 +99,9 @@ var Hiro = {
 	sync: {
 		protocol: undefined,
 		connected: false,
+		authenticated: false,
 
-		// TODO: Move this to persisted data store
+		// TODO: Move this to persisted data store?
 		sid: undefined,
 		token: undefined,		
 
@@ -104,6 +111,10 @@ var Hiro = {
 			if (window.WebSocket && window.WebSocket.prototype.send) {
 				this.protocol = 'ws';
 				this.ws.url = ws_url;
+			} else if (window.XMLHttpRequest) {
+				this.protocol = 'lp';			
+			} else {
+				Hiro.sys.error('Oh noes, no transport protocol available',navigator);					
 			}	
 
 			// Connect to server
@@ -118,13 +129,10 @@ var Hiro = {
 		},
 
 		// Authenticate connection
-		auth: function(token,sid) {
+		auth: function(token) {
 			token = token || this.token || 'userlogin';
-			sid = sid || this.sid || '';
 			var payload = {
 				"name": "session-create",
-        		"sid": sid,
-        		"tag": "client01",
         		"token": token 
         	};
 
@@ -137,6 +145,13 @@ var Hiro = {
 
 		// Send message to server
 		tx: function(data) {
+			if (!data) return;
+
+			// Enrich data object
+			data.sid = this.sid;
+			data.tag = Math.random().toString(36).substring(2,8);
+
+			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
 				this.ws.socket.send(JSON.stringify(data));
 			} else if (this.protocol == 'lp') {
@@ -182,10 +197,10 @@ var Hiro = {
 					Hiro.sys.log('WebSocket opened',this.socket);	
 
 					// Switch to online
-					Hiro.sys.online = Hiro.sync.connected = true;
+					Hiro.sys.online = Hiro.sync.connected = true;	
 
-					// Connection establised, authenticate it now
-					Hiro.sync.auth();				
+					// Auth the connection right away
+					Hiro.sync.auth();		
 				}
 
 				// Message handler
@@ -214,9 +229,12 @@ var Hiro = {
 		online: false,	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
-		init: function(tier,ws_url) {
+		init: function(tier,ws_url,online) {
 			// Prevent initing twice
 			if (this.inited) return;
+
+			// Set online/offline
+			this.online = online;
 
 			// Setup other app parts
 			Hiro.folio.init();

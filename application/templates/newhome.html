@@ -93,4 +93,4 @@
 	
         {{ get_asset('new_js') }}
         {{ profiler_includes|safe }}
-        <script type="text/javascript">window.analytics||(window.analytics=[]);Hiro.sys.init({{ current_user.tier or '0' }},'{{ config.WS_URL }}');</script></body></html>
+        <script type="text/javascript">window.analytics||(window.analytics=[]);Hiro.sys.init({{ current_user.tier or '0' }},'{{ config.WS_URL }}',true);</script></body></html>
