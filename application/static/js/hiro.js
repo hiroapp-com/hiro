@@ -89,22 +89,170 @@ var Hiro = {
 
 	},
 
+	// Connecting local and server state
+	sync: {
+		protocol: undefined,
+		connected: false,
+
+		// TODO: Move this to persisted data store
+		sid: undefined,
+		token: undefined,		
+
+		// Init sync
+		init: function(ws_url) {
+			// Check if we got Websocket support, might need refinement
+			if (window.WebSocket && window.WebSocket.prototype.send) {
+				this.protocol = 'ws';
+				this.ws.url = ws_url;
+			}	
+
+			// Connect to server
+			this.connect();
+		},
+
+		// Establish connection with server 
+		connect: function() {
+			if (this.protocol == 'ws') {
+				this.ws.connect();
+			}
+		},
+
+		// Authenticate connection
+		auth: function(token,sid) {
+			token = token || this.token || 'userlogin';
+			sid = sid || this.sid || '';
+			var payload = {
+				"name": "session-create",
+        		"sid": sid,
+        		"tag": "client01",
+        		"token": token 
+        	};
+
+        	// Logging
+			Hiro.sys.log('Requesting session',payload);			
+
+			// Sending data
+			this.tx(payload);
+		},		
+
+		// Send message to server
+		tx: function(data) {
+			if (this.protocol == 'ws') {
+				this.ws.socket.send(JSON.stringify(data));
+			} else if (this.protocol == 'lp') {
+				this.lp.send(JSON.stringify(data));				
+			} else {
+				Hiro.sys.error('Tried to send data but no transport protocol available',data);
+			}
+		},
+
+		// Receive message
+		rx: function(data) {
+			// Handle specific cases
+			if (data.name == 'session-create') {
+				// Set internal value		
+				this.sid = data.sid;
+
+				// Log
+				Hiro.sys.log('New session created',data);
+				Hiro.sys.log('',null,'groupEnd');				
+			} else {
+				// Abort if it's an unknown response
+				Hiro.sys.error('Received unknown response:',data);	
+			}	
+		},
+
+		// WebSocket settings and functions
+		ws: {
+			// The socket object
+			socket: null,
+			// Generic config			
+			url: undefined,
+
+			// Establish WebSocket connection
+			connect: function() {
+				//  Log kickoff
+				Hiro.sys.log('Connecting to WebSocket server at',this.url,'group');
+
+				// Spawn new socket
+				this.socket = new WebSocket(this.url);
+
+				// Attach onopen event handlers
+				this.socket.onopen = function(e) {
+					Hiro.sys.log('WebSocket opened',this.socket);	
+
+					// Switch to online
+					Hiro.sys.online = Hiro.sync.connected = true;
+
+					// Connection establised, authenticate it now
+					Hiro.sync.auth();				
+				}
+
+				// Message handler
+				this.socket.onmessage = function(e) {
+					Hiro.sync.rx(JSON.parse(e.data));
+				}
+
+				// Close handler
+				this.socket.onclose = function(e) {
+					Hiro.sys.log('WebSocket closed',this.socket);	
+				}				
+			},
+		},
+
+		// Longpolling settings & functions
+		lp: {
+
+		}
+	},
+
 	// Core system functionality
 	sys: {
+		version: undefined,
 		inited: false,
+		production: (window.location.href.indexOf('hiroapp') >= 0),	
+		online: false,	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
-		init: function(tier) {
+		init: function(tier,ws_url) {
 			// Prevent initing twice
 			if (this.inited) return;
 
 			// Setup other app parts
 			Hiro.folio.init();
 			Hiro.canvas.init();
-			Hiro.ui.init(tier);			
+			Hiro.ui.init(tier);	
+			Hiro.sync.init(ws_url);		
 
 			// Make sure we don't fire twice
 			this.inited = true;
+
+			// Log completetion
+			Hiro.sys.log('Hiro inited');
+		},
+
+		// Send error to logging provider and forward to console logging
+		error: function(description,data) {
+			// Throw error to generate stacktrace etc
+			var err = new Error();
+			var stacktrace = err.stack || arguments.callee.caller.toString(),
+				description = description || 'General error';
+
+			// Send to logging service
+			if ('Raven' in window) Raven.captureMessage(description + ', version ' + Hiro.sys.version + ': ' + JSON.stringify(data) + ', ' + stacktrace);			
+
+			// Log in console
+			this.log(description,data,'error');
+		},
+
+		// console.log wrapper
+		log: function(description,data,type) {
+			// Set specific types
+			type = type || 'log';
+			data = data || '';
+
+			// Log
+			if (!this.production) console[type](description,data);
 		}
 	},
 
