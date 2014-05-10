@@ -173,7 +173,11 @@ a.hirobutton:hover {
   padding: 6px 50px 6px 0;
 }
 
-#folio .documents {
+#archivelist {
+  display: none;
+}
+
+#folio .notes {
   position: absolute;
   top: 50px;
   left: 0;
@@ -182,10 +186,46 @@ a.hirobutton:hover {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; 
+  padding-top: 12px;
 }
 
-#folio .documents .loading {
+#folio .notes .loading {
   margin-left: 50px; 
+}
+
+#folio .notes .note {
+  display: block;
+  padding-bottom: 15px;
+  position: relative;
+  cursor: pointer;
+}
+
+#folio .notes .note a {
+  font-family: "urbana",sans-serif;
+  display: block;
+  margin: 0 10px 0 50px;
+  color: #ddd;
+  font-size: 18px;
+  font-weight: 400;
+  text-decoration: none;
+  line-height: 15px;
+}
+
+#folio .notes .note:hover a, #folio .notes .note:hover a small {
+  color: #fff;
+}
+
+#folio .notes .note a .notetitle {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#folio .notes .note a small {
+  color: #bbb;
+  font-size: 14px;
+  font-weight: normal;
 }
 
 #folio .footer {

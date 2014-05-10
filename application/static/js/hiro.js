@@ -45,8 +45,14 @@ var Hiro = {
 	folio: {
 		// States
 		open: false,
+
 		// DOM IDs
 		el_root: 'folio',
+		el_notelist: 'notelist',
+		el_archivelist: 'archivelist',
+
+		// Internal values
+		autoupdate: null,
 
 		// Init folio
 		init: function() {
@@ -60,6 +66,7 @@ var Hiro = {
 		// If the user clicked somewhere in the folio
 		folioclick: function(event) {
 			console.log('Yes, the folio',event);
+			Hiro.util.stopEvent(event);
 		},
 
 		// If the user hovered over the folio with mouse/finger
@@ -69,15 +76,76 @@ var Hiro = {
 		},
 
 		// Rerender data
-		update: function() {
-			var data = Hiro.data.get(folio);
-			console.log(data);
-		},
-
-		// Build DOM objects and add to current DOM
 		paint: function() {
+			var el_n = document.getElementById(this.el_notelist),
+				el_a = document.getElementById(this.el_archivelist);
 
-		}		
+			// Kick off regular updates, only once
+			if (!this.updatetimeout) {
+				this.updatetimeout = setInterval(Hiro.folio.paint,61000);
+			}
+
+			// Get data from store			
+			var data = Hiro.data.get('folio','Docs');
+
+			// Empty current list
+			el_n.innerHTML = '';
+
+			// Cycle through notes
+			for (i=0,l=data.length;i<l;i++) {
+				el_n.appendChild(this.renderlink(data[i]));
+			}
+
+			console.log(data);
+		},	
+
+		renderlink: function(note) {
+			// Render active and archived document link
+			var d = document.createElement('div');
+			d.className = 'note';
+			d.setAttribute('id','doc_' + note);
+
+			var link = document.createElement('a');
+			link.setAttribute('href','/note/' + note);	
+
+			var t = document.createElement('span');
+			t.className = 'notetitle';
+			t.innerHTML = note || 'Untitled Note';
+
+			var stats = document.createElement('small');
+
+			if (note.updated) {
+
+			} else {
+				stats.appendChild(document.createTextNode('Not saved yet'))							
+			}	
+
+
+			link.appendChild(t);
+			link.appendChild(stats);
+
+			if (note.shared) {
+				// Add sharing icon to document and change class to shared
+				var s = document.createElement('div');
+				s.className = 'sharing';
+				var tooltip = 'Shared with others';	
+				if (doc.unseen) {
+					// Show that document has unseen updates
+					var sn = document.createElement('div');
+					sn.className = "bubble red";
+					sn.innerHTML = '*';
+					link.appendChild(sn);
+					tooltip = tooltip + ', just updated';					
+				}			
+				s.setAttribute('title',tooltip);	
+				link.appendChild(s);
+				d.className = 'document shared';					
+			}
+
+			d.appendChild(link);				
+
+			return d;			
+		}			
 	},
 
 	// The white page, including the all elements like apps and the sidebar
@@ -126,6 +194,9 @@ var Hiro = {
 
 			// Add store to currently unsaved data
 			if (this.unsaved.indexOf(store) < 0) this.unsaved.push(store);
+
+			// Repaint folio
+			if (store == 'folio') Hiro.folio.paint();
 
 			// Update localstore
 			this.persist();
