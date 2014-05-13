@@ -196,11 +196,17 @@ var Hiro = {
 			var note = Hiro.data.get('notes',id),
 				text = document.getElementById(this.el_text);
 
+			// Close the folio if it should be open
+			if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);				
+
+			// Start hprogress bar
+			Hiro.ui.hprogress.begin();	
+
 			// Load text onto canvas
 			text.value = note.val;
 
-			// Close the folio if it should be open
-			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
+			// End hprogress
+			Hiro.ui.hprogress.done();
 
 			console.log('loadin...',note);
 		}		
@@ -345,6 +351,9 @@ var Hiro = {
 			if (this.protocol == 'ws') {
 				this.ws.connect();
 			}
+
+			// Increment hprogress
+			Hiro.ui.hprogress.inc(0.2)
 		},
 
 		// Authenticate connection
@@ -391,6 +400,9 @@ var Hiro = {
 				Hiro.data.set('folio','',data.session.folio.val,'s');
 				Hiro.data.set('notes','',data.session.notes,'s');				
 				Hiro.data.set('user','',data.session.folio.val.User,'s');
+
+				// Complete hprogress
+				Hiro.ui.hprogress.done();
 
 				// Log
 				Hiro.sys.log('New session created',data);
@@ -549,7 +561,10 @@ var Hiro = {
 						break;
 					}
 				}
-			}			
+			}	
+
+			// Start hprogress on init
+			this.hprogress.init();		
 		},
 
 		// Setup UI according to account level where 0 = anon
@@ -568,7 +583,7 @@ var Hiro = {
 		},
 
 		// Slide folio: 1 to open, -1 to close
-		slidefolio: function(direction) {
+		slidefolio: function(direction,slideduration) {
 			// Catch cases where sliding makes no sense
 			if ((direction < 0 && this.slidepos === 0) ||  
 				(direction > 0 && this.slidepos > 100) ||
@@ -587,7 +602,8 @@ var Hiro = {
 				// Distance to be achieved
 				dx = x1 - x0;
 				// Ideal easing duration
-				duration = this.slideduration / distance * Math.abs(dx);
+				sd = slideduration || this.slideduration,
+				duration = sd / distance * Math.abs(dx);
 				start = new Date().getTime();
 				_this = this;		
 
@@ -785,8 +801,130 @@ var Hiro = {
 				this.timeout  = null;				
 			}
 
-		}
+		},
 
+		// Simple top loading bar lib
+		hprogress: {
+			active: false,
+			renderstyle: undefined,	
+			bar: document.getElementById('hprogress').getElementsByTagName('div')[0],	
+			progress: 0,	
+
+			// How long until we start hiding the text and minimum visibility time
+			slowtreshhold: 800,
+			slowduration: 800,
+
+			init: function() {
+			    // Determine proper render style
+			    var s = document.body.style,
+			    	v = Hiro.ui.vendorprefix = ('WebkitTransform' in s) ? 'Webkit' :
+	                    ('MozTransform' in s) ? 'Moz' :
+	                    ('msTransform' in s) ? 'ms' :
+	                    ('OTransform' in s) ? 'O' : '';
+
+			    if (v + 'Perspective' in s) {
+					// Modern browsers with 3D support, e.g. Webkit, IE10
+					this.renderstyle = 'translate3d';
+			    } else if (v + 'Transform' in s) {
+					// Browsers without 3D support, e.g. IE9
+					this.renderstyle = 'translate';
+			    } else {
+					// Browsers without translate() support, e.g. IE7-8
+					this.renderstyle = 'margin';
+			    }
+
+				// Start loading bar on init
+				Hiro.ui.hprogress.begin();			    
+			},
+
+			begin: function() {
+				// Start new bar (and clear old)
+				if (this.active) {
+					this.inc(0.2);
+					return;
+				} 
+				this.active = true;
+
+				// Fade in
+				Hiro.ui.hprogress.bar.style.display = 'block';
+				Hiro.ui.hprogress.bar.style.opacity = 1;							
+
+				// Set initial treshhold
+				this.progress = 0.15;
+				this._setbarcss(0.15);
+
+				// Kick off autoinc
+				this.autoinc();
+			},
+
+			autoinc: function() {
+				// Progresses the bar by 1/10th of the remaining progress every n msec
+				if (!this.active) return;
+
+				// Calculate & execute, abort if too little left
+				var diff = (1 - this.progress) / 10;
+				if (diff < 0.001) return;
+				this.inc(diff);
+
+				// Repeat
+				setTimeout(function(){
+					Hiro.ui.hprogress.autoinc();
+				},300);
+			},
+
+			inc: function(inc) {
+				// Increment n inc
+				if (!this.active) return;	
+
+				// Return if we'd increment beyond 1	
+				if (this.progress + inc > 1) return;
+
+				this.progress = this.progress + inc;
+				this._setbarcss(this.progress);				
+			},
+
+			done: function(error) {
+				// Complete bar and fade out
+				if (!this.active) return;				
+				this.progress = 1;
+				this._setbarcss(1);
+				setTimeout(function(){
+					Hiro.ui.hprogress.bar.style.opacity = 0.15;				
+				},300);						
+
+				// if we had an error we change the color to red and fade out later
+				if (error) this.bar.style.background = '#D61818';											
+
+				// Renove remains and get ready again
+				setTimeout(function(){
+					Hiro.ui.hprogress.bar.style.display = 'none';
+					if (error) Hiro.ui.hprogress.bar.style.background = '#3c6198';						
+					Hiro.ui.hprogress.active = false;					
+				},500);					
+			},
+
+			_setbarcss: function(pos) {
+				// Sets the CSS of the progress bar
+				var pos = (-1 + pos) * 100,
+					s = this.renderstyle,
+					vendor = Hiro.ui.vendorprefix.toLowerCase(),
+					v, tf = (vendor) ? vendor + 'Transform' : 'transform';
+
+				// Complete vendor prefix string
+				if (vendor) vendor = '-' + vendor + '-'; 	
+
+				// Determine & set the css transition value
+				if (s == 'translate3d') {
+					v = 'translate3d(' + pos + '%,0,0)';
+					this.bar.style[tf] = v;
+				} else if (s == 'translate') {
+					v = 'translate(' + pos + '%,0)';
+					this.bar.style[tf] = v;					
+				} else {
+					this.bar.style.marginRight = (pos * -1) + '%'; 
+				}	
+			}
+		}		
 	},
 
 	// Generic utilities like event attachment etc
