@@ -65,8 +65,33 @@ var Hiro = {
 
 		// If the user clicked somewhere in the folio
 		folioclick: function(event) {
-			console.log('Yes, the folio',event);
-			Hiro.util.stopEvent(event);
+			// Stop default event
+			Hiro.util.stopEvent(event);		
+
+			var target = event.target || event.srcElement,
+				note;
+			
+			// Clicks on the main elements
+			if (target.id) {
+				switch (target.id) {
+					case 'archive':
+					case 'newnote':
+					case 'settings':
+						console.log(target.id);
+						break;
+					default:
+						if (target.id.indexOf('note_') > -1) note = target.id.replace('note_','');
+				}
+			} else {
+				// Walk two DOM levels up to see if we have a note id
+				note = target.parentNode.id || target.parentNode.parentNode.id;
+				if (note.indexOf('note_') > -1) note = note.replace('note_','');
+			}
+
+			// If the click was on a note link then load the note onto canvas
+			if (note) {
+				Hiro.canvas.load(note);
+			}
 		},
 
 		// If the user hovered over the folio with mouse/finger
@@ -77,12 +102,12 @@ var Hiro = {
 
 		// Rerender data
 		paint: function() {
-			var el_n = document.getElementById(this.el_notelist),
-				el_a = document.getElementById(this.el_archivelist);
+			var el_n = document.getElementById(Hiro.folio.el_notelist),
+				el_a = document.getElementById(Hiro.folio.el_archivelist);
 
 			// Kick off regular updates, only once
-			if (!this.updatetimeout) {
-				this.updatetimeout = setInterval(Hiro.folio.paint,61000);
+			if (!Hiro.folio.updatetimeout) {
+				Hiro.folio.updatetimeout = setInterval(Hiro.folio.paint,61000);
 			}
 
 			// Get data from store			
@@ -93,17 +118,15 @@ var Hiro = {
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
-				el_n.appendChild(this.renderlink(data[i]));
+				el_n.appendChild(Hiro.folio.renderlink(data[i]));
 			}
-
-			console.log(data);
 		},	
 
 		renderlink: function(note) {
 			// Render active and archived document link
 			var d = document.createElement('div');
 			d.className = 'note';
-			d.setAttribute('id','doc_' + note);
+			d.setAttribute('id','note_' + note);
 
 			var link = document.createElement('a');
 			link.setAttribute('href','/note/' + note);	
@@ -152,6 +175,7 @@ var Hiro = {
 	canvas: {
 		// DOM IDs
 		el_root: 'canvas',
+		el_text: 'pageContent',
 
 		// Init canvas
 		init: function() {
@@ -165,6 +189,20 @@ var Hiro = {
 		canvastouch: function(event) {
 			// Close the folio if it should be open
 			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
+		},
+
+		// Load a note onto the canvas
+		load: function(id) {
+			var note = Hiro.data.get('notes',id),
+				text = document.getElementById(this.el_text);
+
+			// Load text onto canvas
+			text.value = note.val;
+
+			// Close the folio if it should be open
+			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
+
+			console.log('loadin...',note);
 		}		
 
 	},

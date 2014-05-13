@@ -186,7 +186,7 @@ a.hirobutton:hover {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; 
-  padding-top: 12px;
+  padding-top: 10px;
 }
 
 #folio .notes .loading {
