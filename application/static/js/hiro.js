@@ -118,22 +118,29 @@ var Hiro = {
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
-				el_n.appendChild(Hiro.folio.renderlink(data[i]));
+				var el = (data[i].status == 'active') ? el_n : el_a;
+				el.appendChild(Hiro.folio.renderlink(data[i].nid));
 			}
 		},	
 
-		renderlink: function(note) {
+		renderlink: function(id) {
+			// Abort if we do not have all data loaded yet
+			if (!Hiro.data.stores.folio || !Hiro.data.stores.folio) return;
+
 			// Render active and archived document link
-			var d = document.createElement('div');
+			var d = document.createElement('div'),
+				note = Hiro.data.get('notes',id);
+
+			// Set note root node properties	
 			d.className = 'note';
-			d.setAttribute('id','note_' + note);
+			d.setAttribute('id','note_' + note.id);
 
 			var link = document.createElement('a');
-			link.setAttribute('href','/note/' + note);	
+			link.setAttribute('href','/note/' + note.id);	
 
 			var t = document.createElement('span');
 			t.className = 'notetitle';
-			t.innerHTML = note || 'Untitled Note';
+			t.innerHTML = note.val.title || 'Untitled Note';
 
 			var stats = document.createElement('small');
 
@@ -145,9 +152,9 @@ var Hiro = {
 
 
 			link.appendChild(t);
-			link.appendChild(stats);
+			link.appendChild(stats);			
 
-			if (note.shared) {
+			if (note.val.tribe.length > 0) {
 				// Add sharing icon to document and change class to shared
 				var s = document.createElement('div');
 				s.className = 'sharing';
@@ -203,7 +210,7 @@ var Hiro = {
 			Hiro.ui.hprogress.begin();	
 
 			// Load text onto canvas
-			text.value = note.val;
+			text.value = note.val.text;
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
@@ -307,6 +314,7 @@ var Hiro = {
 			// Measure duration
 			end = new Date().getTime(); 
 			dur = (end - start);
+			Hiro.sys.log('Data persisted locally within (ms):',dur);
 
 			// Set new value if system is significantly slower than our default interval
 			this.dynamicinterval = ((dur * 50) < this.maxinterval ) ? dur * 50 || 50 : this.maxinterval;
@@ -397,9 +405,10 @@ var Hiro = {
 				this.sid = data.sid;
 
 				// Overwrite local store with server state
-				Hiro.data.set('folio','',data.session.folio.val,'s');
+				// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
 				Hiro.data.set('notes','',data.session.notes,'s');				
-				Hiro.data.set('user','',data.session.folio.val.User,'s');
+				Hiro.data.set('user','',data.session.uid,'s');
+				Hiro.data.set('folio','',data.session.folio.val,'s');				
 
 				// Complete hprogress
 				Hiro.ui.hprogress.done();
