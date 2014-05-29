@@ -182,6 +182,7 @@ var Hiro = {
 	canvas: {
 		// DOM IDs
 		el_root: 'canvas',
+		el_title: 'pageTitle',
 		el_text: 'pageContent',
 
 		// Init canvas
@@ -201,6 +202,7 @@ var Hiro = {
 		// Load a note onto the canvas
 		load: function(id) {
 			var note = Hiro.data.get('notes',id),
+				title = document.getElementById(this.el_title),
 				text = document.getElementById(this.el_text);
 
 			// Close the folio if it should be open
@@ -209,8 +211,9 @@ var Hiro = {
 			// Start hprogress bar
 			Hiro.ui.hprogress.begin();	
 
-			// Load text onto canvas
+			// Load text & title onto canvas
 			text.value = note.val.text;
+			title.value = note.val.title || 'Untitled Note';
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
@@ -314,7 +317,9 @@ var Hiro = {
 			// Measure duration
 			end = new Date().getTime(); 
 			dur = (end - start);
-			Hiro.sys.log('Data persisted locally within (ms):',dur);
+
+			// Log longer persistance times
+			if (dur > 20) Hiro.sys.log('Data persisted bit slowly, within (ms):',dur);
 
 			// Set new value if system is significantly slower than our default interval
 			this.dynamicinterval = ((dur * 50) < this.maxinterval ) ? dur * 50 || 50 : this.maxinterval;
@@ -463,6 +468,30 @@ var Hiro = {
 		// Longpolling settings & functions
 		lp: {
 
+		},
+
+		// Diff/match/patch specific stuff
+		diff: {
+			// The dmp instance we're using, created as callback when dmp script is loaded
+			dmp: null,
+
+			// Compare two strings and return standard delta format
+			delta: function(o,n) {
+				// Cleanup settings
+				this.dmp.Diff_Timeout = 1;
+				this.dmp.Diff_EditCost = 4;
+
+				// Basic diff, cleanup and return standard delta string format
+				var d = this.dmp.diff_main(o, n);
+				if (d.length > 2) {
+					// Cleanup semantics makes it more human readable
+				    // this.dmp.diff_cleanupSemantic(d);
+					this.dmp.diff_cleanupEfficiency(d);				    
+				}				
+
+				// Return patch and simple string format
+				return this.dmp.diff_toDelta(d);
+			}			
 		}
 	},
 
@@ -485,7 +514,8 @@ var Hiro = {
 			Hiro.folio.init();
 			Hiro.canvas.init();
 			Hiro.ui.init(tier);	
-			Hiro.sync.init(ws_url);		
+			Hiro.sync.init(ws_url);	
+			Hiro.lib.init();							
 
 			// Make sure we don't fire twice
 			this.inited = true;
@@ -934,6 +964,52 @@ var Hiro = {
 				}	
 			}
 		}		
+	},
+
+	// External js library handling (Facebook, Analytics, DMP etc)
+	lib: {
+
+		// Load libraries
+		init: function() {
+			// Load Google Diff Match Patch
+			this.loadscript('/static/js/diff_match_patch.js',undefined,function(){
+				Hiro.sync.diff.dmp = new diff_match_patch();
+			},true,0);		
+		},
+
+		// Generic script loader
+		loadscript: function(url,id,callback,defer,delay) {
+			var delay = delay || 1000;
+
+			// Abort if we have no url
+			if (!url) return;	
+
+			setTimeout(function(){
+				var d = document, t = 'script',
+					o = d.createElement(t),
+					s = d.getElementsByTagName(t)[0];
+
+				// Set DOM node params	
+				o.type="text/javascript"
+				o.src = url;
+				o.async = true;
+				if (defer) o.defer = true;
+				if (id) o.id = id;
+				// Attach callback
+				if (callback) { 
+					Hiro.util.registerEvent(o,'load',function(e){
+						try { callback(null, e); } 
+						catch (e) {
+							// Make sure this always happens
+							Hiro.sys.log('Scriptloader callback was not executed:',e)
+						}
+					}); 
+				}	
+
+				// Insert into DOM
+				s.parentNode.insertBefore(o, s);
+			},delay);					
+		},		
 	},
 
 	// Generic utilities like event attachment etc
