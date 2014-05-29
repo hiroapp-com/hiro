@@ -255,7 +255,8 @@ var Hiro = {
 
 		// Set local data
 		set: function(store,key,value,source,type) {
-			type = type || 'UPDATE';
+			type = type || 'UPDATE',
+			source = source || 'c';
 
 			// Create store if it doesn't exist yet
 			if (!this.stores[store]) this.stores[store] = undefined;
@@ -269,6 +270,10 @@ var Hiro = {
 				// No key provided, so we write to the root of the object
 				this.stores[store] = value
 			};
+
+			// Add key to unsynced values
+			if (key && source == 'c' && this.unsynced.indexOf(type + ':' + store + ':' + key) < 0)
+				this.unsynced.push(type + ':' + store + ':' + key); 	
 
 			// Add store to currently unsaved data
 			if (this.unsaved.indexOf(store) < 0) this.unsaved.push(store);
@@ -345,11 +350,12 @@ var Hiro = {
 					value = this.stores[key];	
 
 				// Write data into localStorage	
-				try {
-					localStorage.setItem('Hiro.' + key,value);
-				} catch(e) {		
-					Hiro.sys.error('Datastore error',e);
-				}							
+				this.todisc('Hiro.' + key,value)						
+			}
+
+			// Persist list of unsynced values
+			if (this.unsynced.length > 0) {
+				this.todisc('Hiro.unsynced',this.unsynced);
 			}
 
 			// Empty array
@@ -371,6 +377,19 @@ var Hiro = {
 				// Rerun persist if new changes happened
 				if (Hiro.data.unsaved.length > 0) Hiro.data.persist();
 			},this.dynamicinterval);
+		},
+
+		// Generic localstore writer, room for browser quirks
+		todisc: function(key,value) {
+			// Make sure we store a string
+			if (typeof value !== 'string') value = JSON.stringify(value);
+
+			// Write and log poetntial errors
+			try {
+				localStorage.setItem(key,value);
+			} catch(e) {		
+				Hiro.sys.error('Datastore error',e);
+			}	
 		}
 	},
 
@@ -451,10 +470,7 @@ var Hiro = {
 				this.sid = data.sid;
 
 				// Overwrite local store with server state
-				// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
-				Hiro.data.set('notes','',data.session.notes,'s');				
-				Hiro.data.set('user','',data.session.uid,'s');
-				Hiro.data.set('folio','',data.session.folio.val,'s');				
+				this.reset(data.session);			
 
 				// Complete hprogress
 				Hiro.ui.hprogress.done();
@@ -466,6 +482,21 @@ var Hiro = {
 				// Abort if it's an unknown response
 				Hiro.sys.error('Received unknown response:',data);	
 			}	
+		},
+
+		// Overwrite local state with servers on login, session create or fatal errors
+		reset: function(data) {
+			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
+			Hiro.data.set('notes','',data.notes,'s');				
+			Hiro.data.set('user','',data.uid,'s');
+			Hiro.data.set('folio','',data.folio.val,'s');	
+
+			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
+			for (note in data.notes) {
+				var n = Hiro.data.get('notes',note);
+				n.cv = n.sv = 0;
+				n.val.shadow = n.val.text;
+			}
 		},
 
 		// WebSocket settings and functions
