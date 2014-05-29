@@ -180,6 +180,8 @@ var Hiro = {
 
 	// The white page, including the all elements like apps and the sidebar
 	canvas: {
+		// Internal values
+		currentnote: undefined,
 		// DOM IDs
 		el_root: 'canvas',
 		el_title: 'pageTitle',
@@ -187,10 +189,19 @@ var Hiro = {
 
 		// Init canvas
 		init: function() {
-			var el = document.getElementById(this.el_root);
+			var canvas = document.getElementById(this.el_root),
+				text = document.getElementById(this.el_text);
 
 			// Event setup
-			Hiro.ui.touchy.attach(el,Hiro.canvas.canvastouch,55);			
+			Hiro.util.registerEvent(text,'keyup',Hiro.canvas.textup);
+			// When a user touches the white canvas area
+			Hiro.ui.touchy.attach(canvas,Hiro.canvas.canvastouch,55);			
+		},
+
+		// When a user releases a key, this includes keys like delete or ctrl+v etc
+		textup: function(event) {
+			// Change internal object value
+			Hiro.data.set('notes',Hiro.canvas.currentnote + '.val.text',this.value);
 		},
 
 		// If the user hovers over the canvas
@@ -211,6 +222,9 @@ var Hiro = {
 			// Start hprogress bar
 			Hiro.ui.hprogress.begin();	
 
+			// Set internal values
+			this.currentnote = id;
+
 			// Load text & title onto canvas
 			text.value = note.val.text;
 			title.value = note.val.title || 'Untitled Note';
@@ -230,11 +244,14 @@ var Hiro = {
 
 		// Config
 		enabled: undefined,
-		unsaved: [],
 		saving: false,
 		timeout: null,
 		maxinterval: 3000,
 		dynamicinterval: 100,
+
+		// Log which data isn't saved and/or synced
+		unsaved: [],
+		unsynced: [],		
 
 		// Set local data
 		set: function(store,key,value,source,type) {
@@ -243,8 +260,15 @@ var Hiro = {
 			// Create store if it doesn't exist yet
 			if (!this.stores[store]) this.stores[store] = undefined;
 
-			// Set key TODO: Find a good generic mechanism for creating keys further down the hierarchy
-			if (key) { this.stores[store][key] = value; } else {this.stores[store] = value};
+			// Set data 
+			if (key && key.indexOf('.') >= 0) { 
+				this.deepset(this.stores[store],key,value);
+			} else if (key) {
+				this.stores[store][key] = value; 
+			} else {
+				// No key provided, so we write to the root of the object
+				this.stores[store] = value
+			};
 
 			// Add store to currently unsaved data
 			if (this.unsaved.indexOf(store) < 0) this.unsaved.push(store);
@@ -254,6 +278,23 @@ var Hiro = {
 
 			// Update localstore
 			this.persist();
+		},
+
+		// If the key contains '.', we set the respective property
+		// Example: someobj,'foo.bar.baz' becomes someobj[foo][bar][baz]
+		deepset: function(obj,key,value) {
+			// Split string into array
+			var a = key.split('.');
+
+			// Loop through array and step down object tree
+			for (i=0,l=a.length; i<l; i++) {
+				// Stop one level before last and set value
+				if (i == (l-1)) {
+					obj[a[i]] = value;
+					return;
+				}
+				obj = obj[a[i]];
+			}
 		},
 
 		// Return data from local client
