@@ -551,7 +551,8 @@ var Hiro = {
 			Hiro.folio.paint();
 		},
 
-		// Create messages from changed values & kickoff build
+		// Create messages representing all changes between local client and server versions
+		// Update local server version right away and init sending cycle
 		build: function() {
 			// Only one build at a time
 			if (this.building) return;
@@ -565,10 +566,10 @@ var Hiro = {
 			for (i=0,l=u.length;i<l;i++) {
 				if (u[i] == 'notes') {
 					// Cycle through notes store
-					for (note in n) this.diff.dd(n[note]);
+					for (note in n) this.spawnmsg(this.diff.dd(n[note],true),n[note]);
 				} else {
 					// In case of non notes store
-					this.diff.dd(r);
+					this.spawnmsg(this.diff.dd(u[i],true),u[i]);
 				}
 			}
 
@@ -583,6 +584,23 @@ var Hiro = {
 			// TODO Bruno: Build timer based on tx roundtrips for perfect speed / reliability balance
 			this.building = false;
 			if (Hiro.data.unsynced.length > 0) this.build();
+		},
+
+		// Build a complete message object from simple changes array
+		spawnmsg: function(changes,store) {
+			if (!changes || !store) return;
+
+			// Build wrapper object
+			var r = {};
+			r.name = 'res-sync';
+			r.res = { kind : store['kind'] , id : store['id'] };
+			r.changes = [ changes ];
+			r.sid = Hiro.sync.sid;
+			r.tag = Math.random().toString(36).substring(2,8);
+
+
+			// Add data to queue
+			Hiro.sync.queue.push(r);
 		},
 
 		// WebSocket settings and functions
@@ -633,18 +651,18 @@ var Hiro = {
 			// The dmp instance we're using, created as callback when dmp script is loaded
 			dmp: null,
 
-			// Run Deep Diff over a specified store
-			dd: function(store) {
+			// Run Deep Diff over a specified store and optionally make sure they are the same afterwards
+			dd: function(store,uniform) {
 				// Define a function that returns true for params we want to ignore
 				var ignorelist = function(path,key) {
-					if (key == 'shadow') return true; 
+					if (key == 'shadow' || key == 'backup') return true; 
 				};
 
 				// Make raw diff
 				var d = DeepDiff(store.s,store.c,ignorelist);
 
 				// Abort if we don't have any diffs
-				if (!d || d.length == 0) return;
+				if (!d || d.length == 0) return false;
 
 				// Start building request
 				var changes = {};
@@ -657,6 +675,10 @@ var Hiro = {
 					if (d[i].path == 'text') {
 						// Get dmp delta
 						changes.delta.text = this.delta(store.c.shadow,store.c.text);
+
+						// Create backup to be able to fall back if all fails
+						store.c.backup = store.c.shadow;
+
 						// Update shadow to latest value
 						store.c.shadow = store.c.text;
 					} else {
@@ -664,17 +686,16 @@ var Hiro = {
 					}
 				}
 
-				// Build wrapper object
-				var r = {};
-				r.name = 'res-sync';
-				r.res = { kind : store['kind'] , id : store['id'] };
-				r.changes = [ changes ];
-				r.sid = Hiro.sync.sid;
-				r.tag = Math.random().toString(36).substring(2,8);
+				// Apply changes to local serverstate object
+				// console.log(d);
+				if (uniform) {
+					for (i=0,l=d.length;i<l;i++) {
+						DeepDiff.applyChange(store.s,store.c,d[i]);
+					}
+				}
 
-
-				// Add data to queue
-				Hiro.sync.queue.push(r);
+				// Return changes
+				return changes;
 			},
 
 			// Compare two strings and return standard delta format
