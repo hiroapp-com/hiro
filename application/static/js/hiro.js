@@ -419,6 +419,7 @@ var Hiro = {
 
 		// Message queue
 		queue: [],	
+		queuelookup: {},
 		building: false,
 
 		// Init sync
@@ -483,12 +484,15 @@ var Hiro = {
 		// Receive message
 		rx: function(data) {
 			// Handle specific cases
+			var handler = data.name.replace(/-/g, "_");
+			handler = 'rx_' + handler + '_handler';
+			console.log(handler);
 			if (data.name == 'session-create') {
 				// Set internal value		
 				this.sid = data.sid;
 
 				// Overwrite local store with server state
-				this.reset(data.session);			
+				this._session_create_handler(data.session);			
 
 				// Respond with ehlo
 				var req = {
@@ -514,7 +518,7 @@ var Hiro = {
 
 		// Overwrite local state with servers on login, session create or fatal errors
 		// TODO Bruno: Refactor once protocol is set
-		reset: function(data) {
+		rx_session_create_handler: function(data) {
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
 			Hiro.data.set('notes','',data.notes,'s');				
 			Hiro.data.set('user','',data.uid,'s');
@@ -582,6 +586,9 @@ var Hiro = {
 			// and our msg queue
 			Hiro.data.persist();
 
+			// Send messages via processqueue handler
+			this.processqueue();
+
 			// Allow creation of next build and kick it off if we have new data
 			// TODO Bruno: Build timer based on tx roundtrips for perfect speed / reliability balance
 			this.building = false;
@@ -605,6 +612,29 @@ var Hiro = {
 
 			// Add data to queue
 			Hiro.sync.queue.push(r);
+		},
+
+		// Cycle through queue and send all objects with state < 2 to server
+		// TODO: Add payload [] and push & send in bulk if Hync is ready
+		processqueue: function() {
+			var q = this.queue;
+
+			// Cycle through complete queue
+			for (i=0,l=q.length; i<l; i++) {
+
+				// Process unsent messages
+				if (q[i].state < 2) {
+
+					// Add timestamp
+					q[i].sent = new Date().getTime();
+
+					// Send to server
+					this.tx(q[i]);
+				}
+
+				// Update lookup object
+				this.queuelookup[q[i].tag] = q[i];	
+			}
 		},
 
 		// WebSocket settings and functions
