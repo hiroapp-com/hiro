@@ -6,7 +6,7 @@ import os
 from flask import Flask, Markup
 
 from flask.ext import login
-from werkzeug.debug import DebuggedApplication
+# from werkzeug.debug import DebuggedApplication
 from gae_mini_profiler import profiler, templatetags
 from custom_session import ItsdangerousSessionInterface
 
@@ -61,8 +61,8 @@ login_manager.setup_app(app)
 #toolbar = DebugToolbarExtension(app)
 
 # Werkzeug Debugger (only enabled when DEBUG=True)
-if app.debug:
-    app = DebuggedApplication(app, evalex=True)
+# if app.debug:
+#    app = DebuggedApplication(app, evalex=True)
 
 # GAE Mini Profiler (only enabled on dev server)
 app = profiler.ProfilerWSGIMiddleware(app)

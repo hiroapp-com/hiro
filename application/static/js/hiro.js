@@ -347,8 +347,9 @@ var Hiro = {
 				this.todisc('Hiro.' + key,value)						
 			}
 
-			// Persist list of unsynced values
+			// Persist list of unsynced values and msg queue
 			this.todisc('Hiro.unsynced',this.unsynced);
+			this.todisc('Hiro.queue',Hiro.sync.queue);
 
 			// Empty array
 			this.unsaved = [];
@@ -566,19 +567,20 @@ var Hiro = {
 			for (i=0,l=u.length;i<l;i++) {
 				if (u[i] == 'notes') {
 					// Cycle through notes store
-					for (note in n) this.spawnmsg(this.diff.dd(n[note],true),n[note]);
+					for (note in n) this.spawnmsg(this.diff.dd(n[note],u[i],true),n[note]);
 				} else {
-					// In case of non notes store
-					this.spawnmsg(this.diff.dd(u[i],true),u[i]);
+					// In case of non notes store get store first
+					var s = Hiro.data.get(u[i]);				
+					this.spawnmsg(this.diff.dd(s,u[i],true),s);
 				}
 			}
 
 			// Empty list of unsynced stores to notice later changes
 			Hiro.data.unsynced.length = 0;
 
-			// Send queue contents to server
-			if (this.queue.length > 0) this.tx(this.queue[0]);
-			this.queue.shift();
+			// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
+			// and our msg queue
+			Hiro.data.persist();
 
 			// Allow creation of next build and kick it off if we have new data
 			// TODO Bruno: Build timer based on tx roundtrips for perfect speed / reliability balance
@@ -598,6 +600,8 @@ var Hiro = {
 			r.sid = Hiro.sync.sid;
 			r.tag = Math.random().toString(36).substring(2,8);
 
+			// Add (ready)state to msg
+			r.state = 0;
 
 			// Add data to queue
 			Hiro.sync.queue.push(r);
@@ -652,7 +656,7 @@ var Hiro = {
 			dmp: null,
 
 			// Run Deep Diff over a specified store and optionally make sure they are the same afterwards
-			dd: function(store,uniform) {
+			dd: function(store,rootstoreid,uniform) {
 				// Define a function that returns true for params we want to ignore
 				var ignorelist = function(path,key) {
 					if (key == 'shadow' || key == 'backup') return true; 
@@ -687,12 +691,14 @@ var Hiro = {
 				}
 
 				// Apply changes to local serverstate object
-				// console.log(d);
 				if (uniform) {
 					for (i=0,l=d.length;i<l;i++) {
 						DeepDiff.applyChange(store.s,store.c,d[i]);
 					}
-				}
+				}	
+
+				// Mark store as tainted but do not persist yet for performance reasons
+				if (Hiro.data.unsaved.indexOf(rootstoreid) < 0) Hiro.data.unsaved.push(rootstoreid);			
 
 				// Return changes
 				return changes;
