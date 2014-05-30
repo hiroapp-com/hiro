@@ -489,12 +489,22 @@ var Hiro = {
 				// Overwrite local store with server state
 				this.reset(data.session);			
 
+				// Respond with ehlo
+				var req = {
+            		name: "client-ehlo",
+            		sid: this.sid,
+            		tag: data.tag,
+        		}
+        		this.tx(req);
+
 				// Complete hprogress
 				Hiro.ui.hprogress.done();
 
 				// Log
 				Hiro.sys.log('New session created',data);
 				Hiro.sys.log('',null,'groupEnd');				
+			} else if (data.name == "res-sync") {
+				Hiro.sys.log('Server sez sync!',data);
 			} else {
 				// Abort if it's an unknown response
 				Hiro.sys.error('Received unknown response:',data);	
@@ -566,7 +576,8 @@ var Hiro = {
 			Hiro.data.unsynced.length = 0;
 
 			// Send queue contents to server
-			if (this.queue.length > 0) this.tx(this.queue);
+			if (this.queue.length > 0) this.tx(this.queue[0]);
+			this.queue.shift();
 
 			// Allow creation of next build and kick it off if we have new data
 			// TODO Bruno: Build timer based on tx roundtrips for perfect speed / reliability balance
@@ -657,7 +668,7 @@ var Hiro = {
 				var r = {};
 				r.name = 'res-sync';
 				r.res = { kind : store['kind'] , id : store['id'] };
-				r.changes = changes;
+				r.changes = [ changes ];
 				r.sid = Hiro.sync.sid;
 				r.tag = Math.random().toString(36).substring(2,8);
 
