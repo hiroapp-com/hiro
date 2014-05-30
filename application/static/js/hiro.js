@@ -111,7 +111,7 @@ var Hiro = {
 			}
 
 			// Get data from store			
-			var data = Hiro.data.get('folio','Docs');
+			var data = Hiro.data.get('folio','c');
 
 			// Empty current list
 			el_n.innerHTML = '';
@@ -140,7 +140,7 @@ var Hiro = {
 
 			var t = document.createElement('span');
 			t.className = 'notetitle';
-			t.innerHTML = note.val.title || 'Untitled Note';
+			t.innerHTML = note.c.title || 'Untitled Note';
 
 			var stats = document.createElement('small');
 
@@ -154,7 +154,7 @@ var Hiro = {
 			link.appendChild(t);
 			link.appendChild(stats);			
 
-			if (note.val.tribe.length > 0) {
+			if (note.c.tribe.length > 0) {
 				// Add sharing icon to document and change class to shared
 				var s = document.createElement('div');
 				s.className = 'sharing';
@@ -201,7 +201,7 @@ var Hiro = {
 		// When a user releases a key, this includes keys like delete or ctrl+v etc
 		textup: function(event) {
 			// Change internal object value
-			Hiro.data.set('notes',Hiro.canvas.currentnote + '.val.text',this.value);
+			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.text',this.value);
 		},
 
 		// If the user hovers over the canvas
@@ -226,13 +226,14 @@ var Hiro = {
 			this.currentnote = id;
 
 			// Load text & title onto canvas
-			text.value = note.val.text;
-			title.value = note.val.title || 'Untitled Note';
+			text.value = note.c.text;
+			title.value = note.c.title || 'Untitled Note';
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
 
-			console.log('loadin...',note);
+			// Log
+			Hiro.sys.log('Loaded note onto canvas:',note);
 		}		
 
 	},
@@ -241,6 +242,8 @@ var Hiro = {
 	data: {
 		// Object holding all data
 		stores: {},
+		// Name of stores that are synced with the server
+		onlinestores: ['notes','folio'],
 
 		// Config
 		enabled: undefined,
@@ -259,7 +262,7 @@ var Hiro = {
 			source = source || 'c';
 
 			// Create store if it doesn't exist yet
-			if (!this.stores[store]) this.stores[store] = undefined;
+			if (!this.stores[store]) this.stores[store] = {};
 
 			// Set data 
 			if (key && key.indexOf('.') >= 0) { 
@@ -271,18 +274,21 @@ var Hiro = {
 				this.stores[store] = value
 			};
 
-			// Add key to unsynced values
-			if (key && source == 'c' && this.unsynced.indexOf(type + ':' + store + ':' + key) < 0)
-				this.unsynced.push(type + ':' + store + ':' + key); 	
+			// If the store is an onlinestore 
+			if (this.onlinestores.indexOf(store) > -1) {
+			
+				// Repaint folio
+				if (store == 'folio') Hiro.folio.paint();
 
-			// Add store to currently unsaved data
-			if (this.unsaved.indexOf(store) < 0) this.unsaved.push(store);
+				// Mark store for syncing
+				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);	
 
-			// Repaint folio
-			if (store == 'folio') Hiro.folio.paint();
+				// Kick off sync 
+				Hiro.sync.build();								
+			}
 
-			// Update localstore
-			this.persist();
+			// Mark store for local persistence and kickoff write
+			this.quicksave(store);
 		},
 
 		// If the key contains '.', we set the respective property
@@ -313,30 +319,18 @@ var Hiro = {
 			}
 		},
 
-		// Request data from persistence layer
-		fromdisk: function(store,key) {
-			var data,
-				store = 'Hiro.' + store;
+		// Mark a store for local persistence and kick it off 
+		quicksave: function(store) {
+			// Add store to currently unsaved data
+			if (this.unsaved.indexOf(store) < 0) this.unsaved.push(store);			
 
-			// Get data
-			try {
-				data = localStorage.getItem(store);			
-			} catch (e) {
-				Hiro.sys.error('Error retrieving data from localstore',e);		
-			}
-
-			// Fetch key or return complete object
-			data = JSON.parse(data);
-			if (key && data[key]) {
-				return data[key];
-			} else {
-				return data;
-			}			
+			// Update localstore
+			this.persist();
 		},
 
 		// Persist data to localstorage
 		persist: function() {
-			// Do not run multiple saves
+			// Do not run multiple saves at once
 			if (this.saving) return;
 			var start, end, dur;
 			this.saving = true;
@@ -354,9 +348,7 @@ var Hiro = {
 			}
 
 			// Persist list of unsynced values
-			if (this.unsynced.length > 0) {
-				this.todisc('Hiro.unsynced',this.unsynced);
-			}
+			this.todisc('Hiro.unsynced',this.unsynced);
 
 			// Empty array
 			this.unsaved = [];
@@ -377,6 +369,27 @@ var Hiro = {
 				// Rerun persist if new changes happened
 				if (Hiro.data.unsaved.length > 0) Hiro.data.persist();
 			},this.dynamicinterval);
+		},
+
+		// Request data from persistence layer
+		fromdisk: function(store,key) {
+			var data,
+				store = 'Hiro.' + store;
+
+			// Get data
+			try {
+				data = localStorage.getItem(store);			
+			} catch (e) {
+				Hiro.sys.error('Error retrieving data from localstore',e);		
+			}
+
+			// Fetch key or return complete object
+			data = JSON.parse(data);
+			if (key && data[key]) {
+				return data[key];
+			} else {
+				return data;
+			}			
 		},
 
 		// Generic localstore writer, room for browser quirks
@@ -401,7 +414,11 @@ var Hiro = {
 
 		// TODO: Move this to persisted data store?
 		sid: undefined,
-		token: undefined,		
+		token: undefined,	
+
+		// Message queue
+		queue: [],	
+		building: false,
 
 		// Init sync
 		init: function(ws_url) {
@@ -449,8 +466,8 @@ var Hiro = {
 			if (!data) return;
 
 			// Enrich data object
-			data.sid = this.sid;
-			data.tag = Math.random().toString(36).substring(2,8);
+			if (!data.sid) data.sid = this.sid;
+			if (!data.tag) data.tag = Math.random().toString(36).substring(2,8);
 
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
@@ -485,18 +502,76 @@ var Hiro = {
 		},
 
 		// Overwrite local state with servers on login, session create or fatal errors
+		// TODO Bruno: Refactor once protocol is set
 		reset: function(data) {
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
 			Hiro.data.set('notes','',data.notes,'s');				
 			Hiro.data.set('user','',data.uid,'s');
-			Hiro.data.set('folio','',data.folio.val,'s');	
+			Hiro.data.set('folio','',data.folio,'s');	
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
 			for (note in data.notes) {
-				var n = Hiro.data.get('notes',note);
-				n.cv = n.sv = 0;
-				n.val.shadow = n.val.text;
+				var n = Hiro.data.get('notes',note),
+					t = JSON.stringify(n.val.tribe);
+				n.sv = n.cv = 0;
+				n.c = {};
+				n.s = {};
+				n.c.text = n.c.shadow = n.s.text = n.val.text;
+				n.c.title = n.s.title = n.val.title;
+				n.c.tribe = JSON.parse(t);
+				n.s.tribe = JSON.parse(t);				
+				delete n.val;
 			}
+
+			// Save note changes
+			Hiro.data.quicksave('notes');			
+
+			// Clean up folio
+			var f = Hiro.data.get('folio'),
+				fv = JSON.stringify(f.val);
+			f.cv = f.sv = 0;
+			f.s = JSON.parse(fv);
+			f.c = JSON.parse(fv);	
+			delete f.val;		
+
+			// Save folio changes
+			Hiro.data.quicksave('folio');	
+
+			// Visually update folio
+			Hiro.folio.paint();
+		},
+
+		// Create messages from changed values & kickoff build
+		build: function() {
+			// Only one build at a time
+			if (this.building) return;
+			this.building = true;
+
+			var u = Hiro.data.unsynced,
+				q = this.queue,
+				n = Hiro.data.get('notes');
+
+			// Cycle through changes
+			for (i=0,l=u.length;i<l;i++) {
+				if (u[i] == 'notes') {
+					// Cycle through notes store
+					for (note in n) this.diff.dd(n[note]);
+				} else {
+					// In case of non notes store
+					this.diff.dd(r);
+				}
+			}
+
+			// Empty list of unsynced stores to notice later changes
+			Hiro.data.unsynced.length = 0;
+
+			// Send queue contents to server
+			if (this.queue.length > 0) this.tx(this.queue);
+
+			// Allow creation of next build and kick it off if we have new data
+			// TODO Bruno: Build timer based on tx roundtrips for perfect speed / reliability balance
+			this.building = false;
+			if (Hiro.data.unsynced.length > 0) this.build();
 		},
 
 		// WebSocket settings and functions
@@ -546,6 +621,50 @@ var Hiro = {
 		diff: {
 			// The dmp instance we're using, created as callback when dmp script is loaded
 			dmp: null,
+
+			// Run Deep Diff over a specified store
+			dd: function(store) {
+				// Define a function that returns true for params we want to ignore
+				var ignorelist = function(path,key) {
+					if (key == 'shadow') return true; 
+				};
+
+				// Make raw diff
+				var d = DeepDiff(store.s,store.c,ignorelist);
+
+				// Abort if we don't have any diffs
+				if (!d || d.length == 0) return;
+
+				// Start building request
+				var changes = {};
+				changes.clock = { sv : store['sv'] , cv : store['cv']++ };
+				changes.delta = {};				
+
+				// Create proper delta format
+				for (i=0,l=d.length;i<l;i++) {
+					// If the last path element is a text element, we get a dmp delta from the rhs text & shadow
+					if (d[i].path == 'text') {
+						// Get dmp delta
+						changes.delta.text = this.delta(store.c.shadow,store.c.text);
+						// Update shadow to latest value
+						store.c.shadow = store.c.text;
+					} else {
+						changes.delta[d[i].path] = [d[i].lhs,d[i].rhs];
+					}
+				}
+
+				// Build wrapper object
+				var r = {};
+				r.name = 'res-sync';
+				r.res = { kind : store['kind'] , id : store['id'] };
+				r.changes = changes;
+				r.sid = Hiro.sync.sid;
+				r.tag = Math.random().toString(36).substring(2,8);
+
+
+				// Add data to queue
+				Hiro.sync.queue.push(r);
+			},
 
 			// Compare two strings and return standard delta format
 			delta: function(o,n) {
@@ -1122,3 +1241,6 @@ var Hiro = {
 		}		
 	}
 };
+
+// Minified Deep-Diff: https://github.com/flitbit/diff/
+!function(e){"use strict";var t,n,i=[];if(typeof global=="object"&&global){t=global}else if(typeof window!=="undefined"){t=window}else{t={}}n=t.DeepDiff;if(n){i.push(function(){if("undefined"!==typeof n&&t.DeepDiff===h){t.DeepDiff=n;n=e}})}function r(e,t){e.super_=t;e.prototype=Object.create(t.prototype,{constructor:{value:e,enumerable:false,writable:true,configurable:true}})}function f(e,t){Object.defineProperty(this,"kind",{value:e,enumerable:true});if(t&&t.length){Object.defineProperty(this,"path",{value:t,enumerable:true})}}function a(e,t,n){a.super_.call(this,"E",e);Object.defineProperty(this,"lhs",{value:t,enumerable:true});Object.defineProperty(this,"rhs",{value:n,enumerable:true})}r(a,f);function u(e,t){u.super_.call(this,"N",e);Object.defineProperty(this,"rhs",{value:t,enumerable:true})}r(u,f);function l(e,t){l.super_.call(this,"D",e);Object.defineProperty(this,"lhs",{value:t,enumerable:true})}r(l,f);function o(e,t,n){o.super_.call(this,"A",e);Object.defineProperty(this,"index",{value:t,enumerable:true});Object.defineProperty(this,"item",{value:n,enumerable:true})}r(o,f);function s(e,t,n){var i=e.slice((n||t)+1||e.length);e.length=t<0?e.length+t:t;e.push.apply(e,i);return e}function c(t,n,i,r,f,h,p){f=f||[];var b=f.slice(0);if(h){if(r&&r(b,h))return;b.push(h)}var d=typeof t;var v=typeof n;if(d==="undefined"){if(v!=="undefined"){i(new u(b,n))}}else if(v==="undefined"){i(new l(b,t))}else if(d!==v){i(new a(b,t,n))}else if(t instanceof Date&&n instanceof Date&&t-n!=0){i(new a(b,t,n))}else if(d==="object"&&t!=null&&n!=null){p=p||[];if(p.indexOf(t)<0){p.push(t);if(Array.isArray(t)){var y,m=t.length,g=function(e){i(new o(b,y,e))};for(y=0;y<t.length;y++){if(y>=n.length){i(new o(b,y,new l(e,t[y])))}else{c(t[y],n[y],g,r,[],null,p)}}while(y<n.length){i(new o(b,y,new u(e,n[y++])))}}else{var w=Object.keys(t);var D=Object.keys(n);w.forEach(function(f){var a=D.indexOf(f);if(a>=0){c(t[f],n[f],i,r,b,f,p);D=s(D,a)}else{c(t[f],e,i,r,b,f,p)}});D.forEach(function(t){c(e,n[t],i,r,b,t,p)})}p.length=p.length-1}}else if(t!==n){if(!(d==="number"&&isNaN(t)&&isNaN(n))){i(new a(b,t,n))}}}function h(t,n,i,r){r=r||[];c(t,n,function(e){if(e){r.push(e)}},i);return r.length?r:e}function p(e,t,n){if(n.path&&n.path.length){var i=e[t],r,f=n.path.length-1;for(r=0;r<f;r++){i=i[n.path[r]]}switch(n.kind){case"A":p(i[n.path[r]],n.index,n.item);break;case"D":delete i[n.path[r]];break;case"E":case"N":i[n.path[r]]=n.rhs;break}}else{switch(n.kind){case"A":p(e[t],n.index,n.item);break;case"D":e=s(e,t);break;case"E":case"N":e[t]=n.rhs;break}}return e}function b(e,t,n){if(!(n instanceof f)){throw new TypeError("[Object] change must be instanceof Diff")}if(e&&t&&n){var i=e,r,a;a=n.path.length-1;for(r=0;r<a;r++){if(typeof i[n.path[r]]==="undefined"){i[n.path[r]]={}}i=i[n.path[r]]}switch(n.kind){case"A":p(i[n.path[r]],n.index,n.item);break;case"D":delete i[n.path[r]];break;case"E":case"N":i[n.path[r]]=n.rhs;break}}}function d(e,t,n){if(e&&t){var i=function(i){if(!n||n(e,t,i)){b(e,t,i)}};c(e,t,i)}}Object.defineProperties(h,{diff:{value:h,enumerable:true},observableDiff:{value:c,enumerable:true},applyDiff:{value:d,enumerable:true},applyChange:{value:b,enumerable:true},isConflict:{get:function(){return"undefined"!==typeof n},enumerable:true},noConflict:{value:function(){if(i){i.forEach(function(e){e()});i=null}return h},enumerable:true}});if(typeof module!="undefined"&&module&&typeof exports=="object"&&exports&&module.exports===exports){module.exports=h}else{t.DeepDiff=h}}();
