@@ -310,12 +310,13 @@ var Hiro = {
 
 		// Return data from local client
 		get: function(store,key) {
-			if (key && this.stores[store][key]) {
+			if (key && this.stores[store] && this.stores[store][key]) {
 				return this.stores[store][key];
-			} else if (this.stores[store]) {
+			} else if (!key && this.stores[store]) {
 				return this.stores[store];
 			} else {
-				this.fromdisk(store,key);
+				return false;
+				// this.fromdisk(store,key);
 			}
 		},
 
@@ -379,13 +380,13 @@ var Hiro = {
 
 			// Get data
 			try {
-				data = localStorage.getItem(store);			
+				data = localStorage.getItem(store);	
+				data = JSON.parse(data);						
 			} catch (e) {
 				Hiro.sys.error('Error retrieving data from localstore',e);		
 			}
 
 			// Fetch key or return complete object
-			data = JSON.parse(data);
 			if (key && data[key]) {
 				return data[key];
 			} else {
@@ -412,6 +413,7 @@ var Hiro = {
 		protocol: undefined,
 		connected: false,
 		authenticated: false,
+		latency: 100,
 
 		// TODO: Move this to persisted data store?
 		sid: undefined,
@@ -483,49 +485,33 @@ var Hiro = {
 
 		// Receive message
 		rx: function(data) {
-			// Handle specific cases
+			// Build handler name
 			var handler = data.name.replace(/-/g, "_");
 			handler = 'rx_' + handler + '_handler';
-			console.log(handler);
-			if (data.name == 'session-create') {
-				// Set internal value		
-				this.sid = data.sid;
 
-				// Overwrite local store with server state
-				this._session_create_handler(data.session);			
+			// Check if handler exists and abort if not
+			if (!this[handler]) {
+				Hiro.sys.error('Received unknown response:',data);
+				return;
+			}
 
-				// Respond with ehlo
-				var req = {
-            		name: "client-ehlo",
-            		sid: this.sid,
-            		tag: data.tag,
-        		}
-        		this.tx(req);
-
-				// Complete hprogress
-				Hiro.ui.hprogress.done();
-
-				// Log
-				Hiro.sys.log('New session created',data);
-				Hiro.sys.log('',null,'groupEnd');				
-			} else if (data.name == "res-sync") {
-				Hiro.sys.log('Server sez sync!',data);
-			} else {
-				// Abort if it's an unknown response
-				Hiro.sys.error('Received unknown response:',data);	
-			}	
+			// Fire handler
+			this[handler](data);	
 		},
 
 		// Overwrite local state with servers on login, session create or fatal errors
 		// TODO Bruno: Refactor once protocol is set
 		rx_session_create_handler: function(data) {
+			// Set internal value		
+			this.sid = data.session.sid;
+
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
-			Hiro.data.set('notes','',data.notes,'s');				
-			Hiro.data.set('user','',data.uid,'s');
-			Hiro.data.set('folio','',data.folio,'s');	
+			Hiro.data.set('notes','',data.session.notes,'s');				
+			Hiro.data.set('user','',data.session.uid,'s');
+			Hiro.data.set('folio','',data.session.folio,'s');	
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
-			for (note in data.notes) {
+			for (note in data.session.notes) {
 				var n = Hiro.data.get('notes',note),
 					t = JSON.stringify(n.val.tribe);
 				n.sv = n.cv = 0;
@@ -554,23 +540,55 @@ var Hiro = {
 
 			// Visually update folio
 			Hiro.folio.paint();
+
+			// Respond with ehlo
+			var req = {
+        		name: "client-ehlo",
+        		sid: this.sid,
+        		tag: data.tag,
+    		}
+    		this.tx(req);
+
+			// Complete hprogress
+			Hiro.ui.hprogress.done();
+
+			// Log
+			Hiro.sys.log('New session created',data);
+			Hiro.sys.log('',null,'groupEnd');			
+		},
+
+		// Incoming sync request, could be server initiated or ACK
+		rx_res_sync_handler: function(data) {
+			var ack = this.queuelookup[data.tag];
+
+			// We do have a local msg, this is an ACK
+			if (ack) {
+				// Mark msg as complete
+				ack.state = 4;
+
+				// Calculate roundtrip time
+				this.latency = new Date().getTime() - ack.sent;
+				console.log('HAve! :',this.latency,data);
+			} else {
+				console.log('New sync reaquest from server')
+			}
 		},
 
 		// Create messages representing all changes between local client and server versions
 		// Update local server version right away and init sending cycle
 		build: function() {
-			// Only one build at a time
-			if (this.building) return;
-			this.building = true;
-
 			var u = Hiro.data.unsynced,
-				q = this.queue,
-				n = Hiro.data.get('notes');
+				q = this.queue;
+
+			// Only one build at a time
+			if (this.building || u.length == 0) return;
+			this.building = true;
 
 			// Cycle through changes
 			for (i=0,l=u.length;i<l;i++) {
 				if (u[i] == 'notes') {
 					// Cycle through notes store
+					var n = Hiro.data.get('notes');					
 					for (note in n) this.spawnmsg(this.diff.dd(n[note],u[i],true),n[note]);
 				} else {
 					// In case of non notes store get store first
@@ -590,9 +608,10 @@ var Hiro = {
 			this.processqueue();
 
 			// Allow creation of next build and kick it off if we have new data
-			// TODO Bruno: Build timer based on tx roundtrips for perfect speed / reliability balance
-			this.building = false;
-			if (Hiro.data.unsynced.length > 0) this.build();
+			setTimeout(function(){
+				Hiro.sync.building = false;
+				if (Hiro.data.unsynced.length > 0) Hiro.sync.build();
+			},this.latency);
 		},
 
 		// Build a complete message object from simple changes array
@@ -619,8 +638,8 @@ var Hiro = {
 		processqueue: function() {
 			var q = this.queue;
 
-			// Cycle through complete queue
-			for (i=0,l=q.length; i<l; i++) {
+			// Cycle through complete queue, bottom to top
+			for (i = q.length - 1; i >= 0; i--) {
 
 				// Process unsent messages
 				if (q[i].state < 2) {
@@ -630,6 +649,16 @@ var Hiro = {
 
 					// Send to server
 					this.tx(q[i]);
+
+					// Advance state
+					// TODO: Make sure this only happens when we're online and send above is confirmed
+					q[i].state = 2;					
+				}
+
+				// Discard confirmed messages
+				if (q[i].state == 4) {
+					q.splice(i,1);
+					continue;
 				}
 
 				// Update lookup object
