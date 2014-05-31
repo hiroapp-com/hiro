@@ -558,6 +558,8 @@ var Hiro = {
 		},
 
 		// Incoming sync request, could be server initiated or ACK
+		// TODO Bruno: Check via deepdiff if the ack contains any new changes and apply if yes
+		// TODO Bruno: If it's a new sync request check for local que contents state < 2 and overwrite tag
 		rx_res_sync_handler: function(data) {
 			var ack = this.queuelookup[data.tag];
 
@@ -568,9 +570,9 @@ var Hiro = {
 
 				// Calculate roundtrip time
 				this.latency = new Date().getTime() - ack.sent;
-				console.log('HAve! :',this.latency,data);
+				console.log('Roundtrip have! ',this.latency,data);
 			} else {
-				console.log('New sync reaquest from server')
+				console.log('New sync request from server')
 			}
 		},
 
@@ -1018,7 +1020,6 @@ var Hiro = {
 		
 			// Compute / set internal values
 			duration = duration * Math.abs(da);
-			console.log(a0,a1);
 			element._fadeDirection = direction;
 
 			// Make sure the element is visible when fading in starting at 0 visibility
