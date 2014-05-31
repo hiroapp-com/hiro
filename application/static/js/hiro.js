@@ -182,6 +182,7 @@ var Hiro = {
 	canvas: {
 		// Internal values
 		currentnote: undefined,
+
 		// DOM IDs
 		el_root: 'canvas',
 		el_title: 'pageTitle',
@@ -190,10 +191,14 @@ var Hiro = {
 		// Init canvas
 		init: function() {
 			var canvas = document.getElementById(this.el_root),
-				text = document.getElementById(this.el_text);
+				text = document.getElementById(this.el_text),
+				title = document.getElementById(this.el_title);
 
 			// Event setup
 			Hiro.util.registerEvent(text,'keyup',Hiro.canvas.textup);
+			Hiro.util.registerEvent(title,'keyup',Hiro.canvas.titleup);			
+			Hiro.ui.fastbutton.attach(title,Hiro.canvas.titleclick);			
+
 			// When a user touches the white canvas area
 			Hiro.ui.touchy.attach(canvas,Hiro.canvas.canvastouch,55);			
 		},
@@ -202,6 +207,21 @@ var Hiro = {
 		textup: function(event) {
 			// Change internal object value
 			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.text',this.value);
+		},
+
+		// When the focus comes off the title
+		titleup: function(event) {
+			// Change internal object value
+			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.title',this.value);						
+		},
+
+		// When the user clicks into the title field
+		titleclick: function(event) {
+			var note = Hiro.data.get('notes',Hiro.canvas.currentnote),
+				target = event.target || event.srcElement;
+
+			// Empty field if Note has no title yet
+			if (target.value && !note.c.title) target.value = '';
 		},
 
 		// If the user hovers over the canvas
@@ -213,7 +233,6 @@ var Hiro = {
 		// Load a note onto the canvas
 		load: function(id) {
 			var note = Hiro.data.get('notes',id),
-				title = document.getElementById(this.el_title),
 				text = document.getElementById(this.el_text);
 
 			// Close the folio if it should be open
@@ -227,15 +246,22 @@ var Hiro = {
 
 			// Load text & title onto canvas
 			text.value = note.c.text;
-			title.value = note.c.title || 'Untitled Note';
+			this.settitle(note.c.title);
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
 
 			// Log
 			Hiro.sys.log('Loaded note onto canvas:',note);
-		}		
+		},
 
+		// Set title programmatically
+		settitle: function(title) {
+			var el = document.getElementById(this.el_title);
+
+			// Set title
+			el.value = title || 'Untitled Note';			
+		}		
 	},
 
 	// Local data, model and persitence
@@ -257,9 +283,10 @@ var Hiro = {
 		unsynced: [],		
 
 		// Set local data
-		set: function(store,key,value,source,type) {
+		set: function(store,key,value,source,type,paint) {
 			type = type || 'UPDATE',
 			source = source || 'c';
+			paint = paint || key.indexOf('.c.title');
 
 			// Create store if it doesn't exist yet
 			if (!this.stores[store]) this.stores[store] = {};
@@ -278,7 +305,7 @@ var Hiro = {
 			if (this.onlinestores.indexOf(store) > -1) {
 			
 				// Repaint folio
-				if (store == 'folio') Hiro.folio.paint();
+				if (store == 'folio' || paint) Hiro.folio.paint();
 
 				// Mark store for syncing
 				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);	
@@ -421,6 +448,7 @@ var Hiro = {
 
 		// Message queue
 		queue: [],	
+		// Queue states are: 0 = not sent, new tag; 1 = not sent, tag is ack; 2 = sent; 4 = acked by server & ready to delete
 		queuelookup: {},
 		building: false,
 
@@ -572,8 +600,52 @@ var Hiro = {
 				this.latency = new Date().getTime() - ack.sent;
 				console.log('Roundtrip have! ',this.latency,data);
 			} else {
-				console.log('New sync request from server')
+				this.processupdate(data,true);
 			}
+		},
+
+		// Process changes sent from server
+		processupdate: function(data,echo) {
+			// Find out which store we're talking about
+			var store = (data.res.kind == 'note') ? 'notes' : 'folio',
+				r = Hiro.data.get(store,data.res.id);
+
+			// Process change stack
+			for (i=0,l=data.changes.length; i<l; i++) {
+				var ch = data.changes[i];
+
+				// If the server version is lower than the one we have, ignore
+				if (ch.clock.sv < r.sv) continue;
+
+				// See if title changed, so Bruno can toil along with apply flow
+				// TODO Flo: Only send values that changed
+				if (ch.delta.title[0] != ch.delta.title[1]) {
+					r.s.title = r.c.title = ch.delta.title[1];
+					// Set title visually if current document is open
+					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.settitle(ch.delta.title[1]);
+				}	
+
+				// Iterate server
+				r.sv = ch.clock.sv;
+			}	
+
+			// Change queue tags to echo or echo explicitely
+			// TODO Bruno: Currently we set readystate to 4 on ack, find way to do this for msg that don't get acks
+			if (echo && this.queue.length > 0 && this.queue[0].status == 0) {
+				this.queue[0].status = 1;
+				this.queue[0].tag = data.tag;
+			} else if (echo) {
+				this.echo(data);
+			}
+
+			// Save & repaint
+			Hiro.data.quicksave(store);
+			Hiro.folio.paint();
+		},
+
+		// Send simple confirmation for received request
+		echo: function(data) {
+			this.tx(data);
 		},
 
 		// Create messages representing all changes between local client and server versions
