@@ -50,17 +50,20 @@ var Hiro = {
 		el_root: 'folio',
 		el_notelist: 'notelist',
 		el_archivelist: 'archivelist',
+		el_showmenu: 'showmenu',		
 
 		// Internal values
 		autoupdate: null,
 
 		// Init folio
 		init: function() {
-			var el = document.getElementById(this.el_root);
+			var el = document.getElementById(this.el_root),
+				sm = document.getElementById(this.el_showmenu);
 
 			// Event setup
-			Hiro.ui.fastbutton.attach(el,Hiro.folio.folioclick);
-			Hiro.ui.touchy.attach(el,Hiro.folio.foliotouch,55);			
+			Hiro.ui.fastbutton.attach(el,Hiro.folio.folioclick);			
+			Hiro.ui.touchy.attach(el,Hiro.folio.foliotouch,55);	
+			Hiro.ui.touchy.attach(sm,Hiro.folio.foliotouch,55);					
 		},
 
 		// If the user clicked somewhere in the folio
@@ -72,7 +75,7 @@ var Hiro = {
 				note;
 			
 			// Clicks on the main elements
-			if (target.id) {
+			if (target.id) {				
 				switch (target.id) {
 					case 'archive':
 					case 'newnote':
@@ -96,8 +99,13 @@ var Hiro = {
 
 		// If the user hovered over the folio with mouse/finger
 		foliotouch: function(event) {
+			var target = event.target || event.srcElement;
 			// Open the folio
-			if (!Hiro.folio.open) Hiro.ui.slidefolio(1);
+			if (!Hiro.folio.open) {
+				Hiro.ui.slidefolio(1);
+			} else if (target.id == 'showmenu' || target.id == 'updatebubble') {
+				Hiro.ui.slidefolio(-1);				
+			}			
 		},
 
 		// Rerender data
@@ -212,7 +220,9 @@ var Hiro = {
 		// When the focus comes off the title
 		titleup: function(event) {
 			// Change internal object value
-			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.title',this.value);						
+			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.title',this.value);	
+			// Change browser window title
+			document.title = this.value;					
 		},
 
 		// When the user clicks into the title field
@@ -257,10 +267,11 @@ var Hiro = {
 
 		// Set title programmatically
 		settitle: function(title) {
-			var el = document.getElementById(this.el_title);
+			var el = document.getElementById(this.el_title),
+				title = title || 'Untitled Note';
 
 			// Set title
-			el.value = title || 'Untitled Note';			
+			el.value = document.title = title;			
 		}		
 	},
 
@@ -446,9 +457,10 @@ var Hiro = {
 		sid: undefined,
 		token: undefined,	
 
-		// Message queue
+		// Message queue, states are: 
+		// 0 = not sent, new tag; 1 = not sent, ack tag; 2 = sent; 4 = acked by server & ready to delete		
 		queue: [],	
-		// Queue states are: 0 = not sent, new tag; 1 = not sent, tag is ack; 2 = sent; 4 = acked by server & ready to delete
+		tbc: [],
 		queuelookup: {},
 		building: false,
 
@@ -500,6 +512,9 @@ var Hiro = {
 			// Enrich data object
 			if (!data.sid) data.sid = this.sid;
 			if (!data.tag) data.tag = Math.random().toString(36).substring(2,8);
+
+			// If status = 1, we advance the msg to 4 immediately
+			if (data.status == 1) this.queuelookup(data.tag).status = 4;
 
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
@@ -587,7 +602,6 @@ var Hiro = {
 
 		// Incoming sync request, could be server initiated or ACK
 		// TODO Bruno: Check via deepdiff if the ack contains any new changes and apply if yes
-		// TODO Bruno: If it's a new sync request check for local que contents state < 2 and overwrite tag
 		rx_res_sync_handler: function(data) {
 			var ack = this.queuelookup[data.tag];
 
@@ -597,8 +611,8 @@ var Hiro = {
 				ack.state = 4;
 
 				// Calculate roundtrip time
-				this.latency = new Date().getTime() - ack.sent;
-				console.log('Roundtrip have! ',this.latency,data);
+				l = (new Date().getTime() - ack.sent);
+				this.latency = (l > 0) ? l : 20;
 			} else {
 				this.processupdate(data,true);
 			}
@@ -630,7 +644,6 @@ var Hiro = {
 			}	
 
 			// Change queue tags to echo or echo explicitely
-			// TODO Bruno: Currently we set readystate to 4 on ack, find way to do this for msg that don't get acks
 			if (echo && this.queue.length > 0 && this.queue[0].status == 0) {
 				this.queue[0].status = 1;
 				this.queue[0].tag = data.tag;

@@ -285,6 +285,19 @@ a.hirobutton:hover {
     width: auto;
   }
 
+  #folio .footer {
+    max-width: 295px;    
+    right: 55px;
+    width: auto;
+  }
+
+  #showmenu {
+    background-position: 14px -152px;
+    cursor: pointer;
+    height: 50px;
+    width: 50px;
+  }   
+
 }
 
 
@@ -364,20 +377,8 @@ a.hirobutton:hover {
 @media (max-width: 480px) {
   #canvas {
     margin-left: 0;
-    margin-right: 0;
-    border-right: none;
     border-left: none;
-  }
-
-  #showmenu {
-    position: fixed;
-    background-position: 14px -152px;
-    cursor: pointer;
-    left: 0px;
-    top: 0px;
-    height: 45px;
-    width: 40px;
-  }  
+  } 
 
   #canvas input.title {
     padding: 9px 30px 5px 47px;
@@ -390,14 +391,32 @@ a.hirobutton:hover {
     padding: 45px 12px 2px 12px;
     line-height: 28px;
   }
+
+  #nicequote {
+    left: 20px;
+    bottom: 18px;
+    right: 20px;  
+  }
+
 }
 
-@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
-  #canvas {
-    margin-left: 50px;
-    margin-right: 0;
-    border-right: none;
-  }
+@media (min-width: 481px) and (max-width: 900px) {
+  #canvas input.title {
+    padding: 40px 95px 10px 70px;
+    font-size: 27px;
+    border: 0;
+  }  
+
+  #canvas textarea {
+    padding: 98px 95px 10px 70px;
+    line-height: 30px;
+  }  
+
+  #nicequote {
+    left: 70px;
+    bottom: 40px;
+    right: 70px;  
+  }  
 }
 
 
@@ -810,8 +829,8 @@ a.hirobutton:hover {
 }
 
 @media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
-  .context {
-    display: none;
+  #context {
+    display: block;
     opacity: 0.9;
   }
 }
