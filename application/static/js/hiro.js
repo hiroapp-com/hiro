@@ -79,6 +79,8 @@ var Hiro = {
 				switch (target.id) {
 					case 'archive':
 					case 'newnote':
+						Hiro.folio.newnote();
+						break;
 					case 'settings':
 						console.log(target.id);
 						break;
@@ -93,6 +95,8 @@ var Hiro = {
 
 			// If the click was on a note link then load the note onto canvas
 			if (note) {
+				// Move entry to top of list
+				Hiro.folio.sort(note);
 				Hiro.canvas.load(note);
 			}
 		},
@@ -183,6 +187,58 @@ var Hiro = {
 			d.appendChild(link);				
 
 			return d;			
+		},
+
+		// Move folio entry to top and resort rest of folio
+		// TODO Bruno: Add sort by last own edit when we have it
+		sort: function(totop) {
+			var f = Hiro.data.get('folio','c');
+
+			// Move note by id to top of list
+			if (totop) {
+				for (i=0,l=f.length;i<l;i++) {
+					if (f[i].nid = totop) f.unshift(f.splice(i,1)[0]);
+				}
+			}
+
+			// Save changes locally and repaint
+			Hiro.data.set('folio','c',f);
+		},
+
+		// Add a new note to folio and notes array, then open it 
+		newnote: function() {
+			var f = Hiro.data.get('folio'),
+				n = Hiro.data.get('notes'),
+				id = 1;
+
+			// Find a good id we can use
+			for (i=0,l=f.c.length;i<l;i++) {
+				if (f.c[i].nid.length < 3) id++;
+			}	
+
+			// Convert id to string
+			id = id.toString();
+
+			// Build new note entry for folio
+			var folionote = {
+				nid: id,
+				status: 'active'
+			}
+
+			// Add new item to beginning of array
+			f.c.unshift(folionote);
+
+			// Build new note object for notes store
+			var note = {
+				c: { text: '', title: '', tribe: [] },
+				sv: 0, cv: 0,
+				id: id,
+				kind: 'note'
+			}
+
+			// Add note,save and repaint folio
+			Hiro.data.quicksave('folio');			
+			Hiro.data.set('notes',id.toString(),note,'c','ADD',true);
 		}			
 	},
 
@@ -802,6 +858,7 @@ var Hiro = {
 			dmp: null,
 
 			// Run Deep Diff over a specified store and optionally make sure they are the same afterwards
+			// TODO Bruno: Ignore order diffs of client folio array 
 			dd: function(store,rootstoreid,uniform) {
 				// Define a function that returns true for params we want to ignore
 				var ignorelist = function(path,key) {
