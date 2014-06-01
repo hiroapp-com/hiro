@@ -166,7 +166,7 @@ var Hiro = {
 			link.appendChild(t);
 			link.appendChild(stats);			
 
-			if (note.c.tribe.length > 0) {
+			if (note.c.peers.length > 0) {
 				// Add sharing icon to document and change class to shared
 				var s = document.createElement('div');
 				s.className = 'sharing';
@@ -251,8 +251,8 @@ var Hiro = {
 			// Build new note object for notes store
 			// TODO Bruno: Make sure we mark the notes as different once hync supports
 			var note = {
-				c: { text: '', title: '', tribe: [] },
-				s: { text: '', title: '', tribe: [] },				
+				c: { text: '', title: '', peers: [] },
+				s: { text: '', title: '', peers: [] },				
 				sv: 0, cv: 0,
 				id: id,
 				kind: 'note'
@@ -588,14 +588,21 @@ var Hiro = {
 
 		// Send message to server
 		tx: function(data) {
-			if (!data) return;
+			if (!data) return;		
 
-			// Enrich data object
-			if (!data.sid) data.sid = this.sid;
-			if (!data.tag) data.tag = Math.random().toString(36).substring(2,8);
+			// Make sure we always send an array
+			if (!(data instanceof Array)) {
+				data = [ data ];
+			}			
 
-			// If status = 1, we advance the msg to 4 immediately
-			if (data.status == 1) this.queuelookup(data.tag).status = 4;
+			for (i=0,l=data.length;i<l;i++) {
+				// Enrich data object
+				if (!data[i].sid) data[i].sid = this.sid;
+				if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);
+
+				// If status = 1, we advance the msg to 4 immediately
+				if (data[i].status == 1) this.queuelookup(data[i].tag).status = 4;
+			}
 
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
@@ -609,18 +616,28 @@ var Hiro = {
 
 		// Receive message
 		rx: function(data) {
-			// Build handler name
-			var handler = data.name.replace(/-/g, "_");
-			handler = 'rx_' + handler + '_handler';
+			if (!data) return;
 
-			// Check if handler exists and abort if not
-			if (!this[handler]) {
-				Hiro.sys.error('Received unknown response:',data);
-				return;
+			console.log('have:',data);
+
+			// Cycle through messages
+			for (i=0,l=data.length; i<l; i++) {
+				// Ignore empty messages
+				if (!data[i]) continue;
+
+				// Build handler name				
+				var handler = (data[i].name) ? data[i].name.replace(/-/g, "_") : undefined;
+				if (handler) handler = 'rx_' + handler + '_handler';
+
+				// Check if handler exists and abort if not
+				if (!handler || !this[handler]) {
+					Hiro.sys.error('Received unknown response:',data[i]);
+					return;
+				}
+
+				// Fire handler
+				this[handler](data[i]);	
 			}
-
-			// Fire handler
-			this[handler](data);	
 		},
 
 		// Overwrite local state with servers on login, session create or fatal errors
@@ -637,14 +654,14 @@ var Hiro = {
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
 			for (note in data.session.notes) {
 				var n = Hiro.data.get('notes',note),
-					t = JSON.stringify(n.val.tribe);
+					peers = (n.val.peers) ? JSON.parse(JSON.stringify(n.val.peers)) : undefined;
 				n.sv = n.cv = 0;
 				n.c = {};
 				n.s = {};
 				n.c.text = n.c.shadow = n.s.text = n.val.text;
 				n.c.title = n.s.title = n.val.title;
-				n.c.tribe = JSON.parse(t);
-				n.s.tribe = JSON.parse(t);				
+				n.c.peers = peers;
+				n.s.peers = peers;				
 				delete n.val;
 			}
 
@@ -686,8 +703,6 @@ var Hiro = {
 		rx_res_sync_handler: function(data) {
 			var ack = this.queuelookup[data.tag];
 
-			console.log('Got: ',data);
-
 			// We do have a local msg, this is an ACK
 			if (ack) {
 				// Mark msg as complete
@@ -715,11 +730,10 @@ var Hiro = {
 				if (ch.clock.sv < r.sv) continue;
 
 				// See if title changed, so Bruno can toil along with apply flow
-				// TODO Flo: Only send values that changed
-				if (ch.delta.title[0] != ch.delta.title[1]) {
-					r.s.title = r.c.title = ch.delta.title[1];
+				if (ch.delta.title) {
+					r.s.title = r.c.title = ch.delta.title;
 					// Set title visually if current document is open
-					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.settitle(ch.delta.title[1]);
+					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.settitle(ch.delta.title);
 				}	
 
 				// Iterate server
@@ -786,7 +800,7 @@ var Hiro = {
 
 		// Build a complete message object from simple changes array
 		spawnmsg: function(changes,store) {
-			if (!changes || !store) return;
+			if (!changes || changes.length == 0 || !store) return;
 
 			// Build wrapper object
 			var r = {};
@@ -800,13 +814,13 @@ var Hiro = {
 			r.state = 0;
 
 			// Add data to queue
-			Hiro.sync.queue.push(r);
+			Hiro.sync.queue.push(r);			
 		},
 
 		// Cycle through queue and send all objects with state < 2 to server
-		// TODO: Add payload [] and push & send in bulk if Hync is ready
 		processqueue: function() {
-			var q = this.queue;
+			var q = this.queue,
+				payload = [];	
 
 			// Cycle through complete queue, bottom to top
 			for (i = q.length - 1; i >= 0; i--) {
@@ -817,12 +831,12 @@ var Hiro = {
 					// Add timestamp
 					q[i].sent = new Date().getTime();
 
-					// Send to server
-					this.tx(q[i]);
+					// Add to payload
+					payload.push(q[i]);
 
 					// Advance state
 					// TODO: Make sure this only happens when we're online and send above is confirmed
-					q[i].state = 2;					
+					q[i].state = 2;				
 				}
 
 				// Discard confirmed messages
@@ -834,6 +848,9 @@ var Hiro = {
 				// Update lookup object
 				this.queuelookup[q[i].tag] = q[i];	
 			}
+
+			// Sen payload
+			if (payload.length > 0) this.tx(payload);
 		},
 
 		// WebSocket settings and functions
@@ -869,7 +886,7 @@ var Hiro = {
 
 				// Close handler
 				this.socket.onclose = function(e) {
-					Hiro.sys.log('WebSocket closed',this.socket);	
+					Hiro.sys.log('WebSocket closed',[e,this.socket]);	
 				}				
 			},
 		},
@@ -924,13 +941,14 @@ var Hiro = {
 						var c = { nid: store.c[d[i].index].nid, status: store.c[d[i].index].status};
 						// TODO Bruno: Add changes for submission once supported by hync
 						// changes.delta.add.push(c);
+						return;
 
 						// Set 'new' value to client version value and disable b0rked applychange
 						// TODO Bruno: This currently affects all changes in this diff, think of better way
 						store.s[d[i].index].status = d[i].item.rhs;
 						uniform = false; 					
 					} else {
-						changes.delta[d[i].path] = [d[i].lhs,d[i].rhs];
+						changes.delta[d[i].path] = d[i].rhs;
 					}
 
 					// Apply changes to local serverstate object
