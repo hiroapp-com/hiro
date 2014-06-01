@@ -335,9 +335,8 @@ var Hiro = {
 			// Set internal values
 			this.currentnote = id;
 
-			// Load text & title onto canvas
-			text.value = note.c.text;
-			this.settitle(note.c.title);
+			// Visual update
+			this.paint();
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
@@ -346,14 +345,18 @@ var Hiro = {
 			Hiro.sys.log('Loaded note onto canvas:',note);
 		},
 
-		// Set title programmatically
-		settitle: function(title) {
-			var el = document.getElementById(this.el_title),
-				title = title || 'Untitled Note';
+		// Paint canvas
+		// TODO Bruno: See if requestanimationframe helps her eand at folio.paint()
+		paint: function() {
+			var el_title = document.getElementById(this.el_title),
+				el_text = document.getElementById(this.el_text),
+				n = Hiro.data.get('notes',this.currentnote),
+				title = n.c.title || 'Untitled Note', text = n.c.text;
 
-			// Set title
-			el.value = document.title = title;			
-		}		
+			// Set title & text
+			if (!n.c.title || el_title.value != n.c.title) el_title.value = document.title = title;	
+			if (el_text.value != text) el_text.value = text;							
+		}	
 	},
 
 	// Local data, model and persitence
@@ -618,8 +621,6 @@ var Hiro = {
 		rx: function(data) {
 			if (!data) return;
 
-			console.log('have:',data);
-
 			// Cycle through messages
 			for (i=0,l=data.length; i<l; i++) {
 				// Ignore empty messages
@@ -705,8 +706,13 @@ var Hiro = {
 
 			// We do have a local msg, this is an ACK
 			if (ack) {
-				// Mark msg as complete
+				// Mark msg as complete				
 				ack.state = 4;
+
+				// Iterate server version
+				console.log('Ack!',data);
+
+				// TODO Bruno: Check if the ack contains new data and if yes forward to this.processupdate();
 
 				// Calculate roundtrip time
 				l = (new Date().getTime() - ack.sent);
@@ -724,20 +730,24 @@ var Hiro = {
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
-				var ch = data.changes[i];
-
 				// If the server version is lower than the one we have, ignore
-				if (ch.clock.sv < r.sv) continue;
+				if (data.changes[i].clock.sv < r.sv) continue;
 
-				// See if title changed, so Bruno can toil along with apply flow
-				if (ch.delta.title) {
-					r.s.title = r.c.title = ch.delta.title;
+				// Update title if it's a title update
+				if (data.changes[i].delta.title) {
+					r.s.title = r.c.title = data.changes[i].delta.title;
 					// Set title visually if current document is open
-					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.settitle(ch.delta.title);
+					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.paint();
 				}	
 
+				// Update text if it's a text update
+				if (data.changes[i].delta.text) {
+					var regex = /^=[0-9]+$/;
+					if (!(regex.test(data.changes[i].delta.text))) this.diff.patch(data.changes[i].delta.text,data.res.id);
+				}				
+
 				// Iterate server
-				r.sv = ch.clock.sv;
+				r.sv = data.changes[i].clock.sv;
 			}	
 
 			// Change queue tags to echo or echo explicitely
@@ -978,6 +988,29 @@ var Hiro = {
 
 				// Return patch and simple string format
 				return this.dmp.diff_toDelta(d);
+			},
+
+			// Apply a patch to a specific note 
+			patch: function(delta,id) {
+				var n = Hiro.data.get('notes',id), diffs, patch;
+
+            	// Build diffs from the server delta
+            	try { 
+            		diffs = this.dmp.diff_fromDelta(n.c.shadow,delta) 
+            		patch = this.dmp.patch_make(n.c.shadow,diffs);
+            	} 
+            	catch(e) {
+            		Hiro.sys.error('Something went wrong during patching:',e);
+            	}	          	
+
+            	// Apply
+                if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
+            		// Apply the patch & set new shadow
+                    n.c.shadow = this.dmp.patch_apply(patch, n.c.shadow)[0];                    
+                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];
+	                Hiro.sys.log("Patches successfully merged, replacing text");
+	                if (id == Hiro.canvas.currentnote) Hiro.canvas.paint();
+                }             	
 			}			
 		}
 	},
