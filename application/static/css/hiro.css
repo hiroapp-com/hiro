@@ -150,7 +150,7 @@ a.hirobutton:hover {
 
 #showmenu {
   position: fixed;
-  background: url(../img/icons.png) no-repeat;
+  background: url(../img/icons.2.png) no-repeat;
   background-size: 108px auto;
   background-position: -27px -151px;;
   left: 0;
@@ -197,7 +197,36 @@ a.hirobutton:hover {
   display: block;
   padding-bottom: 15px;
   position: relative;
+}
+
+#folio .notes .note .archive {
+  width: 30px;
+  height: 25px;
+  position: absolute;
+  top: 0;
+  left: 10px;
+  background-image: url(../img/icons.2.png);
+  background-size: 108px auto;
+  opacity: .5;
   cursor: pointer;
+  background-repeat: no-repeat;
+  display: none;
+}
+
+#folio .notes .note:hover .archive {
+  display: block;
+}
+
+#folio .notes .note .archive:hover {
+  opacity: 1;
+}
+
+#notelist .note .archive {
+  background-position: -36px -122px;
+}
+
+#archivelist .note .archive {
+  background-position: -78px -122px;
 }
 
 #folio .notes .note a {
@@ -209,6 +238,7 @@ a.hirobutton:hover {
   font-weight: 400;
   text-decoration: none;
   line-height: 15px;
+  cursor: pointer;  
 }
 
 #folio .notes .note:hover a, #folio .notes .note:hover a small {

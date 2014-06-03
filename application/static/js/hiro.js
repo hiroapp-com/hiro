@@ -57,6 +57,8 @@ var Hiro = {
 		// Internal values
 		autoupdate: null,
 		archivecount: 0,
+		// Use lookup[id] to lookup folio element by id (note: this isn't the note itself, just the folio entry)
+		lookup: {},
 
 		// Init folio
 		init: function() {
@@ -98,6 +100,15 @@ var Hiro = {
 				if (note.indexOf('note_') > -1) note = note.replace('note_','');
 			}
 
+			// If the click was on an archive icon
+			if (target.className == 'archive') {
+				// Directly set status
+				Hiro.folio.lookup[note].status = (Hiro.folio.lookup[note].status == 'active') ? 'archive' : 'active';
+				// Getset hack to kick off persistence / sync
+				Hiro.data.set('folio','',Hiro.data.get('folio'));
+				return;
+			}
+
 			// If the click was on a note link then load the note onto canvas
 			if (note) {
 				// Move entry to top of list
@@ -119,13 +130,15 @@ var Hiro = {
 
 		// Rerender data
 		paint: function() {
-			var el_n = document.getElementById(Hiro.folio.el_notelist),
+			// that scope because it's called by timeout as well
+			var that = Hiro.folio,
+				el_n = document.getElementById(Hiro.folio.el_notelist),
 				el_a = document.getElementById(Hiro.folio.el_archivelist),
 				el_al = document.getElementById(Hiro.folio.el_archivelink);
 
 			// Kick off regular updates, only once
-			if (!Hiro.folio.updatetimeout) {
-				Hiro.folio.updatetimeout = setInterval(Hiro.folio.paint,61000);
+			if (!that.updatetimeout) {
+				that.updatetimeout = setInterval(Hiro.folio.paint,61000);
 			}
 
 			// Get data from store			
@@ -133,17 +146,20 @@ var Hiro = {
 
 			// Empty current list and archivecount
 			el_n.innerHTML = el_a.innerHTML = '';
-			this.archivecount = 0;
+			that.archivecount = 0;
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
 				// Check which DOM bucket and fire renderlink
 				var el = (data[i].status == 'active') ? el_n : el_a;
-				el.appendChild(Hiro.folio.renderlink(data[i]));				
+				el.appendChild(that.renderlink(data[i]));	
+
+				// Update lookup object
+				that.lookup[data[i].nid] = data[i];			
 			}
 
 			// Update text contents of archivelink
-			if (!this.archiveopen && this.archivecount > 0) el_al.innerHTML = 'Archive  (' + this.archivecount.toString() + ')';
+			if (!that.archiveopen && that.archivecount > 0) el_al.innerHTML = 'Archive  (' + that.archivecount.toString() + ')';
 		},	
 
 		renderlink: function(folioentry) {
@@ -153,27 +169,32 @@ var Hiro = {
 			// Render active and archived document link
 			var d = document.createElement('div'),
 				id = folioentry.nid,
-				note = Hiro.data.get('notes',id);				
+				note = Hiro.data.get('notes',id),
+				link, t, stats, a;				
 
 			// Set note root node properties	
 			d.className = 'note';
 			d.setAttribute('id','note_' + note.id);
 
 			// Insert Link, Title and stats
-			var link = document.createElement('a');
+			link = document.createElement('a');
 			link.setAttribute('href','/note/' + note.id);	
 
-			var t = document.createElement('span');
+			t = document.createElement('span');
 			t.className = 'notetitle';
 			t.innerHTML = note.c.title || 'Untitled Note';
 
-			var stats = document.createElement('small');
+			stats = document.createElement('small');
+
+			// Build archive link
+			a = document.createElement('div');
+			a.className = 'archive';		
 
 			// Prepare archive link and iterate counter
 			if (folioentry.status == 'active') {
 
 			} else if (folioentry.status == 'archive') {
-				// Iterate 
+				// Iterate counter
 				this.archivecount++;
 			} else {
 				Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
@@ -185,7 +206,7 @@ var Hiro = {
 				stats.appendChild(document.createTextNode('Not saved yet'))							
 			}	
 
-
+			// Attach elements to root node
 			link.appendChild(t);
 			link.appendChild(stats);			
 
@@ -207,7 +228,9 @@ var Hiro = {
 				d.className = 'document shared';					
 			}
 
+			// Attach link & archive to element
 			d.appendChild(link);				
+			d.appendChild(a);			
 
 			return d;			
 		},
@@ -294,7 +317,7 @@ var Hiro = {
 			var act = document.getElementById(this.el_notelist),
 				arc = document.getElementById(this.el_archivelist),
 				el = document.getElementById(this.el_archivelink),
-				c = (this.archivecount) ? '(' + this.archivecount.toString() + ')' : '';
+				c = (this.archivecount > 0) ? '(' + this.archivecount.toString() + ')' : '';
 
 			// Set CSS properties and TExt string
 			if (this.archiveopen) {
