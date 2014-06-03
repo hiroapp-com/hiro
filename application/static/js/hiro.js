@@ -159,7 +159,7 @@ var Hiro = {
 			}
 
 			// Update text contents of archivelink
-			if (!that.archiveopen && that.archivecount > 0) el_al.innerHTML = 'Archive  (' + that.archivecount.toString() + ')';
+			if (!that.archiveopen) el_al.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
 		},	
 
 		renderlink: function(folioentry) {
@@ -803,7 +803,8 @@ var Hiro = {
 		processupdate: function(data,echo) {
 			// Find out which store we're talking about
 			var store = (data.res.kind == 'note') ? 'notes' : 'folio',
-				r = Hiro.data.get(store,data.res.id);
+				key = (data.res.kind == 'note') ? data.res.id : '',
+				r = Hiro.data.get(store,key);
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -811,17 +812,25 @@ var Hiro = {
 				if (data.changes[i].clock.sv < r.sv) continue;
 
 				// Update title if it's a title update
-				if (data.changes[i].delta.title) {
+				if (store == 'notes' && data.changes[i].delta.title) {
 					r.s.title = r.c.title = data.changes[i].delta.title;
 					// Set title visually if current document is open
 					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.paint();
 				}	
 
 				// Update text if it's a text update
-				if (data.changes[i].delta.text) {
+				if (store == 'notes' && data.changes[i].delta.text) {
 					var regex = /^=[0-9]+$/;
 					if (!(regex.test(data.changes[i].delta.text))) this.diff.patch(data.changes[i].delta.text,data.res.id);
-				}				
+				}	
+
+				// Update folio if it's a folio update
+				if (store == 'folio' && data.changes[i].delta.mod) {
+					var mod = data.changes[i].delta.mod;
+					for (i=0,l=mod.length;i<l;i++) {
+						Hiro.folio.lookup[mod[i][0]][mod[i][1]] = mod[i][3];
+					}
+				}	
 
 				// Iterate server clock
 				r.sv++;
@@ -1034,10 +1043,21 @@ var Hiro = {
 						// changes.delta.add.push(c);
 						return;
 
-						// Set 'new' value to client version value and disable b0rked applychange
+						// Set 'new' server version value to client version value and disable b0rked applychange
 						// TODO Bruno: This currently affects all changes in this diff, think of better way
 						store.s[d[i].index].status = d[i].item.rhs;
-						uniform = false; 					
+						uniform = false; 	
+					// Status of a note in folio changed					
+					} else if (rootstoreid == 'folio' && d[i].item.path[0] == 'status') {
+						// Add change to changes array
+						if (!changes.delta.mod) changes.delta.mod = [];	
+						var c = [ store.c[d[i].index].nid,'status',d[i].item.lhs,d[i].item.rhs];
+						changes.delta.mod.push(c);
+
+						// Update values and prevent deepdiff apply
+						store.s[d[i].index].status = d[i].item.rhs;
+						uniform = false;	
+					// Generic changes					
 					} else {
 						changes.delta[d[i].path] = d[i].rhs;
 					}
