@@ -245,7 +245,7 @@ a.hirobutton:hover {
   opacity: 1;
 }
 
-#folio .footer a.signin, #folio .footer a.archive {
+#folio .footer a.signin, #folio .footer a.archivelink {
   background-image: url(../img/icons.2.png);
   background-repeat: no-repeat;
   background-size: 108px auto;
@@ -266,7 +266,7 @@ a.hirobutton:hover {
   background-position: -68px -151px;
 }
 
-#folio .footer a.archive {
+#folio .footer a.archivelink {
   background-position: -68px -68px;
 }
 

@@ -45,15 +45,18 @@ var Hiro = {
 	folio: {
 		// States
 		open: false,
+		archiveopen: false,
 
 		// DOM IDs
 		el_root: 'folio',
 		el_notelist: 'notelist',
 		el_archivelist: 'archivelist',
-		el_showmenu: 'showmenu',		
+		el_showmenu: 'showmenu',
+		el_archivelink: 'archivelink',		
 
 		// Internal values
 		autoupdate: null,
+		archivecount: 0,
 
 		// Init folio
 		init: function() {
@@ -77,7 +80,8 @@ var Hiro = {
 			// Clicks on the main elements
 			if (target.id) {				
 				switch (target.id) {
-					case 'archive':
+					case 'archivelink':
+						Hiro.folio.archiveswitch();
 						break;
 					case 'newnote':
 						note = Hiro.folio.newnote();
@@ -116,7 +120,8 @@ var Hiro = {
 		// Rerender data
 		paint: function() {
 			var el_n = document.getElementById(Hiro.folio.el_notelist),
-				el_a = document.getElementById(Hiro.folio.el_archivelist);
+				el_a = document.getElementById(Hiro.folio.el_archivelist),
+				el_al = document.getElementById(Hiro.folio.el_archivelink);
 
 			// Kick off regular updates, only once
 			if (!Hiro.folio.updatetimeout) {
@@ -126,28 +131,35 @@ var Hiro = {
 			// Get data from store			
 			var data = Hiro.data.get('folio','c');
 
-			// Empty current list
-			el_n.innerHTML = '';
+			// Empty current list and archivecount
+			el_n.innerHTML = el_a.innerHTML = '';
+			this.archivecount = 0;
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
+				// Check which DOM bucket and fire renderlink
 				var el = (data[i].status == 'active') ? el_n : el_a;
-				el.appendChild(Hiro.folio.renderlink(data[i].nid));
+				el.appendChild(Hiro.folio.renderlink(data[i]));				
 			}
+
+			// Update text contents of archivelink
+			if (!this.archiveopen && this.archivecount > 0) el_al.innerHTML = 'Archive  (' + this.archivecount.toString() + ')';
 		},	
 
-		renderlink: function(id) {
+		renderlink: function(folioentry) {
 			// Abort if we do not have all data loaded yet
 			if (!Hiro.data.stores.folio || !Hiro.data.stores.folio) return;
 
 			// Render active and archived document link
 			var d = document.createElement('div'),
-				note = Hiro.data.get('notes',id);
+				id = folioentry.nid,
+				note = Hiro.data.get('notes',id);				
 
 			// Set note root node properties	
 			d.className = 'note';
 			d.setAttribute('id','note_' + note.id);
 
+			// Insert Link, Title and stats
 			var link = document.createElement('a');
 			link.setAttribute('href','/note/' + note.id);	
 
@@ -156,6 +168,16 @@ var Hiro = {
 			t.innerHTML = note.c.title || 'Untitled Note';
 
 			var stats = document.createElement('small');
+
+			// Prepare archive link and iterate counter
+			if (folioentry.status == 'active') {
+
+			} else if (folioentry.status == 'archive') {
+				// Iterate 
+				this.archivecount++;
+			} else {
+				Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
+			}
 
 			if (note.updated) {
 
@@ -206,7 +228,7 @@ var Hiro = {
 						break;	
 					} 
 				}
-				// Update server array (we need the same order there)
+				// Update server array (we need the same order there for deepdiff to work)
 				for (i=0,l=fs.length;i<l;i++) {
 					if (fs[i].nid == totop) {
 						// Remove item from array and insert at beginning
@@ -265,6 +287,27 @@ var Hiro = {
 
 			// Return the id of the we just created
 			return id;
+		},
+
+		// Switch documentlist between active / archived 
+		archiveswitch: function() {
+			var act = document.getElementById(this.el_notelist),
+				arc = document.getElementById(this.el_archivelist),
+				el = document.getElementById(this.el_archivelink),
+				c = (this.archivecount) ? '(' + this.archivecount.toString() + ')' : '';
+
+			// Set CSS properties and TExt string
+			if (this.archiveopen) {
+				act.style.display = 'block';
+				arc.style.display = 'none';
+				el.innerHTML = 'Archive  ' + c;
+				this.archiveopen = false;
+			} else {
+				act.style.display = 'none';
+				arc.style.display = 'block';
+				el.innerHTML = 'Close Archive'
+				this.archiveopen = true;
+			}	
 		}			
 	},
 
@@ -1091,7 +1134,7 @@ var Hiro = {
 
 		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
 		el_wastebin: document.getElementById('wastebin'),
-		el_archive: document.getElementById('archive'),
+		el_archive: document.getElementById('archivelink'),
 		el_signin: document.getElementById('signin'),
 		el_settings: document.getElementById('settings'),
 
