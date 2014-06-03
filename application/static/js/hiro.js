@@ -78,6 +78,7 @@ var Hiro = {
 			if (target.id) {				
 				switch (target.id) {
 					case 'archive':
+						break;
 					case 'newnote':
 						note = Hiro.folio.newnote();
 						break;
@@ -542,7 +543,11 @@ var Hiro = {
 		token: undefined,	
 
 		// Message queue, states are: 
-		// 0 = not sent, new tag; 1 = not sent, ack tag; 2 = sent; 4 = acked by server & ready to delete		
+		// 0 = not sent, new tag; 
+		// 1 = not sent, ack tag attached; 
+		// 2 = sent; 
+		// 3 = sent, but will not receive explicit ack
+		// 4 = acked by server & ready to delete		
 		queue: [],	
 		tbc: [],
 		queuelookup: {},
@@ -599,12 +604,21 @@ var Hiro = {
 			}			
 
 			for (i=0,l=data.length;i<l;i++) {
+				// Advance states
+				// See state table above: 1 means ack, so we advance to 3 assuming no 'ackack'
+				// 0 means client initiated message, thus we expect server ack
+				if (data[i].state == 1) data[i].state = 3;				
+				if (data[i].state == 0) data[i].state = 2;						
+
+				// Add timestamp and tag
+				data[i].sent = new Date().getTime();	
+
 				// Enrich data object
 				if (!data[i].sid) data[i].sid = this.sid;
 				if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);
 
-				// If status = 1, we advance the msg to 4 immediately
-				if (data[i].status == 1) this.queuelookup(data[i].tag).status = 4;
+				// Log potential error
+				if (data[i].state > 1) Hiro.sys.error('Trying to send message with state > 1',data[i]);
 			}
 
 			// Send to respective protocol handlers
@@ -750,11 +764,19 @@ var Hiro = {
 				r.sv = data.changes[i].clock.sv;
 			}	
 
-			// Change queue tags to echo or echo explicitely
-			if (echo && this.queue.length > 0 && this.queue[0].status == 0) {
-				this.queue[0].status = 1;
-				this.queue[0].tag = data.tag;
-			} else if (echo) {
+			// Search through queue and add tags if we still have tagless messages waiting for submission
+			if (echo && this.queue.length > 0) {
+				for (i=0,l=this.queue.length;i<l;i++) {
+					if (!this.queue[i].tag) {
+						// Attach tag and increase readystate
+						this.queue[i].tag = data.tag;
+						this.queue[i].state = 1;	
+						// Set  var to prevent echo					
+						var attached = true;
+						break;
+					}
+				}
+			} else if (echo && !attached) {
 				this.echo(data);
 			}
 
@@ -818,7 +840,6 @@ var Hiro = {
 			r.res = { kind : store['kind'] , id : store['id'] };
 			r.changes = [ changes ];
 			r.sid = Hiro.sync.sid;
-			r.tag = Math.random().toString(36).substring(2,8);
 
 			// Add (ready)state to msg
 			r.state = 0;
@@ -836,18 +857,15 @@ var Hiro = {
 			for (i = q.length - 1; i >= 0; i--) {
 
 				// Process unsent messages
-				if (q[i].state < 2) {
-
-					// Add timestamp
-					q[i].sent = new Date().getTime();
-
+				if (q[i].state < 2) {		
 					// Add to payload
-					payload.push(q[i]);
-
-					// Advance state
-					// TODO: Make sure this only happens when we're online and send above is confirmed
-					q[i].state = 2;				
+					payload.push(q[i]);			
 				}
+
+				// Discard confirmed messages
+				if (q[i].state == 3) {
+					Hiro.sys.log('TODO: Handle unacked message residue',q[i])
+				}				
 
 				// Discard confirmed messages
 				if (q[i].state == 4) {
@@ -859,7 +877,7 @@ var Hiro = {
 				this.queuelookup[q[i].tag] = q[i];	
 			}
 
-			// Sen payload
+			// Send payload
 			if (payload.length > 0) this.tx(payload);
 		},
 
