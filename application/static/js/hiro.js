@@ -604,7 +604,9 @@ var Hiro = {
 			}			
 
 			for (i=0,l=data.length;i<l;i++) {
-				// Advance states
+				// Check and advance states
+				// Log potential error
+				if (data[i].state > 1) Hiro.sys.error('Trying to send message with state > 1',data[i]);
 				// See state table above: 1 means ack, so we advance to 3 assuming no 'ackack'
 				// 0 means client initiated message, thus we expect server ack
 				if (data[i].state == 1) data[i].state = 3;				
@@ -616,9 +618,6 @@ var Hiro = {
 				// Enrich data object
 				if (!data[i].sid) data[i].sid = this.sid;
 				if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);
-
-				// Log potential error
-				if (data[i].state > 1) Hiro.sys.error('Trying to send message with state > 1',data[i]);
 			}
 
 			// Send to respective protocol handlers
@@ -723,14 +722,12 @@ var Hiro = {
 				// Mark msg as complete				
 				ack.state = 4;
 
-				// Iterate server version
-				console.log('Ack!',data);
-
-				// TODO Bruno: Check if the ack contains new data and if yes forward to this.processupdate();
-
 				// Calculate roundtrip time
 				l = (new Date().getTime() - ack.sent);
-				this.latency = (l > 0) ? l : 20;
+				this.latency = (l > 0) ? l : 20;				
+
+				// Forward sync request to processor to see if it contains updates and iterate server clock
+				this.processupdate(data,false);		
 			} else {
 				this.processupdate(data,true);
 			}
@@ -760,8 +757,8 @@ var Hiro = {
 					if (!(regex.test(data.changes[i].delta.text))) this.diff.patch(data.changes[i].delta.text,data.res.id);
 				}				
 
-				// Iterate server
-				r.sv = data.changes[i].clock.sv;
+				// Iterate server clock
+				r.sv++;
 			}	
 
 			// Search through queue and add tags if we still have tagless messages waiting for submission
