@@ -2,10 +2,10 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-	    <title>{% if doc %}{{ doc.title or 'Untitled' }}{% else %}Hiro{% endif %}</title>
+	    <title>Hiro</title>
         <meta name="description" content="From ideas for your business to party preparations: Hiro is the easiest way to stay organized throughout the day." />
         <meta name="keywords" content="Hiro, notes, notepad, notes with firends, shared notes, notetaking, evernote, simplenote, shared notes, writing, writing app, word processor, text, text editor" />
-        <meta name="title" content="{% if doc %}{{ doc.title or 'Untitled' }}{% else %}Hiro{% endif %}" />	    
+        <meta name="title" content="Hiro" />	    
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="mobile-web-app-capable" content="yes" />		
 		<meta name="apple-touch-fullscreen" content="yes" />
@@ -57,17 +57,8 @@
 			
 		<div id="canvas">
 			<div id="apps"></div>	
-
-            {% if doc %}
-			<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
-			<textarea placeholder="Just write" id="pageContent">{{ doc.text or '' }}</textarea>
-            {% else %}
-			{% with doc = current_user.latest_doc %}										
-			<input class="title" id="pageTitle" value="{{ doc.title or '' }}">				
-			<textarea placeholder="Just write" id="pageContent">{{ doc.text or '' }}</textarea>
-			{% endwith %}
-            {% endif %}
-
+			<input class="title" id="pageTitle" value="">				
+			<textarea placeholder="Just write" id="pageContent"></textarea>
 	        <div id="context">
 				<div id="status">&nbsp;</div>
 				<div id="errorstatus" title="Can't connect to Hiro.&#013;Please do not close Hiro before you went back online &amp; saved, or your changes will be lost.">&nbsp;</div>			
