@@ -170,7 +170,7 @@ var Hiro = {
 			var d = document.createElement('div'),
 				id = folioentry.nid,
 				note = Hiro.data.get('notes',id),
-				link, t, stats, a;				
+				link, t, stats, a;			
 
 			// Set note root node properties	
 			d.className = 'note';
@@ -852,7 +852,7 @@ var Hiro = {
 			// Find out which store we're talking about
 			var store = (data.res.kind == 'note') ? 'notes' : 'folio',
 				key = (data.res.kind == 'note') ? data.res.id : '',
-				r = Hiro.data.get(store,key);
+				r = Hiro.data.get(store,key), paint;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -864,6 +864,8 @@ var Hiro = {
 					r.s.title = r.c.title = data.changes[i].delta.title;
 					// Set title visually if current document is open
 					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.paint();
+					// Repaint folio
+					paint = true;
 				}	
 
 				// Update text if it's a text update
@@ -878,6 +880,8 @@ var Hiro = {
 					for (i=0,l=mod.length;i<l;i++) {
 						Hiro.folio.lookup[mod[i][0]][mod[i][1]] = mod[i][3];
 					}
+					// Repaint folio
+					paint = true;					
 				}	
 			}	
 
@@ -900,7 +904,7 @@ var Hiro = {
 
 			// Save & repaint
 			Hiro.data.quicksave(store);
-			Hiro.folio.paint();
+			if (paint) Hiro.folio.paint();
 		},
 
 		// Send simple confirmation for received request
