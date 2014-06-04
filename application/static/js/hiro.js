@@ -391,7 +391,9 @@ var Hiro = {
 		// Load a note onto the canvas
 		load: function(id) {
 			var note = Hiro.data.get('notes',id),
-				text = document.getElementById(this.el_text);
+				text = document.getElementById(this.el_text),
+				// If we call load without id we just pick the doc on top of the folio
+				id = id || Hiro.data.get('folio').c[0].nid;
 
 			// Close the folio if it should be open
 			if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);				
@@ -442,7 +444,30 @@ var Hiro = {
 
 		// Log which data isn't saved and/or synced
 		unsaved: [],
-		unsynced: [],		
+		unsynced: [],
+
+		// Set up datastore on pageload
+		init: function() {
+			var f = this.fromdisk('folio');
+
+			// If we do have data stored locally
+			if (f) {
+				// Load internal values
+				this.unsynced = this.fromdisk('unsynced');
+				Hiro.sync.queue = this.fromdisk('queue');				
+
+				// Load stores into memory
+				this.set('notes','',this.fromdisk('notes'));				
+				this.set('folio','',f);
+
+				// Load doc onto canvas
+				Hiro.canvas.load();
+			} else {
+
+			}
+
+			console.log('Folio have! ',f);
+		},		
 
 		// Set local data
 		set: function(store,key,value,source,type,paint) {
@@ -534,12 +559,12 @@ var Hiro = {
 					value = this.stores[key];	
 
 				// Write data into localStorage	
-				this.todisc('Hiro.' + key,value)						
+				this.todisk(key,value)						
 			}
 
 			// Persist list of unsynced values and msg queue
-			this.todisc('Hiro.unsynced',this.unsynced);
-			this.todisc('Hiro.queue',Hiro.sync.queue);
+			this.todisk('unsynced',this.unsynced);
+			this.todisk('queue',Hiro.sync.queue);
 
 			// Empty array
 			this.unsaved = [];
@@ -584,9 +609,10 @@ var Hiro = {
 		},
 
 		// Generic localstore writer, room for browser quirks
-		todisc: function(key,value) {
-			// Make sure we store a string
+		todisk: function(key,value) {
+			// Make sure we store a string and extend string with Hiro
 			if (typeof value !== 'string') value = JSON.stringify(value);
+			key = 'Hiro.' + key.toString();
 
 			// Write and log poetntial errors
 			try {
@@ -594,6 +620,13 @@ var Hiro = {
 			} catch(e) {		
 				Hiro.sys.error('Datastore error',e);
 			}	
+		},
+
+		// Delete some or all data set by our host
+		wipe: function(key) {
+
+			// No key, remove all
+			if (!key) localStorage.clear();
 		}
 	},
 
@@ -615,9 +648,23 @@ var Hiro = {
 		// 3 = sent, but will not receive explicit ack
 		// 4 = acked by server & ready to delete		
 		queue: [],	
-		tbc: [],
 		queuelookup: {},
 		building: false,
+
+		/**
+
+		POTENTIAL SYNC ALGORIDDIM IDEAS:
+
+		Optimistic
+		+ 	Iterating local SV in addition to CV before 
+			sending allows multiple packets being sent at once (queue just gets filled with edits)
+		- 	Needs more clever version checks, backups and roll backs of backups
+
+		Safe
+		+ 	Additional inflight array makes sure that only one msg per resource is built, simpler & no complicated rollbacks needed
+		-	Slow, additional checks before each send and more flags to maintain
+
+		**/
 
 		// Init sync
 		init: function(ws_url) {
@@ -681,9 +728,9 @@ var Hiro = {
 				// Add timestamp and tag
 				data[i].sent = new Date().getTime();	
 
-				// Enrich data object
-				if (!data[i].sid) data[i].sid = this.sid;
-				if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);
+				// Enrich data object with sid & tag
+				if (!data[i].sid) data[i].sid = this.sid;				
+				if (!data[i].tag) this.attachtag(data[i]);	
 			}
 
 			// Send to respective protocol handlers
@@ -793,7 +840,8 @@ var Hiro = {
 				this.latency = (l > 0) ? l : 20;				
 
 				// Forward sync request to processor to see if it contains updates and iterate server clock
-				this.processupdate(data,false);		
+				this.processupdate(data,false);	
+			// Server initiated this submission		
 			} else {
 				this.processupdate(data,true);
 			}
@@ -808,8 +856,8 @@ var Hiro = {
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
-				// If the server version is lower than the one we have, ignore
-				if (data.changes[i].clock.sv < r.sv) continue;
+				// If the server version is lower than the one we have in a reply, ignore
+				if (!echo && data.changes[i].clock.sv < r.sv) continue;
 
 				// Update title if it's a title update
 				if (store == 'notes' && data.changes[i].delta.title) {
@@ -831,18 +879,16 @@ var Hiro = {
 						Hiro.folio.lookup[mod[i][0]][mod[i][1]] = mod[i][3];
 					}
 				}	
-
-				// Iterate server clock
-				r.sv++;
 			}	
 
 			// Search through queue and add tags if we still have tagless messages waiting for submission
 			if (echo && this.queue.length > 0) {
 				for (i=0,l=this.queue.length;i<l;i++) {
 					if (!this.queue[i].tag) {
-						// Attach tag and increase readystate
-						this.queue[i].tag = data.tag;
+						// Increase readystate
 						this.queue[i].state = 1;	
+						// Tag and add msg to lookupqueue
+						this.attachtag(this.queue[i],data.tag)						
 						// Set  var to prevent echo					
 						var attached = true;
 						break;
@@ -920,6 +966,17 @@ var Hiro = {
 			Hiro.sync.queue.push(r);			
 		},
 
+		// Attach a tag to msg object and add entry to queuelookup
+		attachtag: function(msg,tag) {
+			tag = tag || Math.random().toString(36).substring(2,8);
+
+			// Attach tag to msg
+			msg.tag = tag;
+
+			// Add msg reference to queue lookup
+			this.queuelookup[tag] = msg;
+		},
+
 		// Cycle through queue and send all objects with state < 2 to server
 		processqueue: function() {
 			var q = this.queue,
@@ -939,14 +996,12 @@ var Hiro = {
 					Hiro.sys.log('TODO: Handle unacked message residue',q[i])
 				}				
 
-				// Discard confirmed messages
+				// Discard confirmed messages, also from lookup
 				if (q[i].state == 4) {
+					if (this.queuelookup[q[i].tag]) delete this.queuelookup[q[i].tag];
 					q.splice(i,1);
 					continue;
 				}
-
-				// Update lookup object
-				this.queuelookup[q[i].tag] = q[i];	
 			}
 
 			// Send payload
@@ -1002,7 +1057,6 @@ var Hiro = {
 			dmp: null,
 
 			// Run Deep Diff over a specified store and optionally make sure they are the same afterwards
-			// TODO Bruno: Ignore order diffs of client folio array 
 			dd: function(store,rootstoreid,uniform) {
 				// Define a function that returns true for params we want to ignore
 				var ignorelist = function(path,key) {
@@ -1029,7 +1083,7 @@ var Hiro = {
 						changes.delta.text = this.delta(store.c.shadow,store.c.text);
 
 						// Create backup to be able to fall back if all fails
-						store.c.backup = store.c.shadow;
+						if (!store.c.backup) store.c.backup = store.c.shadow;
 
 						// Update shadow to latest value
 						store.c.shadow = store.c.text;
@@ -1061,6 +1115,9 @@ var Hiro = {
 					} else {
 						changes.delta[d[i].path] = d[i].rhs;
 					}
+
+					// Iterate server clock to represent uniformation
+					store.sv++;
 
 					// Apply changes to local serverstate object
 					if (uniform) DeepDiff.applyChange(store.s,store.c,d[i]);
@@ -1095,10 +1152,12 @@ var Hiro = {
 			patch: function(delta,id) {
 				var n = Hiro.data.get('notes',id), diffs, patch;
 
+				console.log(n);
+
             	// Build diffs from the server delta
             	try { 
-            		diffs = this.dmp.diff_fromDelta(n.c.shadow,delta) 
-            		patch = this.dmp.patch_make(n.c.shadow,diffs);
+            		diffs = this.dmp.diff_fromDelta(n.s.text,delta) 
+            		patch = this.dmp.patch_make(n.s.text,diffs);
             	} 
             	catch(e) {
             		Hiro.sys.error('Something went wrong during patching:',e);
@@ -1135,6 +1194,7 @@ var Hiro = {
 			Hiro.folio.init();
 			Hiro.canvas.init();
 			Hiro.ui.init(tier);	
+			Hiro.data.init();			
 			Hiro.sync.init(ws_url);	
 			Hiro.lib.init();							
 
