@@ -131,7 +131,7 @@ var Hiro = {
 		// Rerender data
 		paint: function() {
 			// that scope because it's called by timeout as well
-			var that = Hiro.folio,
+			var that = Hiro.folio, i, l, el, data,
 				el_n = document.getElementById(Hiro.folio.el_notelist),
 				el_a = document.getElementById(Hiro.folio.el_archivelist),
 				el_al = document.getElementById(Hiro.folio.el_archivelink);
@@ -142,7 +142,7 @@ var Hiro = {
 			}
 
 			// Get data from store			
-			var data = Hiro.data.get('folio','c');
+			data = Hiro.data.get('folio','c');
 
 			// Empty current list and archivecount
 			el_n.innerHTML = el_a.innerHTML = '';
@@ -151,7 +151,7 @@ var Hiro = {
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
 				// Check which DOM bucket and fire renderlink
-				var el = (data[i].status == 'active') ? el_n : el_a;
+				el = (data[i].status == 'active') ? el_n : el_a;
 				el.appendChild(that.renderlink(data[i]));	
 
 				// Update lookup object
@@ -239,7 +239,8 @@ var Hiro = {
 		// TODO Bruno: Add sort by last own edit when we have it
 		sort: function(totop) {
 			var fc = Hiro.data.get('folio','c'),
-				fs = Hiro.data.get('folio','s');
+				fs = Hiro.data.get('folio','s'),
+				i, l;
 
 			// Move note by id to top of list
 			if (totop) {
@@ -270,7 +271,7 @@ var Hiro = {
 		newnote: function() {
 			var f = Hiro.data.get('folio'),
 				n = Hiro.data.get('notes'),
-				id = 1;
+				id = 1, i, l, folioc, folios, note;
 
 			// Find a good id we can use
 			for (i=0,l=f.c.length;i<l;i++) {
@@ -281,11 +282,11 @@ var Hiro = {
 			id = id.toString();
 
 			// Build new note entries for folio, use status new on serverside to mark changes for deepdiff
-			var folioc = {
+			folioc = {
 				nid: id,
 				status: 'active'
 			}
-			var folios = {
+			folios = {
 				nid: id,
 				status: 'new'
 			}
@@ -296,7 +297,7 @@ var Hiro = {
 
 			// Build new note object for notes store
 			// TODO Bruno: Make sure we mark the notes as different once hync supports
-			var note = {
+			note = {
 				c: { text: '', title: '', peers: [] },
 				s: { text: '', title: '', peers: [] },				
 				sv: 0, cv: 0,
@@ -465,8 +466,6 @@ var Hiro = {
 			} else {
 
 			}
-
-			console.log('Folio have! ',f);
 		},		
 
 		// Set local data
@@ -509,7 +508,7 @@ var Hiro = {
 		// Example: someobj,'foo.bar.baz' becomes someobj[foo][bar][baz]
 		deepset: function(obj,key,value) {
 			// Split string into array
-			var a = key.split('.');
+			var a = key.split('.'), i, l;
 
 			// Loop through array and step down object tree
 			for (i=0,l=a.length; i<l; i++) {
@@ -547,15 +546,15 @@ var Hiro = {
 		persist: function() {
 			// Do not run multiple saves at once
 			if (this.saving) return;
-			var start, end, dur;
+			var start, end, dur, key, i, l;
 			this.saving = true;
 
 			// Start timer
 			start = new Date().getTime(); 
 
 			// Cycle through unsaved stores
-			for (var i = 0, l = this.unsaved.length; i < l; i++) {
-				var key = this.unsaved[i],
+			for (i = 0, l = this.unsaved.length; i < l; i++) {
+				key = this.unsaved[i],
 					value = this.stores[key];	
 
 				// Write data into localStorage	
@@ -709,6 +708,7 @@ var Hiro = {
 
 		// Send message to server
 		tx: function(data) {
+			var i, l;
 			if (!data) return;		
 
 			// Make sure we always send an array
@@ -733,6 +733,8 @@ var Hiro = {
 				if (!data[i].tag) this.attachtag(data[i]);	
 			}
 
+			console.log('Sending',JSON.parse(JSON.stringify(data)));
+
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
 				this.ws.socket.send(JSON.stringify(data));
@@ -745,6 +747,7 @@ var Hiro = {
 
 		// Receive message
 		rx: function(data) {
+			var i, l, handler;
 			if (!data) return;
 
 			// Cycle through messages
@@ -753,7 +756,7 @@ var Hiro = {
 				if (!data[i]) continue;
 
 				// Build handler name				
-				var handler = (data[i].name) ? data[i].name.replace(/-/g, "_") : undefined;
+				handler = (data[i].name) ? data[i].name.replace(/-/g, "_") : undefined;
 				if (handler) handler = 'rx_' + handler + '_handler';
 
 				// Check if handler exists and abort if not
@@ -764,12 +767,15 @@ var Hiro = {
 
 				// Fire handler
 				this[handler](data[i]);	
+
+				console.log('Receiving',JSON.parse(JSON.stringify(data[i])));				
 			}
 		},
 
 		// Overwrite local state with servers on login, session create or fatal errors
 		// TODO Bruno: Refactor once protocol is set
 		rx_session_create_handler: function(data) {
+			var n, f, fv, peers, req;
 			// Set internal value		
 			this.sid = data.session.sid;
 
@@ -780,8 +786,8 @@ var Hiro = {
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
 			for (note in data.session.notes) {
-				var n = Hiro.data.get('notes',note),
-					peers = (n.val.peers) ? JSON.parse(JSON.stringify(n.val.peers)) : undefined;
+				n = Hiro.data.get('notes',note);
+				peers = (n.val.peers) ? JSON.parse(JSON.stringify(n.val.peers)) : undefined;
 				n.sv = n.cv = 0;
 				n.c = {};
 				n.s = {};
@@ -796,8 +802,8 @@ var Hiro = {
 			Hiro.data.quicksave('notes');			
 
 			// Clean up folio
-			var f = Hiro.data.get('folio'),
-				fv = JSON.stringify(f.val);
+			f = Hiro.data.get('folio');
+			fv = JSON.stringify(f.val);
 			f.cv = f.sv = 0;
 			f.s = JSON.parse(fv);
 			f.c = JSON.parse(fv);	
@@ -810,7 +816,7 @@ var Hiro = {
 			Hiro.folio.paint();
 
 			// Respond with ehlo
-			var req = {
+			req = {
         		name: "client-ehlo",
         		sid: this.sid,
         		tag: data.tag,
@@ -837,7 +843,7 @@ var Hiro = {
 
 				// Calculate roundtrip time
 				l = (new Date().getTime() - ack.sent);
-				this.latency = (l > 0) ? l : 20;				
+				this.latency = (l > 0) ? l : 20;	
 
 				// Forward sync request to processor to see if it contains updates and iterate server clock
 				this.processupdate(data,false);	
@@ -852,12 +858,15 @@ var Hiro = {
 			// Find out which store we're talking about
 			var store = (data.res.kind == 'note') ? 'notes' : 'folio',
 				key = (data.res.kind == 'note') ? data.res.id : '',
-				r = Hiro.data.get(store,key), paint;
+				r = Hiro.data.get(store,key), paint, regex, oldmsg, mod, i, l, j, jl;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
-				// If the server version is lower than the one we have in a reply, ignore
-				if (!echo && data.changes[i].clock.sv < r.sv) continue;
+				// Log stuff to doublecheck which rules should be applied				
+				if (data.changes[i].clock.cv < r.cv) {
+					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,r])));
+					// continue;
+				}	
 
 				// Update title if it's a title update
 				if (store == 'notes' && data.changes[i].delta.title) {
@@ -866,27 +875,41 @@ var Hiro = {
 					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.paint();
 					// Repaint folio
 					paint = true;
-				}	
+				}				
 
 				// Update text if it's a text update
 				if (store == 'notes' && data.changes[i].delta.text) {
-					var regex = /^=[0-9]+$/;
+					// Regex to test for =NUM format
+					regex = /^=[0-9]+$/;
+
+					// If we do have a local message for that change that is hereby acked, find & apply it to backup first
+					oldmsg = this.queuelookup[data.tag];
+					// Find correct change
+					if (oldmsg) {
+						for (j=0,jl=oldmsg.changes.length;j<jl;j++) {
+							// If we found the old msg
+							if (!(regex.test(oldmsg.changes[j].delta.text))) this.diff.patchbackup(oldmsg.changes[j].delta.text,data.res.id);
+						}
+					}
+
+					// Now we can safely apply change
 					if (!(regex.test(data.changes[i].delta.text))) this.diff.patch(data.changes[i].delta.text,data.res.id);
+
 				}	
 
 				// Update folio if it's a folio update
 				if (store == 'folio' && data.changes[i].delta.mod) {
-					var mod = data.changes[i].delta.mod;
-					for (i=0,l=mod.length;i<l;i++) {
-						Hiro.folio.lookup[mod[i][0]][mod[i][1]] = mod[i][3];
+					mod = data.changes[i].delta.mod;
+					for (j=0,jl=mod.length;j<jl;j++) {
+						Hiro.folio.lookup[mod[j][0]][mod[j][1]] = mod[j][3];
 					}
 					// Repaint folio
 					paint = true;					
 				}	
-			}	
+			}
 
 			// Search through queue and add tags if we still have tagless messages waiting for submission
-			if (echo && this.queue.length > 0) {
+			if (echo && this.queue.length > 0) {				
 				for (i=0,l=this.queue.length;i<l;i++) {
 					if (!this.queue[i].tag) {
 						// Increase readystate
@@ -908,7 +931,11 @@ var Hiro = {
 		},
 
 		// Send simple confirmation for received request
-		echo: function(data) {
+		echo: function(data) {		
+			// Strip changes from echo
+			data.changes.length = 0;
+
+			// Send echo
 			this.tx(data);
 		},
 
@@ -916,7 +943,7 @@ var Hiro = {
 		// Update local server version right away and init sending cycle
 		build: function() {
 			var u = Hiro.data.unsynced,
-				q = this.queue;
+				q = this.queue, i, l;
 
 			// Only one build at a time
 			if (this.building || u.length == 0) return;
@@ -984,7 +1011,7 @@ var Hiro = {
 		// Cycle through queue and send all objects with state < 2 to server
 		processqueue: function() {
 			var q = this.queue,
-				payload = [];	
+				payload = [], i;	
 
 			// Cycle through complete queue, bottom to top
 			for (i = q.length - 1; i >= 0; i--) {
@@ -1068,15 +1095,16 @@ var Hiro = {
 				};
 
 				// Make raw diff
-				var d = DeepDiff(store.s,store.c,ignorelist);
+				var d = DeepDiff(store.s,store.c,ignorelist),
+					changes, i, l, c;
 
 				// Abort if we don't have any diffs
 				if (!d || d.length == 0) return false;
 
 				// Start building request
-				var changes = {};
+				changes = {};
 				changes.clock = { sv : store['sv'] , cv : store['cv']++ };
-				changes.delta = {};				
+				changes.delta = {};			
 
 				// Create proper delta format and apply changes to serverside
 				// Note: This is going to get very long and potentiall ugly...
@@ -1096,7 +1124,7 @@ var Hiro = {
 					} else if (rootstoreid == 'folio' && d[i].item.lhs == 'new') {
 						// Add change to changes array
 						if (!changes.delta.add) changes.delta.add = [];
-						var c = { nid: store.c[d[i].index].nid, status: store.c[d[i].index].status};
+						c = { nid: store.c[d[i].index].nid, status: store.c[d[i].index].status};
 						// TODO Bruno: Add changes for submission once supported by hync
 						// changes.delta.add.push(c);
 						return;
@@ -1109,7 +1137,7 @@ var Hiro = {
 					} else if (rootstoreid == 'folio' && d[i].item.path[0] == 'status') {
 						// Add change to changes array
 						if (!changes.delta.mod) changes.delta.mod = [];	
-						var c = [ store.c[d[i].index].nid,'status',d[i].item.lhs,d[i].item.rhs];
+						c = [ store.c[d[i].index].nid,'status',d[i].item.lhs,d[i].item.rhs];
 						changes.delta.mod.push(c);
 
 						// Update values and prevent deepdiff apply
@@ -1154,28 +1182,48 @@ var Hiro = {
 
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
-				var n = Hiro.data.get('notes',id), diffs, patch;
-
-				console.log(n);
+				var n = Hiro.data.get('notes',id), diffs, patch,
+					source = n.c.backup || n.c.shadow;
 
             	// Build diffs from the server delta
             	try { 
-            		diffs = this.dmp.diff_fromDelta(n.s.text,delta) 
-            		patch = this.dmp.patch_make(n.s.text,diffs);
+            		diffs = this.dmp.diff_fromDelta(source,delta) 
+            		patch = this.dmp.patch_make(source,diffs);
             	} 
             	catch(e) {
             		Hiro.sys.error('Something went wrong during patching:',e);
-            	}	          	
+            	}	         	       	
 
             	// Apply
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
-            		// Apply the patch & set new shadow
-                    n.c.shadow = this.dmp.patch_apply(patch, n.c.shadow)[0];                    
-                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];
-	                Hiro.sys.log("Patches successfully merged, replacing text");
+            		// Apply the patch
+                    n.c.text = n.s.text = this.dmp.patch_apply(patch, n.c.text)[0]; 
+                    n.c.shadow = this.dmp.patch_apply(patch, n.c.shadow)[0];                                                         
+	                Hiro.sys.log("Patches successfully applied");
 	                if (id == Hiro.canvas.currentnote) Hiro.canvas.paint();
                 }             	
-			}			
+			},
+
+			// Apply a patch to a backup when we delete a sync message that had a text change from the queue
+			patchbackup: function(delta,id) {
+				var n = Hiro.data.get('notes',id),
+					backup = n.c.backup, diffs, patch;
+
+				// Abort if we have no backup
+				if (!backup) return;	
+
+            	// Build diffs from the server delta
+            	try { 
+            		diffs = this.dmp.diff_fromDelta(backup,delta) 
+            		patch = this.dmp.patch_make(backup,diffs);
+            	} 
+            	catch(e) {
+            		Hiro.sys.error('Something went wrong during backup patching:',e);
+            	}
+
+            	// Apply diff to backup
+				n.c.backup = this.dmp.patch_apply(patch,backup)[0];
+			}		
 		}
 	},
 
@@ -1258,7 +1306,7 @@ var Hiro = {
 		// Setup and browser capability testing
 		init: function(tier) {
 			var style = this.el_wastebin.style,
-				v = this.vendors;
+				v = this.vendors, i, l, v;
 
 			// Set up UI according to user level
 			this.setstage(tier);	
@@ -1266,8 +1314,8 @@ var Hiro = {
 			// Determine CSS opacity property
 			if (style.opacity !== undefined) this.opacity = 'opacity';
 			else {
-				for (var i = 0, l = v.length; i < l; i++) {
-					var v = v[i] + 'Opacity';
+				for (i = 0, l = v.length; i < l; i++) {
+					v = v[i] + 'Opacity';
 					if (style[v] !== undefined) {
 						this.opacity = v;
 						break;
@@ -1277,8 +1325,8 @@ var Hiro = {
 
 			// Set vendor specific global animationframe property
 			if (!window.requestAnimationFrame) {
-				for (var i=0, l = v.length; i < l; i++) {
-					var v = v[i], r = window[v + 'RequestAnimationFrame'];
+				for (i=0, l = v.length; i < l; i++) {
+					v = v[i], r = window[v + 'RequestAnimationFrame'];
 					if (r) {
 						window.requestAnimationFrame = r;
 						window.cancelAnimationFrame = window[v + 'CancelAnimationFrame'] ||	window[v + 'CancelRequestAnimationFrame'];
