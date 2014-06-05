@@ -632,7 +632,7 @@ var Hiro = {
 	// Connecting local and server state
 	sync: {
 		protocol: undefined,
-		connected: false,
+		online: false,
 		authenticated: false,
 		latency: 100,
 
@@ -1059,7 +1059,7 @@ var Hiro = {
 					Hiro.sys.log('WebSocket opened',this.socket);	
 
 					// Switch to online
-					Hiro.sys.online = Hiro.sync.connected = true;	
+					Hiro.sync.online = true;	
 
 					// Auth the connection right away
 					Hiro.sync.auth();		
@@ -1072,6 +1072,8 @@ var Hiro = {
 
 				// Close handler
 				this.socket.onclose = function(e) {
+					// Switch to offline
+					Hiro.sync.online = false;					
 					Hiro.sys.log('WebSocket closed',[e,this.socket]);	
 				}				
 			},
@@ -1232,15 +1234,11 @@ var Hiro = {
 		version: undefined,
 		inited: false,
 		production: (window.location.href.indexOf('hiroapp') >= 0),	
-		online: false,	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
-		init: function(tier,ws_url,online) {
+		init: function(tier,ws_url) {
 			// Prevent initing twice
 			if (this.inited) return;
-
-			// Set online/offline
-			this.online = online;
 
 			// Setup other app parts
 			Hiro.folio.init();
