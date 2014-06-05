@@ -688,16 +688,15 @@ var Hiro = {
 
 		// Send message to server
 		tx: function(data) {
-			if (!data) return;			
-			var i, l;		
+			if (!data) return;				
 
 			// Make sure we always send an array
 			if (!(data instanceof Array)) {
 				data = [ data ];
 			}			
 
-			for (i=0,l=data.length;i<l;i++) {	
-				// TODO Bruno: Find out why that sometimes happens despite our no data check
+			for (var i=0,l=data.length;i<l;i++) {	
+				// Make sure no empty or null/undefined messages get sent
 				if (!data[i]) continue;
 
 				// Add timestamp
@@ -705,10 +704,11 @@ var Hiro = {
 
 				// Enrich data object with sid & tag
 				if (!data[i].sid) data[i].sid = this.sid;				
-				if (!data[i].tag) this.attachtag(data[i]);	
-
-				// Add tag to array
-				this.tags.push(data[i].tag);
+				if (!data[i].tag) {
+					// Create tag and add it for later lookup
+					data[i].tag = Math.random().toString(36).substring(2,8);	
+					this.tags.push(data[i].tag);
+				}	
 			}
 
 			console.log('Sending',JSON.parse(JSON.stringify(data)));
@@ -827,7 +827,7 @@ var Hiro = {
 			for (i=0,l=data.changes.length; i<l; i++) {
 				// Log stuff to doublecheck which rules should be applied				
 				if (data.changes[i].clock.cv != r.cv || data.changes[i].clock.sv != r.sv) {
-					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data.changes[i],r])));
+					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,r])));
 					// continue;
 				}	
 
@@ -913,13 +913,13 @@ var Hiro = {
 					var n = Hiro.data.get('notes');					
 					for (note in n) {
 						this.diff.dd(n[note],u[i],true);
-						if (n[note].edits) newcommit.push(this.wrapmsg(n[note].edits,n[note]));
+						if (n[note].edits && n[note].edits.length > 0) newcommit.push(this.wrapmsg(n[note].edits,n[note]));
 					}	
 				} else {
 					// In case of non notes store get store first
 					var s = Hiro.data.get(u[i]);				
-					this.diff.dd(s,u[i],true);
-					if (s.edits) newcommit.push(this.wrapmsg(s.edits,s));
+					this.diff.dd(s,u[i],true);					
+					if (s.edits && s.edits.length > 0) newcommit.push(this.wrapmsg(s.edits,s));
 				}
 			}
 
@@ -937,7 +937,7 @@ var Hiro = {
 
 		// Build a complete message object from simple changes array
 		wrapmsg: function(edits,store) {
-			if (!edits || edits.length == 0 || !store) return;
+			if (!edits || edits.length == 0 || !store || !edits[0]) return;
 
 			// Build wrapper object
 			var r = {};
@@ -949,15 +949,6 @@ var Hiro = {
 			// Return r
 			return r;	
 		},
-
-		// Attach a tag to msg object and add entry to queuelookup
-		attachtag: function(msg,tag) {
-			tag = tag || Math.random().toString(36).substring(2,8);
-
-			// Attach tag to msg
-			msg.tag = tag;
-		},
-
 
 		// WebSocket settings and functions
 		ws: {
