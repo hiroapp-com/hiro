@@ -454,8 +454,7 @@ var Hiro = {
 			// If we do have data stored locally
 			if (f) {
 				// Load internal values
-				this.unsynced = this.fromdisk('unsynced');
-				Hiro.sync.queue = this.fromdisk('queue');				
+				this.unsynced = this.fromdisk('unsynced');			
 
 				// Load stores into memory
 				this.set('notes','',this.fromdisk('notes'));				
@@ -496,8 +495,8 @@ var Hiro = {
 				// Mark store for syncing
 				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);	
 
-				// Kick off sync 
-				Hiro.sync.build();								
+				// Kick off commit 
+				Hiro.sync.commit();								
 			}
 
 			// Mark store for local persistence and kickoff write
@@ -563,7 +562,6 @@ var Hiro = {
 
 			// Persist list of unsynced values and msg queue
 			this.todisk('unsynced',this.unsynced);
-			this.todisk('queue',Hiro.sync.queue);
 
 			// Empty array
 			this.unsaved = [];
@@ -640,30 +638,8 @@ var Hiro = {
 		sid: undefined,
 		token: undefined,	
 
-		// Message queue, states are: 
-		// 0 = not sent, new tag; 
-		// 1 = not sent, ack tag attached; 
-		// 2 = sent; 
-		// 3 = sent, but will not receive explicit ack
-		// 4 = acked by server & ready to delete		
-		queue: [],	
-		queuelookup: {},
-		building: false,
-
-		/**
-
-		POTENTIAL SYNC ALGORIDDIM IDEAS:
-
-		Optimistic
-		+ 	Iterating local SV in addition to CV before 
-			sending allows multiple packets being sent at once (queue just gets filled with edits)
-		- 	Needs more clever version checks, backups and roll backs of backups
-
-		Safe
-		+ 	Additional inflight array makes sure that only one msg per resource is built, simpler & no complicated rollbacks needed
-		-	Slow, additional checks before each send and more flags to maintain
-
-		**/
+		// Prevent two commits being in progress
+		commitinprogress: false,
 
 		// Init sync
 		init: function(ws_url) {
@@ -708,24 +684,19 @@ var Hiro = {
 
 		// Send message to server
 		tx: function(data) {
-			var i, l;
-			if (!data) return;		
+			if (!data) return;			
+			var i, l;		
 
 			// Make sure we always send an array
 			if (!(data instanceof Array)) {
 				data = [ data ];
 			}			
 
-			for (i=0,l=data.length;i<l;i++) {
-				// Check and advance states
-				// Log potential error
-				if (data[i].state > 1) Hiro.sys.error('Trying to send message with state > 1',data[i]);
-				// See state table above: 1 means ack, so we advance to 3 assuming no 'ackack'
-				// 0 means client initiated message, thus we expect server ack
-				if (data[i].state == 1) data[i].state = 3;				
-				if (data[i].state == 0) data[i].state = 2;						
+			for (i=0,l=data.length;i<l;i++) {	
+				// TODO Bruno: Find out why that sometimes happens despite our no data check
+				if (!data[i]) continue;
 
-				// Add timestamp and tag
+				// Add timestamp
 				data[i].sent = new Date().getTime();	
 
 				// Enrich data object with sid & tag
@@ -791,7 +762,7 @@ var Hiro = {
 				n.sv = n.cv = 0;
 				n.c = {};
 				n.s = {};
-				n.c.text = n.c.shadow = n.s.text = n.val.text;
+				n.c.text = n.s.text = n.val.text;
 				n.c.title = n.s.title = n.val.title;
 				n.c.peers = peers;
 				n.s.peers = peers;				
@@ -831,41 +802,19 @@ var Hiro = {
 			Hiro.sys.log('',null,'groupEnd');			
 		},
 
-		// Incoming sync request, could be server initiated or ACK
-		// TODO Bruno: Check via deepdiff if the ack contains any new changes and apply if yes
-		rx_res_sync_handler: function(data) {
-			var ack = this.queuelookup[data.tag];
-
-			// We do have a local msg, this is an ACK
-			if (ack) {
-				// Mark msg as complete				
-				ack.state = 4;
-
-				// Calculate roundtrip time
-				l = (new Date().getTime() - ack.sent);
-				this.latency = (l > 0) ? l : 20;	
-
-				// Forward sync request to processor to see if it contains updates and iterate server clock
-				this.processupdate(data,false);	
-			// Server initiated this submission		
-			} else {
-				this.processupdate(data,true);
-			}
-		},
-
 		// Process changes sent from server
-		processupdate: function(data,echo) {
+		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
 			var store = (data.res.kind == 'note') ? 'notes' : 'folio',
 				key = (data.res.kind == 'note') ? data.res.id : '',
-				r = Hiro.data.get(store,key), paint, regex, oldmsg, mod, i, l, j, jl;
+				r = Hiro.data.get(store,key), paint, regex, oldmsg, mod, i, l, j, jl, stack;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
 				// Log stuff to doublecheck which rules should be applied				
-				if (data.changes[i].clock.cv < r.cv) {
+				if (data.changes[i].clock.cv != r.cv || data.changes[i].clock.sv != r.sv) {
 					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,r])));
-					// continue;
+					continue;
 				}	
 
 				// Update title if it's a title update
@@ -882,16 +831,6 @@ var Hiro = {
 					// Regex to test for =NUM format
 					regex = /^=[0-9]+$/;
 
-					// If we do have a local message for that change that is hereby acked, find & apply it to backup first
-					oldmsg = this.queuelookup[data.tag];
-					// Find correct change
-					if (oldmsg) {
-						for (j=0,jl=oldmsg.changes.length;j<jl;j++) {
-							// If we found the old msg
-							if (!(regex.test(oldmsg.changes[j].delta.text))) this.diff.patchbackup(oldmsg.changes[j].delta.text,data.res.id);
-						}
-					}
-
 					// Now we can safely apply change
 					if (!(regex.test(data.changes[i].delta.text))) this.diff.patch(data.changes[i].delta.text,data.res.id);
 
@@ -906,28 +845,23 @@ var Hiro = {
 					// Repaint folio
 					paint = true;					
 				}	
-			}
 
-			// Search through queue and add tags if we still have tagless messages waiting for submission
-			if (echo && this.queue.length > 0) {				
-				for (i=0,l=this.queue.length;i<l;i++) {
-					if (!this.queue[i].tag) {
-						// Increase readystate
-						this.queue[i].state = 1;	
-						// Tag and add msg to lookupqueue
-						this.attachtag(this.queue[i],data.tag)						
-						// Set  var to prevent echo					
-						var attached = true;
-						break;
-					}
+				// Remove outdated edits from stores
+				stack = r.edits.length;
+				while (stack--) {
+					if (r.edits[stack].clock.cv < data.changes[i].clock.cv) r.edits.splice(stack,1); 
 				}
-			} else if (echo && !attached) {
-				this.echo(data);
+
+				// Iterate server version
+				r.sv++;
 			}
 
 			// Save & repaint
 			Hiro.data.quicksave(store);
 			if (paint) Hiro.folio.paint();
+
+			// Release lock preventing push of new commits
+			this.commitinprogress = false;
 		},
 
 		// Send simple confirmation for received request
@@ -939,62 +873,57 @@ var Hiro = {
 			this.tx(data);
 		},
 
-		// Create messages representing all changes between local client and server versions
-		// Update local server version right away and init sending cycle
-		build: function() {
-			var u = Hiro.data.unsynced,
-				q = this.queue, i, l;
+		// Create messages representing all changes between local model and shadow
+		commit: function() {
+			var u = Hiro.data.unsynced, i, l;
 
-			// Only one build at a time
-			if (this.building || u.length == 0) return;
-			this.building = true;
+			// Only one build at a time, and only when we're online
+			if (this.commitinprogress || !this.online) return;
+			this.commitinprogress = true;
+			var newcommit = [];
 
-			// Cycle through changes
+			// Cycle through stores flagged unsynced
 			for (i=0,l=u.length;i<l;i++) {
 				if (u[i] == 'notes') {
 					// Cycle through notes store
 					var n = Hiro.data.get('notes');					
-					for (note in n) this.spawnmsg(this.diff.dd(n[note],u[i],true),n[note]);
+					for (note in n) {
+						this.diff.dd(n[note],u[i],true);
+						if (n[note].edits) newcommit.push(this.wrapmsg(n[note].edits,n[note]));
+					}	
 				} else {
 					// In case of non notes store get store first
 					var s = Hiro.data.get(u[i]);				
-					this.spawnmsg(this.diff.dd(s,u[i],true),s);
+					this.diff.dd(s,u[i],true);
+					if (s.edits) newcommit.push(this.wrapmsg(s.edits,s));
 				}
 			}
 
-			// Empty list of unsynced stores to notice later changes
-			Hiro.data.unsynced.length = 0;
-
 			// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
-			// and our msg queue
 			Hiro.data.persist();
 
-			// Send messages via processqueue handler
-			this.processqueue();
-
-			// Allow creation of next build and kick it off if we have new data
-			setTimeout(function(){
-				Hiro.sync.building = false;
-				if (Hiro.data.unsynced.length > 0) Hiro.sync.build();
-			},this.latency);
+			// If we have any data in this commit, send it to the server now
+			if (newcommit && newcommit.length > 0) {
+				this.tx(newcommit);
+			} else {
+				// Release lock as no new commits were found
+				this.commitinprogress = false;
+			}	
 		},
 
 		// Build a complete message object from simple changes array
-		spawnmsg: function(changes,store) {
-			if (!changes || changes.length == 0 || !store) return;
+		wrapmsg: function(edits,store) {
+			if (!edits || edits.length == 0 || !store) return;
 
 			// Build wrapper object
 			var r = {};
 			r.name = 'res-sync';
 			r.res = { kind : store['kind'] , id : store['id'] };
-			r.changes = [ changes ];
-			r.sid = Hiro.sync.sid;
+			r.changes = edits;
+			r.sid = Hiro.sync.sid;		
 
-			// Add (ready)state to msg
-			r.state = 0;
-
-			// Add data to queue
-			Hiro.sync.queue.push(r);			
+			// Return r
+			return r;	
 		},
 
 		// Attach a tag to msg object and add entry to queuelookup
@@ -1003,41 +932,8 @@ var Hiro = {
 
 			// Attach tag to msg
 			msg.tag = tag;
-
-			// Add msg reference to queue lookup
-			this.queuelookup[tag] = msg;
 		},
 
-		// Cycle through queue and send all objects with state < 2 to server
-		processqueue: function() {
-			var q = this.queue,
-				payload = [], i;	
-
-			// Cycle through complete queue, bottom to top
-			for (i = q.length - 1; i >= 0; i--) {
-
-				// Process unsent messages
-				if (q[i].state < 2) {		
-					// Add to payload
-					payload.push(q[i]);			
-				}
-
-				// Discard confirmed messages
-				if (q[i].state == 3) {
-					Hiro.sys.log('TODO: Handle unacked message residue',q[i])
-				}				
-
-				// Discard confirmed messages, also from lookup
-				if (q[i].state == 4) {
-					if (this.queuelookup[q[i].tag]) delete this.queuelookup[q[i].tag];
-					q.splice(i,1);
-					continue;
-				}
-			}
-
-			// Send payload
-			if (payload.length > 0) this.tx(payload);
-		},
 
 		// WebSocket settings and functions
 		ws: {
@@ -1093,8 +989,12 @@ var Hiro = {
 			dd: function(store,rootstoreid,uniform) {
 				// Define a function that returns true for params we want to ignore
 				var ignorelist = function(path,key) {
-					if (key == 'shadow' || key == 'backup') return true; 
+					if (key == 'backup') return true; 
 				};
+
+				// Don't run if we already have edits for this store
+				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
+				if (store.edits && store.edits.length > 1) return;
 
 				// Make raw diff
 				var d = DeepDiff(store.s,store.c,ignorelist),
@@ -1103,7 +1003,7 @@ var Hiro = {
 				// Abort if we don't have any diffs
 				if (!d || d.length == 0) return false;
 
-				// Start building request
+				// Start building changes object
 				changes = {};
 				changes.clock = { sv : store['sv'] , cv : store['cv']++ };
 				changes.delta = {};			
@@ -1114,13 +1014,13 @@ var Hiro = {
 					// If the last path element is a text element, we get a dmp delta from the rhs text & shadow
 					if (d[i].path == 'text') {
 						// Get dmp delta
-						changes.delta.text = this.delta(store.c.shadow,store.c.text);
+						changes.delta.text = this.delta(store.s.text,store.c.text);
 
-						// Create backup to be able to fall back if all fails
-						if (!store.c.backup) store.c.backup = store.c.shadow;
+						// TODO Bruno: Add backup handling (ost return case)
+						// store.c.backup = store.s.text;
 
-						// Update shadow to latest value
-						store.c.shadow = store.c.text;
+						// Update local server version to latest value
+						store.s.text = store.c.text;
 
 					// If a new note was added to the folio	or had it's status changed
 					} else if (rootstoreid == 'folio' && d[i].item.lhs == 'new') {
@@ -1129,7 +1029,7 @@ var Hiro = {
 						c = { nid: store.c[d[i].index].nid, status: store.c[d[i].index].status};
 						// TODO Bruno: Add changes for submission once supported by hync
 						// changes.delta.add.push(c);
-						return;
+						continue;
 
 						// Set 'new' server version value to client version value and disable b0rked applychange
 						// TODO Bruno: This currently affects all changes in this diff, think of better way
@@ -1150,9 +1050,6 @@ var Hiro = {
 						changes.delta[d[i].path] = d[i].rhs;
 					}
 
-					// Iterate server clock to represent uniformation
-					store.sv++;
-
 					// Apply changes to local serverstate object
 					if (uniform) DeepDiff.applyChange(store.s,store.c,d[i]);
 				}
@@ -1160,8 +1057,9 @@ var Hiro = {
 				// Mark store as tainted but do not persist yet for performance reasons
 				if (Hiro.data.unsaved.indexOf(rootstoreid) < 0) Hiro.data.unsaved.push(rootstoreid);			
 
-				// Return changes
-				return changes;
+				// Append changes to resource edits
+				store.edits = store.edits || [];
+				store.edits.push(changes);
 			},
 
 			// Compare two strings and return standard delta format
