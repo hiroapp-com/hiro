@@ -632,6 +632,9 @@ var Hiro = {
 		protocol: undefined,
 		online: false,
 		authenticated: false,
+
+		// Timing stuff
+		lastsend: 0,
 		latency: 100,
 
 		// TODO: Move this to persisted data store?
@@ -640,6 +643,7 @@ var Hiro = {
 
 		// Prevent two commits being in progress
 		commitinprogress: false,
+		tags: [],
 
 		// Init sync
 		init: function(ws_url) {
@@ -697,11 +701,14 @@ var Hiro = {
 				if (!data[i]) continue;
 
 				// Add timestamp
-				data[i].sent = new Date().getTime();	
+				this.lastsend = new Date().getTime();	
 
 				// Enrich data object with sid & tag
 				if (!data[i].sid) data[i].sid = this.sid;				
 				if (!data[i].tag) this.attachtag(data[i]);	
+
+				// Add tag to array
+				this.tags.push(data[i].tag);
 			}
 
 			console.log('Sending',JSON.parse(JSON.stringify(data)));
@@ -718,7 +725,7 @@ var Hiro = {
 
 		// Receive message
 		rx: function(data) {
-			var i, l, handler;
+			var i, l, handler, rt;
 			if (!data) return;
 
 			// Cycle through messages
@@ -738,6 +745,10 @@ var Hiro = {
 
 				// Fire handler
 				this[handler](data[i]);	
+
+				// Measure roundtrip and reset
+				if (this.lastsend > 0) this.latency = (new Date().getTime() - this.lastsend) || 100;
+				this.lastsend = 0;
 
 				console.log('Receiving',JSON.parse(JSON.stringify(data[i])));				
 			}
@@ -807,14 +818,17 @@ var Hiro = {
 			// Find out which store we're talking about
 			var store = (data.res.kind == 'note') ? 'notes' : 'folio',
 				key = (data.res.kind == 'note') ? data.res.id : '',
-				r = Hiro.data.get(store,key), paint, regex, oldmsg, mod, i, l, j, jl, stack;
+				r = Hiro.data.get(store,key), paint, regex, ack, mod, i, l, j, jl, stack;
+
+			// Find out if it's a response or server initiated
+			ack = (this.tags.indexOf(data.tag) > -1);
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
 				// Log stuff to doublecheck which rules should be applied				
 				if (data.changes[i].clock.cv != r.cv || data.changes[i].clock.sv != r.sv) {
-					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,r])));
-					continue;
+					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data.changes[i],r])));
+					// continue;
 				}	
 
 				// Update title if it's a title update
@@ -847,9 +861,11 @@ var Hiro = {
 				}	
 
 				// Remove outdated edits from stores
-				stack = r.edits.length;
-				while (stack--) {
-					if (r.edits[stack].clock.cv < data.changes[i].clock.cv) r.edits.splice(stack,1); 
+				if (r.edits && r.edits.length > 0) {
+					stack = r.edits.length;
+					while (stack--) {
+						if (r.edits[stack].clock.cv < data.changes[i].clock.cv) r.edits.splice(stack,1); 
+					}
 				}
 
 				// Iterate server version
@@ -860,15 +876,23 @@ var Hiro = {
 			Hiro.data.quicksave(store);
 			if (paint) Hiro.folio.paint();
 
+			// Remove tag from list
+			if (ack) {
+				this.tags.splice(this.tags.indexOf(data.tag),1);
+			// Respond if it was server initiated
+			} else {
+				// TODO Bruno: Evil hack, pls fix tomorrow				
+				data.changes = r.edits || [{ clock: { cv: r.cv++, sv: r.sv }, delta: {}}];
+
+				this.ack(data);
+			}	
+
 			// Release lock preventing push of new commits
 			this.commitinprogress = false;
 		},
 
 		// Send simple confirmation for received request
-		echo: function(data) {		
-			// Strip changes from echo
-			data.changes.length = 0;
-
+		ack: function(data,reply) {		
 			// Send echo
 			this.tx(data);
 		},
