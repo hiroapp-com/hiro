@@ -1097,13 +1097,12 @@ var Hiro = {
 
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
-				var n = Hiro.data.get('notes',id), diffs, patch,
-					source = n.c.backup || n.c.shadow;
+				var n = Hiro.data.get('notes',id), diffs, patch;
 
             	// Build diffs from the server delta
             	try { 
-            		diffs = this.dmp.diff_fromDelta(source,delta) 
-            		patch = this.dmp.patch_make(source,diffs);
+            		diffs = this.dmp.diff_fromDelta(n.s.text,delta) 
+            		patch = this.dmp.patch_make(n.s.text,diffs);
             	} 
             	catch(e) {
             		Hiro.sys.error('Something went wrong during patching:',e);
@@ -1112,33 +1111,12 @@ var Hiro = {
             	// Apply
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
             		// Apply the patch
-                    n.c.text = n.s.text = this.dmp.patch_apply(patch, n.c.text)[0]; 
-                    n.c.shadow = this.dmp.patch_apply(patch, n.c.shadow)[0];                                                         
+                    n.s.text = this.dmp.patch_apply(patch, n.s.text)[0]; 
+                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];                                                         
 	                Hiro.sys.log("Patches successfully applied");
 	                if (id == Hiro.canvas.currentnote) Hiro.canvas.paint();
                 }             	
-			},
-
-			// Apply a patch to a backup when we delete a sync message that had a text change from the queue
-			patchbackup: function(delta,id) {
-				var n = Hiro.data.get('notes',id),
-					backup = n.c.backup, diffs, patch;
-
-				// Abort if we have no backup
-				if (!backup) return;	
-
-            	// Build diffs from the server delta
-            	try { 
-            		diffs = this.dmp.diff_fromDelta(backup,delta) 
-            		patch = this.dmp.patch_make(backup,diffs);
-            	} 
-            	catch(e) {
-            		Hiro.sys.error('Something went wrong during backup patching:',e);
-            	}
-
-            	// Apply diff to backup
-				n.c.backup = this.dmp.patch_apply(patch,backup)[0];
-			}		
+			},	
 		}
 	},
 
