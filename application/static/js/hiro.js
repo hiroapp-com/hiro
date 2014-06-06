@@ -150,6 +150,9 @@ var Hiro = {
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
+				// Make sure we have a note
+
+
 				// Check which DOM bucket and fire renderlink
 				el = (data[i].status == 'active') ? el_n : el_a;
 				el.appendChild(that.renderlink(data[i]));	
@@ -416,11 +419,12 @@ var Hiro = {
 		},
 
 		// Paint canvas
-		// TODO Bruno: See if requestanimationframe helps her eand at folio.paint()
+		// TODO Bruno: See if requestanimationframe helps her and at folio.paint()
 		paint: function() {
 			var el_title = document.getElementById(this.el_title),
 				el_text = document.getElementById(this.el_text),
-				n = Hiro.data.get('notes',this.currentnote),
+				current = this.currentnote || Hiro.data.get('folio').c[0].nid,
+				n = Hiro.data.get('notes',current),
 				title = n.c.title || 'Untitled Note', text = n.c.text;
 
 			// Set title & text
@@ -457,6 +461,7 @@ var Hiro = {
 				this.unsynced = this.fromdisk('unsynced');			
 
 				// Load stores into memory
+				this.set('user','',this.fromdisk('user'));				
 				this.set('notes','',this.fromdisk('notes'));				
 				this.set('folio','',f);
 
@@ -530,7 +535,7 @@ var Hiro = {
 			} else if (!key && this.stores[store]) {
 				return this.stores[store];
 			} else {
-				return false;
+				return undefined;
 				// this.fromdisk(store,key);
 			}
 		},
@@ -640,10 +645,6 @@ var Hiro = {
 		lastsend: 0,
 		latency: 100,
 
-		// TODO: Move this to persisted data store?
-		sid: undefined,
-		token: undefined,	
-
 		// Prevent two commits being in progress
 		commitinprogress: false,
 		tags: [],
@@ -676,13 +677,18 @@ var Hiro = {
 
 		// Authenticate connection
 		auth: function(token) {
+			var user = Hiro.data.get('user');
+
 			// Just quick ehlo with to make sure session is still valid
-			if (this.sid) {	
+			if (user && user.sid) {	
 	        	// Logging
-				Hiro.sys.log('Veryfing stored session id',this.sid);	
+				Hiro.sys.log('Veryfing stored session id',user.sid);	
 
 				// Send			
-				this.ping();
+				this.commit();
+
+				// End bootstrapping logging group
+				Hiro.sys.log('',null,'groupEnd');				
 			// Hm, no session ID, request a new one
 			} else {
 				// Apply token
@@ -702,10 +708,13 @@ var Hiro = {
 
 		// Send simple ping to server
 		ping: function() {
+			var sid = Hiro.data.get('user','sid');
+			if (!sid) return;
+
 			// Build ping
 			req = {
         		name: "client-ehlo",
-        		sid: this.sid,
+        		sid: sid
     		}
 
     		// Send ping
@@ -729,7 +738,7 @@ var Hiro = {
 				this.lastsend = new Date().getTime();	
 
 				// Enrich data object with sid & tag
-				if (!data[i].sid) data[i].sid = this.sid;				
+				if (!data[i].sid) data[i].sid = Hiro.data.get('user','sid');				
 				if (!data[i].tag) {
 					// Create tag and add it for later lookup
 					data[i].tag = Math.random().toString(36).substring(2,8);	
@@ -783,18 +792,13 @@ var Hiro = {
 		// Overwrite local state with servers on login, session create or fatal errors
 		// TODO Bruno: Refactor once protocol is set
 		rx_session_create_handler: function(data) {
-			var n, f, fv, peers, req;
-			// Set internal value		
-			this.sid = data.session.sid;
-
-			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
-			Hiro.data.set('notes','',data.session.notes,'s');				
-			Hiro.data.set('user','',data.session.uid,'s');
-			Hiro.data.set('folio','',data.session.folio,'s');	
+			var n, f, fv, peers, req, user;
+			// Build user object
+			user = { id: data.session.uid, sid: data.session.sid};
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
 			for (note in data.session.notes) {
-				n = Hiro.data.get('notes',note);
+				n = data.session.notes[note];
 				peers = (n.val.peers) ? JSON.parse(JSON.stringify(n.val.peers)) : undefined;
 				n.sv = n.cv = 0;
 				n.c = {};
@@ -804,28 +808,27 @@ var Hiro = {
 				n.c.peers = peers;
 				n.s.peers = peers;				
 				delete n.val;
-			}
-
-			// Save note changes
-			Hiro.data.quicksave('notes');			
+			}		
 
 			// Clean up folio
-			f = Hiro.data.get('folio');
+			f = data.session.folio;
 			fv = JSON.stringify(f.val);
 			f.cv = f.sv = 0;
 			f.s = JSON.parse(fv);
 			f.c = JSON.parse(fv);	
-			delete f.val;		
+			delete f.val;
 
-			// Save folio changes
-			Hiro.data.quicksave('folio');	
+			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
+			Hiro.data.set('notes','',data.session.notes,'s');						
+			Hiro.data.set('folio','',data.session.folio,'s');	
+			Hiro.data.set('user','',user,'s');						
 
 			// Visually update folio & canvas
 			Hiro.folio.paint();
 			Hiro.canvas.paint();
 
-			// Respond with ping
-			this.ping();			
+			// Respond with commit to make sure changes arrive at the server
+			this.commit();			
 
 			// Complete hprogress
 			Hiro.ui.hprogress.done();
@@ -952,6 +955,9 @@ var Hiro = {
 			if (newcommit && newcommit.length > 0) {
 				this.tx(newcommit);
 			} else {
+				// Send quick ping
+				this.ping();
+
 				// Release lock as no new commits were found
 				this.commitinprogress = false;
 			}	
@@ -966,7 +972,7 @@ var Hiro = {
 			r.name = 'res-sync';
 			r.res = { kind : store['kind'] , id : store['id'] };
 			r.changes = edits;
-			r.sid = Hiro.sync.sid;		
+			r.sid = Hiro.data.get('user','sid');		
 
 			// Return r
 			return r;	
@@ -982,7 +988,7 @@ var Hiro = {
 			// Establish WebSocket connection
 			connect: function() {
 				//  Log kickoff
-				Hiro.sys.log('Connecting to WebSocket server at',this.url,'group');
+				Hiro.sys.log('Connecting to WebSocket server at',this.url);
 
 				// Spawn new socket
 				this.socket = new WebSocket(this.url);
