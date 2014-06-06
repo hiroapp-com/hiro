@@ -492,12 +492,12 @@ var Hiro = {
 			var k = event.key.split('.')[1];
 
 			// Write changes
-			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l');
+			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l','UPDATE',true);
 
 			// See if we should redraw the canvas
 			// TODO Bruno: This most likely (re)moves the cursor, 
 			// 			   find out we should abuse the .edits update before to properly patch the position
-			if (k == 'notes') Hiro.canvas.paint();
+			if (k == 'notes') Hiro.canvas.paint();	
 		},
 
 		// Set local data
