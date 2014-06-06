@@ -453,10 +453,14 @@ var Hiro = {
 
 		// Set up datastore on pageload
 		init: function() {
+			// Attach localstore change listener
+			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);
+
+			// Lookup most common store
 			var f = this.fromdisk('folio');
 
 			// If we do have data stored locally
-			if (f) {
+			if (f) {				
 				// Load internal values
 				this.unsynced = this.fromdisk('unsynced');			
 
@@ -464,6 +468,9 @@ var Hiro = {
 				this.set('user','',this.fromdisk('user'));				
 				this.set('notes','',this.fromdisk('notes'));				
 				this.set('folio','',f);
+
+				// Log 
+				Hiro.sys.log('Found existing data in localstorage',localStorage);				
 
 				// Commit any unsynced data to server
 				Hiro.sync.commit();
@@ -474,6 +481,26 @@ var Hiro = {
 
 			}
 		},		
+
+		// Detect changes to localstorage for all connected tabs
+		// All browser should fire this event if a different window/tab writes changes
+		localchange: function(event) {
+			// IE maps the event to window
+			event = event || window.event;
+
+			// Extract proper key
+			var k = event.key.split('.')[1];
+
+			// Write changes
+			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l');
+
+			// See if we should redraw the canvas
+			// TODO Bruno: This most likely (re)moves the cursor, 
+			// 			   find out we should abuse the .edits update before to properly patch the position
+			if (k == 'folio' || k == 'notes') Hiro.canvas.paint();
+
+			console.log(event);
+		},
 
 		// Set local data
 		set: function(store,key,value,source,type,paint) {
@@ -503,8 +530,8 @@ var Hiro = {
 				// Mark store for syncing
 				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);	
 
-				// Kick off commit 
-				Hiro.sync.commit();								
+				// Kick off commit, no matter if the changes came from the server or client, but not localstorage
+				if (source != 'l') Hiro.sync.commit();								
 			}
 
 			// Mark store for local persistence and kickoff write
@@ -682,7 +709,7 @@ var Hiro = {
 			// Just quick ehlo with to make sure session is still valid
 			if (user && user.sid) {	
 	        	// Logging
-				Hiro.sys.log('Veryfing stored session id',user.sid);	
+				Hiro.sys.log('Startup completed with existing ID',user.sid);	
 
 				// Send			
 				this.commit();
@@ -746,8 +773,6 @@ var Hiro = {
 				}	
 			}
 
-			console.log('Sending',JSON.parse(JSON.stringify(data)));
-
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
 				this.ws.socket.send(JSON.stringify(data));
@@ -783,14 +808,13 @@ var Hiro = {
 
 				// Measure roundtrip and reset
 				if (this.lastsend > 0) this.latency = (new Date().getTime() - this.lastsend) || 100;
-				this.lastsend = 0;
-
-				console.log('Receiving',JSON.parse(JSON.stringify(data[i])));				
+				this.lastsend = 0;			
 			}
 		},
 
 		// Overwrite local state with servers on login, session create or fatal errors
 		// TODO Bruno: Refactor once protocol is set
+		// TODO Bruno/Flo: Build new folio with single note if server has no session data
 		rx_session_create_handler: function(data) {
 			var n, f, fv, peers, req, user;
 			// Build user object
@@ -1156,6 +1180,9 @@ var Hiro = {
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
 		init: function(tier,ws_url) {
+			// Begin startup logging
+			Hiro.sys.log('Hiro startup sequence','','group');
+
 			// Prevent initing twice
 			if (this.inited) return;
 
@@ -1171,7 +1198,7 @@ var Hiro = {
 			this.inited = true;
 
 			// Log completetion
-			Hiro.sys.log('Hiro inited');
+			Hiro.sys.log('Hiro.js fully inited');
 		},
 
 		// Send error to logging provider and forward to console logging
