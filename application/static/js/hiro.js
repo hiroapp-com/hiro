@@ -460,6 +460,9 @@ var Hiro = {
 				this.set('notes','',this.fromdisk('notes'));				
 				this.set('folio','',f);
 
+				// Commit any unsynced data to server
+				Hiro.sync.commit();
+
 				// Load doc onto canvas
 				Hiro.canvas.load();
 			} else {
@@ -673,18 +676,41 @@ var Hiro = {
 
 		// Authenticate connection
 		auth: function(token) {
-			token = token || this.token || 'userlogin';
-			var payload = {
-				"name": "session-create",
-        		"token": token 
-        	};
+			// Just quick ehlo with to make sure session is still valid
+			if (this.sid) {	
+	        	// Logging
+				Hiro.sys.log('Veryfing stored session id',this.sid);	
 
-        	// Logging
-			Hiro.sys.log('Requesting session',payload);			
+				// Send			
+				this.ping();
+			// Hm, no session ID, request a new one
+			} else {
+				// Apply token
+				token = token || this.token || 'userlogin';
+				var payload = {
+					"name": "session-create",
+	        		"token": token 
+	        	};
 
-			// Sending data
-			this.tx(payload);
-		},		
+	        	// Logging
+				Hiro.sys.log('Requesting new session',payload);			
+
+				// Sending data
+				this.tx(payload);
+			}
+		},	
+
+		// Send simple ping to server
+		ping: function() {
+			// Build ping
+			req = {
+        		name: "client-ehlo",
+        		sid: this.sid,
+    		}
+
+    		// Send ping
+    		this.tx(req);
+		},	
 
 		// Send message to server
 		tx: function(data) {
@@ -794,16 +820,12 @@ var Hiro = {
 			// Save folio changes
 			Hiro.data.quicksave('folio');	
 
-			// Visually update folio
+			// Visually update folio & canvas
 			Hiro.folio.paint();
+			Hiro.canvas.paint();
 
-			// Respond with ehlo
-			req = {
-        		name: "client-ehlo",
-        		sid: this.sid,
-        		tag: data.tag,
-    		}
-    		this.tx(req);
+			// Respond with ping
+			this.ping();			
 
 			// Complete hprogress
 			Hiro.ui.hprogress.done();
@@ -828,7 +850,7 @@ var Hiro = {
 				// Log stuff to doublecheck which rules should be applied				
 				if (data.changes[i].clock.cv != r.cv || data.changes[i].clock.sv != r.sv) {
 					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,r])));
-					// continue;
+					continue;
 				}	
 
 				// Update title if it's a title update
