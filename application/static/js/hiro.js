@@ -497,9 +497,7 @@ var Hiro = {
 			// See if we should redraw the canvas
 			// TODO Bruno: This most likely (re)moves the cursor, 
 			// 			   find out we should abuse the .edits update before to properly patch the position
-			if (k == 'folio' || k == 'notes') Hiro.canvas.paint();
-
-			console.log(event);
+			if (k == 'notes') Hiro.canvas.paint();
 		},
 
 		// Set local data
@@ -535,7 +533,7 @@ var Hiro = {
 			}
 
 			// Mark store for local persistence and kickoff write
-			this.quicksave(store);
+			if (source != 'l') this.quicksave(store);
 		},
 
 		// If the key contains '.', we set the respective property
