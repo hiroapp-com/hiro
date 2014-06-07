@@ -342,11 +342,13 @@ var Hiro = {
 	canvas: {
 		// Internal values
 		currentnote: undefined,
+		quoteshown: true,
 
 		// DOM IDs
 		el_root: 'canvas',
 		el_title: 'pageTitle',
 		el_text: 'pageContent',
+		el_quote: 'nicequote',
 
 		// Init canvas
 		init: function() {
@@ -356,6 +358,7 @@ var Hiro = {
 
 			// Event setup
 			Hiro.util.registerEvent(text,'keyup',Hiro.canvas.textup);
+			Hiro.util.registerEvent(text,'keydown',Hiro.canvas.textdown);			
 			Hiro.util.registerEvent(title,'keyup',Hiro.canvas.titleup);			
 			Hiro.ui.fastbutton.attach(title,Hiro.canvas.titleclick);			
 
@@ -363,16 +366,31 @@ var Hiro = {
 			Hiro.ui.touchy.attach(canvas,Hiro.canvas.canvastouch,55);			
 		},
 
-		// When a user releases a key, this includes keys like delete or ctrl+v etc
+		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
+		textdown: function(event) {
+			// Change internal object value
+			console.log(event);
+		},		
+
+		// When a user releases a key, this includes actions like delete or ctrl+v etc
 		textup: function(event) {
 			// Change internal object value
 			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.text',this.value);
-		},
 
-		// When the focus comes off the title
+			// Switch quote on/off based on user actions
+			if ((this.value.length > 0 && Hiro.canvas.quoteshown) || (this.value.length == 0 && !Hiro.canvas.quoteshown)) {
+				var q = document.getElementById(Hiro.canvas.el_quote),
+					d = (Hiro.canvas.quoteshown) ? -1 : 1;
+				Hiro.ui.fade(q,d,450);
+				Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
+			} 
+		},		
+
+		// When a key is released in the title field
 		titleup: function(event) {
 			// Change internal object value
 			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.title',this.value);	
+
 			// Change browser window title
 			document.title = this.value;					
 		},
@@ -419,19 +437,27 @@ var Hiro = {
 		},
 
 		// Paint canvas
-		// TODO Bruno: See if requestanimationframe helps her and at folio.paint()
+		// TODO Bruno: See if requestanimationframe helps here and at folio.paint()
 		paint: function() {
 			// Make sure we have a current note
-			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid
+			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
 
 			var el_title = document.getElementById(this.el_title),
-				el_text = document.getElementById(this.el_text),				
+				el_text = document.getElementById(this.el_text),
+				el_q = document.getElementById(this.el_quote),				
 				n = Hiro.data.get('notes',this.currentnote),
 				title = n.c.title || 'Untitled Note', text = n.c.text;
 
 			// Set title & text
 			if (!n.c.title || el_title.value != n.c.title) el_title.value = document.title = title;	
-			if (el_text.value != text) el_text.value = text;							
+			if (el_text.value != text) el_text.value = text;	
+
+			// 	Switch quote on or off for programmatic text changes
+			if ((text.length > 0 && this.quoteshown) || (text.length == 0 && !this.quoteshown)) {
+				var d = (this.quoteshown) ? -1 : 1;
+				Hiro.ui.fade(el_q,d,150);
+				this.quoteshown = !this.quoteshown;				
+			} 			
 		}	
 	},
 
@@ -882,7 +908,7 @@ var Hiro = {
 				// Log stuff to doublecheck which rules should be applied				
 				if (data.changes[i].clock.cv != r.cv || data.changes[i].clock.sv != r.sv) {
 					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,r])));
-					continue;
+					// continue;
 				}	
 
 				// Update title if it's a title update
@@ -1136,9 +1162,6 @@ var Hiro = {
 
 			// Compare two strings and return standard delta format
 			delta: function(o,n) {
-				// Initial load of DMP
-				if (!this.dmp) this.dmp = new diff_match_patch();
-
 				// Cleanup settings
 				this.dmp.Diff_Timeout = 1;
 				this.dmp.Diff_EditCost = 4;
@@ -1193,6 +1216,9 @@ var Hiro = {
 
 			// Prevent initing twice
 			if (this.inited) return;
+
+			// Create DMP socket
+			Hiro.sync.diff.dmp = new diff_match_patch();
 
 			// Setup other app parts
 			Hiro.folio.init();
