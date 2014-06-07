@@ -350,6 +350,9 @@ var Hiro = {
 		el_text: 'pageContent',
 		el_quote: 'nicequote',
 
+		// Key maps
+		keys_noset: [16,17,18,33,34,35,36,37,38,39,40],
+
 		// Init canvas
 		init: function() {
 			var canvas = document.getElementById(this.el_root),
@@ -368,12 +371,35 @@ var Hiro = {
 
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
 		textdown: function(event) {
-			// Change internal object value
-			console.log(event);
+			// If the user presses Arrowup at position 0
+			if (event.keyCode == 38) {
+				var c = Hiro.canvas.getcursor();
+				if (c[0] == c[1] && c[0] == 0) document.getElementById(Hiro.canvas.el_title).focus();
+			} 
+
+			// The dreaded tab key
+			if (event.keyCode == 9) {
+				// First, we have to kill all the tabbbbbsss
+				Hiro.util.stopEvent(event);
+
+				// Determine current cursor position
+				var c = Hiro.canvas.getcursor(),
+					text = this.value.substr(0, c[0]) + '\t' + this.value.substr(c[1]);
+
+				// Set internal data and display
+				Hiro.data.set('notes',Hiro.canvas.currentnote+'.c.text',text)
+				this.value = text;
+
+				// Reposition cursor
+				Hiro.canvas.setcursor(c[1] + 1);
+			}
 		},		
 
 		// When a user releases a key, this includes actions like delete or ctrl+v etc
 		textup: function(event) {
+			// Handle keys where we don't want to set a different value (and most important kick off commit)
+			if ((Hiro.canvas.keys_noset.indexOf(event.keyCode) > -1) || (event.keyCode > 111 && event.keyCode < 124)) return;
+
 			// Change internal object value
 			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.text',this.value);
 
@@ -388,6 +414,15 @@ var Hiro = {
 
 		// When a key is released in the title field
 		titleup: function(event) {
+			// Jump to text if user presses return or arrowdown
+			if (event.keyCode == 40 || event.keyCode == 13) Hiro.canvas.setcursor(0);
+
+			// LEnovo nostalgia: Goto End on End
+			if (event.keyCode == 35) Hiro.canvas.setcursor(document.getElementById(Hiro.canvas.el_text).value.length);			
+
+			// Handle keys where we don't want to set a different value (and most important kick off commit)
+			if ((Hiro.canvas.keys_noset.indexOf(event.keyCode) > -1) || (event.keyCode > 111 && event.keyCode < 124)) return;
+
 			// Change internal object value
 			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.title',this.value);	
 
@@ -458,7 +493,66 @@ var Hiro = {
 				Hiro.ui.fade(el_q,d,150);
 				this.quoteshown = !this.quoteshown;				
 			} 			
-		}	
+		},
+
+		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
+		getcursor: function() {
+		    var el = document.getElementById(this.el_text),
+		    	x, y, content;	
+
+		    if ('selectionStart' in el) {
+		    	//Mozilla and DOM 3.0
+		        x = el.selectionStart;
+				y = el.selectionEnd;
+				var l = el.selectionEnd - el.selectionStart;
+				content = el.value.substr(el.selectionStart, l)
+		    } else if (document.selection) {
+		    	//IE
+		        el.focus();
+		        var r = document.selection.createRange(),
+		        	tr = el.createTextRange()
+		        	tr2 = tr.duplicate();
+		        tr2.moveToBookmark(r.getBookmark());
+		        tr.setEndPoint('EndToStart',tr2);
+		        if (r == null || tr == null) {
+		        	x = el.value.length;
+		        	y = el.value.length;
+		        	content = '';
+		        	return [x, y, content];
+		        } 
+		        var text_part = r.text.replace(/[\r\n]/g,'.'); //for some reason IE doesn't always count the \n and \r in the length
+		        var text_whole = el.value.replace(/[\r\n]/g,'.');
+		        x = text_whole.indexOf(text_part,tr.text.length);
+		        y = x + text_part.length;
+		        content = r.text;
+		    }  
+		    return [x, y, content];	
+		},
+
+		// Set cursor position, accepts either number or array of two numbers representing selection start & end
+		setcursor: function(pos) {
+			var el = document.getElementById(Hiro.canvas.el_text);
+
+			// Set default value
+			pos = pos || Hiro.data.get('notes',this.currentnote).c.cursor_pos || 0;
+
+			// Create array if we only got a number
+			if (typeof pos == 'number') pos = [pos,pos];
+
+    		// Set the position    		
+    		if (el.setSelectionRange) {
+				el.focus();													
+				el.setSelectionRange(pos[0],pos[1]);																																		   									
+    		} else if (el.createTextRange) {
+        		var range = el.createTextRange();
+        		range.collapse(true);
+        		range.moveEnd('character', pos[0]);
+        		range.moveStart('character', pos[1]);
+        		range.select();
+    		} else {
+    			el.focus();
+    		}	
+		} 	
 	},
 
 	// Local data, model and persitence
