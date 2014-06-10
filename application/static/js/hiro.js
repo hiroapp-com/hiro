@@ -516,8 +516,7 @@ var Hiro = {
 			this.textheight = el.style.height = el.scrollHeight.toString() + 'px';
 
 			// If we are at the last position, also make sure to scroll to it to avoid Chrome etc quirks
-			if (el.value.length == Hiro.canvas.getcursor()[1]) window.scrollTo(0,el.scrollHeight);
-
+			if (el.value.length == Hiro.canvas.getcursor()[1] && el.scrollHeight > document.body.offsetHeight) window.scrollTo(0,el.scrollHeight);
 		},
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
@@ -1331,7 +1330,7 @@ var Hiro = {
 		// System setup, this is called once on startup and then calls inits for the various app parts 
 		init: function(tier,ws_url) {
 			// Begin startup logging
-			Hiro.sys.log('Hiro startup sequence','','group');
+			Hiro.sys.log('Hiro startup sequence','','group');		
 
 			// Prevent initing twice
 			if (this.inited) return;
@@ -1403,7 +1402,7 @@ var Hiro = {
 		// Setup and browser capability testing
 		init: function(tier) {
 			var style = this.el_wastebin.style,
-				v = this.vendors, i, l, v;
+				v = this.vendors, i, l, v, measure;
 
 			// Set up UI according to user level
 			this.setstage(tier);	
@@ -1431,6 +1430,11 @@ var Hiro = {
 					}
 				}
 			}	
+
+			// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
+			// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
+			measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+			document.getElementById('viewport').setAttribute('content', measure);				
 
 			// Start hprogress on init
 			this.hprogress.init();		

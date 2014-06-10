@@ -30,6 +30,12 @@ input {
   }
 }
 
+@media (max-width: 480px) {
+  html{
+    overflow-y: hidden; 
+  }
+}
+
 .fb_dialog {
   z-index: 99990 !important;
 } 
@@ -418,8 +424,11 @@ a.hirobutton:hover {
   } 
 
   #canvas textarea {
-    padding: 45px 12px 2px 12px;
+    padding: 45px 12px 20px 12px;
     line-height: 28px;
+    height: 100% !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
   }
 
   #nicequote {
