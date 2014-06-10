@@ -1402,7 +1402,7 @@ var Hiro = {
 		// Setup and browser capability testing
 		init: function(tier) {
 			var style = this.el_wastebin.style,
-				v = this.vendors, i, l, v, measure;
+				v = this.vendors, i, l, v, r, measure;
 
 			// Set up UI according to user level
 			this.setstage(tier);	
@@ -1411,9 +1411,8 @@ var Hiro = {
 			if (style.opacity !== undefined) this.opacity = 'opacity';
 			else {
 				for (i = 0, l = v.length; i < l; i++) {
-					v = v[i] + 'Opacity';
-					if (style[v] !== undefined) {
-						this.opacity = v;
+					if (style[v[i] + 'Opacity'] !== undefined) {
+						this.opacity = v[i] + 'Opacity';
 						break;
 					}
 				}
@@ -1422,10 +1421,11 @@ var Hiro = {
 			// Set vendor specific global animationframe property
 			if (!window.requestAnimationFrame) {
 				for (i=0, l = v.length; i < l; i++) {
-					v = v[i], r = window[v + 'RequestAnimationFrame'];
+					console.log(v,v[i],i);
+					r = window[v[i] + 'RequestAnimationFrame'];
 					if (r) {
 						window.requestAnimationFrame = r;
-						window.cancelAnimationFrame = window[v + 'CancelAnimationFrame'] ||	window[v + 'CancelRequestAnimationFrame'];
+						window.cancelAnimationFrame = window[v[i] + 'CancelAnimationFrame'] ||	window[v[i] + 'CancelRequestAnimationFrame'];
 						break;
 					}
 				}
