@@ -799,10 +799,18 @@ var Hiro = {
 		},
 
 		// Delete some or all data set by our host
-		wipe: function(key) {
-
-			// No key, remove all
-			if (!key) localStorage.clear();
+		wipe: function(store) {
+			// No store, remove all
+			if (!store) {
+				// Iterate through all localstorage items for current domain
+				for (var i = localStorage.length;i >= 0; i--) {
+					// Verify that we only delete Hiro data and no third party stuff
+					if (localStorage.key(i) && localStorage.key(i).substring(0, 5) == 'Hiro.') localStorage.removeItem(localStorage.key(i));
+				}
+			// store var provided, remove specific store	
+			} else {
+				if (localStorage['Hiro.' + store]) localStorage.removeItem('Hiro.' + store); 
+			}	
 		}
 	},
 
