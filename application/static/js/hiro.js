@@ -343,6 +343,7 @@ var Hiro = {
 		// Internal values
 		currentnote: undefined,
 		quoteshown: true,
+		textheight: 0,
 
 		// DOM IDs
 		el_root: 'canvas',
@@ -393,6 +394,9 @@ var Hiro = {
 				// Reposition cursor
 				Hiro.canvas.setcursor(c[1] + 1);
 			}
+
+			// Resize canvas if we grew, hit space or return
+			if (event.keyCode == 32 || event.keyCode == 13 || Hiro.canvas.scrollHeight != Hiro.canvas.textheight) Hiro.canvas.resize();
 		},		
 
 		// When a user releases a key, this includes actions like delete or ctrl+v etc
@@ -464,6 +468,9 @@ var Hiro = {
 			// Visual update
 			this.paint();
 
+			// Set cursor
+			this.setcursor(0);
+
 			// End hprogress
 			Hiro.ui.hprogress.done();
 
@@ -493,6 +500,24 @@ var Hiro = {
 				Hiro.ui.fade(el_q,d,150);
 				this.quoteshown = !this.quoteshown;				
 			} 			
+
+			// Resize textarea
+			this.resize();
+		},
+
+		// Resize textarea to proper height
+		resize: function() {
+			var el = document.getElementById(this.el_text);
+
+			// Reset to get proper value
+			el.style.height = '100px';
+
+			// Set values
+			this.textheight = el.style.height = el.scrollHeight.toString() + 'px';
+
+			// If we are at the last position, also make sure to scroll to it to avoid Chrome etc quirks
+			if (el.value.length == Hiro.canvas.getcursor()[1]) window.scrollTo(0,el.scrollHeight);
+
 		},
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
