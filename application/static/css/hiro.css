@@ -108,6 +108,32 @@ a.hirobutton:hover {
   opacity: 1;
 }
 
+.simplescroll::-webkit-scrollbar {
+    width: 7px;
+    height: 9px;
+}
+.simplescroll::-webkit-scrollbar-button:start:decrement, 
+.simplescroll::-webkit-scrollbar-button:end:increment {
+    display: block;
+    height: 0;
+    background-color: transparent;
+}
+.simplescroll::-webkit-scrollbar-track-piece {
+    -webkit-border-radius: 0;
+    -webkit-border-bottom-right-radius: 4px;
+    -webkit-border-bottom-left-radius: 4px;
+}
+.simplescroll::-webkit-scrollbar-thumb:vertical {
+    height: 50px;
+    background-color: rgba(0, 0, 0, 0.2);
+    -webkit-border-radius: 4px;
+}
+.simplescroll::-webkit-scrollbar-thumb:horizontal {
+    width: 50px;
+    background-color: rgba(0, 0, 0, 0.2);
+    -webkit-border-radius: 4px;
+}
+
 @media only screen and (min-device-width : 320px) and (max-device-width : 568px) { 
   /* iPhone 5 */
   .bubble {
