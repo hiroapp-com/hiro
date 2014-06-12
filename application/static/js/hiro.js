@@ -1664,6 +1664,34 @@ var Hiro = {
 			}
 		},
 
+		// Switch to an element on the same DOM level and hide all others
+		switchView: function(el, display) {
+			var n;
+
+			// Function accepts both the element directly or a an ID 
+			if (typeof el != 'object') document.getElementById(el);
+
+			// Set default display
+			if (!display || typeof display != 'string') display='block';
+
+			// Walk up & down the same DOM level within animationframe
+			requestAnimationFrame(function(){
+				if (el && el.style) {
+					el.style.display = display;
+					n = el.previousSibling;
+					while (n) {
+						if (n.style) n.style.display='none';
+						 n = n.previousSibling;
+					}
+					n = el.nextSibling;
+					while (n) {
+						if (n.style) n.style.display='none';
+						 n = n.nextSibling;
+					}
+				}
+			});
+		},		
+
 		// Slide folio: 1 to open, -1 to close
 		slidefolio: function(direction,slideduration) {
 			// Catch cases where sliding makes no sense
@@ -1671,6 +1699,9 @@ var Hiro = {
 				(direction > 0 && this.slidepos > 100) ||
 				(this.slidedirection != 0))
 				return;
+
+			// Allow simple call without direction		
+			if (!direction) direction = (Hiro.folio.open) ? -1 : 1;			
 
 			// Local vars
 			var // Make sure we always have 50px on the right, even on narrow devices
@@ -1686,7 +1717,7 @@ var Hiro = {
 				sd = slideduration || this.slideduration,
 				duration = sd / distance * Math.abs(dx);
 				start = new Date().getTime();
-				_this = this;		
+				_this = this;	
 
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
@@ -1893,10 +1924,13 @@ var Hiro = {
 			open: false,
 
 			// Open dialog
-			show: function() {
-				// Change visibility etc, animatnFrame strangely triggers a white flash here in Chrome
+			show: function(container, section, focus, mobilefocus) {
+				// Change visibility etc, animationFrame strangely triggers a white flash here in Chrome
 				Hiro.ui.dialog.center();						
 				Hiro.ui.dialog.el_root.style.display = 'block';
+
+				// Hide folio
+				if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
 							
 				// Attach event and set internal value
 				Hiro.util.registerEvent(window,'resize',Hiro.ui.dialog.center);

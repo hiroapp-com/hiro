@@ -79,12 +79,48 @@
 		</div>
 		
 		<div id="shield">
-			<div class="wrapper">
-				<div id="d_logio"></div>				
+			<div class="wrapper">				
+				<div id="d_logio">
+					<div id="s_signup">
+						<a class="fb hirobutton">Sign-Up With&nbsp;<b>Facebook</b></a>
+						<div class="divider"><span class="or">or</span></div>
+						<form id="signupform" action="javascript:void(0);">
+							<input type="email" placeholder="E-Mail" id="signup_mail"></input><div class="error"></div>					
+							<input type="password" id="signup_pwd" placeholder="Choose a password"></input><div class="error"></div>	
+							<input type="submit" value="foo" onclick="Hiro.sys.user.login(event);" class="pseudobutton"></input>
+						</form>		
+						<a class="hirobutton green" id="signupbutton" onclick="Hiro.sys.user.register(event);">Create Account</a>	
+						<div id="signuperror"></div>
+						<a class="small" onclick="Hiro.ui.switchView(document.getElementById('s_signin'));">Already have an account?</a>			
+					</div>	
+					<div id="s_signin">
+						<a class="fb hirobutton">Log-In With&nbsp;<b>Facebook</b></a>
+						<div class="divider"><span class="or">or</span></div>
+						<form id="loginform" action="javascript:void(0);">
+							<input type="email" placeholder="E-Mail" id="signin_mail"></input><div class="error"></div>
+							<input type="password" id="signin_pwd" placeholder="Password"></input><div class="error"></div>
+							<input type="submit" value="foo" onclick="Hiro.sys.user.login(event);" class="pseudobutton"></input>
+						</form>		
+						<a class="hirobutton green" id="loginbutton" onclick="Hiro.sys.user.login(event);">Log-In</a>	
+						<div id="loginerror"></div>				
+						<a class="small" onclick="Hiro.sys.user.requestreset();">Lost password?</a> &nbsp; <a class="small" onclick="Hiro.ui.switchView(document.getElementById('s_signup'));">Create an account</a>
+					</div>	
+					<div id="s_reset">
+						<form id="resetform">
+							<input type="password" placeholder="New password" id="new_password"></input><div class="error"></div>
+							<input type="password" placeholder="Repeat password"></input><div class="error"></div>
+							<input type="submit" value="foo" onclick="Hiro.sys.user.resetpwd(); return false;" class="pseudobutton"></input>
+						</form>		
+						<a class="hirobutton green" id="resetbutton" onclick="Hiro.sys.user.resetpwd(); return false;">Reset Password</a>	
+						<div id="reseterror"></div>	
+						<a class="small" onclick="Hiro.ui.switchView(document.getElementById('s_signin')); return false;">Login with old password.</a>								
+					</div>			
+				</div>				
 				<div id="d_settings"></div>				
 				<div id="d_msg"></div>				
 				<div id="d_container"></div>
 			</div>	
+			<div class="d_close"><div>
 		</div>	
 
 		<div id="hprogress"><div class="bar" role="bar"><div class="peg"></div></div></div>

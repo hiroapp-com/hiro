@@ -1,220 +1,179 @@
-{% if not current_user.is_authenticated() %}
-<div id="s_login">
-	<div id="s_signup" style="display:none;">
-		<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing Up...';Hiro.sys.user.facebooklogin();return false;">Sign-Up With&nbsp;<b>Facebook</b></a>
-		<div class="divider"><span class="or">or</span></div>
-		<form id="signupform" action="javascript:void(0);">
-			<input type="email" placeholder="E-Mail" id="signup_mail"></input><div class="error"></div>					
-			<input type="password" id="signup_pwd" placeholder="Choose a password"></input><div class="error"></div>	
-			<input type="submit" value="foo" onclick="Hiro.sys.user.register(event); return false;" class="pseudobutton"></input>
-		</form>		
-		<a class="wpcbutton green" id="signupbutton" onclick="Hiro.sys.user.register(event);">Create Account</a>	
-		<div id="signuperror"></div>
-		<a class="small" onclick="Hiro.ui.switchView(document.getElementById('s_signin'));">Already have an account?</a>			
-	</div>	
-	<div id="s_signin" style="display:none;">
-		<a href="#" class="fb wpcbutton" onclick="this.innerHTML='Signing In...';Hiro.sys.user.facebooklogin();return false;">Log-In With&nbsp;<b>Facebook</b></a>
-		<div class="divider"><span class="or">or</span></div>
-		<form id="loginform" action="javascript:void(0);">
-			<input type="email" placeholder="E-Mail" id="signin_mail"></input><div class="error"></div>
-			<input type="password" id="signin_pwd" placeholder="Password"></input><div class="error"></div>
-			<input type="submit" value="foo" onclick="Hiro.sys.user.login(event);" class="pseudobutton"></input>
-		</form>		
-		<a class="wpcbutton green" id="loginbutton" onclick="Hiro.sys.user.login(event);">Log-In</a>	
-		<div id="loginerror"></div>				
-		<a class="small" onclick="Hiro.sys.user.requestreset();">Lost password?</a> &nbsp; <a class="small" onclick="Hiro.ui.switchView(document.getElementById('s_signup'));">Create an account</a>
-	</div>	
-	<div id="s_reset" style="display:none;">
-		<form id="resetform">
-			<input type="password" placeholder="New password" onkeydown="this.nextSibling.innerHTML='';" id="new_password"></input><div class="error"></div>
-			<input type="password" placeholder="Repeat password" onkeydown="this.nextSibling.innerHTML='';"></input><div class="error"></div>
-			<input type="submit" value="foo" onclick="Hiro.sys.user.resetpwd(); return false;" class="pseudobutton"></input>
-		</form>		
-		<a href="" class="wpcbutton green" id="resetbutton" onclick="Hiro.sys.user.resetpwd(); return false;">Reset Password</a>	
-		<div id="reseterror"></div>	
-		<a href="#" class="small" onclick="Hiro.ui.switchView(document.getElementById('s_signin')); return false;">Login with old password.</a>								
-	</div>			
-</div>	
-{% endif %}
-
-<div id="s_settings" {% if not current_user.is_authenticated() %}style="display:none;"{% endif %}>
-
-	<div id="s_account">
-		<div class="header">
-			<div class="active">You<em>r Account</em></div>
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_plan'));return false;">Plan<em>s &amp; Payment</em></a>
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));return false;">About</a>	
-		</div>
-		{% if current_user.is_authenticated() %}
-		<div class="accountdetails">
-			<form id="accountform" action="javascript:void(0);">
-				<input type="text" value="{{ current_user.name }}" onkeyup="Hiro.sys.user.nametype(event)" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a href="#" onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" onclick="Hiro.sys.user.logio();return false;"></div>
-				<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
-				<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-				<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption upgradelink"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>
-				<input type="submit" value="foo" onclick="Hiro.sys.user.namesave(event); return false;" class="pseudobutton"></input>			
-			</form>		
-			<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
-			<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton share fb" onclick="Hiro.ui.facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
-			<a href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="wpcbutton share tw">via&nbsp;<b>Twitter</b></a>	
-			<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20little%20app%20for%20daily%20note-taking%3A%20www.hiroapp.com" class="wpcbutton share mail green" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'Mail'});" target="_blank">via&nbsp;<b>Mail</b></a>	
-			<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F%20%27Notes%20With%20Friends%27" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'SMS'});" class="wpcbutton share sms">via&nbsp;<b>SMS</b></a>
-		</div>	
-		{% endif %}					
+<div id="s_account">
+	<div class="header">
+		<a class="active">You<em>r Account</em></a>
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_plan'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_plan'));">Plan<em>s &amp; Payment</em></a>
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));">About</a>	
 	</div>
-		
-	<div id="s_plan" style="display:none;">
-		<div class="header forced"></div>				
-		<div class="header">
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
-			<div class="active">Plan<em>s &amp; Payment</em></div>
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
-		</div>
-		<div class="plans" id="s_planboxes">
-			<div class="box 1" onclick="Hiro.ui.upgradeboxclick(this);">
-				<div class="head">Basic</div>
-				<div class="price">Free!</div>
-				<div class="curr">&nbsp;</div>	
-				<ul>
-					<li>Fine for daily usage
-					<li>Encrypted like all plans							
-					<li>Up to 10 notes
-					<li>100 context searches	
-				</ul>
-				<a href="#" class="wpcbutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
-				<a href="#" class="wpcbutton red" onclick="Hiro.sys.user.downgrade('free');return false;">Downgrade</a>	
-			</div>
-			<div class="box 2" onclick="Hiro.ui.upgradeboxclick(this);">
-				<div class="head">Advanced</div>
-				<div class="price">9</div>	
-				<div class="curr">USD / MONTH</div>	
-				<ul>
-					<li>Unlimited notes
-					<li>Unlimited searches
-					<li>Advanced publishing	
-					<li>Archive	
-				</ul>
-				<a href="#" class="wpcbutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
-				<a href="#" class="wpcbutton red" onclick="Hiro.sys.user.downgrade('starter');return false;">Downgrade</a>	
-				<a href="#" class="wpcbutton green" onclick="Hiro.ui.fillcheckout('starter');return false;">Upgrade !</a>	
-			</div>
-			<div class="box 3" onclick="Hiro.ui.upgradeboxclick(this);">
-				<div class="head">Pro (coming soon)</div>
-				<div class="price">29</div>		
-				<div class="curr">USD / MONTH</div>	
-				<ul>
-					<li>All Advanced features
-					<li>Speciality data sources
-					<li>Pro publishing								
-					<li>Chrome research plugin							
-				</ul>
-				<a href="#" class="wpcbutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
-				<a href="#" class="wpcbutton green" onclick="Hiro.ui.fillcheckout('pro');return false;">Preorder !</a>	
-			</div>
-		</div>	
-		<div id="s_planfooter" class="footer">
-			<a href="#" onclick="Hiro.ui.hideDialog();return false;">Not now, thanks.</a>	
-		</div>	
+	{% if current_user.is_authenticated() %}
+	<div class="accountdetails">
+		<form id="accountform" action="javascript:void(0);">
+			<input type="text" value="{{ current_user.name }}" onkeyup="Hiro.sys.user.nametype(event)" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a href="#" onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" onclick="Hiro.sys.user.logio();return false;"></div>
+			<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
+			<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
+			<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption upgradelink"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>
+			<input type="submit" value="foo" onclick="Hiro.sys.user.namesave(event); return false;" class="pseudobutton"></input>			
+		</form>		
+		<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
+		<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share fb" onclick="Hiro.ui.facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
+		<a href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="hirobutton share tw">via&nbsp;<b>Twitter</b></a>	
+		<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20little%20app%20for%20daily%20note-taking%3A%20www.hiroapp.com" class="hirobutton share mail green" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'Mail'});" target="_blank">via&nbsp;<b>Mail</b></a>	
+		<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F%20%27Notes%20With%20Friends%27" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'SMS'});" class="hirobutton share sms">via&nbsp;<b>SMS</b></a>
+	</div>	
+	{% endif %}					
+</div>
+	
+<div id="s_plan" style="display:none;">
+	<div class="header forced"></div>				
+	<div class="header">
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));">You<em>r Account</em></a>
+		<a class="active">Plan<em>s &amp; Payment</em></a>
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));">About</a>		
 	</div>
-
-	<div id="s_checkout" style="display:none;">
-		<div class="header forced"></div>				
-		<div class="header">
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
-			<div class="active">Plan<em>s &amp; Payment</em></div>
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));return false;">About</a>		
+	<div class="plans" id="s_planboxes">
+		<div class="box 1" onclick="Hiro.ui.upgradeboxclick(this);">
+			<div class="head">Basic</div>
+			<div class="price">Free!</div>
+			<div class="curr">&nbsp;</div>	
+			<ul>
+				<li>Fine for daily usage
+				<li>Encrypted like all plans							
+				<li>Up to 10 notes
+				<li>100 context searches	
+			</ul>
+			<a href="#" class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
+			<a href="#" class="hirobutton red" onclick="Hiro.sys.user.downgrade('free');return false;">Downgrade</a>	
 		</div>
-		<div class="checkoutdetails">	
-			{% if current_user.active_cc %}
-				<form id="checkoutform">
-					<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
-					<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
-					<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>&nbsp;/&nbsp;<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
-					<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
-					<div class="small" id="checkout_error"></div>			
-					<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
-					Upgrade</a>	
-					<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payment powered by&nbsp;<b>stripe</b></div>
-					<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
-				</form>						
-				<script type="text/javascript">
-					{% with cc = current_user.active_cc %}
-					var hirostripecard = {
-						cc_number: "{{ cc['type'] }}: " + '•••• •••• •••• ' + "{{ cc['last4'] }}",
-						cc_exp_month: "{{ cc['exp_month'] }}",
-						cc_exp_year: "{{ cc['exp_year'] }}",
-						cc_cvc: '•••'
-					};
-					{% endwith %}
-					var usehirostripecard = true;
-					function fillccform() {
-						for (var key in hirostripecard) {
-						   if (hirostripecard.hasOwnProperty(key)) {
-						   	var el = document.getElementById(key); 
-						   	el.value = hirostripecard[key];
-						   	if (key=='cc_number') el.addEventListener('click', clearccform(el));
-						   }
-						}
-					}
-					var clearccform = function(el) {
-					    var handler = function(event) {
-					    	var fields = el.parentNode.getElementsByTagName('input');
-					    	for (i=0,l=fields.length;i<l;i++) {
-					    		if (i>0) fields[i].value = '';
-					    	}
-					    	usehirostripecard = false;
-		           			el.removeEventListener('click', handler);
-					    };
-					    return handler;
-					};
-					fillccform();						
-				</script>
-			{% else %}	
+		<div class="box 2" onclick="Hiro.ui.upgradeboxclick(this);">
+			<div class="head">Advanced</div>
+			<div class="price">9</div>	
+			<div class="curr">USD / MONTH</div>	
+			<ul>
+				<li>Unlimited notes
+				<li>Unlimited searches
+				<li>Advanced publishing	
+				<li>Archive	
+			</ul>
+			<a href="#" class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
+			<a href="#" class="hirobutton red" onclick="Hiro.sys.user.downgrade('starter');return false;">Downgrade</a>	
+			<a href="#" class="hirobutton green" onclick="Hiro.ui.fillcheckout('starter');return false;">Upgrade !</a>	
+		</div>
+		<div class="box 3" onclick="Hiro.ui.upgradeboxclick(this);">
+			<div class="head">Pro (coming soon)</div>
+			<div class="price">29</div>		
+			<div class="curr">USD / MONTH</div>	
+			<ul>
+				<li>All Advanced features
+				<li>Speciality data sources
+				<li>Pro publishing								
+				<li>Chrome research plugin							
+			</ul>
+			<a href="#" class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
+			<a href="#" class="hirobutton green" onclick="Hiro.ui.fillcheckout('pro');return false;">Preorder !</a>	
+		</div>
+	</div>	
+	<div id="s_planfooter" class="footer">
+		<a href="#" onclick="Hiro.ui.hideDialog();return false;">Not now, thanks.</a>	
+	</div>	
+</div>
+
+<div id="s_checkout" style="display:none;">
+	<div class="header forced"></div>				
+	<div class="header">
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));">You<em>r Account</em></a>
+		<a class="active">Plan<em>s &amp; Payment</em></a>
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));">About</a>		
+	</div>
+	<div class="checkoutdetails">	
+		{% if current_user.active_cc %}
 			<form id="checkoutform">
 				<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
-				<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
-				<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
-				<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
-				<input type="text" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+				<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
+				<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>&nbsp;/&nbsp;<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+				<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 				<div class="small" id="checkout_error"></div>			
-				<a href="#" class="wpcbutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
+				<a href="#" class="hirobutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
 				Upgrade</a>	
-				<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by&nbsp;<b>stripe</b></div>						
+				<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payment powered by&nbsp;<b>stripe</b></div>
 				<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
 			</form>						
-			{% endif %}
-		</div>	
+			<script type="text/javascript">
+				{% with cc = current_user.active_cc %}
+				var hirostripecard = {
+					cc_number: "{{ cc['type'] }}: " + '•••• •••• •••• ' + "{{ cc['last4'] }}",
+					cc_exp_month: "{{ cc['exp_month'] }}",
+					cc_exp_year: "{{ cc['exp_year'] }}",
+					cc_cvc: '•••'
+				};
+				{% endwith %}
+				var usehirostripecard = true;
+				function fillccform() {
+					for (var key in hirostripecard) {
+					   if (hirostripecard.hasOwnProperty(key)) {
+					   	var el = document.getElementById(key); 
+					   	el.value = hirostripecard[key];
+					   	if (key=='cc_number') el.addEventListener('click', clearccform(el));
+					   }
+					}
+				}
+				var clearccform = function(el) {
+				    var handler = function(event) {
+				    	var fields = el.parentNode.getElementsByTagName('input');
+				    	for (i=0,l=fields.length;i<l;i++) {
+				    		if (i>0) fields[i].value = '';
+				    	}
+				    	usehirostripecard = false;
+	           			el.removeEventListener('click', handler);
+				    };
+				    return handler;
+				};
+				fillccform();						
+			</script>
+		{% else %}	
+		<form id="checkoutform">
+			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+			<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
+			<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
+			<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+			<input type="text" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
+			<div class="small" id="checkout_error"></div>			
+			<a href="#" class="hirobutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
+			Upgrade</a>	
+			<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by&nbsp;<b>stripe</b></div>						
+			<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
+		</form>						
+		{% endif %}
+	</div>	
+</div>
+
+<div id="s_about" style="display:none;">
+	<div class="header">
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));">You<em>r Account</em></a>
+		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_plan'));">Plan<em>s &amp; Payment</em></a>
+		<a class="active">About</a>	
 	</div>
 
-	<div id="s_about" style="display:none;">
-		<div class="header">
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));return false;">You<em>r Account</em></a>
-			<a href="#" onmousedown="Hiro.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_plan'));return false;">Plan<em>s &amp; Payment</em></a>
-			<div class="active">About</div>	
-		</div>
+	<div class="aboutsection">
+		<div class="claim"><em>Hiro is for people with big ideas</em><br />
+		who want a better tool to keep them.</div>
 
-		<div class="aboutsection">
-			<div class="claim"><em>Hiro is for people with big ideas</em><br />
-			who want a better tool to keep them.</div>
+		Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services or 3 menus before you can do anything. Something you open when an idea you don't want to lose crosses your mind. A place where it is <em>safe and not accessed by anybody else</em>.<br /><br />
 
-			Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services or 3 menus before you can do anything. Something you open when an idea you don't want to lose crosses your mind. A place where it is <em>safe and not accessed by anybody else</em>.<br /><br />
+		<span class="contact">We hope you like Hiro as much as we do. We're always there at <a href="mailto:hello@hiroapp.com" target="_blank">hello@hiroapp.com</a> and share the best tricks of how people manage their ideas on <a href="https://www.facebook.com/hiroapp" target="_new">facebook.com/hiroapp</a>.</span>
+	</div>	
+</div>
 
-			<span class="contact">We hope you like Hiro as much as we do. We're always there at <a href="mailto:hello@hiroapp.com" target="_blank">hello@hiroapp.com</a> and share the best tricks of how people manage their ideas on <a href="https://www.facebook.com/hiroapp" target="_new">facebook.com/hiroapp</a>.</span>
-		</div>	
-	</div>
+<div id="s_upgrade" style="display:none;">
+	<div class="upgradesection">
+		<div class="claim"><em>Your Hiro was just updated</em>,<br />
+		and you can use it right away!</div>
 
-	<div id="s_upgrade" style="display:none;">
-		<div class="upgradesection">
-			<div class="claim"><em>Your Hiro was just updated</em>,<br />
-			and you can use it right away!</div>
+		We try our best to improve Hiro every day and just did. <em>All your changes were saved</em> and you're ready to go. Enjoy, and thanks again for using Hiro.<br /><br />
 
-			We try our best to improve Hiro every day and just did. <em>All your changes were saved</em> and you're ready to go. Enjoy, and thanks again for using Hiro.<br /><br />
+		<a onclick="window.parent.location.reload(true)" ontouchstart="window.parent.location.reload(true)" class="hirobutton green">Use New Version</a>
+	</div>	
+</div>			
 
-			<a onclick="window.parent.location.reload(true)" ontouchstart="window.parent.location.reload(true)" class="wpcbutton green">Use New Version</a>
-		</div>	
-	</div>			
-
-</div>	
+	
 
 <script type="text/javascript">
 	// Various startup functions
