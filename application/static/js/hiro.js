@@ -1618,12 +1618,7 @@ var Hiro = {
 			Hiro.util.registerEvent(this.dialog.el_root,'click',Hiro.ui.dialog.clickhandler);	
 
 			// Load settings into dialog
-			Hiro.sync.ajax.send({
-				url: '/newsettings/',
-				success: function(data) {
-					console.log('Gots teh settings',data);
-				}
-			});		
+			this.dialog.loadsettings();	
 		},
 
 		// Fire keyboard events if applicable
@@ -1892,6 +1887,8 @@ var Hiro = {
 			el_root: document.getElementById('shield'),
 			el_wrapper: document.getElementById('shield').firstChild,
 
+			el_settings: document.getElementById('d_settings'),
+
 			// Internal values
 			open: false,
 
@@ -1939,6 +1936,20 @@ var Hiro = {
 				// User clicked outside of dialog window
 				if (target.id == 'shield') Hiro.ui.dialog.hide();
 				console.log(event);
+			},
+
+			// Fetch latest settings template from server and load into placeholder div
+			loadsettings: function() {
+				// Send off AJAX request
+				Hiro.sync.ajax.send({
+					url: '/newsettings/',
+					success: function(data) {
+						if (data.responseText) Hiro.ui.dialog.el_settings.innerHTML = data.responseText;
+					},
+					error: function(data) {
+						Hiro.sys.error('Unable to load settings',data);
+					}
+				});					
 			}
 
 		},
