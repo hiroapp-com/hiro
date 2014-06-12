@@ -260,6 +260,9 @@ def landing():
 def settings():
     return render_template('settings.html')
 
+def newsettings():
+    return render_template('settings_new.html')    
+
 def test():
     return render_template('test.html')    
 
