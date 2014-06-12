@@ -1429,9 +1429,34 @@ var Hiro = {
 			}
 
 			// Set vendor specific global animationframe property
+			// Paul Irish polyfill from http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
+			(function() {
+			    var lastTime = 0, vendors = Hiro.ui.vendors;
+			    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+			        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+			        window.cancelAnimationFrame =
+			          window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
+			    }
+
+			    if (!window.requestAnimationFrame)
+			        window.requestAnimationFrame = function(callback, element) {
+			            var currTime = new Date().getTime();
+			            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+			            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+			              timeToCall);
+			            lastTime = currTime + timeToCall;
+			            return id;
+			        };
+
+			    if (!window.cancelAnimationFrame)
+			        window.cancelAnimationFrame = function(id) {
+			            clearTimeout(id);
+			        };
+			}());
+
+
 			if (!window.requestAnimationFrame) {
 				for (i=0, l = v.length; i < l; i++) {
-					console.log(v,v[i],i);
 					r = window[v[i] + 'RequestAnimationFrame'];
 					if (r) {
 						window.requestAnimationFrame = r;
@@ -1526,8 +1551,7 @@ var Hiro = {
 					_this.direction = 0;
 					_this.slidetimer = 0;
 				} 
-				else if (window.requestAnimationFrame) _this.slidetimer = requestAnimationFrame(step);
-				else _this.slidetimer = setTimeout(step, 20);
+				else _this.slidetimer = requestAnimationFrame(step);
 			}
 
 			// Kick off stepping loop
@@ -1564,8 +1588,7 @@ var Hiro = {
 					delete element._fadeTimer;
 					delete element._fadeDirection;
 				}
-				else if (window.requestAnimationFrame) element._fadeTimer = requestAnimationFrame(step);
-				else element._fadeTimer = setTimeout(step, 20);
+				else element._fadeTimer = requestAnimationFrame(step);
 			}
 		
 			// Abort if we already reached max opacity or are currently fading
