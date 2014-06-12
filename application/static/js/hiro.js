@@ -1707,6 +1707,38 @@ var Hiro = {
 
 		},
 
+		// All dialog related stuff
+		dialog: {
+			// DOM elements that are NOT changing through AJAX reload etc
+			el_root: document.getElementById('shield'),
+			el_wrapper: document.getElementById('shield').firstChild,
+
+			// Open dialog
+			open: function() {
+				Hiro.util.registerEvent(window,'resize',Hiro.ui.dialog.center);
+			},
+
+			// Close the dialog 
+			close: function() {
+				Hiro.util.releaseEvent(window,'resize',Hiro.ui.dialog.center);
+			},		
+
+			// Center triggered initially and on resize
+			center: function() {
+				requestAnimationFrame(function(){
+					var wh = document.body.clientHeight || document.documentElement.clientHeight || window.innerHeight,
+						ww = document.body.clientWidth || document.documentElement.clientWidth || window.innerWidth,											
+						dh = Hiro.ui.dialog.el_wrapper.clientHeight,
+						dw = Hiro.ui.dialog.el_wrapper.clientWidth;
+
+					// Set properties	
+					Hiro.ui.dialog.el_wrapper.style.left = Math.floor((ww - dw) / 2 - 20) + 'px';
+					Hiro.ui.dialog.el_wrapper.style.top = Math.floor((wh - dh) / 2 - 20) + 'px';					
+				})
+			}
+
+		},
+
 		// Simple top loading bar lib
 		hprogress: {
 			active: false,

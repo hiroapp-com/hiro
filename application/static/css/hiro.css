@@ -876,8 +876,8 @@ a.hirobutton:hover {
 
 /*   Settings and other Dialogs */
 
-#modalShield {
-  display: none;
+#shield {
+  /* display: none; */
   position: fixed;
   top: 0;
   left: 0;
@@ -889,11 +889,12 @@ a.hirobutton:hover {
   z-index: 90000;
 }
 
-#dialogWrapper {
-  position: fixed;
-  display: none;
+#shield .wrapper {
+  position: absolute;
+  width: 750px;
+  height: 480px;
   border: 10px rgba(0,0,0,0.9) solid;
-  color: rgba(0,0,0,0.8)!important;
+  color: rgba(0,0,0,0.8) !important;
   border-radius: 8px;
   -webkit-border-radius: 8px;
   -moz-border-radius: 8px;
