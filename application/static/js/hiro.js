@@ -128,7 +128,8 @@ var Hiro = {
 		// Rerender data
 		paint: function() {
 			// that scope because it's called by timeout as well
-			var that = Hiro.folio, i, l, el, data;
+			var that = Hiro.folio, i, l, data, 
+				f0 = document.createDocumentFragment(), f1;
 
 			// Kick off regular updates, only once
 			if (!that.updatetimeout) {
@@ -138,25 +139,38 @@ var Hiro = {
 			// Get data from store			
 			data = Hiro.data.get('folio','c');
 
-			// Empty current list and archivecount
-			that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
+			// Reset archivecount
 			that.archivecount = 0;
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
-				// Make sure we have a note
-
-
-				// Check which DOM bucket and fire renderlink
-				el = (data[i].status == 'active') ? that.el_notelist : that.el_archivelist;
-				el.appendChild(that.renderlink(data[i]));	
+				// Attach note entries to fragments
+				if (data[i].status == 'active') {
+					f0.appendChild(that.renderlink(data[i]))
+				// If we didn't have an archived Note yet create the fragment	
+				} else if (data[i].status == 'archive') {
+					if (!f1) f1 = document.createDocumentFragment();
+					f1.appendChild(that.renderlink(data[i]))
+				} else {
+					Hiro.sys.error('Tried to paint Note with invalid status',data[i]);
+				}
 
 				// Update lookup object
 				that.lookup[data[i].nid] = data[i];			
 			}
 
-			// Update text contents of archivelink
-			if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
+			// Switch folio DOM contents with fragemnts
+			requestAnimationFrame(function(){
+				// Empty
+				that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
+
+				// Append
+				that.el_notelist.appendChild(f0);				
+				if (f1) that.el_archivelist.appendChild(f1);
+
+				// Update text contents of archivelink
+				if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
+			})
 		},	
 
 		renderlink: function(folioentry) {
@@ -464,7 +478,6 @@ var Hiro = {
 		},
 
 		// Paint canvas
-		// TODO Bruno: See if requestanimationframe helps here and at folio.paint()
 		paint: function() {
 			// Make sure we have a current note
 			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
@@ -489,14 +502,18 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
-			// Reset to get proper value
-			this.el_text.style.height = '100px';
+			// With the next available frame
+			requestAnimationFrame(function(){
+				// Reset to get proper value
+				Hiro.canvas.el_text.style.height = '100px';
 
-			// Set values
-			this.textheight = this.el_text.style.height = this.el_text.scrollHeight.toString() + 'px';
+				// Set values
+				Hiro.canvas.textheight = Hiro.canvas.el_text.scrollHeight;
+				Hiro.canvas.el_text.style.height = Hiro.canvas.textheight.toString() + 'px';
+			})
 
 			// If we are at the last position, also make sure to scroll to it to avoid Chrome etc quirks
-			if (this.el_text.value.length == Hiro.canvas.getcursor()[1] && this.el_text.scrollHeight > document.body.offsetHeight) window.scrollTo(0,el.scrollHeight);
+			if (this.el_text.value.length == Hiro.canvas.getcursor()[1] && this.el_text.scrollHeight > document.body.offsetHeight) window.scrollTo(0,this.el_text.scrollHeight);
 		},
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
