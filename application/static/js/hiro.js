@@ -48,11 +48,11 @@ var Hiro = {
 		archiveopen: false,
 
 		// DOM IDs
-		el_root: 'folio',
-		el_notelist: 'notelist',
-		el_archivelist: 'archivelist',
-		el_showmenu: 'showmenu',
-		el_archivelink: 'archivelink',		
+		el_root: document.getElementById('folio'),
+		el_notelist: document.getElementById('notelist'),
+		el_archivelist: document.getElementById('archivelist'),
+		el_showmenu: document.getElementById('showmenu'),
+		el_archivelink: document.getElementById('archivelink'),		
 
 		// Internal values
 		autoupdate: null,
@@ -62,13 +62,10 @@ var Hiro = {
 
 		// Init folio
 		init: function() {
-			var el = document.getElementById(this.el_root),
-				sm = document.getElementById(this.el_showmenu);
-
 			// Event setup
-			Hiro.ui.fastbutton.attach(el,Hiro.folio.folioclick);			
-			Hiro.ui.touchy.attach(el,Hiro.folio.foliotouch,55);	
-			Hiro.ui.touchy.attach(sm,Hiro.folio.foliotouch,55);					
+			Hiro.ui.fastbutton.attach(this.el_root,Hiro.folio.folioclick);			
+			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);	
+			Hiro.ui.touchy.attach(this.el_showmenu,Hiro.folio.foliotouch,55);					
 		},
 
 		// If the user clicked somewhere in the folio
@@ -131,10 +128,7 @@ var Hiro = {
 		// Rerender data
 		paint: function() {
 			// that scope because it's called by timeout as well
-			var that = Hiro.folio, i, l, el, data,
-				el_n = document.getElementById(Hiro.folio.el_notelist),
-				el_a = document.getElementById(Hiro.folio.el_archivelist),
-				el_al = document.getElementById(Hiro.folio.el_archivelink);
+			var that = Hiro.folio, i, l, el, data;
 
 			// Kick off regular updates, only once
 			if (!that.updatetimeout) {
@@ -145,7 +139,7 @@ var Hiro = {
 			data = Hiro.data.get('folio','c');
 
 			// Empty current list and archivecount
-			el_n.innerHTML = el_a.innerHTML = '';
+			that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
 			that.archivecount = 0;
 
 			// Cycle through notes
@@ -154,7 +148,7 @@ var Hiro = {
 
 
 				// Check which DOM bucket and fire renderlink
-				el = (data[i].status == 'active') ? el_n : el_a;
+				el = (data[i].status == 'active') ? that.el_notelist : that.el_archivelist;
 				el.appendChild(that.renderlink(data[i]));	
 
 				// Update lookup object
@@ -162,7 +156,7 @@ var Hiro = {
 			}
 
 			// Update text contents of archivelink
-			if (!that.archiveopen) el_al.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
+			if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
 		},	
 
 		renderlink: function(folioentry) {
@@ -318,21 +312,18 @@ var Hiro = {
 
 		// Switch documentlist between active / archived 
 		archiveswitch: function() {
-			var act = document.getElementById(this.el_notelist),
-				arc = document.getElementById(this.el_archivelist),
-				el = document.getElementById(this.el_archivelink),
-				c = (this.archivecount > 0) ? '(' + this.archivecount.toString() + ')' : '';
+			var c = (this.archivecount > 0) ? '(' + this.archivecount.toString() + ')' : '';
 
 			// Set CSS properties and TExt string
 			if (this.archiveopen) {
-				act.style.display = 'block';
-				arc.style.display = 'none';
-				el.innerHTML = 'Archive  ' + c;
+				this.el_notelist.style.display = 'block';
+				this.el_archivelist.style.display = 'none';
+				this.el_archivelink.innerHTML = 'Archive  ' + c;
 				this.archiveopen = false;
 			} else {
-				act.style.display = 'none';
-				arc.style.display = 'block';
-				el.innerHTML = 'Close Archive'
+				this.el_notelist.style.display = 'none';
+				this.el_archivelist.style.display = 'block';
+				this.el_archivelink.innerHTML = 'Close Archive'
 				this.archiveopen = true;
 			}	
 		}			
@@ -346,28 +337,24 @@ var Hiro = {
 		textheight: 0,
 
 		// DOM IDs
-		el_root: 'canvas',
-		el_title: 'pageTitle',
-		el_text: 'pageContent',
-		el_quote: 'nicequote',
+		el_root: document.getElementById('canvas'),
+		el_title: document.getElementById('pageTitle'),
+		el_text: document.getElementById('pageContent'),
+		el_quote: document.getElementById('nicequote'),
 
 		// Key maps
 		keys_noset: [16,17,18,33,34,35,36,37,38,39,40],
 
 		// Init canvas
 		init: function() {
-			var canvas = document.getElementById(this.el_root),
-				text = document.getElementById(this.el_text),
-				title = document.getElementById(this.el_title);
-
 			// Event setup
-			Hiro.util.registerEvent(text,'keyup',Hiro.canvas.textup);
-			Hiro.util.registerEvent(text,'keydown',Hiro.canvas.textdown);			
-			Hiro.util.registerEvent(title,'keyup',Hiro.canvas.titleup);			
-			Hiro.ui.fastbutton.attach(title,Hiro.canvas.titleclick);			
+			Hiro.util.registerEvent(this.el_text,'keyup',Hiro.canvas.textup);
+			Hiro.util.registerEvent(this.el_text,'keydown',Hiro.canvas.textdown);			
+			Hiro.util.registerEvent(this.el_title,'keyup',Hiro.canvas.titleup);			
+			Hiro.ui.fastbutton.attach(this.el_title,Hiro.canvas.titleclick);			
 
 			// When a user touches the white canvas area
-			Hiro.ui.touchy.attach(canvas,Hiro.canvas.canvastouch,55);			
+			Hiro.ui.touchy.attach(this.el_root,Hiro.canvas.canvastouch,55);			
 		},
 
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
@@ -375,7 +362,7 @@ var Hiro = {
 			// If the user presses Arrowup at position 0
 			if (event.keyCode == 38) {
 				var c = Hiro.canvas.getcursor();
-				if (c[0] == c[1] && c[0] == 0) document.getElementById(Hiro.canvas.el_title).focus();
+				if (c[0] == c[1] && c[0] == 0) Hiro.canvas.el_title.focus();
 			} 
 
 			// The dreaded tab key
@@ -409,9 +396,8 @@ var Hiro = {
 
 			// Switch quote on/off based on user actions
 			if ((this.value.length > 0 && Hiro.canvas.quoteshown) || (this.value.length == 0 && !Hiro.canvas.quoteshown)) {
-				var q = document.getElementById(Hiro.canvas.el_quote),
-					d = (Hiro.canvas.quoteshown) ? -1 : 1;
-				Hiro.ui.fade(q,d,450);
+				var d = (Hiro.canvas.quoteshown) ? -1 : 1;
+				Hiro.ui.fade(Hiro.canvas.el_quote,d,450);
 				Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
 			} 
 		},		
@@ -422,7 +408,7 @@ var Hiro = {
 			if (event.keyCode == 40 || event.keyCode == 13) Hiro.canvas.setcursor(0);
 
 			// LEnovo nostalgia: Goto End on End
-			if (event.keyCode == 35) Hiro.canvas.setcursor(document.getElementById(Hiro.canvas.el_text).value.length);			
+			if (event.keyCode == 35) Hiro.canvas.setcursor(Hiro.canvas.el_text.value.length);			
 
 			// Handle keys where we don't want to set a different value (and most important kick off commit)
 			if ((Hiro.canvas.keys_noset.indexOf(event.keyCode) > -1) || (event.keyCode > 111 && event.keyCode < 124)) return;
@@ -452,7 +438,6 @@ var Hiro = {
 		// Load a note onto the canvas
 		load: function(id) {
 			var note = Hiro.data.get('notes',id),
-				text = document.getElementById(this.el_text),
 				// If we call load without id we just pick the doc on top of the folio
 				id = id || Hiro.data.get('folio').c[0].nid;
 
@@ -484,20 +469,17 @@ var Hiro = {
 			// Make sure we have a current note
 			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
 
-			var el_title = document.getElementById(this.el_title),
-				el_text = document.getElementById(this.el_text),
-				el_q = document.getElementById(this.el_quote),				
-				n = Hiro.data.get('notes',this.currentnote),
+			var n = Hiro.data.get('notes',this.currentnote),
 				title = n.c.title || 'Untitled Note', text = n.c.text;
 
 			// Set title & text
-			if (!n.c.title || el_title.value != n.c.title) el_title.value = document.title = title;	
-			if (el_text.value != text) el_text.value = text;	
+			if (!n.c.title || this.el_title.value != n.c.title) this.el_title.value = document.title = title;	
+			if (this.el_text.value != text) this.el_text.value = text;	
 
 			// 	Switch quote on or off for programmatic text changes
 			if ((text.length > 0 && this.quoteshown) || (text.length == 0 && !this.quoteshown)) {
 				var d = (this.quoteshown) ? -1 : 1;
-				Hiro.ui.fade(el_q,d,150);
+				Hiro.ui.fade(this.el_quote,d,150);
 				this.quoteshown = !this.quoteshown;				
 			} 			
 
@@ -507,22 +489,19 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
-			var el = document.getElementById(this.el_text);
-
 			// Reset to get proper value
-			el.style.height = '100px';
+			this.el_text.style.height = '100px';
 
 			// Set values
-			this.textheight = el.style.height = el.scrollHeight.toString() + 'px';
+			this.textheight = this.el_text.style.height = this.el_text.scrollHeight.toString() + 'px';
 
 			// If we are at the last position, also make sure to scroll to it to avoid Chrome etc quirks
-			if (el.value.length == Hiro.canvas.getcursor()[1] && el.scrollHeight > document.body.offsetHeight) window.scrollTo(0,el.scrollHeight);
+			if (this.el_text.value.length == Hiro.canvas.getcursor()[1] && this.el_text.scrollHeight > document.body.offsetHeight) window.scrollTo(0,el.scrollHeight);
 		},
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
 		getcursor: function() {
-		    var el = document.getElementById(this.el_text),
-		    	x, y, content;	
+		    var el = this.el_text, x, y, content;	
 
 		    if ('selectionStart' in el) {
 		    	//Mozilla and DOM 3.0
@@ -555,7 +534,7 @@ var Hiro = {
 
 		// Set cursor position, accepts either number or array of two numbers representing selection start & end
 		setcursor: function(pos) {
-			var el = document.getElementById(Hiro.canvas.el_text);
+			var el = this.el_text;
 
 			// Set default value
 			pos = pos || Hiro.data.get('notes',this.currentnote).c.cursor_pos || 0;
@@ -636,6 +615,12 @@ var Hiro = {
 
 			// Extract proper key
 			var k = event.key.split('.')[1];
+
+			// Receive a message
+			if (k == 'notify') {
+				console.log(event);
+				return;
+			}
 
 			// Write changes
 			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l','UPDATE',true);
@@ -1194,7 +1179,7 @@ var Hiro = {
 				this.socket.onclose = function(e) {
 					// Switch to offline
 					Hiro.sync.online = false;					
-					Hiro.sys.log('WebSocket closed',[e,this.socket]);	
+					Hiro.sys.log('WebSocket closed with code ' + e.code + ' and ' + (e.reason || 'no reason given.'),[e,this.socket]);	
 				}				
 			},
 		},
@@ -1472,8 +1457,7 @@ var Hiro = {
 				return;
 
 			// Local vars
-			var el = document.getElementById(Hiro.canvas.el_root),
-				// Make sure we always have 50px on the right, even on narrow devices
+			var // Make sure we always have 50px on the right, even on narrow devices
 				maxwidth = (document.body.offsetWidth - 50),
 				distance = (maxwidth < this.slidewidth) ? maxwidth : this.slidewidth,
 				// Start value
@@ -1515,8 +1499,8 @@ var Hiro = {
 				} 
 
 				// Change DOM CSS values
-				el.style.left = v + 'px';
-				el.style.right = (v*-1)+'px';
+				Hiro.canvas.el_root.style.left = v + 'px';
+				Hiro.canvas.el_root.style.right = (v*-1)+'px';
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
