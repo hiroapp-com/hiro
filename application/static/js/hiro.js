@@ -86,7 +86,7 @@ var Hiro = {
 						note = Hiro.folio.newnote();
 						break;
 					case 'settings':
-						console.log(target.id);
+						Hiro.ui.dialog.show();
 						break;
 					default:
 						if (target.id.indexOf('note_') > -1) note = target.id.replace('note_','');
@@ -194,6 +194,7 @@ var Hiro = {
 			t = document.createElement('span');
 			t.className = 'notetitle';
 			t.innerHTML = note.c.title || 'Untitled Note';
+			if (id.length < 5 && !note.c.title) t.innerHTML = 'New Note';
 
 			stats = document.createElement('small');
 
@@ -484,6 +485,9 @@ var Hiro = {
 
 			var n = Hiro.data.get('notes',this.currentnote),
 				title = n.c.title || 'Untitled Note', text = n.c.text;
+
+			// If we havn't synced the Note yet, call it 'New'
+			if (this.currentnote.length < 5 && !n.c.title) title = 'New Note';
 
 			// Set title & text
 			if (!n.c.title || this.el_title.value != n.c.title) this.el_title.value = document.title = title;	
@@ -1472,7 +1476,41 @@ var Hiro = {
 			document.getElementById('viewport').setAttribute('content', measure);				
 
 			// Start hprogress on init
-			this.hprogress.init();		
+			this.hprogress.init();	
+
+			// Attach keyboard shortcut listener
+			Hiro.util.registerEvent(window,'keydown',Hiro.ui.keyhandler);
+
+			// Attach delegated clickhandler for shield, this handles 
+			Hiro.util.registerEvent(this.dialog.el_root,'click',Hiro.ui.dialog.clickhandler);			
+		},
+
+		// Fire keyboard events if applicable
+		keyhandler: function(event) {
+			// Single keys that trigger an action
+			switch (event.keyCode) {
+				// If ESC key is pressed				
+				case 27:
+					if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();
+					break;
+			}
+
+			// If a key was pressed in combination with CTRL/ALT or APPLE
+			if (event.ctrlKey || event.altKey || event.metaKey) {
+				// Fire combos
+				switch (event.keyCode) {
+					// N key, not supressable in Chrom
+					case 78:
+						Hiro.util.stopEvent(event);						
+						Hiro.canvas.load(Hiro.folio.newnote());					
+						break;
+					// S key
+					case 83:
+						Hiro.util.stopEvent(event);						
+						alert("Hiro saves all your notes automatically and syncs them with the cloud if you're signed in");
+						break;
+				}
+			}
 		},
 
 		// Setup UI according to account level where 0 = anon
@@ -1713,19 +1751,35 @@ var Hiro = {
 			el_root: document.getElementById('shield'),
 			el_wrapper: document.getElementById('shield').firstChild,
 
+			// Internal values
+			open: false,
+
 			// Open dialog
-			open: function() {
+			show: function() {
+				// Change visibility etc, animatnFrame strangely triggers a white flash here in Chrome
+				Hiro.ui.dialog.center();						
+				Hiro.ui.dialog.el_root.style.display = 'block';
+							
+				// Attach event and set internal value
 				Hiro.util.registerEvent(window,'resize',Hiro.ui.dialog.center);
+				this.open = true;
 			},
 
 			// Close the dialog 
-			close: function() {
+			hide: function() {
+				// Change visibility etc
+				requestAnimationFrame( function(){
+					Hiro.ui.dialog.el_root.style.display = 'none';				
+				})					
+
+				// Detach event and set internal value				
 				Hiro.util.releaseEvent(window,'resize',Hiro.ui.dialog.center);
+				this.open = false;				
 			},		
 
 			// Center triggered initially and on resize
 			center: function() {
-				requestAnimationFrame(function(){
+				requestAnimationFrame( function(){
 					var wh = document.body.clientHeight || document.documentElement.clientHeight || window.innerHeight,
 						ww = document.body.clientWidth || document.documentElement.clientWidth || window.innerWidth,											
 						dh = Hiro.ui.dialog.el_wrapper.clientHeight,
@@ -1735,6 +1789,15 @@ var Hiro = {
 					Hiro.ui.dialog.el_wrapper.style.left = Math.floor((ww - dw) / 2 - 20) + 'px';
 					Hiro.ui.dialog.el_wrapper.style.top = Math.floor((wh - dh) / 2 - 20) + 'px';					
 				})
+			},
+
+			// If the user clicks somewhere in the dialog 
+			clickhandler: function(event) {
+				var target = event.target || event.srcElement;
+
+				// User clicked outside of dialog window
+				if (target.id == 'shield') Hiro.ui.dialog.hide();
+				console.log(event);
 			}
 
 		},
