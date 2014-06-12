@@ -200,7 +200,7 @@ input.pseudobutton {
   top: 0;
   height: 50px;
   width: 50px; 
-  z-index: 2200;
+  z-index: 2200;  
 }
 
 #showmenu .bubble {
@@ -386,13 +386,8 @@ input.pseudobutton {
   min-height: 100%;
   z-index: 2000;
   background: #fff;
-  border-left: 1px solid #222;
+  border-left: 1px solid #222;   
 }
-
-#canvas .wrapper {
-  position: relative;
-  width: 100%;
-} 
 
 #canvas input.title {  
   position: absolute;
@@ -920,7 +915,7 @@ input.pseudobutton {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0,0,0,0.8);
+  background-color: rgba(0,0,0,0.7);
   margin: 0;
   padding: 0;
   z-index: 90000;
@@ -931,24 +926,23 @@ input.pseudobutton {
   position: absolute;
   width: 750px;
   height: 480px;
-  border: 10px rgba(0,0,0,0.9) solid;
+  border: 1px rgba(0,0,0,0.9) solid;
   color: rgba(0,0,0,0.8) !important;
-  border-radius: 8px;
-  -webkit-border-radius: 8px;
-  -moz-border-radius: 8px;
-  -o-border-radius: 8px;
-  -khtml-border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  -webkit-box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  -o-box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  -khtml-box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  margin: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -webkit-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -moz-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -o-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -khtml-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  margin: 0;
   padding: 0;  
   z-index: 95000;
   background-color: #fcfcfc;
   text-align: center;  
   overflow: hidden; 
+  margin-left: 200px;
+  -webkit-transition: margin-left 0.1s;
+  -moz-transition: margin-left 0.1s;
+  transition: margin-left 0.1s;  
 }
 
 #shield form input  {

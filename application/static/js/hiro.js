@@ -1538,6 +1538,7 @@ var Hiro = {
 
 		// Browser specific properties
 		vendors: ['webkit','moz','o','ms'],
+		browser: undefined,
 		opacity: '',		
 
 		// Folio open/close properties
@@ -1563,6 +1564,16 @@ var Hiro = {
 						break;
 					}
 				}
+			}
+
+			// Find out which browserwe're using if we dont't know yet
+			if (!this.browser) {
+				for (i = 0, l = v.length; i < l; i++) {
+					if (style[v[i] + 'Transition'] !== undefined) {
+						this.browser = v[i];
+						break;
+					}
+				}				
 			}
 
 			// Set vendor specific global animationframe property
@@ -1771,7 +1782,20 @@ var Hiro = {
 				da = a1 - a0,
 				duration = duration || 1000,
 				start = new Date().getTime(), 
-				_this = this;
+				_this = this, cssd, css;
+
+			// If we can read the transition property, use CSS animations instead
+			// TODO Bruno: Investigate a proper way to do this 
+			if (false &&  typeof element.style.transition == 'string') {
+				cssd = (duration / 1000), csst = (a1 != 1) ? 'visibility 0s linear ' + cssd + 's' : 'visibility ' + cssd + 's';
+				requestAnimationFrame(function(){
+					if (Hiro.ui.browser) element.style[Hiro.ui.browser + 'Transition'] = '-' + Hiro.ui.browser + '-opacity ' + csst;
+					element.style.transition = csst;				 
+					element.style[Hiro.ui.browser + 'Opacity'] = element.style.opacity = a1;
+					element.style.visibility = (a1) ? 'visible' : 'hidden';					
+				});
+				return;
+			}	
 
 			// Step through the animation
 			function step() {
@@ -1927,10 +1951,22 @@ var Hiro = {
 			show: function(container, section, focus, mobilefocus) {
 				// Change visibility etc, animationFrame strangely triggers a white flash here in Chrome
 				Hiro.ui.dialog.center();						
-				Hiro.ui.dialog.el_root.style.display = 'block';
+				Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200);
+
+				// CSS Manipulations
+				requestAnimationFrame(function(){
+					// Set top margin for upward movement
+					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;
+
+					// Add blur filters
+					setTimeout(function(){
+						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
+						Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
+					},220)
+				})
 
 				// Hide folio
-				if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
+				if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 							
 				// Attach event and set internal value
 				Hiro.util.registerEvent(window,'resize',Hiro.ui.dialog.center);
@@ -1939,10 +1975,17 @@ var Hiro = {
 
 			// Close the dialog 
 			hide: function() {
+				// Remove blur filters
+				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';				
+				Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
+				
 				// Change visibility etc
-				requestAnimationFrame( function(){
-					Hiro.ui.dialog.el_root.style.display = 'none';				
-				})					
+				Hiro.ui.fade(Hiro.ui.dialog.el_root,-1,100);			
+
+				// Reset left margin for inward movement
+				setTimeout(function(){				
+					Hiro.ui.dialog.el_wrapper.style.marginLeft = '200px';
+				},100);										
 
 				// Detach event and set internal value				
 				Hiro.util.releaseEvent(window,'resize',Hiro.ui.dialog.center);
@@ -1958,8 +2001,8 @@ var Hiro = {
 						dw = Hiro.ui.dialog.el_wrapper.clientWidth;
 
 					// Set properties	
-					Hiro.ui.dialog.el_wrapper.style.left = Math.floor((ww - dw) / 2 - 20) + 'px';
-					Hiro.ui.dialog.el_wrapper.style.top = Math.floor((wh - dh) / 2 - 20) + 'px';					
+					Hiro.ui.dialog.el_wrapper.style.left = Math.floor((ww - dw) / 2 ) + 'px';
+					Hiro.ui.dialog.el_wrapper.style.top = Math.floor((wh - dh) / 2 ) + 'px';					
 				})
 			},
 
