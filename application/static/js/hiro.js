@@ -452,9 +452,9 @@ var Hiro = {
 
 		// Load a note onto the canvas
 		load: function(id) {
-			var note = Hiro.data.get('notes',id),
-				// If we call load without id we just pick the doc on top of the folio
-				id = id || Hiro.data.get('folio').c[0].nid;
+			// If we call load without id we just pick the doc on top of the folio
+			var	id = id || Hiro.data.get('folio').c[0].nid;
+				note = Hiro.data.get('notes',id);
 
 			// Close the folio if it should be open
 			if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);				
@@ -1205,8 +1205,141 @@ var Hiro = {
 			},
 		},
 
-		// Longpolling settings & functions
-		lp: {
+		// Generic AJAX as well as longpolling settings & functions
+		ajax: {
+			// When we deem a response successfull
+			successcodes: [200],
+
+			// Internal values
+			socket: null,
+
+			// Generic AJAX request handler
+			// obj Object supports:
+			// Method: GET, POST, PATCH
+			// URL: Target URL
+			// Headers: HTTP Headers to be included
+			// Success: Success callback function
+			// Error: Error callback function			
+			send: function(obj) {
+				if (!obj) return;
+
+				// Define default values
+				var method = obj.type || 'GET',
+					async = obj.async || true,
+					contentType = obj.contentType || 'application/json; charset=UTF-8'
+					payload = obj.payload || '';	
+
+				// Build proper URL encoded string for Form fallback
+				if (obj.payload && contentType == 'application/x-www-form-urlencoded') {
+					// TODO: Move this into util once it's tested
+					var str = [];
+					for (var p in obj.payload) {
+						if (obj.payload.hasOwnProperty(p)) {
+							str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj.payload[p]));
+						}
+					}
+					payload = str.join("&");				
+				}		
+
+				// Non Patch supporting devices, move to array check once we have more
+				if (method == 'PATCH' && navigator.appVersion.indexOf('BB10') > -1) method = 'POST';
+
+				// Spawn new request object
+				var req = this.getreq();	
+
+				try {				
+					// Set basic data
+					req.open(method, obj.url, async);
+					req.timeout = obj.timeout || 20000;	
+					
+					// Pass on state changes and attach event handlers
+					if (async) {
+						// This should work in all relevant browsers
+						req.onreadystatechange = function() {
+							if (this.readyState == 4 && obj.success && !obj.called && Hiro.sync.ajax.successcodes.indexOf(this.status) > -1) {
+								obj.success(this);
+								obj.called = true;
+							}
+						};
+
+						// Here we have to get browser specific
+						if (typeof req.ontimeout != 'undefined') {						
+							req.ontimeout = function() { 
+								if (obj.error && !obj.called ) {
+									obj.error(this);
+									obj.called = true;
+								}	
+							};
+						} else {
+							// TODO: timeout fallback
+						}	
+						if (typeof req.onerror != 'undefined') {												
+							req.onerror = function() {						 
+								if (obj.error && !obj.called ) {
+									obj.error(this);
+									obj.called = true;									
+								}	
+							};	
+						} else {
+							req.addEventListener("error", function() { 						
+								if (obj.error && !obj.called ) {
+									obj.error(this);
+									obj.called = true;
+								}		
+							}, false);						
+						}										
+					}	
+
+					// Set headers
+					req.setRequestHeader("Content-Type", contentType);
+					if (obj.headers) {
+						for (var key in obj.headers) {
+							// Cycle through header object
+							req.setRequestHeader(key, obj.headers[key]);
+						}
+					}
+
+					// And off we go
+					req.send(payload);
+
+				} catch(e) {
+					// Proper cleanup and logging
+					Hiro.sys.error('Generic AJAX Error',e);
+				}
+			},
+
+			// Returns proper cross browser xhr method
+			getreq: function() {
+				var req=null;
+				if (window.XMLHttpRequest) {
+					// Most browsers
+					try { req = new XMLHttpRequest(); }	catch(e) { Hiro.sys.error(e) }
+				} else if (window.ActiveXObject) {
+					// MS ftw
+					if (this.msXMLHttpService) {	
+						// See if we already have determined the available MS service
+						try { req = new ActiveXObject(this.msXMLHttpService); }
+						catch(e) { Hiro.sys.error(e) }
+					} else {
+						// Find it if not
+						for (var i=0, l=this.msXMLHttpServices.length; i<l; i++) {
+							try { 
+								req = new ActiveXObject(this.msXMLHttpServices[i]);
+								if (req) {
+									this.msXMLHttpService=this.msXMLHttpServices[i];
+									break;
+								}
+							}
+							catch(e) {
+								Hiro.sys.error(e)
+							}
+						}
+					}
+				}
+
+				// Return request object
+				return req;
+			}			
 
 		},
 
@@ -1482,7 +1615,15 @@ var Hiro = {
 			Hiro.util.registerEvent(window,'keydown',Hiro.ui.keyhandler);
 
 			// Attach delegated clickhandler for shield, this handles 
-			Hiro.util.registerEvent(this.dialog.el_root,'click',Hiro.ui.dialog.clickhandler);			
+			Hiro.util.registerEvent(this.dialog.el_root,'click',Hiro.ui.dialog.clickhandler);	
+
+			// Load settings into dialog
+			Hiro.sync.ajax.send({
+				url: '/newsettings/',
+				success: function(data) {
+					console.log('Gots teh settings',data);
+				}
+			});		
 		},
 
 		// Fire keyboard events if applicable
