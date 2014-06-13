@@ -1,16 +1,16 @@
 <div id="s_account">
 	<div class="header">
 		<a class="active">You<em>r Account</em></a>
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_plan'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_plan'));">Plan<em>s &amp; Payment</em></a>
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));">About</a>	
+		<a data-hiro-action="switch_s_plan">Plan<em>s &amp; Payment</em></a>
+		<a data-hiro-action="switch_s_about">About</a>	
 	</div>
 	{% if current_user.is_authenticated() %}
 	<div class="accountdetails">
 		<form id="accountform" action="javascript:void(0);">
-			<input type="text" value="{{ current_user.name }}" onkeyup="Hiro.sys.user.nametype(event)" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a href="#" onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" onclick="Hiro.sys.user.logio();return false;"></div>
+			<input type="text" value="{{ current_user.name }}" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
 			<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
 			<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-			<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption upgradelink"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));return false;">Upgrade</a></div>
+			<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption upgradelink"><a data-hiro-action="upgrade">Upgrade</a></div>
 			<input type="submit" value="foo" onclick="Hiro.sys.user.namesave(event); return false;" class="pseudobutton"></input>			
 		</form>		
 		<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
@@ -25,9 +25,9 @@
 <div id="s_plan" style="display:none;">
 	<div class="header forced"></div>				
 	<div class="header">
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));">You<em>r Account</em></a>
+		<a data-hiro-action="switch_s_account">You<em>r Account</em></a>
 		<a class="active">Plan<em>s &amp; Payment</em></a>
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));">About</a>		
+		<a data-hiro-action="switch_s_about">About</a>		
 	</div>
 	<div class="plans" id="s_planboxes">
 		<div class="box 1" onclick="Hiro.ui.upgradeboxclick(this);">
@@ -40,8 +40,8 @@
 				<li>Up to 10 notes
 				<li>100 context searches	
 			</ul>
-			<a href="#" class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
-			<a href="#" class="hirobutton red" onclick="Hiro.sys.user.downgrade('free');return false;">Downgrade</a>	
+			<a class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
+			<a class="hirobutton red" onclick="Hiro.sys.user.downgrade('free');return false;">Downgrade</a>	
 		</div>
 		<div class="box 2" onclick="Hiro.ui.upgradeboxclick(this);">
 			<div class="head">Advanced</div>
@@ -53,9 +53,9 @@
 				<li>Advanced publishing	
 				<li>Archive	
 			</ul>
-			<a href="#" class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
-			<a href="#" class="hirobutton red" onclick="Hiro.sys.user.downgrade('starter');return false;">Downgrade</a>	
-			<a href="#" class="hirobutton green" onclick="Hiro.ui.fillcheckout('starter');return false;">Upgrade !</a>	
+			<a class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
+			<a class="hirobutton red" onclick="Hiro.sys.user.downgrade('starter');return false;">Downgrade</a>	
+			<a class="hirobutton green" onclick="Hiro.ui.fillcheckout('starter');return false;">Upgrade !</a>	
 		</div>
 		<div class="box 3" onclick="Hiro.ui.upgradeboxclick(this);">
 			<div class="head">Pro (coming soon)</div>
@@ -67,31 +67,31 @@
 				<li>Pro publishing								
 				<li>Chrome research plugin							
 			</ul>
-			<a href="#" class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
-			<a href="#" class="hirobutton green" onclick="Hiro.ui.fillcheckout('pro');return false;">Preorder !</a>	
+			<a class="hirobutton grey" onclick="Hiro.ui.hideDialog();return false;">Your Current Plan</a>		
+			<a class="hirobutton green" onclick="Hiro.ui.fillcheckout('pro');return false;">Preorder !</a>	
 		</div>
 	</div>	
 	<div id="s_planfooter" class="footer">
-		<a href="#" onclick="Hiro.ui.hideDialog();return false;">Not now, thanks.</a>	
+		<a onclick="Hiro.ui.hideDialog();return false;">Not now, thanks.</a>	
 	</div>	
 </div>
 
 <div id="s_checkout" style="display:none;">
 	<div class="header forced"></div>				
 	<div class="header">
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));">You<em>r Account</em></a>
+		<a data-hiro-action="switch_s_account">You<em>r Account</em></a>
 		<a class="active">Plan<em>s &amp; Payment</em></a>
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_about'));" ontouchstart="Hiro.ui.switchView(document.getElementById('s_about'));">About</a>		
+		<a data-hiro-action="switch_s_about">About</a>		
 	</div>
 	<div class="checkoutdetails">	
 		{% if current_user.active_cc %}
 			<form id="checkoutform">
-				<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+				<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a onclick="Hiro.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 				<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
 				<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>&nbsp;/&nbsp;<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 				<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 				<div class="small" id="checkout_error"></div>			
-				<a href="#" class="hirobutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
+				<a class="hirobutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
 				Upgrade</a>	
 				<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payment powered by&nbsp;<b>stripe</b></div>
 				<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
@@ -130,13 +130,13 @@
 			</script>
 		{% else %}	
 		<form id="checkoutform">
-			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a href="#" onclick="Hiro.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
+			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a onclick="Hiro.ui.switchView(document.getElementById('s_plan'));document.activeElement.blur();return false;">Change</a></div>
 			<input type="text" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number" onfocus="this.nextSibling.innerHTML='';"></input><div class="ioption"></div>
 			<input type="text" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month" onfocus="document.getElementById('checkout_error').innerHTML=''"></input> /
 			<input type="text" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 			<input type="text" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc" onfocus="document.getElementById('checkout_error').innerHTML=''"></input>	
 			<div class="small" id="checkout_error"></div>			
-			<a href="#" class="hirobutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
+			<a class="hirobutton green" id="checkoutbutton" onclick="Hiro.sys.user.checkout(); return false;">
 			Upgrade</a>	
 			<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by&nbsp;<b>stripe</b></div>						
 			<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
@@ -147,8 +147,8 @@
 
 <div id="s_about" style="display:none;">
 	<div class="header">
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_account'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_account'));">You<em>r Account</em></a>
-		<a onmousedown="Hiro.ui.switchView(document.getElementById('s_plan'));return false;" ontouchstart="Hiro.ui.switchView(document.getElementById('s_plan'));">Plan<em>s &amp; Payment</em></a>
+		<a data-hiro-action="switch_s_account">You<em>r Account</em></a>
+		<a data-hiro-action="switch_s_plan">Plan<em>s &amp; Payment</em></a>
 		<a class="active">About</a>	
 	</div>
 

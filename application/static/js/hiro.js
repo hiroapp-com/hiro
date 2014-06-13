@@ -1680,8 +1680,11 @@ var Hiro = {
 			// Attach keyboard shortcut listener
 			Hiro.util.registerEvent(window,'keydown',Hiro.ui.keyhandler);
 
-			// Attach delegated clickhandler for shield, this handles 
-			Hiro.util.registerEvent(this.dialog.el_root,'click',Hiro.ui.dialog.clickhandler);	
+			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up
+			Hiro.util.registerEvent(this.dialog.el_root,'mousedown',Hiro.ui.dialog.clickhandler);	
+			Hiro.util.registerEvent(this.dialog.el_root,'mouseup',Hiro.ui.dialog.clickhandler);	
+			Hiro.util.registerEvent(this.dialog.el_root,'touchstart',Hiro.ui.dialog.clickhandler);	
+			Hiro.util.registerEvent(this.dialog.el_root,'touchend',Hiro.ui.dialog.clickhandler);	
 
 			// Load settings into dialog
 			this.dialog.loadsettings();	
@@ -1997,11 +2000,13 @@ var Hiro = {
 			// DOM elements that are NOT changing through AJAX reload etc
 			el_root: document.getElementById('shield'),
 			el_wrapper: document.getElementById('shield').firstChild,
-
 			el_settings: document.getElementById('d_settings'),
 
 			// Internal values
 			open: false,
+			lastx: 0,
+			lasty: 0,
+			lastaction: undefined,
 
 			// Open dialog
 			show: function(container, section, focus, mobilefocus) {
@@ -2063,11 +2068,54 @@ var Hiro = {
 
 			// If the user clicks somewhere in the dialog 
 			clickhandler: function(event) {
-				var target = event.target || event.srcElement;
+				var target = event.target || event.srcElement, that = Hiro.ui.dialog,
+					x = event.screenX, y = event.screenY,
+					a = target.getAttribute('data-hiro-action') || target.parentNode.getAttribute('data-hiro-action');
 
-				// User clicked outside of dialog window
-				if (target.id == 'shield') Hiro.ui.dialog.hide();
-				console.log(event);
+				// User clicked outside of dialog window, we're done
+				if (target.id == 'shield') {
+					Hiro.ui.dialog.hide();
+					return;
+				}
+
+				// Woop, we inited started fiddling with something relevant
+				if (a && (event.type == 'mousedown' || event.type == 'touchstart')) {
+					// First we remember where it all started
+					that.lastx = x; that.lasty = y; that.lastaction = a;
+
+					// List of actions tobe triggered at action start goes here 
+					switch (a) {
+						case 'switch_s_plan':
+							Hiro.ui.switchView(document.getElementById('s_plan'));
+							break;
+						case 'switch_s_about':
+							Hiro.ui.switchView(document.getElementById('s_about'));
+							break;							
+						case 'switch_s_account':
+							Hiro.ui.switchView(document.getElementById('s_account'));
+							break;		
+					}
+
+					// Do not proceed, all done for now
+					return;
+				}
+
+				// Things that need start & end on the same element or within n pixels. 
+				// Being mouseup or touchend is implicity by having a lastaction
+				if 	(that.lastaction && (a == that.lastaction || ((Math.abs(x - that.lastx) < 10) && (Math.abs(y - that.lasty) < 10 )))) {
+					switch (a) {
+						case 'logout':
+							Hiro.user.logout();
+							break;
+						case 'upgrade':
+							Hiro.ui.switchView(document.getElementById('s_plan'));
+							break;						
+					}
+				} 	
+
+				// Reset values
+				that.lastx = that.lasty = 0;
+				that.lastaction = undefined;
 			},
 
 			// Fetch latest settings template from server and load into placeholder div
