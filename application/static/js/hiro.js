@@ -747,29 +747,57 @@ var Hiro = {
 		// Example: someobj,'foo.bar.baz' becomes someobj[foo][bar][baz]
 		deepset: function(obj,key,value) {
 			// Split string into array
-			var a = key.split('.'), i, l;
+			var a = key.split('.'), o = obj;
 
-			// Loop through array and step down object tree
-			for (i=0,l=a.length; i<l; i++) {
-				// Stop one level before last and set value
-				if (i == (l-1)) {
-					obj[a[i]] = value;
-					return;
-				}
-				obj = obj[a[i]];
-			}
+            for (var i = 0, l = a.length; i < l - 1; i++) {
+            	// Create current property string
+                var n = a[i];
+                // Create property (object) if it doesn't exist
+                if (!(n in o)) o[n] = {};
+            	// Go one level deeper
+                o = o[n];
+            }
+
+            // Set value result
+            o[a[a.length - 1]] = value;					
 		},
 
 		// Return data from local client
 		get: function(store,key) {
-			if (key && this.stores[store] && this.stores[store][key]) {
+			// We need a deeper look
+			if (key && key.indexOf('.') >= 0 && this.stores[store]) {
+				return this.deepget(this.stores[store],key);
+			}
+
+			// Simple lookups
+			else if (key && this.stores[store] && this.stores[store][key]) {
 				return this.stores[store][key];
 			} else if (!key && this.stores[store]) {
 				return this.stores[store];
 			} else {
 				return undefined;
-				// this.fromdisk(store,key);
 			}
+		},
+
+		// Quick lookup of foo.bar.baz formated strings as keys
+		deepget: function(obj,key) {
+			// Split string into array
+			var a = key.split('.'), o = obj;	
+			
+			// Simply go through values while we have some in the array
+            while (a.length) {
+            	// Pick the first key in line
+                var n = a.shift();
+                // Go deeper or return undefined
+                if (n in o) {
+                    o = o[n];
+                } else {
+                    return undefined;
+                }
+            }
+
+            // Return the value at the end of the magnificient journey
+            return o;
 		},
 
 		// Mark a store for local persistence and kick it off 
