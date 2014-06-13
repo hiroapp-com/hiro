@@ -222,12 +222,12 @@ var Hiro = {
 			link.appendChild(t);
 			link.appendChild(stats);			
 
-			if (note.c.peers.length > 0) {
+			if (note.c.peers.length > 1) {
 				// Add sharing icon to document and change class to shared
 				var s = document.createElement('div');
 				s.className = 'sharing';
 				var tooltip = 'Shared with others';	
-				if (doc.unseen) {
+				if (false && doc.unseen) {
 					// Show that document has unseen updates
 					var sn = document.createElement('div');
 					sn.className = "bubble red";
@@ -237,7 +237,7 @@ var Hiro = {
 				}			
 				s.setAttribute('title',tooltip);	
 				link.appendChild(s);
-				d.className = 'document shared';					
+				d.className = 'note shared';					
 			}
 
 			// Attach link & archive to element

@@ -301,6 +301,28 @@ input.pseudobutton {
   font-weight: normal;
 }
 
+#folio .notes .note.shared a {
+  padding-right: 33px;
+}
+
+#folio .notes .note a .sharing {
+  background-image: url(../img/publish.4.png);
+  background-size: 38px auto;
+  background-repeat: no-repeat;
+  background-position: right -387px;
+  position: absolute;
+  top: 0;
+  right: 10px;
+  display: block;
+  height: 30px;
+  width: 30px;
+  opacity: 0.5;
+}
+
+#folio .notes .note:hover a .sharing {
+  opacity: 1;
+}
+
 #folio .footer {
   position: absolute;
   left: 0;
@@ -352,9 +374,9 @@ input.pseudobutton {
     width: 100%;
   }
 
-  #folio .documents {
+  #folio .notes {
     max-width: 295px;
-    right: 55px;
+    right: 57px;
     width: auto;
   }
 
