@@ -7,11 +7,14 @@
 	Hiro.canvas: The currently loaded document
 	Hiro.canvas.context: Search and right hand sidebar related functions
 
+	Hiro.user: User management incl login logout etc
+	Hiro.user.contacts: Contacts including lookup object etc
+
 	Hiro.apps: Generic plugin setup 
 	Hiro.apps.sharing: Sharing plugin
 	Hiro.apps.publish: Publish selections to various external services
 
-	Hiro.store: Core datamodel incl setter & getter & eventhandler
+	Hiro.data: Core datamodel incl setter & getter & eventhandler
 		store: unique store id, also seperate localstorage JSON string
 		key: supports direct access to all object levels, eg foo.bar.baz
 		value: arbitrary js objects
@@ -19,8 +22,8 @@
 
 	Hiro.sync: Data synchronization with local and remote APIs
 	Hiro.sync.ws: Websocket client
-	Hiro.sync.ajax: Longpolling fallback and generic AJAX requests	
-	Hiro.sync.store: Local storage abstractions	
+	Hiro.sync.lp: Longpolling fallback 
+	Hiro.sync.ajax: Generic AJAX stuff
 
 	Hiro.ui: Basic UI related functions like showing/hiding dialogs, sliding menu etc
 	Hiro.ui.fastbutton: Button event handlers that fire instantly on touch devices
@@ -29,7 +32,6 @@
 	Hiro.ui.hprogres: Thin progress bar on very top of page
 
 	Hiro.sys: Core functionality like setup, logging etc
-	Hiro.sys.user: Internal user management
 
 	Hiro.lib: External libraries like Facebook or analytics	
 
@@ -581,6 +583,42 @@ var Hiro = {
     			el.focus();
     		}	
 		} 	
+	},
+
+	// All user related stuff
+	user: {
+		// DOM Nodes
+		el_loginform: document.getElementById('loginform'),
+		el_signupform: document.getElementById('signupform'),		
+
+		// Grab registration form data, submit via XHR and process success / error
+		register: function() {
+
+		},
+
+		// Grab login form data, submit via XHR and process success / error
+		login: function() {
+
+		},		
+
+		// Send logout command to server, fade out page, wipe localstore and refresh page on success
+		logout: function() {
+
+		},			
+
+		// Hello. Is it them you're looking for?
+		contacts: {
+			// Lookup by ID
+			lookup: {},
+
+			// Search all relevant contact properties and return array of matches, IE 8+
+			search: function(string) {
+				// Check if we have support for this
+				if (typeof Array.prototype.filter !== 'function') return;
+			}
+
+		}
+
 	},
 
 	// Local data, model and persitence
