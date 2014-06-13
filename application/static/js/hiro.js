@@ -658,7 +658,58 @@ var Hiro = {
 
 		// Grab login form data, submit via XHR and process success / error
 		login: function() {
+			var branch = Hiro.user.el_login, 
+				b = branch.getElementsByClassName('hirobutton')[1],
+				v = branch.getElementsByTagName('input'),							
+				e = branch.getElementsByClassName('mainerror')[0],
+				payload = {	
+					email: v[0].value.toLowerCase().trim(),
+					password: v[1].value
+				};
 
+				// prevent default submission event if we have one
+				if (event) event.preventDefault();
+
+				// Preparing everything
+				if (Hiro.user.authinprogress) return;
+				Hiro.user.authinprogress = true;				
+				b.innerHTML ="Logging in...";
+
+				// Remove focus on mobiles
+				if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();
+
+				// Clear any old error messages
+				v[0].nextSibling.innerHTML = '';
+				v[1].nextSibling.innerHTML = '';				
+				e.innerHTML = '';	
+
+				// Send request to backend		
+				Hiro.sync.ajax.send({
+					url: "/login",
+	                type: "POST",
+	                contentType: "application/x-www-form-urlencoded",
+	                payload: payload,
+					success: function(req,data) {
+						Hiro.user.authed('login',data);						                    
+					},
+					error: function(req,data) { 												
+	                    b.innerHTML = "Log-In";
+	                    Hiro.sys.user.authactive = false;						
+						if (req.status==500) {
+							e.innerHTML = "Something went wrong, please try again.";
+							Hiro.sys.error('Login error for ' + payload.email,req);								
+							return;
+						} 
+	                    if (data.email) {
+	                    	val[0].className += ' error';
+	                    	val[0].nextSibling.innerHTML = data.email[0];
+	                    }	
+	                    if (data.password) {
+	                    	val[1].className += ' error';	                    	
+	                    	val[1].nextSibling.innerHTML = data.password;  
+	                    }	               		                                    
+					}										
+				});	
 		},		
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
@@ -671,6 +722,7 @@ var Hiro = {
 				url: "/logout",
                 type: "POST",
 				success: function() {
+					Hiro.sys.log('Logged out properly, reloading page');
                     window.location.href = '/shiny/';							                    
 				}									
 			});			
@@ -1369,7 +1421,7 @@ var Hiro = {
 		// Generic AJAX as well as longpolling settings & functions
 		ajax: {
 			// When we deem a response successfull
-			successcodes: [200],
+			successcodes: [200,204],
 
 			// Internal values
 			socket: null,
@@ -1469,7 +1521,7 @@ var Hiro = {
 
 				// Build proper <data> response
 				var ct = response.getResponseHeader('content-type') || '',
-					data = response.responseText;
+					data = response.responseText || '';
 
 				// Try to parse JSON
 				if (ct.indexOf('application/json') > -1) {
@@ -1699,8 +1751,11 @@ var Hiro = {
 			type = type || 'log';
 			data = data || '';
 
-			// Log
-			if (!this.production) console[type](description,data);
+			// Log only on non production systems
+			if (this.production) return;
+
+			// Fire logging
+			var log = (typeof console[type] == 'function') ? console[type](description,data) : console.log(description,data);
 		}
 	},
 
@@ -1810,9 +1865,6 @@ var Hiro = {
 			Hiro.util.registerEvent(this.dialog.el_root,'mouseup',Hiro.ui.dialog.clickhandler);	
 			Hiro.util.registerEvent(this.dialog.el_root,'touchstart',Hiro.ui.dialog.clickhandler);	
 			Hiro.util.registerEvent(this.dialog.el_root,'touchend',Hiro.ui.dialog.clickhandler);	
-
-			// Load settings into dialog
-			this.dialog.loadsettings();	
 		},
 
 		// Fire keyboard events if applicable
@@ -1845,15 +1897,28 @@ var Hiro = {
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
-			//tier = tier || Hiro.sys.user.data.tier || 0;
-			switch(tier) {
+			// tier = tier || Hiro.sys.user.data.tier || 0;
+			switch (tier) {
 				case 0:
-					this.el_signin.style.display = 'block';
-					this.el_settings.style.display = this.el_archive.style.display = 'none';
+					// Set styles at bottom of folio
+					requestAnimationFrame(function(){
+						Hiro.ui.el_signin.style.display = 'block';
+						Hiro.ui.el_settings.style.display = Hiro.ui.el_archive.style.display = 'none';
+					})				
 					break;
 				case 1:
-					this.el_signin.style.display = 'none';
-					this.el_settings.style.display = this.el_archive.style.display = 'block';
+				case 2:	
+					// Set styles at bottom of folio				
+					requestAnimationFrame(function(){
+						Hiro.ui.el_signin.style.display = 'none';
+						Hiro.ui.el_settings.style.display = Hiro.ui.el_archive.style.display = 'block';
+					})
+
+					// Load settings contents
+					this.dialog.load();		
+
+					// Switch default view to settings	
+					this.switchview(this.dialog.el_settings);									
 					break;
 			}
 		},
@@ -2227,11 +2292,11 @@ var Hiro = {
 					switch (a) {
 						case 'switch_s_signup':
 							Hiro.ui.switchview(document.getElementById('s_signup'));
-							Hiro.user.el_signupform.getElementsByTagName('input')[0].focus();
+							Hiro.user.el_register.getElementsByTagName('input')[0].focus();
 							break;							
 						case 'switch_s_signin':						
 							Hiro.ui.switchview(document.getElementById('s_signin'));
-							Hiro.user.el_loginform.getElementsByTagName('input')[0].focus();							
+							Hiro.user.el_login.getElementsByTagName('input')[0].focus();							
 							break;							
 						case 'register':
 							Hiro.user.register();
@@ -2257,15 +2322,15 @@ var Hiro = {
 			},
 
 			// Fetch latest settings template from server and load into placeholder div
-			loadsettings: function() {
+			load: function() {
 				// Send off AJAX request
 				Hiro.sync.ajax.send({
 					url: '/newsettings/',
-					success: function(data) {
-						if (data.responseText) Hiro.ui.dialog.el_settings.innerHTML = data.responseText;
+					success: function(req,data) {
+						if (data) Hiro.ui.dialog.el_settings.innerHTML = data;
 					},
-					error: function(data) {
-						Hiro.sys.error('Unable to load settings',data);
+					error: function(req) {
+						Hiro.sys.error('Unable to load settings',req);
 					}
 				});					
 			}
