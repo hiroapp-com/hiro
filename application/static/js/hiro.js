@@ -75,8 +75,7 @@ var Hiro = {
 			// Stop default event
 			Hiro.util.stopEvent(event);		
 
-			var target = event.target || event.srcElement,
-				note;
+			var target = event.target || event.srcElement, note;
 			
 			// Clicks on the main elements
 			if (target.id) {				
@@ -416,7 +415,7 @@ var Hiro = {
 			if ((Hiro.canvas.keys_noset.indexOf(event.keyCode) > -1) || (event.keyCode > 111 && event.keyCode < 124)) return;
 
 			// Change internal object value
-			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.text',this.value);
+			Hiro.data.set('notes', Hiro.canvas.currentnote + '.c.text',this.value);
 
 			// Switch quote on/off based on user actions
 			if ((this.value.length > 0 && Hiro.canvas.quoteshown) || (this.value.length == 0 && !Hiro.canvas.quoteshown)) {
@@ -438,7 +437,7 @@ var Hiro = {
 			if ((Hiro.canvas.keys_noset.indexOf(event.keyCode) > -1) || (event.keyCode > 111 && event.keyCode < 124)) return;
 
 			// Change internal object value
-			Hiro.data.set('notes',Hiro.canvas.currentnote + '.c.title',this.value);	
+			Hiro.data.set('notes', Hiro.canvas.currentnote + '.c.title',this.value);	
 
 			// Change browser window title
 			document.title = this.value;					
@@ -462,7 +461,7 @@ var Hiro = {
 		// Load a note onto the canvas
 		load: function(id) {
 			// If we call load without id we just pick the doc on top of the folio
-			var	id = id || Hiro.data.get('folio').c[0].nid;
+			var	id = id || Hiro.data.get('folio').c[0].nid,
 				note = Hiro.data.get('notes',id);
 
 			// Close the folio if it should be open
@@ -599,8 +598,11 @@ var Hiro = {
 		authinprogress: false,	
 
 		// Grab registration form data, submit via XHR and process success / error
-		register: function(event) {
-			var branch = Hiro.user.el_register, 
+		// The Login and Register screens and flows are pretty much the same, 
+		// we only have to decide which DOM branch we use in the first line
+		logio: function(event,login) {
+			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register, 
+				url = (login) ? '/login' : '/register', 
 				b = branch.getElementsByClassName('hirobutton')[1],
 				v = branch.getElementsByTagName('input'),							
 				e = branch.getElementsByClassName('mainerror')[0],
@@ -615,7 +617,7 @@ var Hiro = {
 			// Preparation
 			if (this.authinprogress) return;
 			this.authinprogress = true;				
-			b.innerHTML ="Signing Up...";
+			b.innerHTML = (login) ? 'Logging in...' : 'Signing Up...';
 
 			// Remove focus on mobiles
 			if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();				
@@ -627,20 +629,20 @@ var Hiro = {
 
 			// Send request to backend
 			Hiro.sync.ajax.send({
-				url: "/register",
+				url: url,
 	            type: "POST",
 	            contentType: "application/x-www-form-urlencoded",
 	            payload: payload,
 				success: function(req,data) {
-					console.log(req,data);										                    
+					Hiro.user.logiocomplete(data,login);										                    
 				},
 				error: function(req,data) {
 					console.log(req,data);					
-	                b.innerHTML = "Create Account";
+	                b.innerHTML = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;						
 					if (req.status==500) {
 						e.innerHTML = "Something went wrong, please try again.";
-						Hiro.sys.error('Signup error for ' + payload.email,req);							
+						Hiro.sys.error('Auth server error for ' + payload.email,req);							
 						return;
 					}
 	                if (data.email) {
@@ -653,64 +655,14 @@ var Hiro = {
 	                }	                 		                    						                    
 				}										
 			});	
-			console.log(v);
 		},
 
-		// Grab login form data, submit via XHR and process success / error
-		login: function() {
-			var branch = Hiro.user.el_login, 
-				b = branch.getElementsByClassName('hirobutton')[1],
-				v = branch.getElementsByTagName('input'),							
-				e = branch.getElementsByClassName('mainerror')[0],
-				payload = {	
-					email: v[0].value.toLowerCase().trim(),
-					password: v[1].value
-				};
-
-				// prevent default submission event if we have one
-				if (event) event.preventDefault();
-
-				// Preparing everything
-				if (Hiro.user.authinprogress) return;
-				Hiro.user.authinprogress = true;				
-				b.innerHTML ="Logging in...";
-
-				// Remove focus on mobiles
-				if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();
-
-				// Clear any old error messages
-				v[0].nextSibling.innerHTML = '';
-				v[1].nextSibling.innerHTML = '';				
-				e.innerHTML = '';	
-
-				// Send request to backend		
-				Hiro.sync.ajax.send({
-					url: "/login",
-	                type: "POST",
-	                contentType: "application/x-www-form-urlencoded",
-	                payload: payload,
-					success: function(req,data) {
-						Hiro.user.authed('login',data);						                    
-					},
-					error: function(req,data) { 												
-	                    b.innerHTML = "Log-In";
-	                    Hiro.sys.user.authactive = false;						
-						if (req.status==500) {
-							e.innerHTML = "Something went wrong, please try again.";
-							Hiro.sys.error('Login error for ' + payload.email,req);								
-							return;
-						} 
-	                    if (data.email) {
-	                    	val[0].className += ' error';
-	                    	val[0].nextSibling.innerHTML = data.email[0];
-	                    }	
-	                    if (data.password) {
-	                    	val[1].className += ' error';	                    	
-	                    	val[1].nextSibling.innerHTML = data.password;  
-	                    }	               		                                    
-					}										
-				});	
-		},		
+		// Post successfull auth stuff
+		logiocomplete: function(data,login) {
+			// Set visual stage
+			Hiro.ui.setstage(data.tier);			
+			console.log(data,login);
+		},
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
 		logout: function() {
@@ -1093,7 +1045,7 @@ var Hiro = {
 
 		// Send simple ping to server
 		ping: function() {
-			var sid = Hiro.data.get('profile','c.sid');
+			var sid = Hiro.data.get('profile','c.sid'), req;
 			if (!sid) return;
 
 			// Build ping
@@ -1192,7 +1144,7 @@ var Hiro = {
 			delete p.val; 			
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
-			for (note in data.session.notes) {
+			for (var note in data.session.notes) {
 				n = data.session.notes[note];
 				peers = (n.val.peers) ? JSON.parse(JSON.stringify(n.val.peers)) : undefined;
 				n.sv = n.cv = 0;
@@ -1324,7 +1276,7 @@ var Hiro = {
 
 		// Create messages representing all changes between local model and shadow
 		commit: function() {
-			var u = Hiro.data.unsynced, i, l;
+			var u = Hiro.data.unsynced, i, l, note;
 
 			// Only one build at a time, and only when we're online
 			if (this.commitinprogress || !this.online) return;
@@ -1439,7 +1391,7 @@ var Hiro = {
 				// Define default values
 				var method = obj.type || 'GET',
 					async = obj.async || true,
-					contentType = obj.contentType || 'application/json; charset=UTF-8'
+					contentType = obj.contentType || 'application/json; charset=UTF-8',
 					payload = obj.payload || '';	
 
 				// Build proper URL encoded string for Form fallback
@@ -1971,11 +1923,11 @@ var Hiro = {
 				// Target value
 				x1 = (direction < 0) ? 0 : distance,
 				// Distance to be achieved
-				dx = x1 - x0;
+				dx = x1 - x0,
 				// Ideal easing duration
 				sd = slideduration || this.slideduration,
-				duration = sd / distance * Math.abs(dx);
-				start = new Date().getTime();
+				duration = sd / distance * Math.abs(dx),
+				start = new Date().getTime(),
 				_this = this;	
 
 			// Remove keyboard if we open the menu on touch devices
@@ -2299,10 +2251,8 @@ var Hiro = {
 							Hiro.user.el_login.getElementsByTagName('input')[0].focus();							
 							break;							
 						case 'register':
-							Hiro.user.register();
-							break;	
 						case 'login':
-							Hiro.user.login();
+							Hiro.user.logio(event,(a == 'login'));
 							break;	
 						case 'fbauth':
 							Hiro.user.fbauth();
