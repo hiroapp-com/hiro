@@ -204,8 +204,11 @@ var Hiro = {
 
 			// Prepare archive link and iterate counter
 			if (folioentry.status == 'active') {
-
+				// Add tooltip
+				a.setAttribute('title','Move to archive...')
 			} else if (folioentry.status == 'archive') {
+				// Add tooltip
+				a.setAttribute('title','Move back to current notes...')				
 				// Iterate counter
 				this.archivecount++;
 			} else {
@@ -226,7 +229,8 @@ var Hiro = {
 				// Add sharing icon to document and change class to shared
 				var s = document.createElement('div');
 				s.className = 'sharing';
-				var tooltip = 'Shared with others';	
+				var tooltip = 'Shared with ' + (note.c.peers.length - 1) + ' other';	
+				if (note.c.peers.length > 2) tooltip = tooltip + 's';
 				if (false && doc.unseen) {
 					// Show that document has unseen updates
 					var sn = document.createElement('div');
