@@ -615,7 +615,7 @@ var Hiro = {
 				this.unsynced = this.fromdisk('unsynced');			
 
 				// Load stores into memory
-				this.set('user','',this.fromdisk('user'));				
+				this.set('profile','',this.fromdisk('profile'));				
 				this.set('notes','',this.fromdisk('notes'));				
 				this.set('folio','',f);
 
@@ -866,7 +866,7 @@ var Hiro = {
 
 		// Authenticate connection
 		auth: function(token) {
-			var user = Hiro.data.get('user');
+			var user = Hiro.data.get('profile','c');
 
 			// Just quick ehlo with to make sure session is still valid
 			if (user && user.sid) {	
@@ -897,7 +897,7 @@ var Hiro = {
 
 		// Send simple ping to server
 		ping: function() {
-			var sid = Hiro.data.get('user','sid');
+			var sid = Hiro.data.get('profile','c').sid;
 			if (!sid) return;
 
 			// Build ping
@@ -927,7 +927,7 @@ var Hiro = {
 				this.lastsend = new Date().getTime();	
 
 				// Enrich data object with sid & tag
-				if (!data[i].sid) data[i].sid = Hiro.data.get('user','sid');				
+				if (!data[i].sid) data[i].sid = Hiro.data.get('profile','c').sid;				
 				if (!data[i].tag) {
 					// Create tag and add it for later lookup
 					data[i].tag = Math.random().toString(36).substring(2,8);	
@@ -978,9 +978,22 @@ var Hiro = {
 		// TODO Bruno: Refactor once protocol is set
 		// TODO Bruno/Flo: Build new folio with single note if server has no session data
 		rx_session_create_handler: function(data) {
-			var n, f, fv, peers, req, user;
-			// Build user object
-			user = { id: data.session.uid, sid: data.session.sid};
+			var n, f, fv, peers, req, p;
+
+			// Clean up profile object
+			p = data.session.profile;
+			p.c = {}; p.s = {};
+			// Copy strings to client and server version
+			p.c.email = p.s.email = p.val.user.email;
+			p.c.name = p.s.name = p.val.user.name;	
+			p.c.uid = p.s.uid = p.val.user.uid;
+			p.c.sid = p.s.sid = data.session.sid;
+			p.cv = p.sv = 0;			
+			// Stringify contact array, parse and delete remains	
+			pv = JSON.stringify(p.val.contacts);
+			p.c.contacts = JSON.parse(pv); 
+			p.s.contacts = JSON.parse(pv);
+			delete p.val; 			
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
 			for (note in data.session.notes) {
@@ -1005,9 +1018,9 @@ var Hiro = {
 			delete f.val;
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
-			Hiro.data.set('notes','',data.session.notes,'s');						
-			Hiro.data.set('folio','',data.session.folio,'s');	
-			Hiro.data.set('user','',user,'s');						
+			Hiro.data.set('notes','',data.session.notes,'s');	
+			Hiro.data.set('profile','',data.session.profile,'s');								
+			Hiro.data.set('folio','',data.session.folio,'s');							
 
 			// Visually update folio & canvas
 			Hiro.folio.paint();
@@ -1163,7 +1176,7 @@ var Hiro = {
 			r.name = 'res-sync';
 			r.res = { kind : store['kind'] , id : store['id'] };
 			r.changes = edits;
-			r.sid = Hiro.data.get('user','sid');		
+			r.sid = Hiro.data.get('profile','c').sid;		
 
 			// Return r
 			return r;	
