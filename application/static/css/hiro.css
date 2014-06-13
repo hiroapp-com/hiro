@@ -1005,7 +1005,7 @@ input.pseudobutton {
 
 
 /* Hidden per default */
-#s_signin, #s_reset, #d_logio, #d_msg, #d_container {
+#s_signin, #s_reset, #d_settings, #d_msg, #d_container {
   display: none;
 }
 

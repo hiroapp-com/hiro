@@ -81,6 +81,9 @@ var Hiro = {
 			// Clicks on the main elements
 			if (target.id) {				
 				switch (target.id) {
+					case 'signin':
+						Hiro.ui.dialog.show();
+						break;					
 					case 'archivelink':
 						Hiro.folio.archiveswitch();
 						break;
@@ -588,12 +591,69 @@ var Hiro = {
 	// All user related stuff
 	user: {
 		// DOM Nodes
-		el_loginform: document.getElementById('loginform'),
-		el_signupform: document.getElementById('signupform'),		
+		el_login: document.getElementById('s_signin'),
+		el_register: document.getElementById('s_signup'),
+		el_reset: document.getElementById('s_reset'),		
+
+		// Internals
+		authinprogress: false,	
 
 		// Grab registration form data, submit via XHR and process success / error
-		register: function() {
+		register: function(event) {
+			var branch = Hiro.user.el_register, 
+				b = branch.getElementsByClassName('hirobutton')[1],
+				v = branch.getElementsByTagName('input'),							
+				e = branch.getElementsByClassName('mainerror')[0],
+				payload = {	
+					email: v[0].value.toLowerCase().trim(),
+					password: v[1].value
+				};
 
+			// Prevent default event if we have one from firing submit
+			if (event) Hiro.util.stopEvent(event);	
+
+			// Preparation
+			if (this.authinprogress) return;
+			this.authinprogress = true;				
+			b.innerHTML ="Signing Up...";
+
+			// Remove focus on mobiles
+			if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();				
+
+			// Clear any old error messages
+			v[0].nextSibling.innerHTML = '';
+			v[1].nextSibling.innerHTML = '';				
+			e.innerHTML = '';			
+
+			// Send request to backend
+			Hiro.sync.ajax.send({
+				url: "/register",
+	            type: "POST",
+	            contentType: "application/x-www-form-urlencoded",
+	            payload: payload,
+				success: function(req,data) {
+					console.log(req,data);										                    
+				},
+				error: function(req,data) {
+					console.log(req,data);					
+	                b.innerHTML = "Create Account";
+	                Hiro.user.authinprogress = false;						
+					if (req.status==500) {
+						e.innerHTML = "Something went wrong, please try again.";
+						Hiro.sys.error('Signup error for ' + payload.email,req);							
+						return;
+					}
+	                if (data.email) {
+	                	v[0].className += ' error';
+	                	v[0].nextSibling.innerHTML = data.email;
+	                }	
+	                if (data.password) {
+	                	v[1].className += ' error';	                    	
+	                	v[1].nextSibling.innerHTML = data.password;  
+	                }	                 		                    						                    
+				}										
+			});	
+			console.log(v);
 		},
 
 		// Grab login form data, submit via XHR and process success / error
@@ -617,7 +677,12 @@ var Hiro = {
 
 			// Start fading out body
 			Hiro.ui.fade(document.body,-1,400);			
-		},			
+		},	
+
+		// Request password reset
+		requestpwdreset: function() {
+
+		},		
 
 		// Hello. Is it them you're looking for?
 		contacts: {
@@ -1352,36 +1417,26 @@ var Hiro = {
 					if (async) {
 						// This should work in all relevant browsers
 						req.onreadystatechange = function() {
-							if (this.readyState == 4 && obj.success && !obj.called && Hiro.sync.ajax.successcodes.indexOf(this.status) > -1) {
-								obj.success(this);
-								obj.called = true;
+							if (this.readyState == 4 && Hiro.sync.ajax.successcodes.indexOf(this.status) > -1) {
+								Hiro.sync.ajax.responsehandler(obj,this,true);
 							}
 						};
 
 						// Here we have to get browser specific
 						if (typeof req.ontimeout != 'undefined') {						
 							req.ontimeout = function() { 
-								if (obj.error && !obj.called ) {
-									obj.error(this);
-									obj.called = true;
-								}	
+								Hiro.sync.ajax.responsehandler(obj,this);									
 							};
 						} else {
 							// TODO: timeout fallback
 						}	
 						if (typeof req.onerror != 'undefined') {												
 							req.onerror = function() {						 
-								if (obj.error && !obj.called ) {
-									obj.error(this);
-									obj.called = true;									
-								}	
+								Hiro.sync.ajax.responsehandler(obj,this);		
 							};	
 						} else {
 							req.addEventListener("error", function() { 						
-								if (obj.error && !obj.called ) {
-									obj.error(this);
-									obj.called = true;
-								}		
+								Hiro.sync.ajax.responsehandler(obj,this);			
 							}, false);						
 						}										
 					}	
@@ -1402,6 +1457,34 @@ var Hiro = {
 					// Proper cleanup and logging
 					Hiro.sys.error('Generic AJAX Error',e);
 				}
+			},
+
+			// Generic response handler
+			responsehandler: function(obj,response,success) {
+				// If we already processed this response
+				if (obj.called) return;
+
+				// Set called flag
+				obj.called = true;		
+
+				// Build proper <data> response
+				var ct = response.getResponseHeader('content-type') || '',
+					data = response.responseText;
+
+				// Try to parse JSON
+				if (ct.indexOf('application/json') > -1) {
+					try { data = JSON.parse(data);
+					} catch(e) { 
+						Hiro.sys.error('Application/JSON response contains no valid JSON',[e,response,obj]); 
+					}
+				}
+
+				// Send reponse
+				if (success && obj.success) obj.success(this,data);
+				else if (obj.error) obj.error(this,data);
+
+				// Speed up GC
+				obj = response = null;			
 			},
 
 			// Returns proper cross browser xhr method
@@ -1624,6 +1707,7 @@ var Hiro = {
 	// All things ui. Click it, touch it, fix it, show it.
 	ui: {
 		// General properties
+		// TODO Bruno: Compare with http://patrickhlauke.github.io/touch/tests/results/
 		touch: ('ontouchstart' in document.documentElement),
 
 		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
@@ -1775,7 +1859,7 @@ var Hiro = {
 		},
 
 		// Switch to an element on the same DOM level and hide all others
-		switchView: function(el, display) {
+		switchview: function(el, display) {
 			var n;
 
 			// Function accepts both the element directly or a an ID 
@@ -2127,13 +2211,9 @@ var Hiro = {
 					// List of actions tobe triggered at action start goes here 
 					switch (a) {
 						case 'switch_s_plan':
-							Hiro.ui.switchView(document.getElementById('s_plan'));
-							break;
-						case 'switch_s_about':
-							Hiro.ui.switchView(document.getElementById('s_about'));
-							break;							
+						case 'switch_s_about':						
 						case 'switch_s_account':
-							Hiro.ui.switchView(document.getElementById('s_account'));
+							Hiro.ui.switchview(document.getElementById(a.substring(7)));
 							break;		
 					}
 
@@ -2145,11 +2225,28 @@ var Hiro = {
 				// Being mouseup or touchend is implicity by having a lastaction
 				if 	(that.lastaction && (a == that.lastaction || ((Math.abs(x - that.lastx) < 10) && (Math.abs(y - that.lasty) < 10 )))) {
 					switch (a) {
+						case 'switch_s_signup':
+							Hiro.ui.switchview(document.getElementById('s_signup'));
+							Hiro.user.el_signupform.getElementsByTagName('input')[0].focus();
+							break;							
+						case 'switch_s_signin':						
+							Hiro.ui.switchview(document.getElementById('s_signin'));
+							Hiro.user.el_loginform.getElementsByTagName('input')[0].focus();							
+							break;							
+						case 'register':
+							Hiro.user.register();
+							break;	
+						case 'login':
+							Hiro.user.login();
+							break;	
+						case 'fbauth':
+							Hiro.user.fbauth();
+							break;																		
 						case 'logout':
 							Hiro.user.logout();
 							break;
 						case 'upgrade':
-							Hiro.ui.switchView(document.getElementById('s_plan'));
+							Hiro.ui.switchview(document.getElementById('s_plan'));
 							break;						
 					}
 				} 	

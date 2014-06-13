@@ -1,10 +1,10 @@
+{% if current_user.is_authenticated() %}
 <div id="s_account">
 	<div class="header">
 		<a class="active">You<em>r Account</em></a>
 		<a data-hiro-action="switch_s_plan">Plan<em>s &amp; Payment</em></a>
 		<a data-hiro-action="switch_s_about">About</a>	
 	</div>
-	{% if current_user.is_authenticated() %}
 	<div class="accountdetails">
 		<form id="accountform" action="javascript:void(0);">
 			<input type="text" value="{{ current_user.name }}" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
@@ -18,8 +18,7 @@
 		<a href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="hirobutton share tw">via&nbsp;<b>Twitter</b></a>	
 		<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20little%20app%20for%20daily%20note-taking%3A%20www.hiroapp.com" class="hirobutton share mail green" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'Mail'});" target="_blank">via&nbsp;<b>Mail</b></a>	
 		<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F%20%27Notes%20With%20Friends%27" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'SMS'});" class="hirobutton share sms">via&nbsp;<b>SMS</b></a>
-	</div>	
-	{% endif %}					
+	</div>					
 </div>
 	
 <div id="s_plan" style="display:none;">
@@ -177,18 +176,23 @@
 
 <script type="text/javascript">
 	// Various startup functions
-	{% if current_user.is_authenticated() %}
 	Hiro.lib.loguser('{{ current_user.token }}',{
 	email: '{{ current_user.email }}',
 	plan: '{{ current_user.plan }}',
 	created: '{{ current_user.signup_at_ts }}',
 	name: '{{ current_user.name }}'
 	});
-	Hiro.ui.setplans({{ current_user.tier }});  		
-	{% endif %}	  		
+	Hiro.ui.setplans({{ current_user.tier }});  		  		
 	Hiro.lib.init();
 	Hiro.lib.defer({
 		facebook: '{{ config.FACEBOOK_APP_ID }}',
 		stripe: '{{ config.STRIPE_PUBLIC_KEY }}'  			
 	});  								
 </script>
+{% else %}
+<script type="text/javascript">
+(function() {
+	console.log('Not logged in');
+}());  								
+</script>
+{% endif %}	
