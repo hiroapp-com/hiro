@@ -603,7 +603,20 @@ var Hiro = {
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
 		logout: function() {
+			// Wipe local data immediately 
+			Hiro.data.wipe();
 
+			// Notifiy server
+			Hiro.sync.ajax.send({
+				url: "/logout",
+                type: "POST",
+				success: function() {
+                    window.location.href = '/shiny/';							                    
+				}									
+			});			
+
+			// Start fading out body
+			Hiro.ui.fade(document.body,-1,400);			
 		},			
 
 		// Hello. Is it them you're looking for?
@@ -935,7 +948,7 @@ var Hiro = {
 
 		// Send simple ping to server
 		ping: function() {
-			var sid = Hiro.data.get('profile','c').sid;
+			var sid = Hiro.data.get('profile','c.sid');
 			if (!sid) return;
 
 			// Build ping
@@ -964,8 +977,8 @@ var Hiro = {
 				// Add timestamp
 				this.lastsend = new Date().getTime();	
 
-				// Enrich data object with sid & tag
-				if (!data[i].sid) data[i].sid = Hiro.data.get('profile','c').sid;				
+				// Enrich data object with sid (if we have one) & tag
+				if (!data[i].sid && Hiro.data.get('profile')) data[i].sid = Hiro.data.get('profile','c').sid;				
 				if (!data[i].tag) {
 					// Create tag and add it for later lookup
 					data[i].tag = Math.random().toString(36).substring(2,8);	
