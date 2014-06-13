@@ -81,7 +81,7 @@ var Hiro = {
 			if (target.id) {				
 				switch (target.id) {
 					case 'signin':
-						Hiro.ui.dialog.show();
+						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
 						break;					
 					case 'archivelink':
 						Hiro.folio.archiveswitch();
@@ -90,7 +90,7 @@ var Hiro = {
 						note = Hiro.folio.newnote();
 						break;
 					case 'settings':
-						Hiro.ui.dialog.show();
+						Hiro.ui.dialog.show('d_settings','s_account');
 						break;
 					default:
 						if (target.id.indexOf('note_') > -1) note = target.id.replace('note_','');
@@ -658,10 +658,15 @@ var Hiro = {
 		},
 
 		// Post successfull auth stuff
+		// TODO Bruno: Pack all the good logic in here once we get tokens from server, eg 
+		// > Send local notes to server 
 		logiocomplete: function(data,login) {
-			// Set visual stage
+
+			// Close dialog
+			Hiro.ui.dialog.hide();
+
+			// Reset visual stage according to new user level
 			Hiro.ui.setstage(data.tier);			
-			console.log(data,login);
 		},
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
@@ -1421,8 +1426,8 @@ var Hiro = {
 					if (async) {
 						// This should work in all relevant browsers
 						req.onreadystatechange = function() {
-							if (this.readyState == 4 && Hiro.sync.ajax.successcodes.indexOf(this.status) > -1) {
-								Hiro.sync.ajax.responsehandler(obj,this,true);
+							if (this.readyState == 4) {
+								Hiro.sync.ajax.responsehandler(obj,this,(Hiro.sync.ajax.successcodes.indexOf(this.status) > -1));
 							}
 						};
 
@@ -1434,8 +1439,10 @@ var Hiro = {
 						} else {
 							// TODO: timeout fallback
 						}	
+						// Note: This fires only on network level errors where state never changes to 4, otherwise we use the handler above
 						if (typeof req.onerror != 'undefined') {												
-							req.onerror = function() {						 
+							req.onerror = function() {	
+								console.log('error:',req);					 
 								Hiro.sync.ajax.responsehandler(obj,this);		
 							};	
 						} else {
@@ -1867,26 +1874,22 @@ var Hiro = {
 					})
 
 					// Load settings contents
-					this.dialog.load();		
-
-					// Switch default view to settings	
-					this.switchview(this.dialog.el_settings);									
+					this.dialog.load();										
 					break;
 			}
 		},
 
 		// Switch to an element on the same DOM level and hide all others
 		switchview: function(el, display) {
-			var n;
-
 			// Function accepts both the element directly or a an ID 
-			if (typeof el != 'object') document.getElementById(el);
+			if (typeof el != 'object') el = document.getElementById(el);
 
 			// Set default display
-			if (!display || typeof display != 'string') display='block';
+			if (!display || typeof display != 'string') display = 'block';
 
 			// Walk up & down the same DOM level within animationframe
 			requestAnimationFrame(function(){
+				var n;				
 				if (el && el.style) {
 					el.style.display = display;
 					n = el.previousSibling;
@@ -2152,8 +2155,14 @@ var Hiro = {
 
 			// Open dialog
 			show: function(container, section, focus, mobilefocus) {
-				// Change visibility etc, animationFrame strangely triggers a white flash here in Chrome
-				Hiro.ui.dialog.center();						
+				// Change visibility etc
+				requestAnimationFrame(function(){
+					if (container) Hiro.ui.switchview(container);
+					if (section) Hiro.ui.switchview(section);	
+					if (focus) focus.focus();
+					Hiro.ui.dialog.center();										
+				})	
+
 				Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
 					requestAnimationFrame(function(){
 						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
