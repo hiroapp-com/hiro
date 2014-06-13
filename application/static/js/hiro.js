@@ -1776,13 +1776,13 @@ var Hiro = {
 		},
 
 		// Fade a DOM element in or out via opacity changes, 1 top fade in, -1 to fade out
-		fade: function(element, direction, duration) {
+		fade: function(element, direction, duration, callback) {
 			var a0 = parseFloat((a0 === undefined || a0 === '') ? ((direction < 0) ? 1 : 0) : this.getopacity(element)),
 				a1 = (direction < 0) ? 0 : 1,
 				da = a1 - a0,
 				duration = duration || 1000,
 				start = new Date().getTime(), 
-				_this = this, cssd, css;
+				_this = this, cssd, css, i = 0;
 
 			// If we can read the transition property, use CSS animations instead
 			// TODO Bruno: Investigate a proper way to do this 
@@ -1805,7 +1805,7 @@ var Hiro = {
 				if (dt >= duration) {
 					dt = duration;
 					done = true;
-				}					
+				}								
 
 				// Change opacity
 				element.style[_this.opacity] = a0 + da * dt / duration;
@@ -1816,6 +1816,7 @@ var Hiro = {
 					element._fadeDirection = 0;
 					delete element._fadeTimer;
 					delete element._fadeDirection;
+					if (callback) callback();
 				}
 				else element._fadeTimer = requestAnimationFrame(step);
 			}
@@ -1951,18 +1952,17 @@ var Hiro = {
 			show: function(container, section, focus, mobilefocus) {
 				// Change visibility etc, animationFrame strangely triggers a white flash here in Chrome
 				Hiro.ui.dialog.center();						
-				Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200);
+				Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
+					requestAnimationFrame(function(){
+						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
+						Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
+					});
+				});
 
 				// CSS Manipulations
 				requestAnimationFrame(function(){
 					// Set top margin for upward movement
 					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;
-
-					// Add blur filters
-					setTimeout(function(){
-						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
-						Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
-					},220)
 				})
 
 				// Hide folio
@@ -1984,7 +1984,7 @@ var Hiro = {
 
 				// Reset left margin for inward movement
 				setTimeout(function(){				
-					Hiro.ui.dialog.el_wrapper.style.marginLeft = '200px';
+					Hiro.ui.dialog.el_wrapper.style.marginLeft = '300px';
 				},100);										
 
 				// Detach event and set internal value				
