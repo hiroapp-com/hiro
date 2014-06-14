@@ -73,48 +73,48 @@ var Hiro = {
 		},
 
 		// If the user clicked somewhere in the folio
-		folioclick: function(id,type,target) {
-			console.log(id,type,target);
-			return;
-			
-			// Clicks on the main elements
-			if (target.id) {				
-				switch (target.id) {
+		folioclick: function(id,type,target) {		
+			// Clicks on the main elements, fired immediately on touchstart/mousedown
+			if (type == 'half') {				
+				switch (id) {
 					case 'signin':
 						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
 						break;					
 					case 'archivelink':
 						Hiro.folio.archiveswitch();
 						break;
-					case 'newnote':
-						note = Hiro.folio.newnote();
-						break;
 					case 'settings':
 						Hiro.ui.dialog.show('d_settings','s_account');
 						break;
-					default:
-						if (target.id.indexOf('note_') > -1) note = target.id.replace('note_','');
+					case 'showmenu':					
+						Hiro.folio.foliotouch(event);
+						break;						
 				}
-			} else {
-				// Walk two DOM levels up to see if we have a note id
-				note = target.parentNode.id || target.parentNode.parentNode.id;
-				if (note.indexOf('note_') > -1) note = note.replace('note_','');
-			}
+			} else if (type == 'full') {
+				// Deconstruct note id	
+				if (id.indexOf('note_') == 0) {
+					var noteid = id.substring(5);
+					id = 'note';	
+				}	
+				// Go through cases
+				switch (id) {
+					case 'newnote':
+						note = Hiro.folio.newnote();
+						break;
+					case 'note':
+						// If the click was on an archive icon
+						if (target.className == 'archive') {
+							// Directly set status
+							Hiro.folio.lookup[noteid].status = (Hiro.folio.lookup[noteid].status == 'active') ? 'archive' : 'active';
+							// Getset hack to kick off persistence / sync
+							Hiro.data.set('folio','',Hiro.data.get('folio'));
+							return;
+						}		
 
-			// If the click was on an archive icon
-			if (target.className == 'archive') {
-				// Directly set status
-				Hiro.folio.lookup[note].status = (Hiro.folio.lookup[note].status == 'active') ? 'archive' : 'active';
-				// Getset hack to kick off persistence / sync
-				Hiro.data.set('folio','',Hiro.data.get('folio'));
-				return;
-			}
-
-			// If the click was on a note link then load the note onto canvas
-			if (note) {
-				// Move entry to top of list
-				Hiro.folio.sort(note);
-				Hiro.canvas.load(note);
+						// Move entry to top of list and load note
+						Hiro.folio.sort(noteid);
+						Hiro.canvas.load(noteid);												
+				}				
 			}
 		},
 
@@ -124,7 +124,7 @@ var Hiro = {
 			// Open the folio
 			if (!Hiro.folio.open) {
 				Hiro.ui.slidefolio(1);
-			} else if (target.id == 'showmenu' || target.id == 'updatebubble') {
+			} else if (target.id == 'showmenu') {
 				Hiro.ui.slidefolio(-1);				
 			}			
 		},
@@ -2120,13 +2120,13 @@ var Hiro = {
 			bust: function(event) {
 				// See if we have something to bust at all
 				if (Hiro.ui.fastbutton.bustthis.length == 0) return;
-					console.log('busted',event,Hiro.ui.fastbutton.bustthis);
 
 				// See if the click is close the where we fired the full handler above
 				for (var i = 0, l = Hiro.ui.fastbutton.bustthis.length; i < l; i += 2) {
 					if (Math.abs(Hiro.ui.fastbutton.bustthis[i] - event.screenY) < 25 
 						&& Math.abs(Hiro.ui.fastbutton.bustthis[i + 1] - event.screenX) < 25) {
 							Hiro.util.stopEvent(event);
+							console.log('busted',event,Hiro.ui.fastbutton.bustthis);						
 					}
 				}				
 			}			 		
