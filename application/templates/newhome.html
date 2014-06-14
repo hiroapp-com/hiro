@@ -58,7 +58,27 @@
 		</div>
 			
 		<div id="canvas">
-			<div id="apps"></div>	
+			<div id="apps">
+				<div class="app app_sharing" id="app_sharing">
+					<div class="icon">
+						<div class="symbol"></div>
+						<div class="counter"></div>
+					</div>
+					<div class="widget">
+						<a class="cancel" data-hiro-action="close" title="Cancel">Cancel</a>
+						<div class="title">Share this note with others:</div>
+						<form action="javascript:void(0);">
+							<input type="email" placeholder="E-Mail or Phone-Number" class="hiro">
+							<div class="error" style="display: none;"></div>
+							<input type="submit" value="foo" class="pseudobutton">
+						</form>
+						<a class="hirobutton green">Invite</a>
+						<small>You can revoke access at any time</small>
+						<div class="light">People who have access:</div>
+						<div class="peers"></div>
+					</div>	
+				</div>	
+			</div>	
 			<input class="title" id="pageTitle" value="">				
 			<textarea placeholder="Just write" id="pageContent"></textarea>
 	        <div id="context">

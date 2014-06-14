@@ -471,13 +471,17 @@ var Hiro = {
 			Hiro.ui.hprogress.begin();	
 
 			// Set internal values
-			this.currentnote = id;
+			this.currentnote = id;			
 
 			// Visual update
 			this.paint();
 
 			// Set cursor
 			this.setcursor(0);
+
+			// Update sharing stuff
+			Hiro.apps.close();
+			Hiro.apps.sharing.update();
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
@@ -584,6 +588,11 @@ var Hiro = {
     		} else {
     			el.focus();
     		}	
+		},
+
+		// Context sidebar
+		context: {
+			el_root: document.getElementById('context')
 		} 	
 	},
 
@@ -697,13 +706,164 @@ var Hiro = {
 			// Lookup by ID
 			lookup: {},
 
+			// Iterate through peers and update lookup above
+			update: function() {
+				var c = Hiro.data.get('profile','c.contacts'), i, l;
+
+				for (i = 0, l = c.length; i < l; i++) {
+					this.lookup[c[i].uid] = c[i];
+				}
+			},
+
 			// Search all relevant contact properties and return array of matches, IE 8+
 			search: function(string) {
 				// Check if we have support for this
 				if (typeof Array.prototype.filter !== 'function') return;
 			}
-
 		}
+	},
+
+	// Everybodies needs them! Less about Hiro itself than a pattern learning ground
+	apps: {
+		// List of apps
+		installed: {
+			sharing: {
+				id: 'sharing'
+			}
+		},
+
+		// Nodes
+		el_root: document.getElementById('apps'),
+
+		// Vals
+		open: [],
+
+		init: function() {
+			// Go through all available apps
+			for (var app in this.installed) {
+				var el = document.getElementById('app_' + app);
+
+				// Attach touch and click handlers
+				Hiro.ui.touchy.attach(el,Hiro.apps.touchhandler,100);
+				Hiro.ui.fastbutton.attach(el,Hiro.apps.clickhandler);				
+			}	
+		},
+
+		// Touchy handler thats fired for each app on hover or touchstart
+		touchhandler: function(event,element) {
+			var that = Hiro.apps;
+			// If this app is already open for some reason, do nothing
+			if (that.open.indexOf(element.id.substring(4)) > -1) return;
+
+			// Close all others if they should be open
+			if (that.open.length > 0) that.closeall();
+
+			// Open widget
+			that.show(element);		
+		},
+
+		// Fires on touch or click within an app
+		clickhandler: function(id,type,target,branch) {
+			if (type == 'full') {
+				switch (id) {
+					case 'close':
+						Hiro.apps.close(branch.id);
+				}
+			}
+		},
+
+		// Open app widget
+		show: function(el_app) {
+			// Add ID to open list
+			this.open.push(el_app.id.substring(4));
+
+			// Update & display app			
+			requestAnimationFrame(function(){
+				Hiro.apps.sharing.update(true);
+				el_app.getElementsByClassName('widget')[0].style.display = 'block';
+				el_app.getElementsByTagName('input')[0].focus();
+			});
+		},
+
+		close: function(app) {
+			// Abort if no apps open
+			if (this.open.length == 0) return;
+
+			// If no app is given, we close all of them
+			for (var i = this.open.length; i > 0; i--) {
+				document.getElementById('app_' + this.open[i - 1]).getElementsByClassName('widget')[0].style.display = 'none';
+				this.open.pop();
+			}
+		},
+
+		// OK, fuck it, no time to rewrite vue/angular
+		sharing: {
+			el_root: document.getElementById('app_sharing'),
+
+			// Populate header and widget with data from currentnote, triggerd by show
+			update: function(full) {
+				var peers = Hiro.data.get('notes', Hiro.canvas.currentnote + '.c.peers'),
+					counter = this.el_root.getElementsByClassName('counter')[0],
+					el_peers = this.el_root.getElementsByClassName('peers')[0];
+
+				// if the counter changed
+				if (peers.length != counter.innerHTML) {
+					counter.style.display = (peers.length > 0) ? 'block' : 'none';
+					counter.innerHTML = peers.length.toString();
+				}	
+
+				// If we don't want a full update stop here
+				if (!full) return;
+
+				// If we are the only ones in körberl
+				if (peers.length == 1) {
+					el_peers.innerHTML = 'Yo you';
+				} else {
+					requestAnimationFrame(function(){
+						var f = document.createDocumentFragment();
+						for (var i =0, l = peers.length; i < l; i++) {
+							f.appendChild(Hiro.apps.sharing.renderpeer(peers[i])); 
+						}
+						el_peers.innerHTML = '';
+						el_peers.appendChild(f);	
+					});				
+				}	
+			},
+
+			// Turns a peer entry into the respective DOM snippet
+			renderpeer: function(peer,l) {		
+				var d, r, n, profile = Hiro.data.get('profile','c'),
+					user = Hiro.user.contacts.lookup[peer.user.uid] || profile,
+					currentuser = (peer.user.uid == profile.uid),
+					namestring = (user.email) ? user.name + ' (' + user.email + ')' : user.name;
+
+				console.log(peer.user.uid,user.uid,l);	
+
+				d = document.createElement('div');
+				d.className = 'peer';
+				// if (!currentuser && user.status && user.status == 'invited') d.setAttribute('title', (user.status.charAt(0).toUpperCase() + user.status.slice(1)));
+
+				if (peer.role != "owner") {
+					// Add remove link if user is not owner					
+					r = document.createElement('a');
+					r.className = 'remove';
+					var rt = (currentuser) ? 'Revoke your own access' : 'Revoke access';
+					r.setAttribute('title',rt);
+					d.appendChild(r);
+				} else {
+					d.setAttribute('title', 'Owner');
+				}
+
+				// Add user name span
+				n = document.createElement('span');
+				n.className = (user.status == 'invited') ? 'name invited' : 'name';
+				n.innerHTML = (currentuser) ? 'You' : namestring;
+				d.appendChild(n)
+
+				// Return object
+				return d;
+			},			
+		} 
 
 	},
 
@@ -712,7 +872,7 @@ var Hiro = {
 		// Object holding all data
 		stores: {},
 		// Name of stores that are synced with the server
-		onlinestores: ['notes','folio'],
+		onlinestores: ['notes','folio','profile'],
 
 		// Config
 		enabled: undefined,
@@ -804,6 +964,9 @@ var Hiro = {
 			
 				// Repaint folio
 				if (store == 'folio' || paint) Hiro.folio.paint();
+
+				// Update contact lookup
+				if (store == 'profile') Hiro.user.contacts.update();
 
 				// Mark store for syncing
 				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);	
@@ -1679,7 +1842,8 @@ var Hiro = {
 			Hiro.ui.init(tier);	
 			Hiro.data.init();			
 			Hiro.sync.init(ws_url);	
-			Hiro.lib.init();							
+			Hiro.lib.init();		
+			Hiro.apps.init();					
 
 			// Make sure we don't fire twice
 			this.inited = true;
@@ -1945,7 +2109,7 @@ var Hiro = {
 
 				// Change DOM CSS values
 				Hiro.canvas.el_root.style.left = v + 'px';
-				Hiro.canvas.el_root.style.right = (v*-1)+'px';
+				Hiro.canvas.el_root.style.right = Hiro.canvas.context.el_root.style.right = (v*-1)+'px'; 
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
@@ -2076,7 +2240,7 @@ var Hiro = {
 					id = target.id || target.getAttribute('data-hiro-action') || 
 						 target.parentNode.id || target.parentNode.getAttribute('data-hiro-action') || 
 						 target.parentNode.parentNode.id || target.parentNode.parentNode.getAttribute('data-hiro-action'),	
-					handler = that.mapping[this.id].handler;
+					handler = that.mapping[this.id].handler, branch = this;
 
 				// Stop event and prevent it from bubbling further up
 				if (!(target.tagName == 'INPUT' || target.tagName == 'TEXTAREA') && !that.mapping[this.id].allowevents) Hiro.util.stopEvent(event);
@@ -2087,7 +2251,7 @@ var Hiro = {
 					that.x = x; that.y = y; that.lastid = id;
 
 					// Call handler
-					if (handler) handler(id,'half',target,event)
+					if (handler) handler(id,'half',target,branch,event)
 
 					// Stop here for now
 					return;	
@@ -2104,7 +2268,7 @@ var Hiro = {
 					},that.delay);
 
 					// Call handler
-					if (handler) handler(id,'full',target,event)	
+					if (handler) handler(id,'full',target,branch,event)	
 				} 	
 
 				// Reset values
@@ -2149,8 +2313,8 @@ var Hiro = {
 			// If the event is fired
 			fire: function(event,element,handler,delay) {
 				// If its a touch event we fire the event immediately		
-				if (event.type === 'touchstart') handler();				
-				else if (event.type === 'mouseover') {
+				if (event.type === 'touchstart') handler(event,element);				
+				else if (event.type === 'mouseover') {				
 					// If we already listen to this element but moved to a different subnode do nothing
 					if (element === this.element) return;
 					// Initiate the delayed event firing
@@ -2159,7 +2323,7 @@ var Hiro = {
 					// Set timeout as local var (only one touchy at a time)
 					this.timeout = setTimeout(function() {
 						// If the timeout wasnt killed by the bounds handler, we execute the handler
-						handler(event);
+						handler(event,element);
 						// And clean up 
 						Hiro.ui.touchy.abort(element);
 						Hiro.util.releaseEvent(element,'mouseout',Hiro.ui.touchy.boundschecker);						
@@ -2269,7 +2433,7 @@ var Hiro = {
 			},
 
 			// If the user clicks somewhere in the dialog 
-			clickhandler: function(action,type,target,event) {
+			clickhandler: function(action,type,target) {
 				// Woop, we inited started fiddling with something relevant
 				if (type == 'half') {
 					// List of actions to be triggered

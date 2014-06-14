@@ -193,7 +193,7 @@ input.pseudobutton {
 
 #showmenu {
   position: fixed;
-  background: url(../img/icons.2.png) no-repeat;
+  background: url(../img/icons.3.png) no-repeat;
   background-size: 108px auto;
   background-position: -27px -151px;;
   left: 0;
@@ -248,7 +248,7 @@ input.pseudobutton {
   position: absolute;
   top: 0;
   left: 10px;
-  background-image: url(../img/icons.2.png);
+  background-image: url(../img/icons.3.png);
   background-size: 108px auto;
   opacity: .5;
   cursor: pointer;
@@ -306,10 +306,10 @@ input.pseudobutton {
 }
 
 #folio .notes .note a .sharing {
-  background-image: url(../img/publish.4.png);
-  background-size: 38px auto;
+  background-image: url(../img/icons.3.png);
+  background-size: 140px auto;
   background-repeat: no-repeat;
-  background-position: right -387px;
+  background-position: 5px -107px;
   position: absolute;
   top: 0;
   right: 10px;
@@ -341,7 +341,7 @@ input.pseudobutton {
 }
 
 #folio .footer a.signin, #folio .footer a.archivelink {
-  background-image: url(../img/icons.2.png);
+  background-image: url(../img/icons.3.png);
   background-repeat: no-repeat;
   background-size: 108px auto;
   padding: 15px 10px 15px 50px;
@@ -349,7 +349,7 @@ input.pseudobutton {
 } 
 
 #folio .footer a.icon {
-  background-image: url(../img/icons.2.png);
+  background-image: url(../img/icons.3.png);
   background-repeat: no-repeat;
   background-size: 108px auto;
   float: right;
@@ -419,12 +419,12 @@ input.pseudobutton {
   font-size: 30px;
   font-weight: 600;
   color: #333;
-  text-overflow: ellipsis;  
+  text-overflow: ellipsis;     
   width: 100%;
   z-index: 2020;
 }
 
-#canvas input:focus, #canvas textarea:focus {
+#pageTitle:focus, #pageContent:focus {
     outline: none;
 }
 
@@ -511,6 +511,190 @@ input.pseudobutton {
     right: 70px;  
   }  
 }
+
+
+/* ------- Äppppps --------- */
+
+#apps {
+  position: absolute;
+  right: 395px;
+  top: 54px;
+  z-index: 3000; 
+}
+
+#apps .app {
+
+}
+
+#apps .app .icon {
+  display: block;
+  width: 45px;
+  height: 50px;
+  cursor: pointer;
+  z-index: 3000;  
+}
+
+#apps .app .icon .counter {
+  display: block;
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  padding: 0 4px;
+  font-size: 14px;
+  background: #bbb;
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -o-border-radius: 3px;  
+}
+
+#apps .app:hover .icon .counter {
+  background: #999;
+}
+
+#apps .app .icon .symbol {
+  display: block;
+  width: 45px;
+  height: 50px;
+  background-image: url(../img/icons.3.png);
+  background-repeat: no-repeat;
+  background-size: 200px auto;
+  opacity: .15;
+}
+
+#apps .app:hover .icon .symbol {
+  opacity: .4;
+}
+
+#apps .app .widget {
+  display: none;
+  background: rgba(255,255,255,0.95);
+  position: absolute;
+  top: 50px;
+  right: -6px;
+  padding: 18px 20px;   
+}
+
+#apps .app .widget .cancel, #apps .app .widget .remove {
+  background: url(../img/icons.3.png) no-repeat;
+  background-size: 115px auto;
+  color: #fff;
+  opacity: .3;
+  cursor: pointer;
+}
+
+#apps .app .widget .cancel:hover, #apps .app .widget .cancel:hover {
+  opacity: 1;
+}
+
+#apps .app .widget .cancel {
+  top: 21px;
+  right: 17px;
+  position: absolute; 
+  padding-right: 20px;  
+  background-position: -18px -47px; 
+  font-size: 12px;   
+}
+
+#apps .app .widget .remove {
+  float: right;
+  display: inline-block;
+  height: 20px;
+  width: 20px;
+  background-position: -42px -45px;  
+}
+
+#apps .app .widget .title {
+  font-size: 18px;
+  min-width: 250px;
+  margin: 0 20px 10px 0;  
+}
+
+#apps .app .widget small  {
+  color: #999;
+  display: block;
+  font-size: 14px;
+  padding: 4px 0;  
+}
+
+#apps .app .widget .light  {
+  color: #666;
+  padding: 5px 0;
+  display: block; 
+  font-size: 18px;
+}
+
+#apps .app .widget input  {
+  font-family: "urbana",sans-serif;
+  font-size: 18px;
+  padding: 8px 10px 8px 10px;  
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  font-weight: 200;
+  border-radius: 3px;
+  border: 1px solid #bbb;
+}
+
+#apps .app .widget a.hirobutton  {
+  padding: 9px 10px 8px 10px;  
+}
+
+
+#apps .app.app_sharing .icon .symbol {
+  background-position: -75px -390px; 
+}
+
+#apps .app.app_sharing .widget .peers .peer {
+  display: block;
+  padding: 5px 0 3px 25px;
+  font-size: 18px;
+  color: #333;
+  background-image: url(../img/icons.3.png);
+  background-repeat: no-repeat;
+  background-size: 160px auto;
+  background-position: -132px -312px;
+  white-space: nowrap;
+}
+
+#apps .app.app_sharing .widget .peers .peer:last-child {
+  padding-bottom: 0;
+}
+
+@media (min-width: 481px) {
+  #apps .app .widget {
+    border: 1px solid rgba(0,0,0,0.15);
+    box-shadow: 0 5px 20px -12px #000;    
+  }
+
+  #apps .app .widget:after, #apps .app .widget:before {
+    bottom: 100%;
+    right: 17px;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    position: absolute;
+    pointer-events: none;
+  }
+
+  #apps .app .widget:before {
+    border-color: rgba(157, 166, 166, 0);
+    border-bottom-color: #666;
+    border-width: 11px;
+    margin-left: -11px;
+  }    
+
+  #apps .app .widget:after {
+    border-color: rgba(255, 255, 255, 0);
+    border-bottom-color: #ffffff;
+    border-width: 11px;
+    margin-left: -10px;
+  }
+}
+
 
 
 /* ------ Context Bar ------*/
@@ -675,7 +859,7 @@ input.pseudobutton {
 }
 
 #wwwresults .result a.action {
-  background-image: url(../img/icons.png);   
+  background-image: url(../img/icons.3.png);   
   width: 32px;
   height: 32px;
   border-radius: 3px;
@@ -1160,7 +1344,7 @@ input.pseudobutton {
   margin-top: -44px;
   float: right;
   cursor: pointer;
-  background-image: url(../img/icons.png);
+  background-image: url(../img/icons.3.png);
   background-repeat: no-repeat;
   background-size: 90px auto;  
   background-position: 6px -98px;   
