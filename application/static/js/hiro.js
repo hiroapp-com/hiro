@@ -837,8 +837,6 @@ var Hiro = {
 					currentuser = (peer.user.uid == profile.uid),
 					namestring = (user.email) ? user.name + ' (' + user.email + ')' : user.name;
 
-				console.log(peer.user.uid,user.uid,l);	
-
 				d = document.createElement('div');
 				d.className = 'peer';
 				// if (!currentuser && user.status && user.status == 'invited') d.setAttribute('title', (user.status.charAt(0).toUpperCase() + user.status.slice(1)));
@@ -2240,7 +2238,10 @@ var Hiro = {
 					id = target.id || target.getAttribute('data-hiro-action') || 
 						 target.parentNode.id || target.parentNode.getAttribute('data-hiro-action') || 
 						 target.parentNode.parentNode.id || target.parentNode.parentNode.getAttribute('data-hiro-action'),	
-					handler = that.mapping[this.id].handler, branch = this;
+					handler = that.mapping[this.id].handler, branch = this, button = event.which || event.button;
+
+				// Don't even start if it's not a leftclick
+				if (button != 1) return;	
 
 				// Stop event and prevent it from bubbling further up
 				if (!(target.tagName == 'INPUT' || target.tagName == 'TEXTAREA') && !that.mapping[this.id].allowevents) Hiro.util.stopEvent(event);
