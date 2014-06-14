@@ -65,17 +65,17 @@ var Hiro = {
 		// Init folio
 		init: function() {
 			// Event setup
-			Hiro.ui.fastbutton.attach(this.el_root,Hiro.folio.folioclick);			
-			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);	
-			Hiro.ui.touchy.attach(this.el_showmenu,Hiro.folio.foliotouch,55);					
+			Hiro.ui.fastbutton.attach(this.el_root,Hiro.folio.folioclick);	
+			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);
+
+			// Open the folio if a user hovers		
+			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);						
 		},
 
 		// If the user clicked somewhere in the folio
-		folioclick: function(event) {
-			// Stop default event
-			Hiro.util.stopEvent(event);		
-
-			var target = event.target || event.srcElement, note;
+		folioclick: function(id,type,target) {
+			console.log(id,type,target);
+			return;
 			
 			// Clicks on the main elements
 			if (target.id) {				
@@ -1746,21 +1746,19 @@ var Hiro = {
 			var style = this.el_wastebin.style,
 				v = this.vendors, i, l, v, r, measure;
 
-			// Set up UI according to user level
-			this.setstage(tier);	
-
 			// Determine CSS opacity property
 			if (style.opacity !== undefined) this.opacity = 'opacity';
 			else {
 				for (i = 0, l = v.length; i < l; i++) {
 					if (style[v[i] + 'Opacity'] !== undefined) {
 						this.opacity = v[i] + 'Opacity';
+						this.browser = v[i];
 						break;
 					}
 				}
 			}
 
-			// Find out which browserwe're using if we dont't know yet
+			// Find out which browser we're using if we dont't know yet
 			if (!this.browser) {
 				for (i = 0, l = v.length; i < l; i++) {
 					if (style[v[i] + 'Transition'] !== undefined) {
@@ -1796,17 +1794,8 @@ var Hiro = {
 			        };
 			}());
 
-
-			if (!window.requestAnimationFrame) {
-				for (i=0, l = v.length; i < l; i++) {
-					r = window[v[i] + 'RequestAnimationFrame'];
-					if (r) {
-						window.requestAnimationFrame = r;
-						window.cancelAnimationFrame = window[v[i] + 'CancelAnimationFrame'] ||	window[v[i] + 'CancelRequestAnimationFrame'];
-						break;
-					}
-				}
-			}	
+			// Set up UI according to user level
+			this.setstage(tier);	
 
 			// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
 			// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
@@ -1820,10 +1809,7 @@ var Hiro = {
 			Hiro.util.registerEvent(window,'keydown',Hiro.ui.keyhandler);
 
 			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up
-			Hiro.util.registerEvent(this.dialog.el_root,'mousedown',Hiro.ui.dialog.clickhandler);	
-			Hiro.util.registerEvent(this.dialog.el_root,'mouseup',Hiro.ui.dialog.clickhandler);	
-			Hiro.util.registerEvent(this.dialog.el_root,'touchstart',Hiro.ui.dialog.clickhandler);	
-			Hiro.util.registerEvent(this.dialog.el_root,'touchend',Hiro.ui.dialog.clickhandler);	
+			this.fastbutton.attach(this.dialog.el_root,Hiro.ui.dialog.clickhandler)
 		},
 
 		// Fire keyboard events if applicable
@@ -2048,38 +2034,102 @@ var Hiro = {
 			if (window.getComputedStyle) return window.getComputedStyle(element,null).getPropertyValue("opacity");
 		},		
 
-		// Handle clicks depending on device (mouse or touch)
+		// Handle clicks depending on device (mouse or touch), this shoudl mostly be used on delegated handlers spanning larger areas
 		fastbutton: {
+			// Map of Nodes to events
+			mapping: {},
+
 			// Current event details
-			x: undefined,
-			y: undefined,
+			x: 0,
+			y: 0,
+			lastid: undefined,
 
-			// Attach initial event trigger
+			// Values related to busting clicks (Click event is fired no matter what we do the faster up/down/start/end)
+			busterinstalled: false,
+			delay: 500,
+			bustthis: [],
+
+			// Attach event triggers
 			attach: function(element,handler) {
-				// Always attach click event
-				Hiro.util.registerEvent(element,'click', function(e) {Hiro.ui.fastbutton.fire(e,handler)});
+				// Attach buster when attaching first fastbutton
+				if (!this.busterinstalled) this.installbuster(); 
+
+				// Store handler in mapping table, create id if element has none
+				if (!element.id) element.id = 'fastbutton' + Math.random().toString(36).substring(2,6);
+				this.mapping[element.id] = handler;
+
+				// TODO Bruno: See if there is a reliable way to check if device supports mouse or not
+				Hiro.util.registerEvent(element,'mousedown',Hiro.ui.fastbutton.fire);
+				Hiro.util.registerEvent(element,'mouseup',Hiro.ui.fastbutton.fire);				
 				// Optionally attach touchstart event for touch devices
-				if (Hiro.ui.touch) Hiro.util.registerEvent(element,'touchstart', function(e) {Hiro.ui.fastbutton.fire(e,handler)});
+				if (Hiro.ui.touch) {
+					Hiro.util.registerEvent(element,'touchstart', Hiro.ui.fastbutton.fire);
+					Hiro.util.registerEvent(element,'touchend', Hiro.ui.fastbutton.fire);	
+				} 
 			},
 
-			// If the initial event is fired
-			fire: function(event,handler) {
-				if (event.type === 'click') {
-					// If the event is a click event we just execute the handler and quit
-					handler(event);					
-				} else if (event.type === 'touchstart') {
-					// In this case we attach a touchend event to wait for and set the start coordinates
-					console.log('touchend')
-				} else {
-					// Log error to see if any browsers fire unknown events
-					Hiro.sys.error('Fastbutton triggered unknown event: ', event);
+			// Handle firing of events
+			fire: function(event) {
+				var target = event.target || event.srcElement, that = Hiro.ui.fastbutton, x = event.screenX, y = event.screenY,
+					// Traverse up DOM tree for up to two levels
+					id = target.id || target.getAttribute('data-hiro-action') || 
+						 target.parentNode.id || target.parentNode.getAttribute('data-hiro-action') || 
+						 target.parentNode.parentNode.id || target.parentNode.parentNode.getAttribute('data-hiro-action'),	
+					handler = that.mapping[this.id];
+
+				// Stop event and prevent it from bubbling further up
+				Hiro.util.stopEvent(event);
+
+				// Note values and fire handler for beginning of interaction
+				if (id && (event.type == 'mousedown' || event.type == 'touchstart')) {
+					// First we remember where it all started
+					that.x = x; that.y = y; that.lastid = id;
+
+					// Call handler
+					if (handler) handler(id,'half',target,event)
+
+					// Stop here for now
+					return;	
 				}
+
+				// Things that need start & end on the same element or within n pixels. 
+				// Being mouseup or touchend is implicity by having a lastaction id
+				// TODO Bruno: Think about if we can move this to document
+				if 	(that.lastid && (id == that.lastid || ((Math.abs(x - that.x) < 10) && (Math.abs(y - that.x) < 10 )))) {
+					// Add coordinates to buster to prevent clickhandler from also firing, remove after n msecs
+					that.bustthis.push(y,x);
+					setTimeout(function(){
+						Hiro.ui.fastbutton.bustthis.splice(0,2);
+					},that.delay);
+
+					// Call handler
+					if (handler) handler(id,'full',target,event)	
+				} 	
+
+				// Reset values
+				that.x = that.y = 0;
+				that.lastid = undefined;
 			},
 
-			// Reset the coordinates and remove touchend event
-			reset: function() {
-				Hiro.ui.fastbutton.x = Hiro.ui.fastbutton.y = undefined;
-			}			
+			// Attach a click handler to the document that prevents clicks from firing if we just triggered something via touchend/mouseup above
+			installbuster: function() {
+				Hiro.util.registerEvent(document,'click',Hiro.ui.fastbutton.bust,true);
+			},
+
+			// Fires when buster installed & click event happens on document
+			bust: function(event) {
+				// See if we have something to bust at all
+				if (Hiro.ui.fastbutton.bustthis.length == 0) return;
+					console.log('busted',event,Hiro.ui.fastbutton.bustthis);
+
+				// See if the click is close the where we fired the full handler above
+				for (var i = 0, l = Hiro.ui.fastbutton.bustthis.length; i < l; i += 2) {
+					if (Math.abs(Hiro.ui.fastbutton.bustthis[i] - event.screenY) < 25 
+						&& Math.abs(Hiro.ui.fastbutton.bustthis[i + 1] - event.screenX) < 25) {
+							Hiro.util.stopEvent(event);
+					}
+				}				
+			}			 		
 		},
 
 		// Attach events to areas that fire under certain conditions like hover and support delays
@@ -2098,8 +2148,8 @@ var Hiro = {
 
 			// If the event is fired
 			fire: function(event,element,handler,delay) {
-				// If its a touch event, we turn this into a fastbutton without delay (but spatial limitation)				
-				if (event.type === 'touchstart') Hiro.ui.fastbutton.fire(event,handler);				
+				// If its a touch event we fire the event immediately		
+				if (event.type === 'touchstart') handler();				
 				else if (event.type === 'mouseover') {
 					// If we already listen to this element but moved to a different subnode do nothing
 					if (element === this.element) return;
@@ -2112,6 +2162,7 @@ var Hiro = {
 						handler(event);
 						// And clean up 
 						Hiro.ui.touchy.abort(element);
+						Hiro.util.releaseEvent(element,'mouseout',Hiro.ui.touchy.boundschecker);						
 					}, delay);
 					// Register mouseout event to clean things up once we leave target area
 					Hiro.util.registerEvent(element,'mouseout', Hiro.ui.touchy.boundschecker);				
@@ -2218,39 +2269,22 @@ var Hiro = {
 			},
 
 			// If the user clicks somewhere in the dialog 
-			clickhandler: function(event) {
-				var target = event.target || event.srcElement, that = Hiro.ui.dialog,
-					x = event.screenX, y = event.screenY,
-					a = target.getAttribute('data-hiro-action') || target.parentNode.getAttribute('data-hiro-action');
-
-				// User clicked outside of dialog window, we're done
-				if (target.id == 'shield') {
-					Hiro.ui.dialog.hide();
-					return;
-				}
-
+			clickhandler: function(action,type,target,event) {
 				// Woop, we inited started fiddling with something relevant
-				if (a && (event.type == 'mousedown' || event.type == 'touchstart')) {
-					// First we remember where it all started
-					that.lastx = x; that.lasty = y; that.lastaction = a;
-
-					// List of actions tobe triggered at action start goes here 
-					switch (a) {
+				if (type == 'half') {
+					// List of actions to be triggered
+					switch (action) {
 						case 'switch_s_plan':
 						case 'switch_s_about':						
 						case 'switch_s_account':
-							Hiro.ui.switchview(document.getElementById(a.substring(7)));
+							Hiro.ui.switchview(document.getElementById(action.substring(7)));
 							break;		
 					}
-
-					// Do not proceed, all done for now
-					return;
-				}
-
-				// Things that need start & end on the same element or within n pixels. 
-				// Being mouseup or touchend is implicity by having a lastaction
-				if 	(that.lastaction && (a == that.lastaction || ((Math.abs(x - that.lastx) < 10) && (Math.abs(y - that.lasty) < 10 )))) {
-					switch (a) {
+				} else if (type == 'full') {
+					switch (action) {
+						case 'shield':
+							Hiro.ui.dialog.hide();
+							break;						
 						case 'switch_s_signup':
 							Hiro.ui.switchview(document.getElementById('s_signup'));
 							Hiro.user.el_register.getElementsByTagName('input')[0].focus();
@@ -2261,7 +2295,7 @@ var Hiro = {
 							break;							
 						case 'register':
 						case 'login':
-							Hiro.user.logio(event,(a == 'login'));
+							Hiro.user.logio(event,(action == 'login'));
 							break;	
 						case 'fbauth':
 							Hiro.user.fbauth();
@@ -2273,11 +2307,7 @@ var Hiro = {
 							Hiro.ui.switchview(document.getElementById('s_plan'));
 							break;						
 					}
-				} 	
-
-				// Reset values
-				that.lastx = that.lasty = 0;
-				that.lastaction = undefined;
+				}
 			},
 
 			// Fetch latest settings template from server and load into placeholder div
@@ -2471,8 +2501,12 @@ var Hiro = {
 	util: {
 
 		// Cross browser event registration
-		registerEvent: function(obj, eventType, handler) {
-			if (obj.addEventListener) obj.addEventListener(eventType.toLowerCase(), handler, false);
+		registerEvent: function(obj, eventType, handler, capture) {
+			// Set default value for capture
+			capture = capture || false;
+
+			// Go through various implementations
+			if (obj.addEventListener) obj.addEventListener(eventType.toLowerCase(), handler, capture);
 			else if (obj.attachEvent) obj.attachEvent('on'+eventType.toLowerCase(), handler);
 			else {
 				var et=eventType.toUpperCase();
