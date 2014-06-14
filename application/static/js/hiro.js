@@ -69,7 +69,8 @@ var Hiro = {
 			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);
 
 			// Open the folio if a user hovers		
-			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);						
+			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);	
+			Hiro.ui.touchy.attach(this.el_showmenu,Hiro.folio.foliotouch,55);								
 		},
 
 		// If the user clicked somewhere in the folio
@@ -83,11 +84,9 @@ var Hiro = {
 					case 'archivelink':
 						Hiro.folio.archiveswitch();
 						break;
-					case 'settings':
-						Hiro.ui.dialog.show('d_settings','s_account');
-						break;
 					case 'showmenu':					
-						Hiro.folio.foliotouch(event);
+						var d = (!Hiro.folio.open || Hiro.ui.slidedirection == -1) ? 1 : -1;
+						Hiro.ui.slidefolio(d,150);
 						break;						
 				}
 			} else if (type == 'full') {
@@ -101,6 +100,9 @@ var Hiro = {
 					case 'newnote':
 						note = Hiro.folio.newnote();
 						break;
+					case 'settings':
+						Hiro.ui.dialog.show('d_settings','s_account');
+						break;						
 					case 'note':
 						// If the click was on an archive icon
 						if (target.className == 'archive') {
@@ -121,12 +123,11 @@ var Hiro = {
 		// If the user hovered over the folio with mouse/finger
 		foliotouch: function(event) {
 			var target = event.target || event.srcElement;
+
 			// Open the folio
 			if (!Hiro.folio.open) {
 				Hiro.ui.slidefolio(1);
-			} else if (target.id == 'showmenu') {
-				Hiro.ui.slidefolio(-1);				
-			}			
+			}		
 		},
 
 		// Rerender data
@@ -374,7 +375,7 @@ var Hiro = {
 			Hiro.util.registerEvent(this.el_text,'keyup',Hiro.canvas.textup);
 			Hiro.util.registerEvent(this.el_text,'keydown',Hiro.canvas.textdown);			
 			Hiro.util.registerEvent(this.el_title,'keyup',Hiro.canvas.titleup);			
-			Hiro.ui.fastbutton.attach(this.el_title,Hiro.canvas.titleclick);			
+			Hiro.ui.fastbutton.attach(this.el_title,Hiro.canvas.titleclick,true);			
 
 			// When a user touches the white canvas area
 			Hiro.ui.touchy.attach(this.el_root,Hiro.canvas.canvastouch,55);			
@@ -444,9 +445,8 @@ var Hiro = {
 		},
 
 		// When the user clicks into the title field
-		titleclick: function(event) {
-			var note = Hiro.data.get('notes',Hiro.canvas.currentnote),
-				target = event.target || event.srcElement;
+		titleclick: function(id,type,target) {
+			var note = Hiro.data.get('notes',Hiro.canvas.currentnote);
 
 			// Empty field if Note has no title yet
 			if (target.value && !note.c.title) target.value = '';
@@ -636,8 +636,7 @@ var Hiro = {
 				success: function(req,data) {
 					Hiro.user.logiocomplete(data,login);										                    
 				},
-				error: function(req,data) {
-					console.log(req,data);					
+				error: function(req,data) {				
 	                b.innerHTML = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;						
 					if (req.status==500) {
@@ -1441,8 +1440,7 @@ var Hiro = {
 						}	
 						// Note: This fires only on network level errors where state never changes to 4, otherwise we use the handler above
 						if (typeof req.onerror != 'undefined') {												
-							req.onerror = function() {	
-								console.log('error:',req);					 
+							req.onerror = function() {					 
 								Hiro.sync.ajax.responsehandler(obj,this);		
 							};	
 						} else {
@@ -1893,15 +1891,15 @@ var Hiro = {
 		},		
 
 		// Slide folio: 1 to open, -1 to close
-		slidefolio: function(direction,slideduration) {
+		slidefolio: function(direction,slideduration,force) {
 			// Catch cases where sliding makes no sense
 			if ((direction < 0 && this.slidepos === 0) ||  
 				(direction > 0 && this.slidepos > 100) ||
-				(this.slidedirection != 0))
+				(!force && this.slidedirection != 0))
 				return;
 
 			// Allow simple call without direction		
-			if (!direction) direction = (Hiro.folio.open) ? -1 : 1;			
+			if (!direction) direction = (this.slidedirection == 1 || Hiro.folio.open) ? -1 : 1;			
 
 			// Local vars
 			var // Make sure we always have 50px on the right, even on narrow devices
@@ -2050,13 +2048,16 @@ var Hiro = {
 			bustthis: [],
 
 			// Attach event triggers
-			attach: function(element,handler) {
+			attach: function(element,handler,allowevents) {
 				// Attach buster when attaching first fastbutton
 				if (!this.busterinstalled) this.installbuster(); 
 
 				// Store handler in mapping table, create id if element has none
 				if (!element.id) element.id = 'fastbutton' + Math.random().toString(36).substring(2,6);
-				this.mapping[element.id] = handler;
+				this.mapping[element.id] = {
+					handler: handler,
+					allowevents: allowevents
+				};
 
 				// TODO Bruno: See if there is a reliable way to check if device supports mouse or not
 				Hiro.util.registerEvent(element,'mousedown',Hiro.ui.fastbutton.fire);
@@ -2075,10 +2076,10 @@ var Hiro = {
 					id = target.id || target.getAttribute('data-hiro-action') || 
 						 target.parentNode.id || target.parentNode.getAttribute('data-hiro-action') || 
 						 target.parentNode.parentNode.id || target.parentNode.parentNode.getAttribute('data-hiro-action'),	
-					handler = that.mapping[this.id];
+					handler = that.mapping[this.id].handler;
 
 				// Stop event and prevent it from bubbling further up
-				Hiro.util.stopEvent(event);
+				if (!(target.tagName == 'INPUT' || target.tagName == 'TEXTAREA') && !that.mapping[this.id].allowevents) Hiro.util.stopEvent(event);
 
 				// Note values and fire handler for beginning of interaction
 				if (id && (event.type == 'mousedown' || event.type == 'touchstart')) {
@@ -2125,8 +2126,7 @@ var Hiro = {
 				for (var i = 0, l = Hiro.ui.fastbutton.bustthis.length; i < l; i += 2) {
 					if (Math.abs(Hiro.ui.fastbutton.bustthis[i] - event.screenY) < 25 
 						&& Math.abs(Hiro.ui.fastbutton.bustthis[i + 1] - event.screenX) < 25) {
-							Hiro.util.stopEvent(event);
-							console.log('busted',event,Hiro.ui.fastbutton.bustthis);						
+							Hiro.util.stopEvent(event);						
 					}
 				}				
 			}			 		
