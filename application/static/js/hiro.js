@@ -382,7 +382,7 @@ var Hiro = {
 		},
 
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
-		textdown: function(event) {
+		textdown: function(event) {			
 			// If the user presses Arrowup at position 0
 			if (event.keyCode == 38) {
 				var c = Hiro.canvas.getcursor();
@@ -521,7 +521,7 @@ var Hiro = {
 			// With the next available frame
 			requestAnimationFrame(function(){
 				// Reset to get proper value
-				Hiro.canvas.el_text.style.height = '100px';
+				// Hiro.canvas.el_text.style.height = '1px';
 
 				// Set values
 				Hiro.canvas.textheight = Hiro.canvas.el_text.scrollHeight;
@@ -529,7 +529,7 @@ var Hiro = {
 			})
 
 			// If we are at the last position, also make sure to scroll to it to avoid Chrome etc quirks
-			if (this.el_text.value.length == Hiro.canvas.getcursor()[1] && this.el_text.scrollHeight > document.body.offsetHeight) window.scrollTo(0,this.el_text.scrollHeight);
+			// if (this.el_text.value.length == Hiro.canvas.getcursor()[1] && this.el_text.scrollHeight > document.body.offsetHeight) window.scrollTo(0,this.el_text.scrollHeight);
 		},
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
