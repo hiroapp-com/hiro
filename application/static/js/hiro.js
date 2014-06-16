@@ -658,11 +658,11 @@ var Hiro = {
 					}
 	                if (data.email) {
 	                	v[0].className += ' error';
-	                	v[0].nextSibling.innerHTML = data.email;
+	                	v[0].nextSibling.innerHTML = data.email[0];
 	                }	
 	                if (data.password) {
 	                	v[1].className += ' error';	                    	
-	                	v[1].nextSibling.innerHTML = data.password;  
+	                	v[1].nextSibling.innerHTML = data.password[0];  
 	                }	                 		                    						                    
 				}										
 			});	
@@ -2241,10 +2241,10 @@ var Hiro = {
 					id = target.id || target.getAttribute('data-hiro-action') || 
 						 target.parentNode.id || target.parentNode.getAttribute('data-hiro-action') || 
 						 target.parentNode.parentNode.id || target.parentNode.parentNode.getAttribute('data-hiro-action'),	
-					handler = that.mapping[this.id].handler, branch = this, button = event.which || event.button;
+					handler = that.mapping[this.id].handler, branch = this, button = event.which || event.button;	
 
-				// Don't even start if it's not a leftclick
-				if (button != 1) return;	
+				// Don't even start if it's not a leftclick, this also kills touch mousedown events
+				if (event.type == 'mousedown' && button != 1) return;	
 
 				// Stop event and prevent it from bubbling further up
 				if (!(target.tagName == 'INPUT' || target.tagName == 'TEXTAREA') && !that.mapping[this.id].allowevents) Hiro.util.stopEvent(event);
@@ -2374,30 +2374,36 @@ var Hiro = {
 
 			// Open dialog
 			show: function(container, section, focus, mobilefocus) {
+				// If we're offline, show a default message
+				if (!Hiro.sync.online) {
+					container = 'd_msg';
+					section = focus = undefined;
+				}
+
 				// Change visibility etc
 				requestAnimationFrame(function(){
 					if (container) Hiro.ui.switchview(container);
 					if (section) Hiro.ui.switchview(section);	
 					if (focus) focus.focus();
-					Hiro.ui.dialog.center();										
-				})	
+					Hiro.ui.dialog.center();	
 
-				Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
-					// Blurring is slooow on small mobile browsers, so don't do it
-					if (window.innerWidth < 481) return;
+					Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
+						// Blurring is slooow on small mobile browsers, so don't do it
+						if (window.innerWidth < 481) return;
 
-					// Blur background
-					requestAnimationFrame(function(){
-						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
-						Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
+						// Blur background
+						requestAnimationFrame(function(){
+							var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
+							Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
+						});
 					});
-				});
 
-				// CSS Manipulations
-				requestAnimationFrame(function(){
-					// Set top margin for upward movement
-					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;
-				})
+					// CSS Manipulations
+					requestAnimationFrame(function(){
+						// Set top margin for upward movement
+						Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;
+					})														
+				})	
 
 				// Hide folio
 				if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);

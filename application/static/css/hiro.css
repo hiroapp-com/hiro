@@ -23,6 +23,10 @@ input {
   box-sizing: border-box;   
 }
 
+em {
+  font-style: normal;
+}
+
 /* Mobile devices */
 @media (max-width: 480px), (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
   body{
@@ -508,9 +512,13 @@ input.pseudobutton {
 
   #nicequote {
     left: 20px;
-    bottom: 18px;
+    bottom: 14px;
     right: 20px;  
   }
+
+  #nicequote small{
+    padding-top: 4px; 
+  }  
 
 }
 
@@ -831,7 +839,6 @@ input.pseudobutton {
 
 #msgresults a.msg em {
   color: #333;
-  font-style: normal;
 }
 
 #wwwresults .tip {
@@ -1033,7 +1040,6 @@ input.pseudobutton {
 
 #synresults .group .header em {
   color: #666;
-  font-style: normal;
   text-transform: capitalize;
 }
 
@@ -1231,8 +1237,37 @@ input.pseudobutton {
 
 
 /* Hidden per default */
-#s_signin, #s_reset, #d_settings, #d_msg, #d_container {
+#d_logio, #s_register, #s_signin, #s_reset, #d_settings, #d_msg, #d_container {
   display: none;
+}
+
+#d_msg .icon {
+  background-image: url(../img/icons.3.png);
+  background-repeat: no-repeat;
+  background-size: 160px auto;
+  background-position: center -355px;
+  position: absolute;
+  top: 30%;
+  bottom: 40%;
+  width: 100%;
+  opacity: 0.25; 
+  height: 145px;  
+}
+
+#d_msg .message {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 150px 30px 20px 30px;
+  box-sizing: border-box;
+  top: 30%;
+  color: #999;  
+}
+
+#d_msg .message em {
+  display: block;
+  color: #333;
+  padding-bottom: 3px;
 }
 
 #s_signin, #s_signup {
@@ -1285,10 +1320,6 @@ input.pseudobutton {
 
 #d_settings .header.forced {
   display: none;
-}
-
-#d_settings .header em {
-  font-style: normal;
 }
 
 #d_settings .header span {
@@ -1561,7 +1592,6 @@ input.pseudobutton {
 }
 
 #s_about .aboutsection em, #s_upgrade .upgradesection em {
-  font-style: normal;
   color: #1a1a1a;
 }
 
@@ -1600,6 +1630,10 @@ input.pseudobutton {
 }
 
 @media (max-width: 440px) {
+
+  #d_msg .icon, #d_msg .message {
+    top: 22%;
+  }
 
   #d_settings {
     overflow-y: auto; 
@@ -1656,7 +1690,7 @@ input.pseudobutton {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch; 
     border-bottom: none;
-    padding: 19px 16px 15px 16px;    
+    padding: 19px 16px 15px 16px;  
   }  
 
   #d_settings .checkoutdetails {
@@ -1907,8 +1941,7 @@ body#landingPage2 .l_container .l_canvas .text {
   line-height: 22px;
 }
 
-body#landingPage2 .l_container .l_canvas .text em {
-  font-style: normal;   
+body#landingPage2 .l_container .l_canvas .text em {   
   color: #333;  
 }
 
