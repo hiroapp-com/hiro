@@ -518,6 +518,9 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
+			// Abort on small devices
+			if (window.innerWidth < 481) return;
+
 			// With the next available frame
 			requestAnimationFrame(function(){
 				// Reset to get proper value
@@ -2380,6 +2383,10 @@ var Hiro = {
 				})	
 
 				Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
+					// Blurring is slooow on small mobile browsers, so don't do it
+					if (window.innerWidth < 481) return;
+
+					// Blur background
 					requestAnimationFrame(function(){
 						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
 						Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
@@ -2402,9 +2409,9 @@ var Hiro = {
 
 			// Close the dialog 
 			hide: function() {
-				// Remove blur filters
+				// Remove blur filters, only if we set them before
 				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';				
-				Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
+				if (Hiro.canvas.el_root.style[filter]) Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
 				
 				// Change visibility etc
 				Hiro.ui.fade(Hiro.ui.dialog.el_root,-1,100);			

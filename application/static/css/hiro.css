@@ -492,7 +492,7 @@ input.pseudobutton {
   } 
 
   #canvas input.title {
-    padding: 9px 30px 5px 47px;
+    padding: 9px 48px 5px 47px;
     border: 0; 
     font-size: 27px;
     background-color: transparent;
@@ -714,6 +714,27 @@ input.pseudobutton {
     border-width: 11px;
     margin-left: -10px;
   }
+}
+
+@media (max-width: 480px) {
+  #apps {
+    right: 0;
+    top: 0;    
+  }
+
+  #apps .app .icon .counter {
+    top: 8px;
+    right: 8px;
+  }  
+
+  #apps .app .icon .symbol {
+    background-size: 170px auto;
+  }  
+
+  #apps .app.app_sharing .icon .symbol {
+    background-position: -66px -322px;
+  }
+
 }
 
 
@@ -1563,6 +1584,264 @@ input.pseudobutton {
   padding-bottom: 8px;
 }
 
+
+
+@media (max-width: 480px) {
+  #shield .wrapper {
+    width: auto;
+    height: auto;
+    overflow: hidden;
+    top: 15px !important;
+    left: 15px !important;
+    bottom: 15px !important;
+    right: 15px !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 440px) {
+
+  #d_settings {
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; 
+  }
+
+  body#settingsPage a.close {
+    color: transparent;
+    padding-right: 0;
+    background-position: -16px -29px;
+  }
+
+  body#settingsPage input#cc_number {
+    background: url(../img/payment.png) right -16px no-repeat;
+    background-size: 163px 75px;
+  }  
+
+  #d_settings .header em {
+    display: none;
+  }  
+
+  #d_settings .header .reason {
+    text-transform: capitalize;
+  }
+
+  #d_settings .header .active, #d_settings .header a  {
+    margin-right: 10px;
+  }  
+
+  #s_signin, #s_signup, #s_reset {
+    width: 90%;
+    margin-top: 58px;    
+  }
+
+  #s_login form {
+    margin-top: 18px;
+  }
+
+  #s_login a.fb {
+    font-size: 20px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  #d_settings .accountdetails {
+    position: absolute;
+    width: auto;
+    margin: 0;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-x: hidden; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
+    border-bottom: none;
+    padding: 19px 16px 15px 16px;    
+  }  
+
+  #d_settings .checkoutdetails {
+    width: 90%;
+    margin-top: 17px;   
+    position: relative; 
+  }
+
+  #d_settings .accountdetails form, #d_settings .checkoutdetails form {
+    margin-top: 0;   
+  }
+
+  .checkoutdetails form input.small, .checkoutdetails form input.small.cvc {
+    width: 50px;
+    display: inline-block;
+  }  
+
+  #d_settings form .ioption {
+    color: transparent;
+  } 
+
+  #s_settings form .ioption.error {
+    width: 110px;
+    text-align: right;
+    line-height: 14px;
+    margin-top: -43px;
+  }    
+
+  #d_settings form .ioption.upgradelink {
+    top: 215px;
+    right: 18px;
+  } 
+
+  #d_settings form .ioption a.facebook {
+    display: none;
+  }  
+
+  #s_account form .ioption:last-child {
+    position: absolute;
+    top: 214px;
+    right: 17px; 
+    z-index: 99000;
+  }
+
+  #s_checkout form .ioption.changeplan {
+    top: 49px;
+    right: 0; 
+  }
+
+  .accountdetails .divider, #s_login .divider {
+    margin-top: 10px;
+  }
+
+  #s_account .accountdetails a.hirobutton.share {
+    width: auto;
+    display: block;
+    margin-top: 10px;
+    margin-right: 0;
+    text-align: left;
+    padding-left: 10px;
+  }  
+
+  #s_account .accountdetails a.hirobutton.share.sms {
+    display: block;
+    background-color: #055a0b;
+  }   
+
+  .checkoutdetails .pbstripe .right {
+    float: none;
+    display: block;
+  }   
+
+  #s_signin div.error, #s_signup div.error, #s_reset div.error {
+    text-align: right;
+  }
+
+  #s_plan .plans {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 47px;
+    overflow-x: hidden; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
+    border-bottom: 1px dotted #ddd;    
+  }  
+
+  #s_plan .box {
+    float: none;
+    margin: 15px auto 10px auto;
+    display: block;
+    width: 90%;
+    height: auto;
+    text-align: center;
+  } 
+
+  #s_plan .box .head {
+    display: block;
+    font-size: 18px;
+    color: #999;
+    padding-top: 10px;
+    width: 90%;
+    margin: auto;
+    text-align: left;
+  }  
+  #s_plan .box .price {
+    position: absolute;
+    font-size: 18px;
+    color: #333;
+    font-weight: normal;
+    top: 5px;
+    right: 13px;
+  }
+  #s_plan .box .price sup {
+    font-size: 12px;
+  }  
+  #s_plan .box .curr {
+    position: absolute;
+    top: 30px;
+    right: 13px;
+    width: 30px;
+    text-align: right;
+  }
+  #s_plan .box ul {
+    display: block;
+    font-size: 16px;
+    text-align: left;
+    color: #666;
+    vertical-align: top;
+    list-style-type: none;
+    padding: 0 0 5px 0;
+    font-size: 14px;
+    width: 90%;
+    margin: auto;    
+  } 
+
+  #s_plan .box ul {
+    display: block;
+    font-size: 16px;
+    text-align: left;
+    color: #666;
+    vertical-align: top;
+    list-style-type: none;
+    padding: 0 0 5px 0;
+    font-size: 14px;
+    width: 90%;
+    margin: auto;    
+  }
+
+  #s_plan .box a.wpcbutton {
+    bottom: 0;
+    left: 0;
+    position: relative;
+    display: none;
+    margin: 0 auto 10px auto;
+    width: 85%;
+  }
+
+  #s_about .aboutsection, #s_upgrade .upgradesection {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-x: hidden; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
+    margin: 0;    
+    padding: 12px 18px 12px 18px;
+    width: auto;
+    line-height: 22px;
+  } 
+
+  #s_upgrade .upgradesection {
+    top: 0;
+  }
+
+  #s_about .aboutsection .claim, #s_upgrade .upgradesection .claim {
+    padding-bottom: 16px;
+    font-size: 18px;
+    line-height: 22px;
+  }    
+
+}
 
 
 /* ---------------------- Landing page overlay ----------------------------- */
