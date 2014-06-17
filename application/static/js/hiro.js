@@ -382,9 +382,9 @@ var Hiro = {
 		},
 
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
-		textdown: function(event) {			
-			// If the user presses Arrowup at position 0
-			if (event.keyCode == 38) {
+		textdown: function(event) {		
+			// If the user presses Arrowup or Pageup at position 0
+			if (event.keyCode == 38 || event.keyCode == 33) {
 				var c = Hiro.canvas.getcursor();
 				if (c[0] == c[1] && c[0] == 0) Hiro.canvas.el_title.focus();
 			} 
@@ -428,10 +428,10 @@ var Hiro = {
 
 		// When a key is released in the title field
 		titleup: function(event) {
-			// Jump to text if user presses return or arrowdown
-			if (event.keyCode == 40 || event.keyCode == 13) Hiro.canvas.setcursor(0);
+			// Jump to text if user presses return, pagedown or arrowdown
+			if (event.keyCode == 40 || event.keyCode == 13 || event.keyCode == 34) Hiro.canvas.setcursor(0);
 
-			// LEnovo nostalgia: Goto End on End
+			// Lenovo nostalgia: Goto End on End
 			if (event.keyCode == 35) Hiro.canvas.setcursor(Hiro.canvas.el_text.value.length);			
 
 			// Handle keys where we don't want to set a different value (and most important kick off commit)

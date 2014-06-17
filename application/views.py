@@ -54,6 +54,32 @@ DA_STATUS_ORDER = {
 
 base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
 
+# Direct Templates
+
+def home():
+    return render_template('index.html')
+
+def newhome():
+    return render_template('newhome.html')    
+
+def landing():
+    return render_template('landing_new.html')
+
+def settings():
+    return render_template('settings.html')
+
+def newsettings():
+    return render_template('settings_new.html')    
+
+def offline():
+    return render_template('offline.html')       
+
+def test():
+    return render_template('test.html')   
+
+def static_manifest():
+    return Response(render_template('hiro.appcache'), mimetype="text/cache-manifest")
+
 
 yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
 def search_yahoo(terms, num_results=20):
@@ -225,13 +251,6 @@ def change_plan():
         return jsonify_err(400, err)
     return jsonify(current_user.to_dict())
 
-
-def home():
-    return render_template('index.html')
-
-def newhome():
-    return render_template('newhome.html')
-
 def note(doc_id):
     doc = Document.get_by_id(doc_id)
     if doc and not doc.grant(current_user):
@@ -249,22 +268,7 @@ def profile():
         if payload.get('limbo', '') == "!":
             user.custom_css = ".canvas .page .content textarea { font-family: Inconsolata; font-size: 11px; font-weight: bold;}"
         user.put()
-    return jsonify(user.to_dict())
-
-
-    
-
-def landing():
-    return render_template('landing_new.html')
-
-def settings():
-    return render_template('settings.html')
-
-def newsettings():
-    return render_template('settings_new.html')    
-
-def test():
-    return render_template('test.html')    
+    return jsonify(user.to_dict()) 
 
 @ndb.tasklet
 def fetch_docinfo(da):
@@ -667,12 +671,6 @@ def _manual_intervention():
     while being logged in as a root user. 
     """
     return "ok"
-
-
-
-
-def static_manifest():
-    return Response(render_template('hiro.appcache'), mimetype="text/cache-manifest")
 
 def warmup():
     """App Engine warmup handler

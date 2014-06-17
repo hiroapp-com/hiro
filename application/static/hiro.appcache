@@ -1,2 +1,17 @@
+CACHE MANIFEST
+# We generate it via assets.py, thus changes to either css or js 
+# also update the content of the mafiest file (via file hash).
+# Thus new assets should trigger a cache reload. 
+
+CACHE:
 {{ get_asset_url('new_css') }}
 {{ get_asset_url('new_js') }}
+
+FALLBACK:
+# Make sure all requests (eg /note/foo) go to a standard offline template.
+# This template doesn't have any landing page overlay, tracking etc.
+/ /offline/
+
+NETWORK:
+*
+https://*
