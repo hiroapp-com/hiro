@@ -2110,3 +2110,9 @@ body#landingPage h1 {
   -o-transform: rotate(3deg) translate(0px, -4px);
   transform: rotate(3deg) translate(0px, -4px);
 }
+
+@media (max-width: 480px) {
+  #hprogress .bar {
+    position: absolute; 
+  }  
+}

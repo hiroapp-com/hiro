@@ -2460,6 +2460,7 @@ var Hiro = {
 					}
 				} else if (type == 'full') {
 					switch (action) {
+						case 'd_msg':						
 						case 'shield':
 							Hiro.ui.dialog.hide();
 							break;						
