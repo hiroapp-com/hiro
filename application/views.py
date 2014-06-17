@@ -671,6 +671,9 @@ def _manual_intervention():
 
 
 
+def static_manifest():
+    return Response(render_template('hiro.appcache'), mimetype="text/cache-manifest")
+
 def warmup():
     """App Engine warmup handler
 

@@ -37,20 +37,20 @@ def assets_env(app):
     env.register('hiro_css', 'css/wonderpad.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")
     env.register('new_js', 'js/hiro.js', filters='jsmin', output="javascript/hiro.%(version)s.js")      
     env.register('new_css', 'css/hiro.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")    
+    env.register('cache_manifest', 'hiro.appcache', filters='appcache', output="appcache/hiro.%(version)s.appcache")    
     if os.environ.get('SERVER_SOFTWARE', '').startswith('Devel'):
         env.debug = True
     return env
 
 asset_html = {
     'css': '<link rel="stylesheet" type="text/css" href="{url}">',
-    'js': '<script src="{url}" type="text/javascript"></script>'
+    'js': '<script src="{url}" type="text/javascript"></script>',
+    'appcache': '{url}'
     }
 
 def get_html_output(urls):
     urls = [urls] if not hasattr(urls, '__iter__') else urls
     return '\n'.join(asset_html.get(url.split('.')[-1], '').format(url=url) for url in urls)
-
-
 
 
 
@@ -76,6 +76,11 @@ if __name__== "__main__":
     app.config.from_object('application.settings')
     # build bundles
     env = assets_env(app)
+    for bundle in list(env):
+        bundle.build()
+        print('built {0}'.format(bundle.output % {'version': str(bundle.get_version())}))
+
+    print "hack: run a second time to make sure appcache is uptodate"
     for bundle in list(env):
         bundle.build()
         print('built {0}'.format(bundle.output % {'version': str(bundle.get_version())}))

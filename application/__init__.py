@@ -40,7 +40,10 @@ def inject_asset_getter():
     def get_asset(name):
         bundle = assets._named_bundles[name]
         return Markup(get_html_output(bundle.urls()))
-    return dict(get_asset=get_asset)
+    def get_asset_url(name):
+        bundle = assets._named_bundles[name]
+        return Markup(u'\n'.join(bundle.urls()))
+    return dict(get_asset=get_asset, get_asset_url=get_asset_url)
 
 
 # Pull in URL dispatch routes

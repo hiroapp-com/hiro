@@ -11,6 +11,7 @@ app.add_url_rule('/_ah/warmup', 'warmup', view_func=views.warmup)
 
 # pages
 app.add_url_rule('/', 'home', view_func=views.home)
+app.add_url_rule('/static/hiro.appcache', 'static_manifest', view_func=views.static_manifest)
 app.add_url_rule('/landing/', 'landing', view_func=views.landing)
 app.add_url_rule('/settings/', 'settings', view_func=views.settings)
 app.add_url_rule('/test/', 'test', view_func=views.test)

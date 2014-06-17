@@ -34,6 +34,14 @@ inbound_services:
 
 
 handlers:
+- url: /static/hiro.appcache
+  script: run.application.app
+  secure: always
+
+- url: /static/appcache/.*
+  static_dir: application/static/appcache
+  mime_type: text/cache-manifest
+
 - url: /favicon.ico
   static_files: application/static/img/favicon.ico
   upload: application/static/img/favicon.ico
@@ -82,6 +90,7 @@ handlers:
 - url: /json
   static_dir: application/static/json
   secure: always  
+
 
 - url: .*
   script: run.application.app
