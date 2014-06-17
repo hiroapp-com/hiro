@@ -1,0 +1,2 @@
+{{ get_asset_url('new_css') }}
+{{ get_asset_url('new_js') }}
