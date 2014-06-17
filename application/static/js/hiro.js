@@ -1837,6 +1837,12 @@ var Hiro = {
 			// Create DMP socket
 			Hiro.sync.diff.dmp = new diff_match_patch();
 
+			// Attach appcache logger and hotswap events
+			Hiro.util.registerEvent(window.applicationCache,'error',function(e){ 
+				Hiro.sys.error('Appcache Error',[e,this]);
+			});			
+			Hiro.util.registerEvent(window.applicationCache,'updateready',function(){ window.applicationCache.swapCache() });			
+
 			// Setup other app parts
 			Hiro.folio.init();
 			Hiro.canvas.init();

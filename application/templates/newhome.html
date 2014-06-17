@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<!-- TODO Flo: enable link to hashed manifest file, i.e. hiro.foo132.manifest that changes whenever js or css changes -->
-<!-- Alternatively we can als switch off caching for manifest file and bear the extra request costs if it's too much effort -->
-<html manifest="/hiro.manifest">
+<html manifest="{{ get_asset('cache_manifest') }}">
 	<head>
 		<meta charset="utf-8">
 	    <title>Hiro</title>
@@ -30,7 +28,6 @@
         </style>
 	</head>
 	<body>
-
 		<div id="fb-root"></div>		
 
 		{% if not current_user.is_authenticated() %}

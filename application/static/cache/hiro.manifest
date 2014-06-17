@@ -1,3 +1,0 @@
-Woohooo:
-Something like {{ get_asset_url('new_css') }} with tokenized/hashed URL asset here pls,
-with or without path is fine

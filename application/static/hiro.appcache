@@ -1,4 +1,4 @@
-CACHE MANIFEST
+CACHE MANIFEST 
 # We generate it via assets.py, thus changes to either css or js 
 # also update the content of the mafiest file (via file hash).
 # Thus new assets should trigger a cache reload. 
@@ -14,4 +14,3 @@ FALLBACK:
 
 NETWORK:
 *
-https://*
