@@ -98,7 +98,7 @@ var Hiro = {
 				// Go through cases
 				switch (id) {
 					case 'newnote':
-						note = Hiro.folio.newnote();
+						Hiro.canvas.load(Hiro.folio.newnote());
 						break;
 					case 'settings':
 						Hiro.ui.dialog.show('d_settings','s_account');
@@ -1655,7 +1655,7 @@ var Hiro = {
 				// Send reponse
 				if (success && obj.success) obj.success(response,data);
 				else if (obj.error) obj.error(response,data);
-				
+
 				// Speed up GC
 				obj = response = null;			
 			},
