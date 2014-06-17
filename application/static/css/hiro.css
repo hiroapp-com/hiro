@@ -1241,6 +1241,12 @@ input.pseudobutton {
   display: none;
 }
 
+#d_msg {
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
 #d_msg .icon {
   background-image: url(../img/icons.3.png);
   background-repeat: no-repeat;
