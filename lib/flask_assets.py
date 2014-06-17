@@ -37,6 +37,23 @@ class Jinja2Filter(Filter):
 # the standard Flask template context variables.
 register_filter(Jinja2Filter)
 
+class AppcacheFilter(Filter):
+    name = 'appcache'
+    def input(self, _in, out, **kwargs):
+        if hasattr(self, 'env'):
+            ctx = {}
+            for name, bundle in self.env._named_bundles.iteritems():
+               ctx[name] = bundle.output % {'version': str(bundle.get_version())}
+            ctx['get_asset_url'] = lambda name: ctx.get(name)
+            output = self._render(_in.read(), ctx)
+            out.write(output) 
+
+    def _render(self, source, context):
+        template = self.env.app.jinja_env.from_string(source)
+        rv = template.render(context)
+        return rv
+
+register_filter(AppcacheFilter)
 
 class FlaskConfigStorage(ConfigStorage):
     """Uses the config object of a Flask app as the backend: either the app
