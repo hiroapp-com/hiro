@@ -1653,9 +1653,9 @@ var Hiro = {
 				}
 
 				// Send reponse
-				if (success && obj.success) obj.success(this,data);
-				else if (obj.error) obj.error(this,data);
-
+				if (success && obj.success) obj.success(response,data);
+				else if (obj.error) obj.error(response,data);
+				
 				// Speed up GC
 				obj = response = null;			
 			},
