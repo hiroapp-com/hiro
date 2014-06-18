@@ -164,7 +164,7 @@ var Hiro = {
 				that.lookup[data[i].nid] = data[i];			
 			}
 
-			// Switch folio DOM contents with fragemnts
+			// Switch folio DOM contents with fragments
 			requestAnimationFrame(function(){
 				// Empty
 				that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
@@ -1846,12 +1846,12 @@ var Hiro = {
 			Hiro.lib.init();		
 			Hiro.apps.init();			
 
-			// Attach appcache logger and hotswap events
+			// Load application cache
 			if (window.applicationCache) {
-				Hiro.util.registerEvent(window.applicationCache,'error',function(e){ 
-					Hiro.sys.error('Appcache Error',[e,this]);
-				});			
-				Hiro.util.registerEvent(window.applicationCache,'updateready',function(){ window.applicationCache.swapCache() });
+				var frame = document.createElement('iframe');
+				frame.style.display = 'none';
+				frame.src = '/offline/manifestwrapper/';
+				document.body.appendChild(frame);
 			};						
 
 			// Make sure we don't fire twice

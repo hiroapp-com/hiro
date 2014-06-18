@@ -1,0 +1,9 @@
+<html manifest="{{ get_asset('cache_manifest') }}">
+	<head>
+	<script type="text/javascript">
+	window.applicationCache.addEventListener('updateready', function() { window.applicationCache.swapCache(); }, false);
+	</script>
+	</head>
+	<body>
+	</body>
+</html>

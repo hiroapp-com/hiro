@@ -57,10 +57,7 @@ base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTW
 # Direct Templates
 
 def home():
-    return render_template('index.html')
-
-def newhome():
-    return render_template('newhome.html')    
+    return render_template('index.html')  
 
 def landing():
     return render_template('landing_new.html')
@@ -69,10 +66,16 @@ def settings():
     return render_template('settings.html')
 
 def newsettings():
-    return render_template('settings_new.html')    
+    return render_template('hync_settings.html')    
 
 def offline():
-    return render_template('offline.html')       
+    return render_template('hync_offline.html')     
+
+def newhome():
+    return render_template('hync_home.html')  
+
+def manifestwrapper():
+    return render_template('hync_manifestwrapper.html')           
 
 def test():
     return render_template('test.html')   
