@@ -14,4 +14,9 @@ FALLBACK:{{ "\n" }}
 / /offline/{{ "\n" }}
 
 NETWORK:{{ "\n" }}
-*
+*{{ "\n" }}
+http://*{{ "\n" }}
+https://*{{ "\n" }}
+
+SETTINGS:{{ "\n" }}
+prefer-online

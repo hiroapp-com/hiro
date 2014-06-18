@@ -1835,13 +1835,7 @@ var Hiro = {
 			if (this.inited) return;
 
 			// Create DMP socket
-			Hiro.sync.diff.dmp = new diff_match_patch();
-
-			// Attach appcache logger and hotswap events
-			Hiro.util.registerEvent(window.applicationCache,'error',function(e){ 
-				Hiro.sys.error('Appcache Error',[e,this]);
-			});			
-			Hiro.util.registerEvent(window.applicationCache,'updateready',function(){ window.applicationCache.swapCache() });			
+			Hiro.sync.diff.dmp = new diff_match_patch();		
 
 			// Setup other app parts
 			Hiro.folio.init();
@@ -1850,7 +1844,15 @@ var Hiro = {
 			Hiro.data.init();			
 			Hiro.sync.init(ws_url);	
 			Hiro.lib.init();		
-			Hiro.apps.init();					
+			Hiro.apps.init();			
+
+			// Attach appcache logger and hotswap events
+			if (window.applicationCache) {
+				Hiro.util.registerEvent(window.applicationCache,'error',function(e){ 
+					Hiro.sys.error('Appcache Error',[e,this]);
+				});			
+				Hiro.util.registerEvent(window.applicationCache,'updateready',function(){ window.applicationCache.swapCache() });
+			};						
 
 			// Make sure we don't fire twice
 			this.inited = true;
