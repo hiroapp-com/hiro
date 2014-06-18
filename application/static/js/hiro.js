@@ -809,6 +809,10 @@ var Hiro = {
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers')[0];
 
+				// If we don't have any peers yet
+				// TODO Bruno: Remove this once we have proper no server/no localstorage handling
+				if (!peers) return;	
+
 				// if the counter changed
 				if (peers.length != counter.innerHTML) {
 					counter.style.display = (peers.length > 0) ? 'block' : 'none';
@@ -2324,16 +2328,18 @@ var Hiro = {
 
 			// If the event is fired
 			fire: function(event,element,handler,delay) {
-				// If its a touch event we fire the event immediately		
+				// If its a touch event we fire the event immediately	
 				if (event.type === 'touchstart') handler(event,element);				
-				else if (event.type === 'mouseover') {				
-					// If we already listen to this element but moved to a different subnode do nothing
+				else if (event.type === 'mouseover') {	
+					// Prevent event from triggering touchies fruther up the treee			
+					Hiro.util.stopEvent(event);						
+					// If we already listen to this element but moved to a different subnode do nothing					
 					if (element === this.element) return;
-					// Initiate the delayed event firing
+					// Initiate the delayed event firing and stop event from bubbling				
 					delay = delay || this.defaultdelay;
 					this.element = element;
 					// Set timeout as local var (only one touchy at a time)
-					this.timeout = setTimeout(function() {
+					element._hirotimeout = setTimeout(function() {
 						// If the timeout wasnt killed by the bounds handler, we execute the handler
 						handler(event,element);
 						// And clean up 
@@ -2353,16 +2359,17 @@ var Hiro = {
 				var target = event.relatedTarget || event.toElement;
 				// If we mouseout to the same or a contained DOM node do nothing				
 				if (target === this || this.contains(target)) return;
-				// If we leave the DOM are of interest, remove the handler and clean up
-				Hiro.util.releaseEvent(this,'mouseout',Hiro.ui.touchy.boundschecker);					
+				// If we leave the DOM aree of interest, remove the handler and clean up
+				Hiro.util.stopEvent(event);
+				Hiro.util.releaseEvent(this,'mouseout',Hiro.ui.touchy.boundschecker);								
 				Hiro.ui.touchy.element = null;
-				if (Hiro.ui.touchy.timeout) Hiro.ui.touchy.abort();							
+				Hiro.ui.touchy.abort(this);							
 			},
 
 			// Abort our timeout & clean up
-			abort: function() {
-				clearTimeout(this.timeout);				
-				this.timeout  = null;				
+			abort: function(element) {				
+				window.clearTimeout(element._hirotimeout);				
+				element._hirotimeout = undefined;									
 			}
 
 		},
