@@ -445,7 +445,7 @@ input.pseudobutton {
   color: #333;
   text-overflow: ellipsis;     
   width: 100%;
-  z-index: 2020;
+  z-index: 2050;
 }
 
 #pageTitle:focus, #pageContent:focus {
@@ -496,10 +496,11 @@ input.pseudobutton {
   } 
 
   #canvas input.title {
-    padding: 9px 48px 5px 47px;
-    border: 0; 
+    padding: 9px 0 5px 95px;
+    border: 0;
     font-size: 27px;
     background-color: transparent;
+    margin-left: -48px;
   } 
 
   #canvas textarea {
@@ -619,12 +620,13 @@ input.pseudobutton {
 }
 
 #apps .app .widget .cancel {
-  top: 21px;
-  right: 17px;
-  position: absolute; 
-  padding-right: 20px;  
-  background-position: -18px -47px; 
-  font-size: 12px;   
+  top: 5px;
+  right: 8px; 
+  position: absolute;
+  background-position: -30px -32px;
+  font-size: 12px;
+  height: 45px;
+  width: 45px;
 }
 
 #apps .app .widget .remove {
@@ -727,7 +729,8 @@ input.pseudobutton {
 @media (max-width: 480px) {
   #apps {
     right: 0;
-    top: 0;    
+    top: 0;   
+    z-index: 2040; 
   }
 
   #apps .app .icon .counter {
@@ -743,6 +746,19 @@ input.pseudobutton {
     background-position: -66px -322px;
   }
 
+  #apps .app .widget {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    padding: 47px 17px 20px 15px;   
+  }
+
+  #apps .app .widget .cancel {
+    top: 3px;
+    right: 3px;
+  }  
 }
 
 
@@ -757,7 +773,7 @@ input.pseudobutton {
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 3000;
+  z-index: 4000;
   border-left: 1px solid #dcdcdc;
 }
 

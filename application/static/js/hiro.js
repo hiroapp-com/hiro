@@ -386,7 +386,12 @@ var Hiro = {
 			// If the user presses Arrowup or Pageup at position 0
 			if (event.keyCode == 38 || event.keyCode == 33) {
 				var c = Hiro.canvas.getcursor();
-				if (c[0] == c[1] && c[0] == 0) Hiro.canvas.el_title.focus();
+				if (c[0] == c[1] && c[0] == 0) {
+					// Focus Title
+					Hiro.canvas.el_title.focus();
+					// If we're running the mini UI, also scroll the textarea to the top
+					if (Hiro.canvas.el_text.scrollTop != 0) Hiro.canvas.el_text.scrollTop = 0;
+				}	
 			} 
 
 			// The dreaded tab key
