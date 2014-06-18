@@ -724,9 +724,21 @@ var Hiro = {
 			},
 
 			// Search all relevant contact properties and return array of matches, IE 8+
-			search: function(string) {
-				// Check if we have support for this
-				if (typeof Array.prototype.filter !== 'function') return;
+			search: function(string,list) {
+				var contacts = Hiro.data.get('profile','c.contacts'),
+					results = [];
+
+				// Iterate through contacts
+				for (var i=0,l=contacts.length;i<l;i++) {					
+					// Rules to be observed
+					if (contacts[i].name.toLowerCase().indexOf(string.toLowerCase()) == -1) continue;
+					if (list && list.indexOf(contacts[i].uid) > -1) continue;
+					// Add all who made it until
+					results.push(contacts[i]);
+				}
+
+				// Return list of result references
+				return results;
 			}
 		}
 	},
@@ -753,7 +765,8 @@ var Hiro = {
 
 				// Attach touch and click handlers
 				Hiro.ui.touchy.attach(el,Hiro.apps.touchhandler,100);
-				Hiro.ui.fastbutton.attach(el,Hiro.apps.clickhandler);				
+				Hiro.ui.fastbutton.attach(el,Hiro.apps.clickhandler);		
+				Hiro.util.registerEvent(el,'keyup',Hiro.apps[app].keyhandler)		
 			}	
 		},
 
@@ -807,6 +820,11 @@ var Hiro = {
 		// OK, fuck it, no time to rewrite vue/angular
 		sharing: {
 			el_root: document.getElementById('app_sharing'),
+
+			// Handle all keyboard events happening withing widget
+			keyhandler: function(event) {
+				Hiro.apps.sharing.typeahead(event);
+			},
 
 			// Populate header and widget with data from currentnote, triggerd by show
 			update: function(full) {
@@ -872,7 +890,27 @@ var Hiro = {
 
 				// Return object
 				return d;
-			},			
+			},	
+
+			// Typeahead function that fetches & renders contacts
+			typeahead: function(event) {
+				var t = event.srcElement || event.target, matches, blacklist = [],
+					peers = Hiro.data.get('notes',Hiro.canvas.currentnote + '.c.peers');
+
+				// Abort if we have nothing to search
+				if (!t.value) return;
+
+				// Build list of UID blacklist
+				for (var i = 0, l = peers.length; i < l; i++ ) {
+					blacklist.push(peers[i].user.uid);
+				}
+
+				// Get matches from contact list
+				matches = Hiro.user.contacts.search(t.value,blacklist);
+
+
+				console.log( matches );
+			}		
 		} 
 
 	},
