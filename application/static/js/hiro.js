@@ -1462,7 +1462,10 @@ var Hiro = {
 			// Save & repaint
 			Hiro.data.quicksave(id);
 			if (fpaint) Hiro.folio.paint();
-			if (npaint) Hiro.canvas.paint();	
+			if (npaint) Hiro.canvas.paint();
+
+			// Update server version if we got updates
+			if (update) store.sv++;					
 
 			// Find out if it's a response or server initiated
 			if (this.tags.indexOf(data.tag) > -1) {
@@ -1475,10 +1478,7 @@ var Hiro = {
 
 				// Send
 				this.ack(data);				
-			}	
-
-			// Update server version if we got updates
-			if (update) store.sv++;							
+			}							
 
 			// Release lock preventing push of new commits
 			this.commitinprogress = false;
