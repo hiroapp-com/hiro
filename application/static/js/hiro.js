@@ -1001,7 +1001,7 @@ var Hiro = {
 			if (this.onlinestores.indexOf(store) > -1 || store.substring(0,5) == 'note_') {
 			
 				// Repaint folio
-				if (store == 'folio' || paint) Hiro.folio.paint();
+				if (store == 'folio' || paint || key == 'c.title') Hiro.folio.paint();
 
 				// Update contact lookup
 				if (store == 'profile') Hiro.user.contacts.update();
@@ -1495,19 +1495,20 @@ var Hiro = {
 
 		// Create messages representing all changes between local model and shadow
 		commit: function() {
-			var u = Hiro.data.unsynced, i, l, note;
+			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online
 			if (this.commitinprogress || !this.online) return;
 			this.commitinprogress = true;
-			var newcommit = [];
+			newcommit = [];
 
 			// Cycle through stores flagged unsynced
 			for (i=0,l=u.length;i<l;i++) {
-				// In case of non notes store get store first
-				var s = Hiro.data.get(u[i]);				
-				this.diff.dd(s,true);					
-				if (s.edits && s.edits.length > 0) newcommit.push(this.wrapmsg(s.edits,s));
+				var s = Hiro.data.get(u[i]),
+					d = this.diff.makediff(s);	
+
+				// If diff told us that there are old or new edits					
+				if (d) newcommit.push(this.wrapmsg(s));
 			}
 
 			// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
@@ -1517,23 +1518,18 @@ var Hiro = {
 			if (newcommit && newcommit.length > 0) {
 				this.tx(newcommit);
 			} else {
-				// Send quick ping
-				this.ping();
-
 				// Release lock as no new commits were found
 				this.commitinprogress = false;
 			}	
 		},
 
 		// Build a complete message object from simple changes array
-		wrapmsg: function(edits,store) {
-			if (!edits || edits.length == 0 || !store || !edits[0]) return;
-
+		wrapmsg: function(store) {				
 			// Build wrapper object
 			var r = {};
 			r.name = 'res-sync';
 			r.res = { kind : store['kind'] , id : store['id'] };
-			r.changes = edits;
+			r.changes = store.edits;
 			r.sid = Hiro.data.get('profile','c').sid;		
 
 			// Return r
@@ -1743,13 +1739,13 @@ var Hiro = {
 			dmp: null,
 
 			// Run diff over a specified store, create and add edits to edits array, mark store as unsaved
-			dd: function(store) {
+			makediff: function(store) {
 				// Don't run if we already have edits for this store
 				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
-				if (store.edits && store.edits.length > 1) return;			
+				if (store.edits && store.edits.length > 1) return true;			
 
 				// Define vars
-				var d, changes = {}, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
+				var d, changes, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
 
 				// Get delta from respective diffing function (functions also set shadows to current versions)
 				switch (store.kind) {
@@ -1767,7 +1763,7 @@ var Hiro = {
 				// Build changes object, iterate cv and return data if we have any changes
 				if (d) {
 					// Build changes object, iterate client version
-					var changes = {};
+					changes = {};
 					changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
 					changes.delta = d;
 
@@ -1777,10 +1773,11 @@ var Hiro = {
 
 					// Mark store as tainted but do not persist yet for performance reasons
 					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);							
+				} 
 
-					// Return changes						
-					return changes;
-				}
+				// Return changes						
+				return changes || false;
+
 			},
 
 			// Specific folio diff, returns proper changes format
