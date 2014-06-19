@@ -1408,42 +1408,36 @@ var Hiro = {
 		// Process changes sent from server
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
-			var store = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind,
-				res = Hiro.data.get(store), paint, regex, ack, mod, i, l, j, jl, stack;
-
-			// Find out if it's a response or server initiated
-			ack = (this.tags.indexOf(data.tag) > -1);
+			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind,
+				store = Hiro.data.get(id), fpaint, npaint, update, regex, mod, i, l, j, jl, stack, regex = /^=[0-9]+$/;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
 				// Check for potential infinite lopp				
-				if (data.changes.length > 100 || (res.edits && res.edits.length > 100) ) {
-					Hiro.sys.error('Unusual high number of changes',JSON.parse(JSON.stringify([data,res])));
+				if (data.changes.length > 100 || (store.edits && store.edits.length > 100) ) {
+					Hiro.sys.error('Unusual high number of changes',JSON.parse(JSON.stringify([data,store])));
 				}	
 
 				// Log stuff to doublecheck which rules should be applied				
-				if (data.changes[i].clock.cv != res.cv || data.changes[i].clock.sv != res.sv) {
-					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,res])));
+				if (data.changes[i].clock.cv != store.cv || data.changes[i].clock.sv != store.sv) {
+					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,store])));
 					// continue;
 				}	
 
 				// Update title if it's a title update
 				if (data.res.kind == 'note' && data.changes[i].delta.title) {
-					res.s.title = res.c.title = data.changes[i].delta.title;
+					store.s.title = store.c.title = data.changes[i].delta.title;
 					// Set title visually if current document is open
-					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.paint();
-					// Repaint folio
-					paint = true;
+					if (data.res.id == Hiro.canvas.currentnote) npaint = true;
+					// Set val
+					update = fpaint = true;
 				}				
 
 				// Update text if it's a text update
-				if (data.res.kind == 'note' && data.changes[i].delta.text) {
-					// Regex to test for =NUM format
-					regex = /^=[0-9]+$/;
-
-					// Now we can safely apply change
-					if (!(regex.test(data.changes[i].delta.text))) this.diff.patch(data.changes[i].delta.text,data.res.id);
-
+				if (data.res.kind == 'note' && data.changes[i].delta.text && !(regex.test(data.changes[i].delta.text))) {
+					// Apply the change
+					this.diff.patch(data.changes[i].delta.text,data.res.id);
+					update = true;
 				}	
 
 				// Update folio if it's a folio update
@@ -1453,42 +1447,45 @@ var Hiro = {
 						Hiro.folio.lookup[mod[j][0]][mod[j][1]] = mod[j][3];
 					}
 					// Repaint folio
-					paint = true;					
+					update = fpaint = true;					
 				}	
 
 				// Remove outdated edits from stores
-				if (res.edits && res.edits.length > 0) {
-					stack = res.edits.length;
+				if (store.edits && store.edits.length > 0) {
+					stack = store.edits.length;
 					while (stack--) {
-						if (res.edits[stack].clock.cv < data.changes[i].clock.cv) res.edits.splice(stack,1); 
+						if (store.edits[stack].clock.cv < data.changes[i].clock.cv) store.edits.splice(stack,1); 
 					}
 				}
-
-				// Iterate server version
-				res.sv++;
 			}
 
 			// Save & repaint
-			Hiro.data.quicksave(store);
-			if (paint) Hiro.folio.paint();
+			Hiro.data.quicksave(id);
+			if (fpaint) Hiro.folio.paint();
+			if (npaint) Hiro.canvas.paint();	
 
-			// Remove tag from list
-			if (ack) {
+			// Find out if it's a response or server initiated
+			if (this.tags.indexOf(data.tag) > -1) {
+				// Remove tag from list
 				this.tags.splice(this.tags.indexOf(data.tag),1);
 			// Respond if it was server initiated
 			} else {
-				// TODO Bruno: Evil hack, pls fix tomorrow				
-				data.changes = r.edits || [{ clock: { cv: res.cv++, sv: res.sv }, delta: {}}];
+				// Send any edits waiting or an empty ack		
+				data.changes = (store.edits && store.edits.length > 0) ? store.edits : [{ clock: { cv: store.cv, sv: store.sv }, delta: {}}];
 
-				this.ack(data);
+				// Send
+				this.ack(data);				
 			}	
+
+			// Update server version if we got updates
+			if (update) store.sv++;							
 
 			// Release lock preventing push of new commits
 			this.commitinprogress = false;
 		},
 
 		// Send simple confirmation for received request
-		ack: function(data,reply) {		
+		ack: function(data) {		
 			// Send echo
 			this.tx(data);
 		},
