@@ -59,6 +59,7 @@ var Hiro = {
 		// Internal values
 		autoupdate: null,
 		archivecount: 0,
+
 		// Use lookup[id] to lookup folio element by id (note: this isn't the note itself, just the folio entry)
 		lookup: {},
 
@@ -272,20 +273,12 @@ var Hiro = {
 						fc.unshift(fc.splice(i,1)[0]);
 						break;	
 					} 
-				}
-				// Update server array (we need the same order there for deepdiff to work)
-				for (i=0,l=fs.length;i<l;i++) {
-					if (fs[i].nid == totop) {
-						// Remove item from array and insert at beginning
-						fs.unshift(fs.splice(i,1)[0]);
-						break;	
-					} 
-				}				
+				}			
 			}
 
 			// Save changes locally and repaint
+			this.paint();			
 			Hiro.data.quicksave('folio');
-			this.paint();
 		},
 
 		// Add a new note to folio and notes array, then open it 
@@ -913,7 +906,7 @@ var Hiro = {
 		// Object holding all data
 		stores: {},
 		// Name of stores that are synced with the server
-		onlinestores: ['notes','folio','profile'],
+		onlinestores: ['folio','profile'],
 
 		// Config
 		enabled: undefined,
@@ -973,6 +966,8 @@ var Hiro = {
 				console.log(event);
 				return;
 			}
+
+			console.log(k);
 
 			// Write changes
 			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l','UPDATE',true);
@@ -1413,9 +1408,8 @@ var Hiro = {
 		// Process changes sent from server
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
-			var store = (data.res.kind == 'note') ? 'note_'  : 'folio',
-				key = (data.res.kind == 'note') ? data.res.id : '',
-				r = Hiro.data.get(store,key), paint, regex, ack, mod, i, l, j, jl, stack;
+			var store = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind,
+				res = Hiro.data.get(store), paint, regex, ack, mod, i, l, j, jl, stack;
 
 			// Find out if it's a response or server initiated
 			ack = (this.tags.indexOf(data.tag) > -1);
@@ -1423,19 +1417,19 @@ var Hiro = {
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
 				// Check for potential infinite lopp				
-				if (data.changes.length > 100 || (r.edits && r.edits.length > 100) ) {
-					Hiro.sys.error('Unusual high number of changes',JSON.parse(JSON.stringify([data,r])));
+				if (data.changes.length > 100 || (res.edits && res.edits.length > 100) ) {
+					Hiro.sys.error('Unusual high number of changes',JSON.parse(JSON.stringify([data,res])));
 				}	
 
 				// Log stuff to doublecheck which rules should be applied				
-				if (data.changes[i].clock.cv != r.cv || data.changes[i].clock.sv != r.sv) {
-					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,r])));
+				if (data.changes[i].clock.cv != res.cv || data.changes[i].clock.sv != res.sv) {
+					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,res])));
 					// continue;
 				}	
 
 				// Update title if it's a title update
 				if (data.res.kind == 'note' && data.changes[i].delta.title) {
-					r.s.title = r.c.title = data.changes[i].delta.title;
+					res.s.title = res.c.title = data.changes[i].delta.title;
 					// Set title visually if current document is open
 					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.paint();
 					// Repaint folio
@@ -1453,7 +1447,7 @@ var Hiro = {
 				}	
 
 				// Update folio if it's a folio update
-				if (store == 'folio' && data.changes[i].delta.mod) {
+				if (data.res.kind == 'folio' && data.changes[i].delta.mod) {
 					mod = data.changes[i].delta.mod;
 					for (j=0,jl=mod.length;j<jl;j++) {
 						Hiro.folio.lookup[mod[j][0]][mod[j][1]] = mod[j][3];
@@ -1463,15 +1457,15 @@ var Hiro = {
 				}	
 
 				// Remove outdated edits from stores
-				if (r.edits && r.edits.length > 0) {
-					stack = r.edits.length;
+				if (res.edits && res.edits.length > 0) {
+					stack = res.edits.length;
 					while (stack--) {
-						if (r.edits[stack].clock.cv < data.changes[i].clock.cv) r.edits.splice(stack,1); 
+						if (res.edits[stack].clock.cv < data.changes[i].clock.cv) res.edits.splice(stack,1); 
 					}
 				}
 
 				// Iterate server version
-				r.sv++;
+				res.sv++;
 			}
 
 			// Save & repaint
@@ -1484,7 +1478,7 @@ var Hiro = {
 			// Respond if it was server initiated
 			} else {
 				// TODO Bruno: Evil hack, pls fix tomorrow				
-				data.changes = r.edits || [{ clock: { cv: r.cv++, sv: r.sv }, delta: {}}];
+				data.changes = r.edits || [{ clock: { cv: res.cv++, sv: res.sv }, delta: {}}];
 
 				this.ack(data);
 			}	
@@ -1512,7 +1506,7 @@ var Hiro = {
 			for (i=0,l=u.length;i<l;i++) {
 				// In case of non notes store get store first
 				var s = Hiro.data.get(u[i]);				
-				this.diff.dd(s,u[i],true);					
+				this.diff.dd(s,true);					
 				if (s.edits && s.edits.length > 0) newcommit.push(this.wrapmsg(s.edits,s));
 			}
 
@@ -1749,27 +1743,64 @@ var Hiro = {
 			dmp: null,
 
 			// Run Deep Diff over a specified store and optionally make sure they are the same afterwards
-			dd: function(store,rootstoreid,uniform) {
+			dd: function(store,uniform) {
+				// Don't run if we already have edits for this store
+				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
+				if (store.edits && store.edits.length > 1) return;			
+
+				// TODO Bruno: switch once we got new Hync
+				if (window.newhync == true) {
+					var d;
+
+					// Get delta from respective diffing function
+					switch (store.kind) {
+						case 'note':
+							d = this.diffnote(store);
+							break;
+						case 'folio':
+							d = this.difffolio(store);
+							break;
+						case 'profile':
+							d = this.diffprofile(store);
+							break;							
+					}
+
+					// Build changes object, iterate cv and return data if we have any changes
+					if (d.length > 0) {
+						console.log(d);
+						// Build changes object
+						var changes = {};
+						changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
+						changes.delta = d;
+
+						// Add this rounds changes to edits
+						store.edits = store.edits || [];
+						store.edits.push(changes);	
+
+						// Return changes						
+						return changes;
+					}
+				} else {
+					// Start building changes object
+					var changes = {};
+					changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
+					changes.delta = {};	
+				}		
+
+				// DEEPDIFF LEGACY 
+
 				// Define a function that returns true for params we want to ignore
 				var ignorelist = function(path,key) {
 					if (key == 'backup') return true; 
 				};
 
-				// Don't run if we already have edits for this store
-				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
-				if (store.edits && store.edits.length > 1) return;
-
 				// Make raw diff
 				var d = DeepDiff(store.s,store.c,ignorelist),
-					changes, i, l, c;
+					storeid = (store.kind == 'note') ? 'note_' + store.id : store.kind, 
+					i, l, c;
 
 				// Abort if we don't have any diffs
-				if (!d || d.length == 0) return false;
-
-				// Start building changes object
-				changes = {};
-				changes.clock = { sv : store['sv'] , cv : store['cv']++ };
-				changes.delta = {};			
+				if (!d || d.length == 0) return false;		
 
 				// Create proper delta format and apply changes to serverside
 				// Note: This is going to get very long and potentiall ugly...
@@ -1786,7 +1817,7 @@ var Hiro = {
 						store.s.text = store.c.text;
 
 					// If a new note was added to the folio	or had it's status changed
-					} else if (rootstoreid == 'folio' && d[i].item.lhs == 'new') {
+					} else if (store.kind == 'folio' && d[i].item.lhs == 'new') {
 						// Add change to changes array
 						if (!changes.delta.add) changes.delta.add = [];
 						c = { nid: store.c[d[i].index].nid, status: store.c[d[i].index].status};
@@ -1799,11 +1830,12 @@ var Hiro = {
 						store.s[d[i].index].status = d[i].item.rhs;
 						uniform = false; 	
 					// Status of a note in folio changed					
-					} else if (rootstoreid == 'folio' && d[i].item.path[0] == 'status') {
+					} else if (store.kind == 'folio' && d[i].item.path[0] == 'status') {
 						// Add change to changes array
 						if (!changes.delta.mod) changes.delta.mod = [];	
 						c = [ store.c[d[i].index].nid,'status',d[i].item.lhs,d[i].item.rhs];
 						changes.delta.mod.push(c);
+						console.log(changes.delta.mod);						
 
 						// Update values and prevent deepdiff apply
 						store.s[d[i].index].status = d[i].item.rhs;
@@ -1814,11 +1846,11 @@ var Hiro = {
 					}
 
 					// Apply changes to local serverstate object
-					if (uniform) DeepDiff.applyChange(store.s,store.c,d[i]);
+					if (uniform) DeepDiff.applyChange(store.s,store.c,d[i]);					
 				}
 
 				// Mark store as tainted but do not persist yet for performance reasons
-				if (Hiro.data.unsaved.indexOf(rootstoreid) < 0) Hiro.data.unsaved.push(rootstoreid);			
+				if (Hiro.data.unsaved.indexOf(storeid) < 0) Hiro.data.unsaved.push(storeid);			
 
 				// Append changes to resource edits
 				store.edits = store.edits || [];
@@ -1826,13 +1858,26 @@ var Hiro = {
 			},
 
 			// Specific folio diff, returns proper changes format
-			difffolio: function() {
-				var f = Hiro.data.get('folio');
+			difffolio: function(store) {
+				var i, l, delta = [];
 
+				// Iterate through shadow
+				// We also do this to avoid sending newly created notes, which do not have a proper ID
+				// and are not synced yet
+				for ( i = 0, l = store.s.length; i < l ; i++ ) {
+					// If we have a different status
+					if (Hiro.folio.lookup[store.s[i].nid].status != store.s[i].status) {
+						// Add change to delta array
+						delta.push({ "op": "set-status", "path": "nid:" + store.s[i].nid, "value": Hiro.folio.lookup[store.s[i].nid].status });
+						// Set shadow to client version
+						store.s[i].nid = Hiro.folio.lookup[store.s[i].nid].status;
+					}					
+				}
+				return delta;
 			},
 
 			// Specific notes diff, returns proper changes format of all notes on client side
-			diffnotes: function() {
+			diffnotes: function(note) {
 				
 			},
 
