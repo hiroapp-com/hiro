@@ -982,7 +982,7 @@ var Hiro = {
 		set: function(store,key,value,source,type,paint) {
 			type = type || 'UPDATE',
 			source = source || 'c';
-			paint = paint || (key && key.indexOf('.c.title') > -1);
+			paint = paint || (key && key.indexOf('c.title') > -1);
 
 			// Create store if it doesn't exist yet
 			if (!this.stores[store]) this.stores[store] = {};
@@ -1001,7 +1001,7 @@ var Hiro = {
 			if (this.onlinestores.indexOf(store) > -1 || store.substring(0,5) == 'note_') {
 			
 				// Repaint folio
-				if (store == 'folio' || paint || key == 'c.title') Hiro.folio.paint();
+				if (store == 'folio' || paint) Hiro.folio.paint();
 
 				// Update contact lookup
 				if (store == 'profile') Hiro.user.contacts.update();
