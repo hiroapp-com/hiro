@@ -814,7 +814,7 @@ var Hiro = {
 
 			// Populate header and widget with data from currentnote, triggerd by show
 			update: function(full) {
-				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote + '.c.peers'),
+				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers')[0];
 
