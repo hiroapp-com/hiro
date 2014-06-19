@@ -1750,9 +1750,9 @@ var Hiro = {
 
 				// TODO Bruno: switch once we got new Hync
 				if (window.newhync == true) {
-					var d;
+					var d, changes = {}, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
 
-					// Get delta from respective diffing function
+					// Get delta from respective diffing function (functions also set shadows to current versions)
 					switch (store.kind) {
 						case 'note':
 							d = this.diffnote(store);
@@ -1766,9 +1766,8 @@ var Hiro = {
 					}
 
 					// Build changes object, iterate cv and return data if we have any changes
-					if (d.length > 0) {
-						console.log(d);
-						// Build changes object
+					if (d) {
+						// Build changes object, iterate client version
 						var changes = {};
 						changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
 						changes.delta = d;
@@ -1776,6 +1775,9 @@ var Hiro = {
 						// Add this rounds changes to edits
 						store.edits = store.edits || [];
 						store.edits.push(changes);	
+
+						// Mark store as tainted but do not persist yet for performance reasons
+						if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);							
 
 						// Return changes						
 						return changes;
@@ -1859,7 +1861,7 @@ var Hiro = {
 
 			// Specific folio diff, returns proper changes format
 			difffolio: function(store) {
-				var i, l, delta = [];
+				var i, l, delta;
 
 				// Iterate through shadow
 				// We also do this to avoid sending newly created notes, which do not have a proper ID
@@ -1867,26 +1869,44 @@ var Hiro = {
 				for ( i = 0, l = store.s.length; i < l ; i++ ) {
 					// If we have a different status
 					if (Hiro.folio.lookup[store.s[i].nid].status != store.s[i].status) {
+						// Create delta array if not done so yet
+						if (!delta) delta = [];
 						// Add change to delta array
 						delta.push({ "op": "set-status", "path": "nid:" + store.s[i].nid, "value": Hiro.folio.lookup[store.s[i].nid].status });
 						// Set shadow to client version
 						store.s[i].nid = Hiro.folio.lookup[store.s[i].nid].status;
 					}					
 				}
-				return delta;
+
+				// Return delta value if we have one or false
+				return delta || false;
 			},
 
 			// Specific notes diff, returns proper changes format of all notes on client side
-			diffnotes: function(note) {
-				
+			diffnote: function(note) {
+				var delta;
+
+				// Compare different values, starting with text
+				if (note.c.text != note.s.text) {
+					if (!delta) delta = {};
+					delta.text = this.delta(note.s.text,note.c.text);
+					note.s.text = note.c.text;
+				}
+
+				// Check title	
+				if (note.c.title != note.s.title) {
+					if (!delta) delta = {};
+					delta.title = note.s.title = note.c.title;
+				}			
+
+				// Return value
+				return delta || false;	
 			},
 
 			// Specific profile diff, returns proper changes format
 			diffprofile: function() {
 				
 			},	
-
-
 
 			// Compare two strings and return standard delta format
 			delta: function(o,n) {
