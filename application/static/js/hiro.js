@@ -185,7 +185,7 @@ var Hiro = {
 			// Render active and archived document link
 			var d = document.createElement('div'),
 				id = folioentry.nid,
-				note = Hiro.data.get('notes',id),
+				note = Hiro.data.get('note_' + id),
 				link, t, stats, a;			
 
 			// Set note root node properties	
@@ -291,7 +291,6 @@ var Hiro = {
 		// Add a new note to folio and notes array, then open it 
 		newnote: function() {
 			var f = Hiro.data.get('folio'),
-				n = Hiro.data.get('notes'),
 				id = 1, i, l, folioc, folios, note;
 
 			// Find a good id we can use
@@ -307,17 +306,11 @@ var Hiro = {
 				nid: id,
 				status: 'active'
 			}
-			folios = {
-				nid: id,
-				status: 'new'
-			}
 
 			// Add new item to beginning of array
-			f.c.unshift(folioc);
-			f.s.unshift(folios);		
+			f.c.unshift(folioc);		
 
 			// Build new note object for notes store
-			// TODO Bruno: Make sure we mark the notes as different once hync supports
 			note = {
 				c: { text: '', title: '', peers: [] },
 				s: { text: '', title: '', peers: [] },				
@@ -327,7 +320,7 @@ var Hiro = {
 			}
 
 			// Add note and save						
-			Hiro.data.set('notes',id.toString(),note,'c','ADD',false);
+			Hiro.data.set('note_' + id.toString(),note,'c','ADD',false);
 			Hiro.data.set('folio','',f);
 
 			// Return the id of the we just created
@@ -404,7 +397,7 @@ var Hiro = {
 					text = this.value.substr(0, c[0]) + '\t' + this.value.substr(c[1]);
 
 				// Set internal data and display
-				Hiro.data.set('notes',Hiro.canvas.currentnote+'.c.text',text)
+				Hiro.data.set('note_' + Hiro.canvas.currentnote, 'c.text',text)
 				this.value = text;
 
 				// Reposition cursor
@@ -421,7 +414,7 @@ var Hiro = {
 			if ((Hiro.canvas.keys_noset.indexOf(event.keyCode) > -1) || (event.keyCode > 111 && event.keyCode < 124)) return;
 
 			// Change internal object value
-			Hiro.data.set('notes', Hiro.canvas.currentnote + '.c.text',this.value);
+			Hiro.data.set('note_' + Hiro.canvas.currentnote, 'c.text',this.value);
 
 			// Switch quote on/off based on user actions
 			if ((this.value.length > 0 && Hiro.canvas.quoteshown) || (this.value.length == 0 && !Hiro.canvas.quoteshown)) {
@@ -443,7 +436,7 @@ var Hiro = {
 			if ((Hiro.canvas.keys_noset.indexOf(event.keyCode) > -1) || (event.keyCode > 111 && event.keyCode < 124)) return;
 
 			// Change internal object value
-			Hiro.data.set('notes', Hiro.canvas.currentnote + '.c.title',this.value);	
+			Hiro.data.set('note_' + Hiro.canvas.currentnote, 'c.title',this.value);	
 
 			// Change browser window title
 			document.title = this.value;					
@@ -451,7 +444,7 @@ var Hiro = {
 
 		// When the user clicks into the title field
 		titleclick: function(id,type,target) {
-			var note = Hiro.data.get('notes',Hiro.canvas.currentnote);
+			var note = Hiro.data.get('note_' + Hiro.canvas.currentnote);
 
 			// Empty field if Note has no title yet
 			if (target.value && !note.c.title) target.value = '';
@@ -467,7 +460,7 @@ var Hiro = {
 		load: function(id) {
 			// If we call load without id we just pick the doc on top of the folio
 			var	id = id || Hiro.data.get('folio').c[0].nid,
-				note = Hiro.data.get('notes',id);
+				note = Hiro.data.get('note_' + id);
 
 			// Close the folio if it should be open
 			if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);				
@@ -500,7 +493,7 @@ var Hiro = {
 			// Make sure we have a current note
 			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
 
-			var n = Hiro.data.get('notes',this.currentnote),
+			var n = Hiro.data.get('note_' + this.currentnote),
 				title = n.c.title || 'Untitled Note', text = n.c.text;
 
 			// If we havn't synced the Note yet, call it 'New'
@@ -578,7 +571,7 @@ var Hiro = {
 			var el = this.el_text;
 
 			// Set default value
-			pos = pos || Hiro.data.get('notes',this.currentnote).c.cursor_pos || 0;
+			pos = pos || Hiro.data.get('note_' + this.currentnote).c.cursor_pos || 0;
 
 			// Create array if we only got a number
 			if (typeof pos == 'number') pos = [pos,pos];
@@ -828,7 +821,7 @@ var Hiro = {
 
 			// Populate header and widget with data from currentnote, triggerd by show
 			update: function(full) {
-				var peers = Hiro.data.get('notes', Hiro.canvas.currentnote + '.c.peers'),
+				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote + '.c.peers'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers')[0];
 
@@ -895,7 +888,7 @@ var Hiro = {
 			// Typeahead function that fetches & renders contacts
 			typeahead: function(event) {
 				var t = event.srcElement || event.target, matches, blacklist = [],
-					peers = Hiro.data.get('notes',Hiro.canvas.currentnote + '.c.peers');
+					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote + '.c.peers');
 
 				// Abort if we have nothing to search
 				if (!t.value) return;
@@ -938,18 +931,20 @@ var Hiro = {
 			// Attach localstore change listener
 			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);
 
-			// Lookup most common store
-			var f = this.fromdisk('folio');
+			// Lookup most common store and all notes
+			var p = this.fromdisk('profile'), n = this.fromdisk('_allnotes');
 
 			// If we do have data stored locally
-			if (f) {				
+			if (p && n) {				
 				// Load internal values
 				this.unsynced = this.fromdisk('unsynced');			
 
 				// Load stores into memory
-				this.set('profile','',this.fromdisk('profile'));				
-				this.set('notes','',this.fromdisk('notes'));				
-				this.set('folio','',f);
+				this.set('profile','',p);
+				for (var i = 0, l = n.length; i < l ; i++) {
+					this.set('note_' + n[i].id,'',n[i]);
+				}							
+				this.set('folio','',this.fromdisk('folio'));
 
 				// Log 
 				Hiro.sys.log('Found existing data in localstorage',localStorage);				
@@ -985,7 +980,7 @@ var Hiro = {
 			// See if we should redraw the canvas
 			// TODO Bruno: This most likely (re)moves the cursor, 
 			// 			   find out we should abuse the .edits update before to properly patch the position
-			if (k == 'notes') Hiro.canvas.paint();	
+			if (k.substring(0,5) == 'note_') Hiro.canvas.paint();	
 		},
 
 		// Set local data
@@ -1008,7 +1003,7 @@ var Hiro = {
 			};
 
 			// If the store is an onlinestore 
-			if (this.onlinestores.indexOf(store) > -1) {
+			if (this.onlinestores.indexOf(store) > -1 || store.substring(0,5) == 'note_') {
 			
 				// Repaint folio
 				if (store == 'folio' || paint) Hiro.folio.paint();
@@ -1138,8 +1133,21 @@ var Hiro = {
 
 		// Request data from persistence layer
 		fromdisk: function(store,key) {
-			var data,
-				store = 'Hiro.' + store;
+			var data;
+
+			// In case we want all notes
+			if (store == '_allnotes') {
+				var notes = [], i , l = localStorage.length, k;
+
+				for (i = 0; i < l; i++ ) {
+					k = localStorage.key(i);
+					if (k.substring(0,10) == 'Hiro.note_') notes.push(JSON.parse(localStorage.getItem(k)));
+				}
+				return notes;
+			}
+
+			// Standard cases
+			store = 'Hiro.' + store
 
 			// Get data
 			try {
@@ -1370,6 +1378,9 @@ var Hiro = {
 				n.c.peers = peers;
 				n.s.peers = peers;				
 				delete n.val;
+
+				// Create a dedicated store for each note
+				Hiro.data.set('note_' + note,'',n,'s');				
 			}		
 
 			// Clean up folio
@@ -1380,8 +1391,7 @@ var Hiro = {
 			f.c = JSON.parse(fv);	
 			delete f.val;
 
-			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
-			Hiro.data.set('notes','',data.session.notes,'s');	
+			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed	
 			Hiro.data.set('profile','',data.session.profile,'s');								
 			Hiro.data.set('folio','',data.session.folio,'s');							
 
@@ -1403,7 +1413,7 @@ var Hiro = {
 		// Process changes sent from server
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
-			var store = (data.res.kind == 'note') ? 'notes' : 'folio',
+			var store = (data.res.kind == 'note') ? 'note_'  : 'folio',
 				key = (data.res.kind == 'note') ? data.res.id : '',
 				r = Hiro.data.get(store,key), paint, regex, ack, mod, i, l, j, jl, stack;
 
@@ -1424,7 +1434,7 @@ var Hiro = {
 				}	
 
 				// Update title if it's a title update
-				if (store == 'notes' && data.changes[i].delta.title) {
+				if (data.res.kind == 'note' && data.changes[i].delta.title) {
 					r.s.title = r.c.title = data.changes[i].delta.title;
 					// Set title visually if current document is open
 					if (data.res.id == Hiro.canvas.currentnote) Hiro.canvas.paint();
@@ -1433,7 +1443,7 @@ var Hiro = {
 				}				
 
 				// Update text if it's a text update
-				if (store == 'notes' && data.changes[i].delta.text) {
+				if (data.res.kind == 'note' && data.changes[i].delta.text) {
 					// Regex to test for =NUM format
 					regex = /^=[0-9]+$/;
 
@@ -1500,19 +1510,10 @@ var Hiro = {
 
 			// Cycle through stores flagged unsynced
 			for (i=0,l=u.length;i<l;i++) {
-				if (u[i] == 'notes') {
-					// Cycle through notes store
-					var n = Hiro.data.get('notes');					
-					for (note in n) {
-						this.diff.dd(n[note],u[i],true);
-						if (n[note].edits && n[note].edits.length > 0) newcommit.push(this.wrapmsg(n[note].edits,n[note]));
-					}	
-				} else {
-					// In case of non notes store get store first
-					var s = Hiro.data.get(u[i]);				
-					this.diff.dd(s,u[i],true);					
-					if (s.edits && s.edits.length > 0) newcommit.push(this.wrapmsg(s.edits,s));
-				}
+				// In case of non notes store get store first
+				var s = Hiro.data.get(u[i]);				
+				this.diff.dd(s,u[i],true);					
+				if (s.edits && s.edits.length > 0) newcommit.push(this.wrapmsg(s.edits,s));
 			}
 
 			// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
@@ -1838,7 +1839,9 @@ var Hiro = {
 			// Specific profile diff, returns proper changes format
 			diffprofile: function() {
 				
-			},							
+			},	
+
+
 
 			// Compare two strings and return standard delta format
 			delta: function(o,n) {
@@ -1860,7 +1863,7 @@ var Hiro = {
 
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
-				var n = Hiro.data.get('notes',id), diffs, patch;
+				var n = Hiro.data.get('note_' + id), diffs, patch;
 
             	// Build diffs from the server delta
             	try { 
