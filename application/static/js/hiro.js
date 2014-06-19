@@ -1742,121 +1742,45 @@ var Hiro = {
 			// The dmp instance we're using, created as callback when dmp script is loaded
 			dmp: null,
 
-			// Run Deep Diff over a specified store and optionally make sure they are the same afterwards
-			dd: function(store,uniform) {
+			// Run diff over a specified store, create and add edits to edits array, mark store as unsaved
+			dd: function(store) {
 				// Don't run if we already have edits for this store
 				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
 				if (store.edits && store.edits.length > 1) return;			
 
-				// TODO Bruno: switch once we got new Hync
-				if (window.newhync == true) {
-					var d, changes = {}, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
+				// Define vars
+				var d, changes = {}, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
 
-					// Get delta from respective diffing function (functions also set shadows to current versions)
-					switch (store.kind) {
-						case 'note':
-							d = this.diffnote(store);
-							break;
-						case 'folio':
-							d = this.difffolio(store);
-							break;
-						case 'profile':
-							d = this.diffprofile(store);
-							break;							
-					}
-
-					// Build changes object, iterate cv and return data if we have any changes
-					if (d) {
-						// Build changes object, iterate client version
-						var changes = {};
-						changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
-						changes.delta = d;
-
-						// Add this rounds changes to edits
-						store.edits = store.edits || [];
-						store.edits.push(changes);	
-
-						// Mark store as tainted but do not persist yet for performance reasons
-						if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);							
-
-						// Return changes						
-						return changes;
-					}
-				} else {
-					// Start building changes object
-					var changes = {};
-					changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
-					changes.delta = {};	
-				}		
-
-				// DEEPDIFF LEGACY 
-
-				// Define a function that returns true for params we want to ignore
-				var ignorelist = function(path,key) {
-					if (key == 'backup') return true; 
-				};
-
-				// Make raw diff
-				var d = DeepDiff(store.s,store.c,ignorelist),
-					storeid = (store.kind == 'note') ? 'note_' + store.id : store.kind, 
-					i, l, c;
-
-				// Abort if we don't have any diffs
-				if (!d || d.length == 0) return false;		
-
-				// Create proper delta format and apply changes to serverside
-				// Note: This is going to get very long and potentiall ugly...
-				for (i=0,l=d.length;i<l;i++) {
-					// If the last path element is a text element, we get a dmp delta from the rhs text & shadow
-					if (d[i].path == 'text') {
-						// Get dmp delta
-						changes.delta.text = this.delta(store.s.text,store.c.text);
-
-						// TODO Bruno: Add backup handling (ost return case)
-						// store.c.backup = store.s.text;
-
-						// Update local server version to latest value
-						store.s.text = store.c.text;
-
-					// If a new note was added to the folio	or had it's status changed
-					} else if (store.kind == 'folio' && d[i].item.lhs == 'new') {
-						// Add change to changes array
-						if (!changes.delta.add) changes.delta.add = [];
-						c = { nid: store.c[d[i].index].nid, status: store.c[d[i].index].status};
-						// TODO Bruno: Add changes for submission once supported by hync
-						// changes.delta.add.push(c);
-						continue;
-
-						// Set 'new' server version value to client version value and disable b0rked applychange
-						// TODO Bruno: This currently affects all changes in this diff, think of better way
-						store.s[d[i].index].status = d[i].item.rhs;
-						uniform = false; 	
-					// Status of a note in folio changed					
-					} else if (store.kind == 'folio' && d[i].item.path[0] == 'status') {
-						// Add change to changes array
-						if (!changes.delta.mod) changes.delta.mod = [];	
-						c = [ store.c[d[i].index].nid,'status',d[i].item.lhs,d[i].item.rhs];
-						changes.delta.mod.push(c);
-						console.log(changes.delta.mod);						
-
-						// Update values and prevent deepdiff apply
-						store.s[d[i].index].status = d[i].item.rhs;
-						uniform = false;	
-					// Generic changes					
-					} else {
-						changes.delta[d[i].path] = d[i].rhs;
-					}
-
-					// Apply changes to local serverstate object
-					if (uniform) DeepDiff.applyChange(store.s,store.c,d[i]);					
+				// Get delta from respective diffing function (functions also set shadows to current versions)
+				switch (store.kind) {
+					case 'note':
+						d = this.diffnote(store);
+						break;
+					case 'folio':
+						d = this.difffolio(store);
+						break;
+					case 'profile':
+						d = this.diffprofile(store);
+						break;							
 				}
 
-				// Mark store as tainted but do not persist yet for performance reasons
-				if (Hiro.data.unsaved.indexOf(storeid) < 0) Hiro.data.unsaved.push(storeid);			
+				// Build changes object, iterate cv and return data if we have any changes
+				if (d) {
+					// Build changes object, iterate client version
+					var changes = {};
+					changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
+					changes.delta = d;
 
-				// Append changes to resource edits
-				store.edits = store.edits || [];
-				store.edits.push(changes);
+					// Add this rounds changes to edits
+					store.edits = store.edits || [];
+					store.edits.push(changes);	
+
+					// Mark store as tainted but do not persist yet for performance reasons
+					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);							
+
+					// Return changes						
+					return changes;
+				}
 			},
 
 			// Specific folio diff, returns proper changes format
@@ -2917,275 +2841,3 @@ diff_match_patch.prototype.patch_fromText=function(a){var b=[];if(!a)return b;a=
 parseInt(e[4],10));for(c++;c<a.length;){e=a[c].charAt(0);try{var g=decodeURI(a[c].substring(1))}catch(h){throw Error("Illegal escape in patch_fromText: "+g);}if("-"==e)f.diffs.push([-1,g]);else if("+"==e)f.diffs.push([1,g]);else if(" "==e)f.diffs.push([0,g]);else if("@"==e)break;else if(""!==e)throw Error('Invalid patch mode "'+e+'" in: '+g);c++}}return b};diff_match_patch.patch_obj=function(){this.diffs=[];this.start2=this.start1=null;this.length2=this.length1=0};
 diff_match_patch.patch_obj.prototype.toString=function(){var a,b;a=0===this.length1?this.start1+",0":1==this.length1?this.start1+1:this.start1+1+","+this.length1;b=0===this.length2?this.start2+",0":1==this.length2?this.start2+1:this.start2+1+","+this.length2;a=["@@ -"+a+" +"+b+" @@\n"];var c;for(b=0;b<this.diffs.length;b++){switch(this.diffs[b][0]){case 1:c="+";break;case -1:c="-";break;case 0:c=" "}a[b+1]=c+encodeURI(this.diffs[b][1])+"\n"}return a.join("").replace(/%20/g," ")};
 this.diff_match_patch=diff_match_patch;this.DIFF_DELETE=-1;this.DIFF_INSERT=1;this.DIFF_EQUAL=0;})()
-
-
-
-
-
-
-// Raw Deep-Diff for debugging: https://github.com/flitbit/diff/
-;(function(undefined) {
-	"use strict";
-
-	var $scope
-	, conflict, conflictResolution = [];
-	if (typeof global == 'object' && global) {
-		$scope = global;
-	} else if (typeof window !== 'undefined'){
-		$scope = window;
-	} else {
-		$scope = {};
-	}
-	conflict = $scope.DeepDiff;
-	if (conflict) {
-		conflictResolution.push(
-			function() {
-				if ('undefined' !== typeof conflict && $scope.DeepDiff === accumulateDiff) {
-					$scope.DeepDiff = conflict;
-					conflict = undefined;
-				}
-			});
-	}
-
-	// nodejs compatible on server side and in the browser.
-  function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor;
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  }
-
-  function Diff(kind, path) {
-  	Object.defineProperty(this, 'kind', { value: kind, enumerable: true });
-  	if (path && path.length) {
-  		Object.defineProperty(this, 'path', { value: path, enumerable: true });
-  	}
-  }
-
-  function DiffEdit(path, origin, value) {
-  	DiffEdit.super_.call(this, 'E', path);
-  	Object.defineProperty(this, 'lhs', { value: origin, enumerable: true });
-  	Object.defineProperty(this, 'rhs', { value: value, enumerable: true });
-  }
-  inherits(DiffEdit, Diff);
-
-  function DiffNew(path, value) {
-  	DiffNew.super_.call(this, 'N', path);
-  	Object.defineProperty(this, 'rhs', { value: value, enumerable: true });
-  }
-  inherits(DiffNew, Diff);
-
-  function DiffDeleted(path, value) {
-  	DiffDeleted.super_.call(this, 'D', path);
-  	Object.defineProperty(this, 'lhs', { value: value, enumerable: true });
-  }
-  inherits(DiffDeleted, Diff);
-
-  function DiffArray(path, index, item) {
-  	DiffArray.super_.call(this, 'A', path);
-  	Object.defineProperty(this, 'index', { value: index, enumerable: true });
-  	Object.defineProperty(this, 'item', { value: item, enumerable: true });
-  }
-  inherits(DiffArray, Diff);
-
-  function arrayRemove(arr, from, to) {
-  	var rest = arr.slice((to || from) + 1 || arr.length);
-  	arr.length = from < 0 ? arr.length + from : from;
-  	arr.push.apply(arr, rest);
-  	return arr;
-  }
-
-  function deepDiff(lhs, rhs, changes, prefilter, path, key, stack) {
-  	path = path || [];
-  	var currentPath = path.slice(0);
-  	if (key) {
-  		if (prefilter && prefilter(currentPath, key)) return;
-  		currentPath.push(key);
-  	}
-  	var ltype = typeof lhs;
-  	var rtype = typeof rhs;
-  	if (ltype === 'undefined') {
-  		if (rtype !== 'undefined') {
-  			changes(new DiffNew(currentPath, rhs ));
-  		}
-  	} else if (rtype === 'undefined') {
-  		changes(new DiffDeleted(currentPath, lhs));
-  	} else if (ltype !== rtype) {
-  		changes(new DiffEdit(currentPath, lhs, rhs));
-  	} else if (lhs instanceof Date && rhs instanceof Date && ((lhs-rhs) != 0) ) {
-  		changes(new DiffEdit(currentPath, lhs, rhs));
-  	} else if (ltype === 'object' && lhs != null && rhs != null) {
-  		stack = stack || [];
-  		if (stack.indexOf(lhs) < 0) {
-  			stack.push(lhs);
-  			if (Array.isArray(lhs)) {
-  				var i
-  				, len = lhs.length
-  				, ea = function(d) {
-  					changes(new DiffArray(currentPath, i, d));
-  				};
-  				for(i = 0; i < lhs.length; i++) {
-  					if (i >= rhs.length) {
-  						changes(new DiffArray(currentPath, i, new DiffDeleted(undefined, lhs[i])));
-  					} else {
-  						deepDiff(lhs[i], rhs[i], ea, prefilter, [], null, stack);
-  					}
-  				}
-  				while(i < rhs.length) {
-  					changes(new DiffArray(currentPath, i, new DiffNew(undefined, rhs[i++])));
-  				}
-  			} else {
-  				var akeys = Object.keys(lhs);
-  				var pkeys = Object.keys(rhs);
-  				akeys.forEach(function(k) {
-  					var i = pkeys.indexOf(k);
-  					if (i >= 0) {
-  						deepDiff(lhs[k], rhs[k], changes, prefilter, currentPath, k, stack);
-  						pkeys = arrayRemove(pkeys, i);
-  					} else {
-  						deepDiff(lhs[k], undefined, changes, prefilter, currentPath, k, stack);
-  					}
-  				});
-  				pkeys.forEach(function(k) {
-  					deepDiff(undefined, rhs[k], changes, prefilter, currentPath, k, stack);
-  				});
-  			}
-  			stack.length = stack.length - 1;
-  		}
-  	} else if (lhs !== rhs) {
-      if(!(ltype === "number" && isNaN(lhs) && isNaN(rhs))) {
-  		  changes(new DiffEdit(currentPath, lhs, rhs));
-      }
-  	}
-  }
-
-  function accumulateDiff(lhs, rhs, prefilter, accum) {
-  	accum = accum || [];
-  	deepDiff(lhs, rhs,
-  		function(diff) {
-  			if (diff) {
-  				accum.push(diff);
-  			}
-  		},
-  		prefilter);
-  	return (accum.length) ? accum : undefined;
-  }
-
-	function applyArrayChange(arr, index, change) {
-		if (change.path && change.path.length) {
-			// the structure of the object at the index has changed...
-			var it = arr[index], i, u = change.path.length - 1;
-			for(i = 0; i < u; i++){
-				it = it[change.path[i]];
-			}
-			switch(change.kind) {
-				case 'A':
-					// Array was modified...
-					// it will be an array...
-					applyArrayChange(it[change.path[i]], change.index, change.item);
-					break;
-				case 'D':
-					// Item was deleted...
-					delete it[change.path[i]];
-					break;
-				case 'E':
-				case 'N':
-					// Item was edited or is new...
-					it[change.path[i]] = change.rhs;
-					break;
-			}
-		} else {
-			// the array item is different...
-			switch(change.kind) {
-				case 'A':
-					// Array was modified...
-					// it will be an array...
-					applyArrayChange(arr[index], change.index, change.item);
-					break;
-				case 'D':
-					// Item was deleted...
-					arr = arrayRemove(arr, index);
-					break;
-				case 'E':
-				case 'N':
-					// Item was edited or is new...
-					arr[index] = change.rhs;
-					break;
-			}
-		}
-		return arr;
-	}
-
-	function applyChange(target, source, change) {
-		if (!(change instanceof Diff)) {
-			throw new TypeError('[Object] change must be instanceof Diff');
-		}
-		if (target && source && change) {
-			var it = target, i, u;
-			u = change.path.length - 1;
-			for(i = 0; i < u; i++){
-				if (typeof it[change.path[i]] === 'undefined') {
-					it[change.path[i]] = {};
-				}
-				it = it[change.path[i]];
-			}
-			switch(change.kind) {
-				case 'A':
-					// Array was modified...
-					// it will be an array...
-					applyArrayChange(it[change.path[i]], change.index, change.item);
-					break;
-				case 'D':
-					// Item was deleted...
-					delete it[change.path[i]];
-					break;
-				case 'E':
-				case 'N':
-					// Item was edited or is new...
-					it[change.path[i]] = change.rhs;
-					break;
-				}
-			}
-		}
-
-	function applyDiff(target, source, filter) {
-		if (target && source) {
-			var onChange = function(change) {
-				if (!filter || filter(target, source, change)) {
-					applyChange(target, source, change);
-				}
-			};
-			deepDiff(target, source, onChange);
-		}
-	}
-
-	Object.defineProperties(accumulateDiff, {
-
-		diff: { value: accumulateDiff, enumerable:true },
-		observableDiff: { value: deepDiff, enumerable:true },
-		applyDiff: { value: applyDiff, enumerable:true },
-		applyChange: { value: applyChange, enumerable:true },
-		isConflict: { get: function() { return 'undefined' !== typeof conflict; }, enumerable: true },
-		noConflict: {
-			value: function () {
-				if (conflictResolution) {
-					conflictResolution.forEach(function (it) { it(); });
-					conflictResolution = null;
-				}
-				return accumulateDiff;
-			},
-			enumerable: true
-		}
-	});
-
-	if (typeof module != 'undefined' && module && typeof exports == 'object' && exports && module.exports === exports) {
-		module.exports = accumulateDiff; // nodejs
-	} else {
-		$scope.DeepDiff = accumulateDiff; // other... browser?
-	}
-}());
