@@ -723,7 +723,7 @@ var Hiro = {
 				}
 			},
 
-			// Search all relevant contact properties and return array of matches, IE 8+
+			// Search all relevant contact properties and return array of matches
 			search: function(string,list) {
 				var contacts = Hiro.data.get('profile','c.contacts'),
 					results = [];
@@ -1823,6 +1823,22 @@ var Hiro = {
 				store.edits = store.edits || [];
 				store.edits.push(changes);
 			},
+
+			// Specific folio diff, returns proper changes format
+			difffolio: function() {
+				var f = Hiro.data.get('folio');
+
+			},
+
+			// Specific notes diff, returns proper changes format of all notes on client side
+			diffnotes: function() {
+				
+			},
+
+			// Specific profile diff, returns proper changes format
+			diffprofile: function() {
+				
+			},							
 
 			// Compare two strings and return standard delta format
 			delta: function(o,n) {
