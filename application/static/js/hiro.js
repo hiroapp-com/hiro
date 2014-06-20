@@ -272,14 +272,20 @@ var Hiro = {
 		sort: function(totop) {
 			var fc = Hiro.data.get('folio','c'), i, l;
 
+			// Sort array by last edit
+			fc.sort( function(a,b) { 
+				return new Date(Hiro.data.stores['note_' + b.nid]._ownedit) - new Date(Hiro.data.stores['note_' + a.nid]._ownedit);
+			});		
+
 			// Update client array, remove 
+			// TODO Bruno: Figure out how to use the sort above to achive this in one loop, too tired to understand it 
 			for (i=0,l=fc.length;i<l;i++) {
 				if (totop && fc[i].nid == totop && i > 0) {
 					// Remove item from array and insert at beginning
 					fc.unshift(fc.splice(i,1)[0]);				
 					break;	
 				} 
-			}			
+			}	
 
 			// Save changes and trigger repaint		
 			Hiro.data.set('folio','c',fc);
@@ -313,7 +319,10 @@ var Hiro = {
 				s: { text: '', title: '', peers: [] },				
 				sv: 0, cv: 0,
 				id: id,
-				kind: 'note'
+				kind: 'note',
+				_lasteditor: Hiro.data.stores.profile.c.uid,
+				_lastedit: new Date().toISOString(),
+				_ownedit: new Date().toISOString()				
 			}
 
 			// Add note and save						
@@ -1099,18 +1108,21 @@ var Hiro = {
 						// Create/set shared flag to true
 						n._shared = true;
 
-						// Make sure we have a last editor and edit
-						n._lasteditor = Hiro.data.stores.profile.c.uid;	
+						// Make sure we have a last edit to compare against
 						if (!n._lastedit) n._lastedit = 0;				
 
 						// Iterate through peers
 						for (var i = 0, l = n.c.peers.length, p; i < l; i++) {
 							p = n.c.peers[i], t = new Date(p.last_edit);
+
 							// Check if peers edit is more recent than what we got
 							if (t > n._lastedit) {
 								n._lastedit = t;
 								n._lasteditor = p.user.uid;
 							}
+
+							// Set _ownedit property
+							if (p.user.uid == Hiro.data.stores.profile.c.uid) n._ownedit = new Date(p.last_edit);
 						}
 					} else if (n._shared) {
 						n._shared = n._lasteditor = false;
