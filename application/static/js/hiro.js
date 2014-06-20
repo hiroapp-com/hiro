@@ -908,10 +908,6 @@ var Hiro = {
 
 		// Config
 		enabled: undefined,
-		saving: false,
-		timeout: null,
-		maxinterval: 3000,
-		dynamicinterval: 100,
 
 		// Log which data isn't saved and/or synced
 		unsaved: [],
@@ -992,21 +988,17 @@ var Hiro = {
 				this.stores[store] = value
 			};
 
-			// If the store is an onlinestore 
-			if (this.onlinestores.indexOf(store) > -1 || store.substring(0,5) == 'note_') {
-			
-				// Repaint folio
-				if (store == 'folio' || paint) Hiro.folio.paint();
+			// Call respective post set handler
+			if (store.substring(0,5) == 'note_' || this.onlinestores.indexOf(store) > -1) {
+				// Mark store for syncing if the changes came from the client
+				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);				
 
-				// Update contact lookup
-				if (store == 'profile') Hiro.user.contacts.update();
-
-				// Mark store for syncing
-				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);	
+				// Call handler, if available
+				if (this.stores[store] && this.post[this.stores[store].kind]) this.post[this.stores[store].kind](key,value,source,paint);
 
 				// Kick off commit, no matter if the changes came from the server or client, but not localstorage
-				if (source != 'l') Hiro.sync.commit();								
-			}
+				if (source != 'l') Hiro.sync.commit();					
+			}							
 
 			// Mark store for local persistence and kickoff write
 			if (source != 'l') this.local.quicksave(store);
@@ -1072,10 +1064,32 @@ var Hiro = {
 		// Various handlers executed after stores values are set, bit of poor mans react
 		post: {
 
+			// After a note store was set
+			note: function(key,value,source,paint) {
+				console.log('noteshandler fired!');
+			},
+
+			// After the folio was set
+			folio: function(key,value,source,paint) {
+				// Repaint folio
+				Hiro.folio.paint();				
+			},			
+
+			// After the profile was set
+			profile: function(key,value,source,paint) {
+				// Update contact lookup
+				Hiro.user.contacts.update();				
+			}
+
 		},
 
 		// All localstorage related functions
 		local: {
+			// Internals
+			saving: false,
+			timeout: null,
+			maxinterval: 3000,
+			dynamicinterval: 100,			
 
 			// Mark a store for local persistence and kick it off 
 			quicksave: function(store) {
@@ -1089,9 +1103,9 @@ var Hiro = {
 			// Persist data to localstorage
 			persist: function() {
 				// Do not run multiple saves at once
-				if (Hiro.data.saving) return;
+				if (this.saving) return;
 				var start, end, dur, key, value, i, l;
-				Hiro.data.saving = true;
+				this.saving = true;
 
 				// Start timer
 				start = new Date().getTime(); 
@@ -1101,11 +1115,11 @@ var Hiro = {
 					key = Hiro.data.unsaved[i],	value = Hiro.data.stores[key];	
 
 					// Write data into localStorage	
-					Hiro.data.todisk(key,value)						
+					this.todisk(key,value)						
 				}
 
 				// Persist list of unsynced values and msg queue
-				Hiro.data.todisk('unsynced',Hiro.data.unsynced);
+				this.todisk('unsynced',Hiro.data.unsynced);
 
 				// Empty array
 				Hiro.data.unsaved = [];
@@ -1118,23 +1132,23 @@ var Hiro = {
 				if (dur > 20) Hiro.sys.log('Data persisted bit slowly, within (ms):',dur);
 
 				// Set new value if system is significantly slower than our default interval
-				Hiro.data.dynamicinterval = ((dur * 50) < Hiro.data.maxinterval ) ? dur * 50 || 50 : Hiro.data.maxinterval;
+				this.dynamicinterval = ((dur * 50) < this.maxinterval ) ? dur * 50 || 50 : this.maxinterval;
 
 				// Trigger next save to browsers abilities
-				Hiro.data.timeout = setTimeout(function(){
-					Hiro.data.saving = false;
+				this.timeout = setTimeout(function(){
+					Hiro.data.local.saving = false;
 					// Rerun persist if new changes happened
-					if (Hiro.data.unsaved.length > 0) Hiro.data.persist();
-				},Hiro.data.dynamicinterval);
+					if (Hiro.data.unsaved.length > 0) Hiro.data.local.persist();
+				},this.dynamicinterval);
 			},
 
 			// Request data from persistence layer
 			fromdisk: function(store,key) {
-				var data, notes;
+				var data;
 
 				// In case we want all notes
 				if (store == '_allnotes') {
-					notes = [], i , l = localStorage.length, k;
+					var notes = [], i , l = localStorage.length, k;
 
 					for (i = 0; i < l; i++ ) {
 						k = localStorage.key(i);
@@ -1511,12 +1525,13 @@ var Hiro = {
 				if (d) newcommit.push(this.wrapmsg(s));
 			}
 
-			// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
-			Hiro.data.persist();
-
 			// If we have any data in this commit, send it to the server now
 			if (newcommit && newcommit.length > 0) {
+				// Send off
 				this.tx(newcommit);
+
+				// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
+				Hiro.data.local.persist();
 			} else {
 				// Release lock as no new commits were found
 				this.commitinprogress = false;
