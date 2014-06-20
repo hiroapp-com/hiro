@@ -144,6 +144,7 @@ var Hiro = {
 
 			// Get data from store			
 			data = Hiro.data.get('folio','c');
+			if (!data) return;
 
 			// Reset archivecount
 			that.archivecount = 0;
@@ -274,9 +275,8 @@ var Hiro = {
 				}			
 			}
 
-			// Save changes locally and repaint
-			this.paint();			
-			Hiro.data.local.quicksave('folio');
+			// Save changes and trigger repaint		
+			Hiro.data.set('folio','c',fc);
 		},
 
 		// Add a new note to folio and notes array, then open it 
@@ -311,7 +311,7 @@ var Hiro = {
 			}
 
 			// Add note and save						
-			Hiro.data.set('note_' + id.toString(),note,'c',false);
+			Hiro.data.set('note_' + id,'',note);
 			Hiro.data.set('folio','',f);
 
 			// Return the id of the we just created
@@ -322,7 +322,7 @@ var Hiro = {
 		archiveswitch: function() {
 			var c = (this.archivecount > 0) ? '(' + this.archivecount.toString() + ')' : '';
 
-			// Set CSS properties and TExt string
+			// Set CSS properties and Text string
 			if (this.archiveopen) {
 				this.el_notelist.style.display = 'block';
 				this.el_archivelist.style.display = 'none';
@@ -395,8 +395,8 @@ var Hiro = {
 				Hiro.canvas.setcursor(c[1] + 1);
 			}
 
-			// Resize canvas if we grew, hit space or return
-			if (event.keyCode == 32 || event.keyCode == 13 || Hiro.canvas.scrollHeight != Hiro.canvas.textheight) Hiro.canvas.resize();
+			// Resize canvas if we grew
+			if (Hiro.canvas.scrollHeight != Hiro.canvas.textheight) Hiro.canvas.resize();
 		},		
 
 		// When a user releases a key, this includes actions like delete or ctrl+v etc
@@ -915,9 +915,6 @@ var Hiro = {
 
 		// Set up datastore on pageload
 		init: function() {
-			// Attach localstore change listener
-			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);
-
 			// Lookup most common store and all notes
 			var p = this.local.fromdisk('profile'), n = this.local.fromdisk('_allnotes');
 
@@ -944,6 +941,9 @@ var Hiro = {
 			} else {
 
 			}
+
+			// Attach localstore change listener
+			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);			
 		},		
 
 		// Detect changes to localstorage for all connected tabs
@@ -962,18 +962,12 @@ var Hiro = {
 			}
 
 			// Write changes
-			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l',true);
-
-			// See if we should redraw the canvas
-			// TODO Bruno: This most likely (re)moves the cursor, 
-			// 			   find out we should abuse the .edits update before to properly patch the position
-			if (k.substring(0,5) == 'note_') Hiro.canvas.paint();	
+			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l',true);	
 		},
 
 		// Set local data
 		set: function(store,key,value,source,paint) {
 			source = source || 'c';
-			paint = paint || (key && key.indexOf('c.title') > -1);
 
 			// Create store if it doesn't exist yet
 			if (!this.stores[store]) this.stores[store] = {};
@@ -994,14 +988,16 @@ var Hiro = {
 				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);				
 
 				// Call handler, if available
-				if (this.stores[store] && this.post[this.stores[store].kind]) this.post[this.stores[store].kind](key,value,source,paint);
+				if (this.stores[store] && this.post[this.stores[store].kind]) this.post[this.stores[store].kind](store,key,value,source,paint);
 
 				// Kick off commit, no matter if the changes came from the server or client, but not localstorage
 				if (source != 'l') Hiro.sync.commit();					
-			}							
+			} 
 
 			// Mark store for local persistence and kickoff write
-			if (source != 'l') this.local.quicksave(store);
+			// TODO Bruno: This fires twice, reight now and at the end of commit if we have a relevant change
+			// Find out if there's a better way to do this > only once
+			if (source != 'l') this.local.quicksave(store);							
 		},
 
 		// If the key contains '.', we set the respective property
@@ -1065,18 +1061,25 @@ var Hiro = {
 		post: {
 
 			// After a note store was set
-			note: function(key,value,source,paint) {
-				console.log('noteshandler fired!');
+			note: function(store,key,value,source,paint) {
+				// If the whole thing or client title changed, repaint the folio
+				if (!key || key == 'c' || key == 'c.title') Hiro.folio.paint();
+
+				// If the update wasn't by client and concerns the current note
+				if (source != 'c' && store.substring(5) == Hiro.canvas.currentnote) Hiro.canvas.paint();				
 			},
 
 			// After the folio was set
-			folio: function(key,value,source,paint) {
+			folio: function(store,key,value,source,paint) {
 				// Repaint folio
-				Hiro.folio.paint();				
+				Hiro.folio.paint();	
+
+				// Always save folio changes (this is mostly order atm)
+				Hiro.data.local.quicksave(store);
 			},			
 
 			// After the profile was set
-			profile: function(key,value,source,paint) {
+			profile: function(store,key,value,source,paint) {
 				// Update contact lookup
 				Hiro.user.contacts.update();				
 			}
@@ -1154,7 +1157,7 @@ var Hiro = {
 						k = localStorage.key(i);
 						if (k.substring(0,10) == 'Hiro.note_') notes.push(JSON.parse(localStorage.getItem(k)));
 					}
-					return notes;
+					return notes;					
 				}
 
 				// Standard cases
@@ -1405,14 +1408,10 @@ var Hiro = {
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed	
 			Hiro.data.set('profile','',data.session.profile,'s');								
-			Hiro.data.set('folio','',data.session.folio,'s');							
+			Hiro.data.set('folio','',data.session.folio,'s');	
 
-			// Visually update folio & canvas
-			Hiro.folio.paint();
-			Hiro.canvas.paint();
-
-			// Respond with commit to make sure changes arrive at the server
-			this.commit();			
+			// Load doc onto canvas
+			Hiro.canvas.load();											
 
 			// Complete hprogress
 			Hiro.ui.hprogress.done();
@@ -1426,7 +1425,7 @@ var Hiro = {
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
 			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind,
-				store = Hiro.data.get(id), fpaint, npaint, update, regex, mod, i, l, j, jl, stack, regex = /^=[0-9]+$/;
+				store = Hiro.data.get(id), update, regex, mod, i, l, j, jl, stack, regex = /^=[0-9]+$/;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -1444,10 +1443,8 @@ var Hiro = {
 				// Update title if it's a title update
 				if (data.res.kind == 'note' && data.changes[i].delta.title) {
 					store.s.title = store.c.title = data.changes[i].delta.title;
-					// Set title visually if current document is open
-					if (data.res.id == Hiro.canvas.currentnote) npaint = true;
 					// Set val
-					update = fpaint = true;
+					update = true;
 				}				
 
 				// Update text if it's a text update
@@ -1464,7 +1461,7 @@ var Hiro = {
 						Hiro.folio.lookup[mod[j][0]][mod[j][1]] = mod[j][3];
 					}
 					// Repaint folio
-					update = fpaint = true;					
+					update = true;					
 				}	
 
 				// Remove outdated edits from stores
@@ -1492,10 +1489,8 @@ var Hiro = {
 				this.ack(data);				
 			}	
 
-			// Save & repaint
-			Hiro.data.local.quicksave(id);
-			if (fpaint) Hiro.folio.paint();
-			if (npaint) Hiro.canvas.paint();									
+			// Save changes back to store, for now we just save the whole store, see if this could/should be more granular in the future
+			if (update) Hiro.data.set(id,'',store,'s');								
 
 			// Release lock preventing push of new commits
 			this.commitinprogress = false;
@@ -1881,7 +1876,6 @@ var Hiro = {
                     n.s.text = this.dmp.patch_apply(patch, n.s.text)[0]; 
                     n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];                                                         
 	                Hiro.sys.log("Patches successfully applied");
-	                if (id == Hiro.canvas.currentnote) Hiro.canvas.paint();
                 }             	
 			},	
 		}
