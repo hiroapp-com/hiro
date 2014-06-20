@@ -260,9 +260,7 @@ var Hiro = {
 		// Move folio entry to top and resort rest of folio for both, local client and server versions
 		// TODO Bruno: Add sort by last own edit when we have it
 		sort: function(totop) {
-			var fc = Hiro.data.get('folio','c'),
-				fs = Hiro.data.get('folio','s'),
-				i, l;
+			var fc = Hiro.data.get('folio','c'), i, l;
 
 			// Move note by id to top of list
 			if (totop) {
@@ -278,7 +276,7 @@ var Hiro = {
 
 			// Save changes locally and repaint
 			this.paint();			
-			Hiro.data.quicksave('folio');
+			Hiro.data.local.quicksave('folio');
 		},
 
 		// Add a new note to folio and notes array, then open it 
@@ -881,7 +879,7 @@ var Hiro = {
 			// Typeahead function that fetches & renders contacts
 			typeahead: function(event) {
 				var t = event.srcElement || event.target, matches, blacklist = [],
-					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote + '.c.peers');
+					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers');
 
 				// Abort if we have nothing to search
 				if (!t.value) return;
@@ -925,19 +923,19 @@ var Hiro = {
 			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);
 
 			// Lookup most common store and all notes
-			var p = this.fromdisk('profile'), n = this.fromdisk('_allnotes');
+			var p = this.local.fromdisk('profile'), n = this.local.fromdisk('_allnotes');
 
 			// If we do have data stored locally
 			if (p && n) {				
 				// Load internal values
-				this.unsynced = this.fromdisk('unsynced');			
+				this.unsynced = this.local.fromdisk('unsynced');			
 
 				// Load stores into memory
 				this.set('profile','',p);
 				for (var i = 0, l = n.length; i < l ; i++) {
 					this.set('note_' + n[i].id,'',n[i]);
 				}							
-				this.set('folio','',this.fromdisk('folio'));
+				this.set('folio','',this.local.fromdisk('folio'));
 
 				// Log 
 				Hiro.sys.log('Found existing data in localstorage',localStorage);				
@@ -966,8 +964,6 @@ var Hiro = {
 				console.log(event);
 				return;
 			}
-
-			console.log(k);
 
 			// Write changes
 			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l','UPDATE',true);
@@ -1014,7 +1010,7 @@ var Hiro = {
 			}
 
 			// Mark store for local persistence and kickoff write
-			if (source != 'l') this.quicksave(store);
+			if (source != 'l') this.local.quicksave(store);
 		},
 
 		// If the key contains '.', we set the respective property
@@ -1074,119 +1070,122 @@ var Hiro = {
             return o;
 		},
 
-		// Mark a store for local persistence and kick it off 
-		quicksave: function(store) {
-			// Add store to currently unsaved data
-			if (this.unsaved.indexOf(store) < 0) this.unsaved.push(store);			
+		// All localstorage related functions
+		local: {
 
-			// Update localstore
-			this.persist();
-		},
+			// Mark a store for local persistence and kick it off 
+			quicksave: function(store) {
+				// Add store to currently unsaved data
+				if (Hiro.data.unsaved.indexOf(store) < 0) Hiro.data.unsaved.push(store);			
 
-		// Persist data to localstorage
-		persist: function() {
-			// Do not run multiple saves at once
-			if (this.saving) return;
-			var start, end, dur, key, i, l;
-			this.saving = true;
+				// Update localstore
+				this.persist();
+			},
 
-			// Start timer
-			start = new Date().getTime(); 
+			// Persist data to localstorage
+			persist: function() {
+				// Do not run multiple saves at once
+				if (Hiro.data.saving) return;
+				var start, end, dur, key, value, i, l;
+				Hiro.data.saving = true;
 
-			// Cycle through unsaved stores
-			for (i = 0, l = this.unsaved.length; i < l; i++) {
-				key = this.unsaved[i],
-					value = this.stores[key];	
+				// Start timer
+				start = new Date().getTime(); 
 
-				// Write data into localStorage	
-				this.todisk(key,value)						
-			}
+				// Cycle through unsaved stores
+				for (i = 0, l = Hiro.data.unsaved.length; i < l; i++) {
+					key = Hiro.data.unsaved[i],	value = Hiro.data.stores[key];	
 
-			// Persist list of unsynced values and msg queue
-			this.todisk('unsynced',this.unsynced);
-
-			// Empty array
-			this.unsaved = [];
-
-			// Measure duration
-			end = new Date().getTime(); 
-			dur = (end - start);
-
-			// Log longer persistance times
-			if (dur > 20) Hiro.sys.log('Data persisted bit slowly, within (ms):',dur);
-
-			// Set new value if system is significantly slower than our default interval
-			this.dynamicinterval = ((dur * 50) < this.maxinterval ) ? dur * 50 || 50 : this.maxinterval;
-
-			// Trigger next save to browsers abilities
-			this.timeout = setTimeout(function(){
-				Hiro.data.saving = false;
-				// Rerun persist if new changes happened
-				if (Hiro.data.unsaved.length > 0) Hiro.data.persist();
-			},this.dynamicinterval);
-		},
-
-		// Request data from persistence layer
-		fromdisk: function(store,key) {
-			var data;
-
-			// In case we want all notes
-			if (store == '_allnotes') {
-				var notes = [], i , l = localStorage.length, k;
-
-				for (i = 0; i < l; i++ ) {
-					k = localStorage.key(i);
-					if (k.substring(0,10) == 'Hiro.note_') notes.push(JSON.parse(localStorage.getItem(k)));
+					// Write data into localStorage	
+					Hiro.data.todisk(key,value)						
 				}
-				return notes;
-			}
 
-			// Standard cases
-			store = 'Hiro.' + store
+				// Persist list of unsynced values and msg queue
+				Hiro.data.todisk('unsynced',Hiro.data.unsynced);
 
-			// Get data
-			try {
-				data = localStorage.getItem(store);	
-				data = JSON.parse(data);						
-			} catch (e) {
-				Hiro.sys.error('Error retrieving data from localstore',e);		
-			}
+				// Empty array
+				Hiro.data.unsaved = [];
 
-			// Fetch key or return complete object
-			if (key && data[key]) {
-				return data[key];
-			} else {
-				return data;
-			}			
-		},
+				// Measure duration
+				end = new Date().getTime(); 
+				dur = (end - start);
 
-		// Generic localstore writer, room for browser quirks
-		todisk: function(key,value) {
-			// Make sure we store a string and extend string with Hiro
-			if (typeof value !== 'string') value = JSON.stringify(value);
-			key = 'Hiro.' + key.toString();
+				// Log longer persistance times
+				if (dur > 20) Hiro.sys.log('Data persisted bit slowly, within (ms):',dur);
 
-			// Write and log poetntial errors
-			try {
-				localStorage.setItem(key,value);
-			} catch(e) {		
-				Hiro.sys.error('Datastore error',e);
-			}	
-		},
+				// Set new value if system is significantly slower than our default interval
+				Hiro.data.dynamicinterval = ((dur * 50) < Hiro.data.maxinterval ) ? dur * 50 || 50 : Hiro.data.maxinterval;
 
-		// Delete some or all data set by our host
-		wipe: function(store) {
-			// No store, remove all
-			if (!store) {
-				// Iterate through all localstorage items for current domain
-				for (var i = localStorage.length;i >= 0; i--) {
-					// Verify that we only delete Hiro data and no third party stuff
-					if (localStorage.key(i) && localStorage.key(i).substring(0, 5) == 'Hiro.') localStorage.removeItem(localStorage.key(i));
+				// Trigger next save to browsers abilities
+				Hiro.data.timeout = setTimeout(function(){
+					Hiro.data.saving = false;
+					// Rerun persist if new changes happened
+					if (Hiro.data.unsaved.length > 0) Hiro.data.persist();
+				},Hiro.data.dynamicinterval);
+			},
+
+			// Request data from persistence layer
+			fromdisk: function(store,key) {
+				var data, notes;
+
+				// In case we want all notes
+				if (store == '_allnotes') {
+					notes = [], i , l = localStorage.length, k;
+
+					for (i = 0; i < l; i++ ) {
+						k = localStorage.key(i);
+						if (k.substring(0,10) == 'Hiro.note_') notes.push(JSON.parse(localStorage.getItem(k)));
+					}
+					return notes;
 				}
-			// store var provided, remove specific store	
-			} else {
-				if (localStorage['Hiro.' + store]) localStorage.removeItem('Hiro.' + store); 
-			}	
+
+				// Standard cases
+				store = 'Hiro.' + store
+
+				// Get data
+				try {
+					data = localStorage.getItem(store);	
+					data = JSON.parse(data);						
+				} catch (e) {
+					Hiro.sys.error('Error retrieving data from localstore',e);		
+				}
+
+				// Fetch key or return complete object
+				if (key && data[key]) {
+					return data[key];
+				} else {
+					return data;
+				}			
+			},
+
+			// Generic localstore writer, room for browser quirks
+			todisk: function(key,value) {
+				// Make sure we store a string and extend string with Hiro
+				if (typeof value !== 'string') value = JSON.stringify(value);
+				key = 'Hiro.' + key.toString();
+
+				// Write and log poetntial errors
+				try {
+					localStorage.setItem(key,value);
+				} catch(e) {		
+					Hiro.sys.error('Datastore error',e);
+				}	
+			},
+
+			// Delete some or all data set by our host
+			wipe: function(store) {
+				// No store, remove all
+				if (!store) {
+					// Iterate through all localstorage items for current domain
+					for (var i = localStorage.length;i >= 0; i--) {
+						// Verify that we only delete Hiro data and no third party stuff
+						if (localStorage.key(i) && localStorage.key(i).substring(0, 5) == 'Hiro.') localStorage.removeItem(localStorage.key(i));
+					}
+				// store var provided, remove specific store	
+				} else {
+					if (localStorage['Hiro.' + store]) localStorage.removeItem('Hiro.' + store); 
+				}	
+			}
 		}
 	},
 
@@ -1459,11 +1458,6 @@ var Hiro = {
 				}
 			}
 
-			// Save & repaint
-			Hiro.data.quicksave(id);
-			if (fpaint) Hiro.folio.paint();
-			if (npaint) Hiro.canvas.paint();
-
 			// Update server version if we got updates
 			if (update) store.sv++;					
 
@@ -1478,7 +1472,12 @@ var Hiro = {
 
 				// Send
 				this.ack(data);				
-			}							
+			}	
+
+			// Save & repaint
+			Hiro.data.local.quicksave(id);
+			if (fpaint) Hiro.folio.paint();
+			if (npaint) Hiro.canvas.paint();									
 
 			// Release lock preventing push of new commits
 			this.commitinprogress = false;
