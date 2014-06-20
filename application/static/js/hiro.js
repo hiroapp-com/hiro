@@ -311,7 +311,7 @@ var Hiro = {
 			}
 
 			// Add note and save						
-			Hiro.data.set('note_' + id.toString(),note,'c','ADD',false);
+			Hiro.data.set('note_' + id.toString(),note,'c',false);
 			Hiro.data.set('folio','',f);
 
 			// Return the id of the we just created
@@ -966,7 +966,7 @@ var Hiro = {
 			}
 
 			// Write changes
-			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l','UPDATE',true);
+			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l',true);
 
 			// See if we should redraw the canvas
 			// TODO Bruno: This most likely (re)moves the cursor, 
@@ -975,8 +975,7 @@ var Hiro = {
 		},
 
 		// Set local data
-		set: function(store,key,value,source,type,paint) {
-			type = type || 'UPDATE',
+		set: function(store,key,value,source,paint) {
 			source = source || 'c';
 			paint = paint || (key && key.indexOf('c.title') > -1);
 
@@ -1068,6 +1067,11 @@ var Hiro = {
 
             // Return the value at the end of the magnificient journey
             return o;
+		},
+
+		// Various handlers executed after stores values are set, bit of poor mans react
+		post: {
+
 		},
 
 		// All localstorage related functions
