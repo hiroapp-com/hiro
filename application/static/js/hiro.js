@@ -933,11 +933,11 @@ var Hiro = {
 				this.unsynced = this.local.fromdisk('unsynced');			
 
 				// Load stores into memory
-				this.set('profile','',p);
+				this.set('profile','',p,'l');
 				for (var i = 0, l = n.length; i < l ; i++) {
-					this.set('note_' + n[i].id,'',n[i]);
+					this.set('note_' + n[i].id,'',n[i],'l');
 				}							
-				this.set('folio','',this.local.fromdisk('folio'));
+				this.set('folio','',this.local.fromdisk('folio'),'l');
 
 				// Log 
 				Hiro.sys.log('Found existing data in localstorage',localStorage);				
@@ -1070,6 +1070,12 @@ var Hiro = {
 			// After a note store was set
 			note: function(store,key,value,source,paint) {
 				var n = Hiro.data.stores[store];
+
+				// Update the last edit & editor data
+				if (source == 'c') {
+					n._lasteditor = Hiro.data.stores.profile.c.uid;
+					n._lastedit = new Date().toISOString();				
+				}
 
 				// If the whole thing or client title changed, repaint the folio
 				if (!key || key == 'c' || key == 'c.title') Hiro.folio.paint();
