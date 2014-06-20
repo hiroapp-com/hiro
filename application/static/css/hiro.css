@@ -329,6 +329,13 @@ input.pseudobutton {
   padding-right: 33px;
 }
 
+#folio .notes .note.shared a .bubble {
+  top: 1px;
+  right: 6px;
+  line-height: 6px;
+  padding: 5px 2px 0 2px;
+}
+
 #folio .notes .note a .sharing {
   background-image: url(../img/icons.3.png);
   background-size: 140px auto;

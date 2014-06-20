@@ -112,7 +112,7 @@ var Hiro = {
 							// Getset hack to kick off persistence / sync
 							Hiro.data.set('folio','',Hiro.data.get('folio'));
 							return;
-						}		
+						}	
 
 						// Move entry to top of list and load note
 						Hiro.folio.sort(noteid);
@@ -272,17 +272,14 @@ var Hiro = {
 		sort: function(totop) {
 			var fc = Hiro.data.get('folio','c'), i, l;
 
-			// Move note by id to top of list
-			if (totop) {
-				// Update client array
-				for (i=0,l=fc.length;i<l;i++) {
-					if (fc[i].nid == totop) {
-						// Remove item from array and insert at beginning
-						fc.unshift(fc.splice(i,1)[0]);
-						break;	
-					} 
-				}			
-			}
+			// Update client array, remove 
+			for (i=0,l=fc.length;i<l;i++) {
+				if (totop && fc[i].nid == totop && i > 0) {
+					// Remove item from array and insert at beginning
+					fc.unshift(fc.splice(i,1)[0]);				
+					break;	
+				} 
+			}			
 
 			// Save changes and trigger repaint		
 			Hiro.data.set('folio','c',fc);
@@ -462,6 +459,9 @@ var Hiro = {
 			var	id = id || Hiro.data.get('folio').c[0].nid,
 				note = Hiro.data.get('note_' + id);
 
+			// Ceck if we have an unseen flag and remove if so
+			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);				
+
 			// Close the folio if it should be open
 			if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);				
 
@@ -469,7 +469,7 @@ var Hiro = {
 			Hiro.ui.hprogress.begin();	
 
 			// Set internal values
-			this.currentnote = id;			
+			this.currentnote = id;					
 
 			// Visual update
 			this.paint();
@@ -1069,19 +1069,25 @@ var Hiro = {
 		post: {
 			// After a note store was set
 			note: function(store,key,value,source,paint) {
-				var n = Hiro.data.stores[store];
+				var n = Hiro.data.stores[store],
+					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// Update the last edit & editor data
 				if (source == 'c') {
 					n._lasteditor = Hiro.data.stores.profile.c.uid;
-					n._lastedit = new Date().toISOString();				
+					n._lastedit = new Date().toISOString();		
+				// Set the note to unseen if we get updates from the server		
+				// TODO Bruno: Move this loop below if data gets transmitted / testing is done	
+				} else if (source == 's' && !current) {
+					n._unseen = true;
+					n._lastedit = new Date().toISOString();					
 				}
 
 				// If the whole thing or client title changed, repaint the folio
-				if (!key || key == 'c' || key == 'c.title') Hiro.folio.paint();
+				if (!key || key == 'c' || key == 'c.title' ||  key == '_unseen') Hiro.folio.paint();
 
 				// If the update wasn't by client and concerns the current note
-				if (source != 'c' && store.substring(5) == Hiro.canvas.currentnote) Hiro.canvas.paint();	
+				if (source != 'c' && current) Hiro.canvas.paint();	
 
 				// Abort here if the update came from localStorage to avoid infinite save loops
 				if (source == 'l')  return;
