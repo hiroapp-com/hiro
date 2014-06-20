@@ -188,7 +188,7 @@ var Hiro = {
 			var d = document.createElement('div'),
 				id = folioentry.nid,
 				note = Hiro.data.get('note_' + id),
-				link, t, stats, a;			
+				link, t, stats, a, time, tooltip, s, sn;			
 
 			// Set note root node properties	
 			d.className = 'note';
@@ -220,13 +220,10 @@ var Hiro = {
 				this.archivecount++;
 			} else {
 				Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
-			}
-
-			if (note.updated) {
-
-			} else {
-				stats.appendChild(document.createTextNode('Not saved yet'))							
 			}	
+
+			// Get basic time string
+			time = (note._lastedit) ? Hiro.util.humantime(note._lastedit) + ' ago': 'Note saved yet';
 
 			// Attach elements to root node
 			link.appendChild(t);
@@ -234,22 +231,34 @@ var Hiro = {
 
 			if (note._shared) {
 				// Add sharing icon to document and change class to shared
-				var s = document.createElement('div');
+				s = document.createElement('div');
 				s.className = 'sharing';
-				var tooltip = 'Shared with ' + (note.c.peers.length - 1) + ' other';	
+
+				// Add sharing hover tooltip
+				tooltip = 'Shared with ' + (note.c.peers.length - 1) + ' other';	
 				if (note.c.peers.length > 2) tooltip = tooltip + 's';
-				if (false && doc.unseen) {
+				s.setAttribute('title',tooltip);	
+				link.appendChild(s);		
+				
+				// Change classname
+				d.className = 'note shared';		
+
+				// Add bubble if changes weren't seen yet
+				if (note._unseen) {
 					// Show that document has unseen updates
-					var sn = document.createElement('div');
+					sn = document.createElement('div');
 					sn.className = "bubble red";
 					sn.innerHTML = '*';
 					link.appendChild(sn);
 					tooltip = tooltip + ', just updated';					
-				}			
-				s.setAttribute('title',tooltip);	
-				link.appendChild(s);
-				d.className = 'note shared';					
+				}	
+
+				// Append time indicator if someone else did the last update
+				if (note._lasteditor && note._lasteditor != Hiro.data.stores.profile.c.uid)	time = time + ' by ' + (Hiro.user.contacts.lookup[note._lasteditor].name || Hiro.user.contacts.lookup[note._lasteditor].uid);					
 			}
+
+			// Append stats with time indicator
+			stats.appendChild(document.createTextNode(time));
 
 			// Attach link & archive to element
 			d.appendChild(link);				
@@ -672,7 +681,7 @@ var Hiro = {
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
 		logout: function() {
 			// Wipe local data immediately 
-			Hiro.data.wipe();
+			Hiro.data.local.wipe();
 
 			// Notifiy server
 			Hiro.sync.ajax.send({
@@ -1084,7 +1093,7 @@ var Hiro = {
 
 						// Iterate through peers
 						for (var i = 0, l = n.c.peers.length, p; i < l; i++) {
-							p = n.c.peers[i], t = new Date(p.last_edit).getTime();
+							p = n.c.peers[i], t = new Date(p.last_edit);
 							// Check if peers edit is more recent than what we got
 							if (t > n._lastedit) {
 								n._lastedit = t;
@@ -1419,7 +1428,10 @@ var Hiro = {
 			pv = JSON.stringify(p.val.contacts);
 			p.c.contacts = JSON.parse(pv); 
 			p.s.contacts = JSON.parse(pv);
-			delete p.val; 			
+			delete p.val;
+
+			// Save profile
+			Hiro.data.set('profile','',data.session.profile,'s');				 			
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
 			for (var note in data.session.notes) {
@@ -1446,8 +1458,7 @@ var Hiro = {
 			f.c = JSON.parse(fv);	
 			delete f.val;
 
-			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed	
-			Hiro.data.set('profile','',data.session.profile,'s');								
+			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
 			Hiro.data.set('folio','',data.session.folio,'s');	
 
 			// Load doc onto canvas
@@ -2790,6 +2801,37 @@ var Hiro = {
 
 	// Generic utilities like event attachment etc
 	util: {
+
+		// Takes a unix timestamp and turns it into mins/days/weeks/months
+		// 86400 = 1 day
+		// 604800 = 1 week 
+		// 2592000 = 30 days
+		// 31536000 = 1 year		
+		humantime: function(timestamp) {			
+			var now = new Date(new Date().toUTCString()).getTime(), t;
+
+			// Make sure we got a UTC string
+			if (typeof timestamp != 'number') timestamp = new Date(new Date(timestamp).toUTCString()).getTime();
+			t = Math.round((now - timestamp) / 1000);
+
+			// Return the various string values
+			if (t<60) return "Moments";
+			if (t<90) return Math.round(t/60) + " minute";			
+			if (t<3600) return Math.round(t/60) + " minutes";
+			// if less than 1 hour ago			
+			if (t<5200) return Math.round(t/3600) + " hour";			
+			// if less than 36 hours ago			
+			if (t<129600) return Math.round(t/3600) + " hours";					
+			// if less than 14 days ago
+			if (t<1209600) return Math.round(t/86400) + " days";
+			// if less than 8 weeks ago
+			if (t<4838400) return Math.round(t/604800) + " weeks";	
+			// if less a year ago
+			if (t<31536000) return Math.round(t/2592000) + " months";
+			// if less two years ago
+			if (t<63072000) return "More than a year";			
+			return Math.round(t/31536000) + " years";					
+		},	
 
 		// Cross browser event registration
 		registerEvent: function(obj, eventType, handler, capture) {
