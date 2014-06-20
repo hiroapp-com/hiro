@@ -59,6 +59,7 @@ var Hiro = {
 		// Internal values
 		autoupdate: null,
 		archivecount: 0,
+		unseencount: 0,
 
 		// Use lookup[id] to lookup folio element by id (note: this isn't the note itself, just the folio entry)
 		lookup: {},
@@ -147,7 +148,7 @@ var Hiro = {
 			if (!data) return;
 
 			// Reset archivecount
-			that.archivecount = 0;
+			that.archivecount = that.unseencount = 0;
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
@@ -170,6 +171,10 @@ var Hiro = {
 			requestAnimationFrame(function(){
 				// Empty
 				that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
+
+				// Update bubble
+				that.el_showmenu.firstChild.innerHTML = that.unseencount;
+				that.el_showmenu.firstChild.style.display = (that.unseencount) ? 'block' : 'none';
 
 				// Append
 				that.el_notelist.appendChild(f0);				
@@ -250,7 +255,10 @@ var Hiro = {
 					sn.className = "bubble red";
 					sn.innerHTML = '*';
 					link.appendChild(sn);
-					tooltip = tooltip + ', just updated';					
+					tooltip = tooltip + ', just updated';		
+
+					// Iterate counter for our bubble
+					if (folioentry.status == 'active') this.unseencount++;								
 				}	
 
 				// Append time indicator if someone else did the last update
@@ -309,6 +317,9 @@ var Hiro = {
 				nid: id,
 				status: 'active'
 			}
+
+			// Sort folio first
+			this.sort();
 
 			// Add new item to beginning of array
 			f.c.unshift(folioc);		

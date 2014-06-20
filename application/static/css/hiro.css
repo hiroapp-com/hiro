@@ -229,9 +229,8 @@ input.pseudobutton {
 
 #showmenu .bubble {
   display: none;
-  text-indent: 0;
-  bottom: 3px;
-  right: 0;
+  bottom: 8px;
+  right: 8px;
 } 
 
 #newnote {
