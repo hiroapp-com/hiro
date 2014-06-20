@@ -232,7 +232,7 @@ var Hiro = {
 			link.appendChild(t);
 			link.appendChild(stats);			
 
-			if (note.c.peers.length > 1) {
+			if (note._shared) {
 				// Add sharing icon to document and change class to shared
 				var s = document.createElement('div');
 				s.className = 'sharing';
@@ -991,13 +991,12 @@ var Hiro = {
 				if (this.stores[store] && this.post[this.stores[store].kind]) this.post[this.stores[store].kind](store,key,value,source,paint);
 
 				// Kick off commit, no matter if the changes came from the server or client, but not localstorage
-				if (source != 'l') Hiro.sync.commit();					
-			} 
+				if (source != 'l') Hiro.sync.commit();	
 
-			// Mark store for local persistence and kickoff write
-			// TODO Bruno: This fires twice, reight now and at the end of commit if we have a relevant change
-			// Find out if there's a better way to do this > only once
-			if (source != 'l') this.local.quicksave(store);							
+			} else {
+				// Mark store for local persistence and kickoff write
+				if (source != 'l') this.local.quicksave(store);	
+			}						
 		},
 
 		// If the key contains '.', we set the respective property
@@ -1059,14 +1058,46 @@ var Hiro = {
 
 		// Various handlers executed after stores values are set, bit of poor mans react
 		post: {
-
 			// After a note store was set
 			note: function(store,key,value,source,paint) {
+				var n = Hiro.data.stores[store];
+
 				// If the whole thing or client title changed, repaint the folio
 				if (!key || key == 'c' || key == 'c.title') Hiro.folio.paint();
 
 				// If the update wasn't by client and concerns the current note
-				if (source != 'c' && store.substring(5) == Hiro.canvas.currentnote) Hiro.canvas.paint();				
+				if (source != 'c' && store.substring(5) == Hiro.canvas.currentnote) Hiro.canvas.paint();	
+
+				// Abort here if the update came from localStorage to avoid infinite save loops
+				if (source == 'l')  return;
+
+				// More complex actions, make sure to use proper keys for very frequent actions
+				if (key != 'c.title' && key != 'c.text') {
+					// Go through peers				
+					if (n.c.peers && n.c.peers.length > 1) {
+						// Create/set shared flag to true
+						n._shared = true;
+
+						// Make sure we have a last editor and edit
+						n._lasteditor = Hiro.data.stores.profile.c.uid;	
+						if (!n._lastedit) n._lastedit = 0;				
+
+						// Iterate through peers
+						for (var i = 0, l = n.c.peers.length, p; i < l; i++) {
+							p = n.c.peers[i], t = new Date(p.last_edit).getTime();
+							// Check if peers edit is more recent than what we got
+							if (t > n._lastedit) {
+								n._lastedit = t;
+								n._lasteditor = p.user.uid;
+							}
+						}
+					} else if (n._shared) {
+						n._shared = n._lasteditor = false;
+					}
+				}				
+
+				// Save
+ 				Hiro.data.local.quicksave(store);							
 			},
 
 			// After the folio was set
@@ -1074,14 +1105,23 @@ var Hiro = {
 				// Repaint folio
 				Hiro.folio.paint();	
 
-				// Always save folio changes (this is mostly order atm)
+				// Abort if source is localStorage
+				if (source == 'l') return;
+
+				// Save
 				Hiro.data.local.quicksave(store);
 			},			
 
 			// After the profile was set
 			profile: function(store,key,value,source,paint) {
 				// Update contact lookup
-				Hiro.user.contacts.update();				
+				Hiro.user.contacts.update();	
+
+				// Abort if source is localStorage
+				if (source == 'l') return;				
+
+				// Save
+				Hiro.data.local.quicksave(store);								
 			}
 
 		},
