@@ -360,7 +360,7 @@ var Hiro = {
 		el_quote: document.getElementById('nicequote'),
 
 		// Key maps
-		keys_noset: [16,17,18,33,34,35,36,37,38,39,40],
+		keys_noset: [16,17,18,20,33,34,35,36,37,38,39,40],
 
 		// Init canvas
 		init: function() {
