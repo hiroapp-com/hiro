@@ -65,6 +65,9 @@ def landing():
 def settings():
     return render_template('settings.html')
 
+def newlanding():
+    return render_template('hync_landing.html')  
+
 def newsettings():
     return render_template('hync_settings.html')    
 

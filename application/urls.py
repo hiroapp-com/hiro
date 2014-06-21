@@ -15,8 +15,11 @@ app.add_url_rule('/static/hiro.appcache', 'static_manifest', view_func=views.sta
 app.add_url_rule('/landing/', 'landing', view_func=views.landing)
 app.add_url_rule('/settings/', 'settings', view_func=views.settings)
 app.add_url_rule('/test/', 'test', view_func=views.test)
+
+# Go sync server pages
 app.add_url_rule('/shiny/', 'newhome', view_func=views.newhome)
 app.add_url_rule('/newsettings/', 'newsettings', view_func=views.newsettings)
+app.add_url_rule('/newlanding/', 'newlanding', view_func=views.newlanding)
 
 # offline pages
 app.add_url_rule('/offline/app.html', 'offline', view_func=views.offline)

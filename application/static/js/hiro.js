@@ -2048,6 +2048,7 @@ var Hiro = {
 		el_archive: document.getElementById('archivelink'),
 		el_signin: document.getElementById('signin'),
 		el_settings: document.getElementById('settings'),
+		el_landingpage: document.getElementById('landing'),
 
 		// Browser specific properties
 		vendors: ['webkit','moz','o','ms'],
@@ -2127,8 +2128,11 @@ var Hiro = {
 			// Attach keyboard shortcut listener
 			Hiro.util.registerEvent(window,'keydown',Hiro.ui.keyhandler);
 
-			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up
+			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up in the settings area
 			this.fastbutton.attach(this.dialog.el_root,Hiro.ui.dialog.clickhandler)
+
+			// Attach fastbuttons to landing page
+			if (this.el_landingpage) this.fastbutton.attach(this.el_landingpage.contentDocument.body,Hiro.ui.landingclick);			
 		},
 
 		// Fire keyboard events if applicable
@@ -2183,6 +2187,25 @@ var Hiro = {
 					break;
 			}
 		},
+
+		// Handle clicks on landingpage
+		landingclick: function(action,type) {
+			// Woop, we inited started fiddling with something relevant
+			if (type == 'full') {						
+				switch (action) {
+					case 'screenshot':
+					case 'cto':	
+						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);										
+						Hiro.canvas.el_text.focus(); 					
+						//window.parent.analytics.track('Started Interacting');					
+						break;		
+					case 'signin':	
+						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);					
+						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
+						break;									
+				}
+			}
+		},			
 
 		// Switch to an element on the same DOM level and hide all others
 		switchview: function(el, display) {
