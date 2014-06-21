@@ -34,9 +34,6 @@ inbound_services:
 
 
 handlers:
-- url: .*
-  script: run.application.app
-  secure: always
 
 - url: /static/hiro.appcache
   script: run.application.app
@@ -94,3 +91,7 @@ handlers:
 - url: /json
   static_dir: application/static/json
   secure: always  
+
+- url: .*
+  script: run.application.app
+  secure: always
