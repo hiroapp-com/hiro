@@ -467,7 +467,6 @@ input.pseudobutton {
   font-size: 17px;
   line-height: 32px;
   border: 0;
-  overflow-y: scroll;
   color: #333;
   min-height: 100%;
   width: 100%;  
@@ -531,13 +530,13 @@ input.pseudobutton {
 
 @media (min-width: 481px) and (max-width: 900px) {
   #canvas input.title {
-    padding: 40px 95px 10px 70px;
+    padding: 40px 120px 10px 70px;
     font-size: 27px;
     border: 0;
   }  
 
   #canvas textarea {
-    padding: 98px 95px 10px 70px;
+    padding: 98px 70px 10px 70px;
     line-height: 30px;
   }  
 
@@ -732,6 +731,13 @@ input.pseudobutton {
   }
 }
 
+@media (min-width: 481px) and (max-width: 900px) {
+  #apps {
+    right: 70px;
+    top: 36px;
+  } 
+}
+
 @media (max-width: 480px) {
   #apps {
     right: 0;
@@ -795,297 +801,6 @@ input.pseudobutton {
   color: rgba(209,11,11,1);
 }
 
-#context .results {
-  overflow-y: hidden;
-  overflow-x: hidden;
-  position: absolute;
-  right: 0;
-  top: 37px;
-  bottom: 58px;
-  left: -100px;
-  padding-right: 3px;
-  -webkit-overflow-scrolling: touch;  
-}
-
-#context .results::-webkit-scrollbar {
-    width: 7px;
-    height: 9px;
-}
-
-#context .results::-webkit-scrollbar-button:start:decrement, 
-#context .results::-webkit-scrollbar-button:end:increment {
-    display: block;
-    height: 0;
-    background-color: transparent;
-}
-#context .results::-webkit-scrollbar-track-piece {
-    -webkit-border-radius: 0;
-    -webkit-border-bottom-right-radius: 4px;
-    -webkit-border-bottom-left-radius: 4px;
-}
-#context .results::-webkit-scrollbar-thumb:vertical {
-    height: 50px;
-    background-color: rgba(0, 0, 0, 0.2);
-    -webkit-border-radius: 4px;
-}
-#context .results::-webkit-scrollbar-thumb:horizontal {
-    width: 50px;
-    background-color: rgba(0, 0, 0, 0.2);
-    -webkit-border-radius: 4px;
-}
-
-#wwwresults .result, #wwwresults .result.touch:hover, #synresults .group, #msgresults a.msg {
-  margin-left: 100px;
-  display: block;
-  position: relative;
-  height: 92px;  
-  padding: 8px 12px 8px 14px;
-  border-bottom: 1px dotted #d6d6d6;
-  -webkit-transition: background-color 750ms ease-out;
-  -moz-transition: background-color 750ms ease-out;
-  -o-transition: background-color 750ms ease-out; 
-}
-
-#synresults .group {
-  height: auto;
-  color: #999;
-}
-
-#msgresults a.msg {
-  height: auto;
-  color: #999;
-  text-decoration: none;
-}
-
-
-
-#msgresults a.msg em {
-  color: #333;
-}
-
-#wwwresults .tip {
-  margin: 10px 10px 0 115px;
-  color: #999;
-}
-
-#wwwresults .result.touch:hover {
-  border-bottom: 1px solid #c5c5c5; 
-  margin-left: 50px;   
-  padding-left: 63px;   
-}
-
-
-#wwwresults .result:first-child, #synresults .group:first-child, #msgresults a.msg:first-child  {
-  margin-top: 1px;    
-}
-
-#wwwresults .result:hover, #synresults .group:hover, #msgresults a.msg:hover {
-  margin-left: 50px;
-  border-left: 1px solid #c5c5c5;
-  margin-top: -1px;
-  border-top: 1px solid #c5c5c5;  
-  border-bottom: 1px solid #c5c5c5;    
-  background-color: #e1e1dd;
-  padding-left: 63px;    
-  -webkit-transition: background-color 0ms ease-in;
-  -moz-transition: background-color 0ms ease-in;
-  -o-transition: background-color 0ms ease-in;     
-}
-
-#synresults .group:hover, #msgresults a.msg:hover {
-  padding-left: 14px;
-  margin-left: 99px;
-  color: #000;  
-}
-
-#wwwresults .result.sticky, #wwwresults .result.sticky.touch:hover {
-  height: 37px;
-  margin-left: 50px; 
-  padding-left: 64px;  
-}
-
-#wwwresults .result.sticky.touch:hover {
-  padding-left: 63px;  
-}
-
-#wwwresults .result.sticky:hover {
-  height: 92px;
-  padding-left: 63px;   
-}
-
-#wwwresults .result.sticky a.link .blurb, #wwwresults .result.sticky.touch:hover a.link .blurb {
-  display: none;
-}
-
-#wwwresults .result.sticky:hover a.link .blurb {
-  display: block;
-}
-
-#wwwresults .result:first-child:hover, #synresults .group:first-child:hover, #msgresults a.msg:first-child:hover {
-  margin-top: 0px;    
-}
-
-#wwwresults .result a {
-  text-decoration: none;
-}
-
-#wwwresults .result a.action {
-  background-image: url(../img/icons.3.png);   
-  width: 32px;
-  height: 32px;
-  border-radius: 3px;
-  display: none;
-}
-
-#wwwresults .result:hover a.action {
-  display: block;
-  background-color: #ccc;
-}
-
-#wwwresults .result:hover a.action:hover {
-  background-color: #bbb;
-}
-
-#wwwresults .result a.action {
-  background-repeat: no-repeat;
-  background-size: 102px auto;  
-}
-
-#wwwresults .result a.stick { 
-  background-position: 8px 8px;  
-  position: absolute;
-  top: 10px;
-  left: 10px;
-}
-
-#wwwresults .result a.stick:hover { 
-  background-position: 8px -32px;  
-}
-
-#wwwresults .result a.unstick { 
-  background-position: 8px -32px;  
-  position: absolute;
-  display: block;
-  background-color: none;
-  top: 10px;
-  left: 11px;
-  opacity: 0.6;
-}
-
-#wwwresults .result:hover a.unstick { 
-  background-position: -72px 8px;   
-  top: 10px;
-  left: 10px;  
-  opacity: 1;
-}
-
-#wwwresults .result:hover a.unstick:hover { 
-  background-position: -72px -32px;  
-  background-color: #bbb;  
-  top: 10px;
-  left: 10px;  
-}
-
-#wwwresults .result a.delete {
-  background-position: -32px 8px;  
-  position: absolute;
-  top: 49px;
-  left: 10px;
-}
-
-#wwwresults .result a.delete:hover { 
-  background-position: -32px -32px;   
-}
-
-#wwwresults .result a.link {
-}
-
-#wwwresults .result:hover a.link {
-
-}
-
-#wwwresults .result a.link .title {
-  color: #666;
-  font-size: 18px;
-  font-weight: 400;
-  width: 100%;
-  display: block;  
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-#wwwresults .result a.link .title b {
-  font-weight: 400;
-}
-
-#wwwresults .result a.link:hover .title {
-  color: #000;
-}
-
-#wwwresults .result a.link .blurb {
-  font-size: 14px;
-  color: #888;
-  width: 100%;
-  max-height: 53px;
-  display: block;  
-  overflow: hidden;
-  text-overflow: ellipsis;   
-}
-
-#wwwresults .result a.link .blurb b {
-  font-weight: normal;
-  color: #777;  
-}
-
-#wwwresults .result a.link:hover .blurb, #wwwresults .result a.link:hover .blurb b {
-  color: #333;
-}
-
-#wwwresults .result a.link .url {
-  color: #999;
-  display: block;
-  padding: 0 0 5px 0;
-  font-family: 'lucida grande',tahoma,verdana,arial,sans-serif;
-  font-size: 11px;
-  width: 100%;
-  display: block;  
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;  
-}
-
-#wwwresults .result a.link:hover .url {
-  color: #666;
-  text-decoration: underline;
-}
-
-#synresults .group .header em {
-  color: #666;
-  text-transform: capitalize;
-}
-
-#synresults .group:hover .header em {
-  color: #000;
-}
-
-#synresults .group .words {
-  display: none;
-}
-
-#synresults .group:hover .words {
-  display: block;
-}
-
-#synresults .group .words a, #synresults .group .words a:visited {
-  color: #336699;
-  text-decoration: none;
-}
-
-#synresults .group .words a:hover {
-  color: #996633;
-}
-
 
 @media (max-width: 480px){
   #context {
@@ -1098,86 +813,11 @@ input.pseudobutton {
   #status, #errorstatus {
     padding: 17px 5px 12px 14px    
   }
-
-  #context .results {
-    top: 48px;
-  }
-
-  #wwwresults .result.sticky, #wwwresults .result.sticky.touch:hover {
-    background-color: #f0f0ed;  
-    margin-left: 51px;
-    padding-left: 63px;    
-  }  
-
-  #wwwresults .result.sticky:hover {
-    background-color: #e1e1dd;
-  }
-
-  #wwwresults .result.touch:hover {
-    border-bottom: 1px solid #c5c5c5; 
-    margin-left: 100px;   
-    padding-left: 14px;   
-  }  
-
-  #wwwresults .result.sticky:first-child, #wwwresults .result.sticky.touch:first-child:hover {
-    border-top: 1px dotted #d6d6d6;  
-    margin-top: 0; 
-  }  
-
-  #wwwresults .result.sticky:first-child:hover {
-    border-top: 1px solid #c5c5c5;
-  } 
-
-  #wwwresults .result:hover {
-    margin-left: 51px;
-    border-left: none;
-    padding-left: 63px;        
-  }  
-
-  #wwwresults .result a.action, #wwwresults .result.touch:hover a.action {
-    width: 32px;
-    height: 32px;
-    border-radius: 3px;
-    display: block;
-    margin-left: -51px;
-    background-color: rgba(230,230,230,0.9);    
-  }
-
-  #wwwresults .result a.unstick {
-    margin-left: -2px !important;
-    background-color: transparent;     
-  }     
-
-  #wwwresults .result:hover a.action {
-    margin-left: -2px;
-    display: block;
-    background-color: #ccc;
-  }
-
-  #wwwresults .result:hover a.action:hover {
-    background-color: #bbb;
-  }  
-
-  .context .upgrade {
-    right: 0;
-    left: 0;    
-  }
-
-  .context .upgrade small {
-    display: block;
-  }  
-
-  .context .upgrade a {
-    width: auto;
-    display: block; 
-    text-align: center;
-  }
-
 }
 
-@media (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
+@media (min-width: 481px) and (max-width: 900px) {
   #context {
-    display: block;
+    display: none;
     opacity: 0.9;
   }
 }

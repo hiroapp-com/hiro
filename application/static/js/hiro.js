@@ -169,12 +169,12 @@ var Hiro = {
 
 			// Switch folio DOM contents with fragments
 			requestAnimationFrame(function(){
-				// Empty
-				that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
-
 				// Update bubble
 				that.el_showmenu.firstChild.innerHTML = that.unseencount;
 				that.el_showmenu.firstChild.style.display = (that.unseencount) ? 'block' : 'none';
+
+				// Empty
+				that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
 
 				// Append
 				that.el_notelist.appendChild(f0);				
@@ -385,7 +385,7 @@ var Hiro = {
 			Hiro.util.registerEvent(this.el_text,'keyup',Hiro.canvas.textup);
 			Hiro.util.registerEvent(this.el_text,'keydown',Hiro.canvas.textdown);			
 			Hiro.util.registerEvent(this.el_title,'keyup',Hiro.canvas.titleup);			
-			Hiro.ui.fastbutton.attach(this.el_title,Hiro.canvas.titleclick,true);			
+			Hiro.util.registerEvent(this.el_title,'focus',Hiro.canvas.titlefocus);			
 
 			// When a user touches the white canvas area
 			Hiro.ui.touchy.attach(this.el_root,Hiro.canvas.canvastouch,55);			
@@ -460,11 +460,12 @@ var Hiro = {
 		},
 
 		// When the user clicks into the title field
-		titleclick: function(id,type,target) {
+		titlefocus: function(event) {
 			var note = Hiro.data.get('note_' + Hiro.canvas.currentnote);
+			console.log(event,this);
 
 			// Empty field if Note has no title yet
-			if (target.value && !note.c.title) target.value = '';
+			if (this.value && !note.c.title) this.value = '';
 		},
 
 		// If the user hovers over the canvas
@@ -1093,7 +1094,7 @@ var Hiro = {
 					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// Update the last edit & editor data
-				if (source == 'c') {
+				if (source == 'c' && key.charAt(0) != '_') {
 					n._lasteditor = Hiro.data.stores.profile.c.uid;
 					n._lastedit = new Date().toISOString();		
 				// Set the note to unseen if we get updates from the server		
