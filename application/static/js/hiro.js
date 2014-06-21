@@ -2275,6 +2275,9 @@ var Hiro = {
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
 
+			// Close apps we they should be open on small devices
+			if (Hiro.apps.open.length > 0 && document.body.offsetWidth > 480) Hiro.apps.close();			
+
 			// Easing function (quad), see 
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
 			// Overview / demos: http://easings.net/
