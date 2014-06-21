@@ -1553,7 +1553,7 @@ iframe#landing  {
   width: 100%;
   height: 100%;
   border: 0;
-  position: fixed;
+  position: absolute;
   z-index: 80000; 
 }
 

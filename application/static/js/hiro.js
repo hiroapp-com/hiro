@@ -471,7 +471,12 @@ var Hiro = {
 		// If the user hovers over the canvas
 		canvastouch: function(event) {
 			// Close the folio if it should be open
-			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
+			if (Hiro.folio.open) {
+				Hiro.ui.slidefolio(-1);
+
+				// Kill the event here to make UI more stable on mobiles	
+				if (Hiro.ui.touch && event.type == 'touchstart') Hiro.util.stopEvent(event);		
+			}	
 		},
 
 		// Load a note onto the canvas
@@ -651,7 +656,7 @@ var Hiro = {
 			b.innerHTML = (login) ? 'Logging in...' : 'Signing Up...';
 
 			// Remove focus on mobiles
-			if ('ontouchstart' in document.documentElement && document.activeElement) document.activeElement.blur();				
+			if (Hiro.ui.touch && document.activeElement) document.activeElement.blur();				
 
 			// Clear any old error messages
 			v[0].nextSibling.innerHTML = '';
@@ -2117,10 +2122,16 @@ var Hiro = {
 			// Set up UI according to user level
 			this.setstage(tier);	
 
-			// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
-			// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
-			measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
-			document.getElementById('viewport').setAttribute('content', measure);				
+			// Mobile specific setup
+			if (this.touch) {
+				// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
+				// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
+				measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+				document.getElementById('viewport').setAttribute('content', measure);	
+
+				// Attach swipe event listener 
+				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);
+			}			
 
 			// Start hprogress on init
 			this.hprogress.init();	
@@ -2374,6 +2385,74 @@ var Hiro = {
 			if (this.opacity && element.style[this.opacity] !==undefined ) return element.style[this.opacity];
 			if (element.currentStyle) return element.currentStyle["opacity"];
 			if (window.getComputedStyle) return window.getComputedStyle(element,null).getPropertyValue("opacity");
+		},		
+
+		// Left / right swipes
+		swipe: {
+			start_x: 0,
+			start_y: 0,
+			active: false,
+			id: undefined,
+
+			// Track movements
+			move: function(e) {
+				var that = Hiro.ui.swipe;			
+				// If the user starts moving
+	    		if (e.touches.length == 1 && !that.active && that.identifier != e.touches[0].identifier) {	   
+	    			// Store reference to starting touch 			    			
+	    			that.start_x = e.touches[0].screenX;
+	    			that.start_y = e.touches[0].screenY;
+	    			that.active = true;
+	    			that.identifier = e.touches[0].identifier;
+
+	    			// Set timeout after which assume it wasn't a swipe
+	    			setTimeout(function(){
+	    				that.active = false;	    				
+	    				that.cancel();
+	    			},120);
+
+	    		// As long as we didn't time out / move off course	
+	    		} else if (that.active) { 
+	    			// init rest of variables  			
+		    	 	var x = e.touches[0].screenX,
+		    			y = e.touches[0].screenY,
+		    			dx = that.start_x - x,
+		    			dy = that.start_y - y;    			
+
+		    		// If the left/right movement was more than 45 devicepixels	
+		    		if (Math.abs(dx) >= (45 * window.devicePixelRatio)) {	
+		    			// Cancel event listener	    			
+		    			that.cancel();
+
+		    			// Prevent further move action (stabilises ui)
+		    			Hiro.util.stopEvent(e)
+
+		    			// Cancel if we veered outside a 45° corridor
+		    			if (Math.abs(dy) > Math.abs(dx*0.5)) return;
+
+		    			// User swiped left
+		    			if(dx > 0) {	    				
+		    				// If the folio is open, close
+		    				if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
+		    			}
+		    			// User swiped right
+		    			else {
+		    				// Open folio
+		    				if (!Hiro.folio.open) Hiro.ui.slidefolio(1,100);	    				
+		    			}
+		    		}
+	    		}
+			},	
+
+			// Reset properties and remove listener
+			cancel: function() {
+				var that = Hiro.ui.swipe;
+				// if (!that.start_x) return;
+
+				// Reset internal values
+				that.start_x = 0;
+				that.active = false;			
+			}			
 		},		
 
 		// Handle clicks depending on device (mouse or touch), this shoudl mostly be used on delegated handlers spanning larger areas
