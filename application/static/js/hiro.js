@@ -193,7 +193,8 @@ var Hiro = {
 			var d = document.createElement('div'),
 				id = folioentry.nid,
 				note = Hiro.data.get('note_' + id),
-				link, t, stats, a, time, tooltip, s, sn;			
+				link, t, stats, a, time, tooltip, s, sn
+				title = note.c.title || ((id.length < 5) ? 'New Note' : 'Untitled Note');			
 
 			// Set note root node properties	
 			d.className = 'note';
@@ -205,8 +206,7 @@ var Hiro = {
 
 			t = document.createElement('span');
 			t.className = 'notetitle';
-			t.innerHTML = note.c.title || 'Untitled Note';
-			if (id.length < 5 && !note.c.title) t.innerHTML = 'New Note';
+			t.innerHTML = title;
 
 			stats = document.createElement('small');
 
@@ -246,10 +246,10 @@ var Hiro = {
 				link.appendChild(s);		
 				
 				// Change classname
-				d.className = 'note shared';		
+				d.className = 'note shared';					
 
 				// Add bubble if changes weren't seen yet
-				if (note._unseen) {
+				if (note._unseen && id != Hiro.canvas.currentnote) {
 					// Show that document has unseen updates
 					sn = document.createElement('div');
 					sn.className = "bubble red";
@@ -1102,9 +1102,12 @@ var Hiro = {
 					n._lastedit = new Date().toISOString();		
 				// Set the note to unseen if we get updates from the server		
 				// TODO Bruno: Move this loop below if data gets transmitted / testing is done	
-				} else if (source == 's' && !current) {
+				} else if (source == 's') {
+					// Set properties					
 					n._unseen = true;
-					n._lastedit = new Date().toISOString();					
+					n._lastedit = new Date().toISOString();		
+					// Add notification if we're not focused
+					if (!Hiro.ui.focus) Hiro.ui.tabby.notify(n.c.title);								
 				}
 
 				// If the whole thing or client title changed, repaint the folio
@@ -1223,7 +1226,7 @@ var Hiro = {
 				if (dur > 20) Hiro.sys.log('Data persisted bit slowly, within (ms):',dur);
 
 				// Set new value if system is significantly slower than our default interval
-				this.dynamicinterval = ((dur * 50) < this.maxinterval ) ? dur * 50 || 50 : this.maxinterval;
+				this.dynamicinterval = ((dur * 50) < this.maxinterval ) ? ( dur * 50 || 50 ) : this.maxinterval;
 
 				// Trigger next save to browsers abilities
 				this.timeout = setTimeout(function(){
@@ -1286,7 +1289,7 @@ var Hiro = {
 				// No store, remove all
 				if (!store) {
 					// Iterate through all localstorage items for current domain
-					for (var i = localStorage.length;i >= 0; i--) {
+					for (var i = localStorage.length - 1;i > -1; i--) {
 						// Verify that we only delete Hiro data and no third party stuff
 						if (localStorage.key(i) && localStorage.key(i).substring(0, 5) == 'Hiro.') localStorage.removeItem(localStorage.key(i));
 					}
@@ -1564,7 +1567,7 @@ var Hiro = {
 			}
 
 			// Remove store from unsynced list if we have no more edits
-			if (store.edits.length == 0) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);			
+			if (!store.edits || store.edits.length == 0) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);			
 
 			// Update server version if we got updates
 			if (update) store.sv++;					
@@ -1606,8 +1609,8 @@ var Hiro = {
 			this.commitinprogress = true;
 			newcommit = [];
 
-			// Cycle through stores flagged unsynced
-			for (i=0,l=u.length;i<l;i++) {
+			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
+			for (i = u.length - 1; i > -1; i--) {
 				var s = Hiro.data.get(u[i]),
 					d = this.diff.makediff(s);	
 
@@ -2077,8 +2080,7 @@ var Hiro = {
 		slidedirection: 0,	
 
 		// Internals
-		// Initial state only, will be overwritten by focushandler below
-		focus: (document.visibilityState == 'visible' || !document.hidden || document.hasFocus() || true),
+		focus: false,
 
 		// Setup and browser capability testing
 		init: function(tier) {
@@ -2223,11 +2225,13 @@ var Hiro = {
 		focuschange: function(event) {
 			// Some browser send the event from window
 	        event = event || window.event;			
-	        var v = true, h = false, eMap = {focus:v, focusin:v, pageshow:v, blur:h, focusout:h, pagehide:h},
-	        	focus = Hiro.ui.focus = (event.type in eMap) ? eMap[event.type] : ((Hiro.ui.focus) ? false : true); 
+	        var map = {focus: true, focusin: true, pageshow: true, blur: false, focusout: false, pagehide: false},
+	        	focus = Hiro.ui.focus = (event.type in map) ? map[event.type] : !Hiro.ui.focus; 
 
 	        // If the window gets focused
 	        if (focus) {
+	        	// Reset tab notifier
+	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.clear();
 				    
 	        // If the window blurs
 	        } else {
@@ -2682,6 +2686,115 @@ var Hiro = {
 				element._hirotimeout = undefined;									
 			}
 
+		},
+
+		// Little lib that circles through tab title messages if browser is not focused
+		tabby: {
+			// Internals
+			active: false,
+			messages: [],
+			timeout: null,
+			faviconstate: 'normal',
+
+			notify: function(msg) {
+				// Cycles a que of notifictaions if tab is not focused and changes favicon
+				var that = Hiro.ui.tabby, pool = that.messages,
+					nextstate = (that.faviconstate == 'normal') ? 'red' : 'normal',
+					pos, nextpos, next, title = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title');
+
+				// Ignore undefined messages
+				if (!msg) msg = 'Untitle Note';	
+
+				// Cancel all actions and reset state
+				if (Hiro.ui.focus) {
+					that.clear(); 		
+					return;
+				}	
+
+				// Turn on internal notify value
+				if (!that.active) that.active = true;
+
+				// Add another message to the array if we haven't yet
+				if (msg && pool.indexOf(msg) == -1) pool.push(msg);
+
+				// Do cycling, find out next message first
+				pos = pool.indexOf(msg);
+				nextpos = (pos + 1 == pool.length) ? 0 : ++pos;
+				next = pool[nextpos];
+
+				// Switch between simple update flash and numbered notifications
+				if (pool.length == 1 && title == next) {
+					// If we only have one message, we cycle title between doc title and message
+					document.title = (document.title == next) ? 'Updated!' : next;
+				} else {
+					// If we have multiple we cycle between them
+					document.title = '(' + pool.length + ') ' + next + ' updated!';				
+				}
+
+				// Only one timeout cycling at a time
+				if (that.timeout) return;				
+
+				// Switch favicon
+				that.setfavicon(nextstate);
+
+				// Repeat cycle
+				that.timeout = window.setTimeout(function(){ 
+					// Make sure
+					window.clearTimeout(that.timeout);
+					that.timeout = null;
+
+					// We send the current msg to the function so it can easily pick the next from the array				
+					that.notify(next);
+				},1000);
+
+			},
+
+			// Clear the tab notifications
+			clear: function() {
+				var that = Hiro.ui.tabby;
+
+				// Clear timeout							
+				window.clearTimeout(that.timeout);
+				that.timeout = null;
+
+				// Reset document and internal states
+				pool = [];	
+				that.active = false;				
+				Hiro.canvas.paint();										
+				that.setfavicon('normal');			
+			},
+
+			// Change the favicon to a certain state
+			setfavicon: function(state) {
+				var h = document.head || document.getElementsByTagName('head')[0],
+					old = document.getElementById('dynacon'), el = document.createElement('link'), src;
+
+				// Remove any old links
+				if (old) h.removeChild(old);	
+
+				// pick right path & file
+				switch (state) {
+					case 'normal':
+						src = '/static/img/favicon.png';
+						break;
+					case 'red':
+						src = '/static/img/faviconred.png';	
+						break;
+				}
+
+				// Build link	
+				el.id = 'dynacon';
+				el.rel = 'shortcut icon';
+				el.href = src;
+
+				// Set internal value
+				this.faviconstate = state;
+
+				requestAnimationFrame(function(){
+					// Add favicon link to DOM
+					h.appendChild(el);
+				})	
+			}			
 		},
 
 		// All dialog related stuff

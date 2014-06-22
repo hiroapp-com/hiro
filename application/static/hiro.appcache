@@ -7,6 +7,8 @@ CACHE:{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
 {{ get_asset_url('new_js') }}{{ "\n" }}
 /static/img/icons.3.png{{ "\n" }}
+/static/img/favicon.png{{ "\n" }}
+/static/img/faviconred.png{{ "\n" }}
 
 FALLBACK:{{ "\n" }}
 # Make sure all requests (eg /note/foo) go to a standard offline template.
