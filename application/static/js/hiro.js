@@ -1565,16 +1565,21 @@ var Hiro = {
 				}
 			}
 
+			// Remove store from unsynced list if we have no more edits
+			if (store.edits.length == 0) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);			
+
 			// Update server version if we got updates
 			if (update) store.sv++;					
 
 			// Find out if it's a response or server initiated
 			if (this.tags.indexOf(data.tag) > -1) {
+
 				// Remove tag from list
 				this.tags.splice(this.tags.indexOf(data.tag),1);
 			// Respond if it was server initiated
 			} else {
-				// Send any edits waiting or an empty ack		
+				// Send any edits waiting or an empty ack
+				// TODO Bruno: Answering with a commit here would be more efficient, find a good way to do so		
 				data.changes = (store.edits && store.edits.length > 0) ? store.edits : [{ clock: { cv: store.cv, sv: store.sv }, delta: {}}];
 
 				// Send
@@ -1614,11 +1619,11 @@ var Hiro = {
 
 			// If we have any data in this commit, send it to the server now
 			if (newcommit && newcommit.length > 0) {
-				// Send off
-				this.tx(newcommit);
-
 				// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
 				Hiro.data.local.persist();
+				
+				// Send off
+				this.tx(newcommit);
 			} else {
 				// Release lock as no new commits were found
 				this.commitinprogress = false;
