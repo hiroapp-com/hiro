@@ -326,8 +326,7 @@ var Hiro = {
 
 			// Build new note object for notes store
 			note = {
-				c: { text: '', title: '', peers: [] },
-				s: { text: '', title: '', peers: [] },				
+				c: { text: '', title: '', peers: [] },			
 				sv: 0, cv: 0,
 				id: id,
 				kind: 'note',
@@ -1621,7 +1620,7 @@ var Hiro = {
 			if (newcommit && newcommit.length > 0) {
 				// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
 				Hiro.data.local.persist();
-				
+
 				// Send off
 				this.tx(newcommit);
 			} else {
@@ -1879,8 +1878,12 @@ var Hiro = {
 					store.edits.push(changes);	
 
 					// Mark store as tainted but do not persist yet for performance reasons
-					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);							
-				} 
+					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);	
+
+				// Remove store from unsynced already at this point (as opposed to res_sync ack/incoming) if we have nothing to sync						
+				} else if (!store.edits || store.edits.length == 0) {				
+					Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);					
+				}
 
 				// Return changes						
 				return changes || false;
@@ -1914,6 +1917,9 @@ var Hiro = {
 			diffnote: function(note) {
 				var delta;
 
+				// Do not diif notes that have no server ID yet
+				if (note.id.length < 5) return false;	
+				
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
 					if (!delta) delta = {};
