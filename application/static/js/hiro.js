@@ -461,7 +461,6 @@ var Hiro = {
 		// When the user clicks into the title field
 		titlefocus: function(event) {
 			var note = Hiro.data.get('note_' + Hiro.canvas.currentnote);
-			console.log(event,this);
 
 			// Empty field if Note has no title yet
 			if (this.value && !note.c.title) this.value = '';
@@ -1919,7 +1918,7 @@ var Hiro = {
 
 				// Do not diif notes that have no server ID yet
 				if (note.id.length < 5) return false;	
-				
+
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
 					if (!delta) delta = {};
@@ -2077,6 +2076,10 @@ var Hiro = {
 		slidepos: 0,
 		slidedirection: 0,	
 
+		// Internals
+		// Initial state only, will be overwritten by focushandler below
+		focus: (document.visibilityState == 'visible' || !document.hidden || document.hasFocus() || true),
+
 		// Setup and browser capability testing
 		init: function(tier) {
 			var style = this.el_wastebin.style,
@@ -2154,7 +2157,10 @@ var Hiro = {
 			this.fastbutton.attach(this.dialog.el_root,Hiro.ui.dialog.clickhandler)
 
 			// Attach fastbuttons to landing page
-			if (this.el_landingpage) this.fastbutton.attach(this.el_landingpage.contentDocument.body,Hiro.ui.landingclick);			
+			if (this.el_landingpage) this.fastbutton.attach(this.el_landingpage.contentDocument.body,Hiro.ui.landingclick);		
+
+			// Attach focus change handler
+			this.attachfocuschange();
 		},
 
 		// Fire keyboard events if applicable
@@ -2184,6 +2190,50 @@ var Hiro = {
 				}
 			}
 		},
+
+		// Attach focuschange properly
+		attachfocuschange: function() {
+		    var handler = Hiro.ui.focuschange;
+
+		    // Standards browser
+		    if ('focus' in window && 'blur' in window) {
+				Hiro.util.registerEvent(window, 'focus', handler);	 
+				Hiro.util.registerEvent(window, 'blur', handler);				   	
+		    }
+
+		    // Iterate through teh crazies
+		    else if ('hidden' in document)
+		        document.addEventListener("visibilitychange", handler);
+		    else if ('mozHidden' in document)
+		        document.addEventListener("mozvisibilitychange", handler);
+		    else if ('webkitHidden' in document)
+		        document.addEventListener("webkitvisibilitychange", handler);
+		    else if ('msHidden' in document)
+		        document.addEventListener("msvisibilitychange", handler);
+		    // IE 9 and lower:
+		    else if ('onfocusin' in document)
+		        document.onfocusin = document.onfocusout =  handler;
+
+		    // All others (aka wishfull thinking)
+		    else
+		        window.onpageshow = window.onpagehide = window.onfocus = window.onblur =  handler;
+		},	
+
+		// If the focus of the current tab changed
+		focuschange: function(event) {
+			// Some browser send the event from window
+	        event = event || window.event;			
+	        var v = true, h = false, eMap = {focus:v, focusin:v, pageshow:v, blur:h, focusout:h, pagehide:h},
+	        	focus = Hiro.ui.focus = (event.type in eMap) ? eMap[event.type] : ((Hiro.ui.focus) ? false : true); 
+
+	        // If the window gets focused
+	        if (focus) {
+				    
+	        // If the window blurs
+	        } else {
+
+	        }
+		},		
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
