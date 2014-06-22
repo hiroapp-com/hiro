@@ -1555,6 +1555,7 @@ iframe#landing  {
   border: 0;
   position: absolute;
   z-index: 80000; 
+  background-color: #fcfcfc;   
 }
 
 body#landingPage2 {

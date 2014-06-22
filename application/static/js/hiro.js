@@ -2158,8 +2158,8 @@ var Hiro = {
 			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up in the settings area
 			this.fastbutton.attach(this.dialog.el_root,Hiro.ui.dialog.clickhandler)
 
-			// Attach fastbuttons to landing page
-			if (this.el_landingpage) this.fastbutton.attach(this.el_landingpage.contentDocument.body,Hiro.ui.landingclick);		
+			// Attach fastbuttons to landing page if it was to fast to do it itself
+			if (this.el_landingpage && this.el_landingpage.contentDocument.body) this.fastbutton.attach(this.el_landingpage.contentDocument.body,Hiro.ui.landingclick);		
 
 			// Attach focus change handler
 			this.attachfocuschange();

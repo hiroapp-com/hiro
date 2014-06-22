@@ -16,3 +16,4 @@ secret_keys.py
 /application/static/javascript
 /application/static/.webassets-cache
 /application/templates/hiro.appcache
+/application/templates/hiro.appcache
