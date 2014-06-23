@@ -136,7 +136,7 @@ var Hiro = {
 		paint: function() {
 			// that scope because it's called by timeout as well
 			var that = Hiro.folio, i, l, data, 
-				f0 = document.createDocumentFragment(), f1;
+				f0 = document.createDocumentFragment(), f1, link;
 
 			// Kick off regular updates, only once
 			if (!that.updatetimeout) {
@@ -154,11 +154,13 @@ var Hiro = {
 			for (i=0,l=data.length;i<l;i++) {
 				// Attach note entries to fragments
 				if (data[i].status == 'active') {
-					f0.appendChild(that.renderlink(data[i]))
+					link = that.renderlink(data[i]);
+					if (link) f0.appendChild(link);
 				// If we didn't have an archived Note yet create the fragment	
 				} else if (data[i].status == 'archive') {
 					if (!f1) f1 = document.createDocumentFragment();
-					f1.appendChild(that.renderlink(data[i]))
+					link = that.renderlink(data[i]);
+					if (link) f1.appendChild(link);
 				} else {
 					Hiro.sys.error('Tried to paint Note with invalid status',data[i]);
 				}
@@ -177,7 +179,7 @@ var Hiro = {
 				that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
 
 				// Append
-				that.el_notelist.appendChild(f0);				
+				if (f0) that.el_notelist.appendChild(f0);				
 				if (f1) that.el_archivelist.appendChild(f1);
 
 				// Update text contents of archivelink
@@ -187,14 +189,21 @@ var Hiro = {
 
 		renderlink: function(folioentry) {
 			// Abort if we do not have all data loaded yet
-			if (!Hiro.data.stores.folio || !Hiro.data.stores.folio) return;
+			if (!Hiro.data.stores.folio) return;
 
 			// Render active and archived document link
 			var d = document.createElement('div'),
 				id = folioentry.nid,
 				note = Hiro.data.get('note_' + id),
-				link, t, stats, a, time, tooltip, s, sn, title,
-				title = note.c.title || ((id.length < 5) ? 'New Note' : 'Untitled Note');			
+				link, t, stats, a, time, tooltip, s, sn, title, title;
+
+			// Abort if we try to render a link for which we don't have any data
+			if (!note) {
+				Hiro.sys.error('Tried to paint a link for note ' + id + ' but no data is available',note);
+				return;
+			}
+
+			title = note.c.title || ((id.length < 5) ? 'New Note' : 'Untitled Note');			
 
 			// Set note root node properties	
 			d.className = 'note';
@@ -353,7 +362,9 @@ var Hiro = {
 					s: { text: '', title: '', peers: [] },							
 					sv: 0, cv: 0,
 					id: id,
-					kind: 'note',			
+					kind: 'note',	
+					_lastedit: new Date(new Date().getTime()-100000).toISOString(),
+					_ownedit: new Date(new Date().getTime()-100000).toISOString()								
 				}
 			}
 
@@ -776,6 +787,24 @@ var Hiro = {
 
 				// Return list of result references
 				return results;
+			},
+
+			// Add a user to our contacts list
+			add: function() {
+
+			},
+
+			// Add a certain contact to the note, current user if no information provided
+			addtonote: function(noteid, uid) {
+				var uid ;
+
+				// Add ourselves
+				if (!uid) {
+
+				// Add a user based on the provided user id
+				} else {
+
+				}
 			}
 		}
 	},
