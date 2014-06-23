@@ -1542,8 +1542,8 @@ var Hiro = {
 							break;
 						// Update text if it's a text update							
 						case 'note|delta-text':
-							if (!(regex.test(ops[j].text))) {
-								this.diff.patch(ops[j].text,data.res.id);
+							if (!(regex.test(ops[j].value))) {
+								this.diff.patch(ops[j].value,data.res.id);
 								update = true;	
 							} else {
 								Hiro.sys.error('Received unknown note delta op',ops[j])
