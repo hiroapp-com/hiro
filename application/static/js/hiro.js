@@ -1533,6 +1533,7 @@ var Hiro = {
 					// Server sends an edit twice, so we just ignore it
 					if (ssv < store.sv) {
 						Hiro.sys.log('Server sent sv' + ssv + ' twice, local sv' + store.sv + ', ignoring changes:',data.changes[i].delta);
+					// Log all other cases we don't handle / know how to handle yet	
 					} else {
 						Hiro.sys.error('Unknown sync case with Server cv' + scv + ' sv' + ssv	+ ' and Client cv' + store.cv + ' sv' +  store.sv,JSON.parse(JSON.stringify([data,store])));
 					}
@@ -1938,7 +1939,7 @@ var Hiro = {
 						// Add change to delta array
 						delta.push({ "op": "set-status", "path": "nid:" + store.s[i].nid, "value": Hiro.folio.lookup[store.s[i].nid].status });
 						// Set shadow to client version
-						store.s[i].nid = Hiro.folio.lookup[store.s[i].nid].status;
+						store.s[i].status = Hiro.folio.lookup[store.s[i].nid].status;
 					}					
 				}
 
@@ -1950,7 +1951,7 @@ var Hiro = {
 			diffnote: function(note) {
 				var delta;
 
-				// Do not diif notes that have no server ID yet
+				// Do not diff notes that have no server ID yet
 				if (note.id.length < 5) return false;	
 
 				// Compare different values, starting with text
