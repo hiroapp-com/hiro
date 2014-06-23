@@ -518,10 +518,7 @@ var Hiro = {
 			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
 
 			var n = Hiro.data.get('note_' + this.currentnote),
-				title = n.c.title || 'Untitled Note', text = n.c.text;
-
-			// If we havn't synced the Note yet, call it 'New'
-			if (this.currentnote.length < 5 && !n.c.title) title = 'New Note';
+				title = n.c.title || ((this.currentnote.length < 5) ? 'Untitled Note' : 'New Note'), text = n.c.text;
 
 			// Set title & text
 			if (!n.c.title || this.el_title.value != n.c.title) this.el_title.value = document.title = title;	
@@ -1107,7 +1104,7 @@ var Hiro = {
 					n._unseen = true;
 					n._lastedit = new Date().toISOString();		
 					// Add notification if we're not focused
-					if (!Hiro.ui.focus) Hiro.ui.tabby.notify(n.c.title);								
+					if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store);								
 				}
 
 				// If the whole thing or client title changed, repaint the folio
@@ -1518,7 +1515,7 @@ var Hiro = {
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
 			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind,
-				store = Hiro.data.get(id), update, regex, mod, i, l, j, jl, stack, regex = /^=[0-9]+$/;
+				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, stack, regex = /^=[0-9]+$/;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -1533,29 +1530,34 @@ var Hiro = {
 					// continue;
 				}	
 
-				// Update title if it's a title update
-				if (data.res.kind == 'note' && data.changes[i].delta.title) {
-					store.s.title = store.c.title = data.changes[i].delta.title;
-					// Set val
-					update = true;
-				}				
-
-				// Update text if it's a text update
-				if (data.res.kind == 'note' && data.changes[i].delta.text && !(regex.test(data.changes[i].delta.text))) {
-					// Apply the change
-					this.diff.patch(data.changes[i].delta.text,data.res.id);
-					update = true;
-				}	
-
-				// Update folio if it's a folio update
-				if (data.res.kind == 'folio' && data.changes[i].delta.mod) {
-					mod = data.changes[i].delta.mod;
-					for (j=0,jl=mod.length;j<jl;j++) {
-						Hiro.folio.lookup[mod[j][0]][mod[j][1]] = mod[j][3];
+				// Iterate through delta msg's
+				ops = data.changes[i].delta;
+				for (j = 0, jl = ops.length; j < jl; j++) {
+					// Process ops according to ressource kind and op
+					switch (data.res.kind  + '|' + ops[i].op) {	
+						// Update title if it's a title update					
+						case 'note|set-title':
+							store.s.title = store.c.title = ops[i].value;
+							update = true;
+							break;
+						// Update text if it's a text update							
+						case 'note|delta-text':
+							if (!(regex.test(ops[i].text))) {
+								this.diff.patch(ops[i].text,data.res.id);
+								update = true;	
+							} else {
+								Hiro.sys.error('Received unknown note delta op',ops[i])
+							}							
+							break;	
+						// Set changed folio status							
+						case 'folio|set-status':
+							Hiro.folio.lookup[ops[i].path.split(':')[1]].status = ops[i].value;
+							update = true;								
+							break;
+						default:
+							Hiro.sys.error('Received unknown change op from server',ops[i]);		
 					}
-					// Repaint folio
-					update = true;					
-				}	
+				}		
 
 				// Remove outdated edits from stores
 				if (store.edits && store.edits.length > 0) {
@@ -1564,13 +1566,20 @@ var Hiro = {
 						if (store.edits[stack].clock.cv < data.changes[i].clock.cv) store.edits.splice(stack,1); 
 					}
 				}
+
+				// If any update happened
+				if (update) {
+					// Iterate server version
+					store.sv++;
+					// Reset update flag for next run (if changes contains more than 1 change)
+					update = false;
+					// Set flag to save data
+					dosave = true;
+				}						
 			}
 
 			// Remove store from unsynced list if we have no more edits
-			if (!store.edits || store.edits.length == 0) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);			
-
-			// Update server version if we got updates
-			if (update) store.sv++;					
+			if (!store.edits || store.edits.length == 0) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);							
 
 			// Find out if it's a response or server initiated
 			if (this.tags.indexOf(data.tag) > -1) {
@@ -1581,14 +1590,14 @@ var Hiro = {
 			} else {
 				// Send any edits waiting or an empty ack
 				// TODO Bruno: Answering with a commit here would be more efficient, find a good way to do so		
-				data.changes = (store.edits && store.edits.length > 0) ? store.edits : [{ clock: { cv: store.cv, sv: store.sv }, delta: {}}];
+				data.changes = (store.edits && store.edits.length > 0) ? store.edits : [{ clock: { cv: store.cv, sv: store.sv }, delta: []}];
 
 				// Send
 				this.ack(data);				
 			}	
 
 			// Save changes back to store, for now we just save the whole store, see if this could/should be more granular in the future
-			if (update) Hiro.data.set(id,'',store,'s');								
+			if (dosave) Hiro.data.set(id,'',store,'s');								
 
 			// Release lock preventing push of new commits
 			this.commitinprogress = false;
@@ -1924,15 +1933,22 @@ var Hiro = {
 
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
-					if (!delta) delta = {};
-					delta.text = this.delta(note.s.text,note.c.text);
+					// Create delta array
+					delta = [];
+					// Fill with dmp delta
+					delta.push({"op": "delta-text", "path": "", "value": this.delta(note.s.text,note.c.text)});
+					// Synchronize c/s text
 					note.s.text = note.c.text;
 				}
 
 				// Check title	
 				if (note.c.title != note.s.title) {
-					if (!delta) delta = {};
-					delta.title = note.s.title = note.c.title;
+					// Create delta if we haven't so yet
+					if (!delta) delta = [];
+					// Add title op
+					delta.push({"op": "set-title", "path": "", "value": note.c.title });
+					// Copy c to s					
+					note.s.title = note.c.title;
 				}			
 
 				// Return value
@@ -2231,7 +2247,7 @@ var Hiro = {
 	        // If the window gets focused
 	        if (focus) {
 	        	// Reset tab notifier
-	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.clear();
+	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.cleanup();
 				    
 	        // If the window blurs
 	        } else {
@@ -2341,7 +2357,7 @@ var Hiro = {
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
 
 			// Close apps we they should be open on small devices
-			if (Hiro.apps.open.length > 0 && document.body.offsetWidth > 480) Hiro.apps.close();			
+			if (Hiro.apps.open.length > 0 && document.body.offsetWidth < 481) Hiro.apps.close();			
 
 			// Easing function (quad), see 
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
@@ -2700,14 +2716,11 @@ var Hiro = {
 				// Cycles a que of notifictaions if tab is not focused and changes favicon
 				var that = Hiro.ui.tabby, pool = that.messages,
 					nextstate = (that.faviconstate == 'normal') ? 'red' : 'normal',
-					pos, nextpos, next, title = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title');
-
-				// Ignore undefined messages
-				if (!msg) msg = 'Untitle Note';	
+					pos, nextpos, next, title = Hiro.data.get(msg,'c.title');	
 
 				// Cancel all actions and reset state
 				if (Hiro.ui.focus) {
-					that.clear(); 		
+					that.cleanup(); 		
 					return;
 				}	
 
@@ -2715,12 +2728,16 @@ var Hiro = {
 				if (!that.active) that.active = true;
 
 				// Add another message to the array if we haven't yet
-				if (msg && pool.indexOf(msg) == -1) pool.push(msg);
+				if (msg && pool.indexOf(msg) == -1) {
+					pool.push(msg); 
+				} else {
+					return;
+				}	
 
 				// Do cycling, find out next message first
 				pos = pool.indexOf(msg);
 				nextpos = (pos + 1 == pool.length) ? 0 : ++pos;
-				next = pool[nextpos];
+				next = Hiro.data.get(pool[nextpos],'c.title');
 
 				// Switch between simple update flash and numbered notifications
 				if (pool.length == 1 && title == next) {
@@ -2750,7 +2767,7 @@ var Hiro = {
 			},
 
 			// Clear the tab notifications
-			clear: function() {
+			cleanup: function() {
 				var that = Hiro.ui.tabby;
 
 				// Clear timeout							
@@ -2758,10 +2775,10 @@ var Hiro = {
 				that.timeout = null;
 
 				// Reset document and internal states
-				pool = [];	
-				that.active = false;				
-				Hiro.canvas.paint();										
-				that.setfavicon('normal');			
+				that.pool = [];	
+				that.active = false;														
+				that.setfavicon('normal');		
+				document.title = Hiro.canvas.el_title.value;					
 			},
 
 			// Change the favicon to a certain state
