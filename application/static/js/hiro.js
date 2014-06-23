@@ -1534,28 +1534,28 @@ var Hiro = {
 				ops = data.changes[i].delta;
 				for (j = 0, jl = ops.length; j < jl; j++) {
 					// Process ops according to ressource kind and op
-					switch (data.res.kind  + '|' + ops[i].op) {	
+					switch (data.res.kind  + '|' + ops[j].op) {	
 						// Update title if it's a title update					
 						case 'note|set-title':
-							store.s.title = store.c.title = ops[i].value;
+							store.s.title = store.c.title = ops[j].value;
 							update = true;
 							break;
 						// Update text if it's a text update							
 						case 'note|delta-text':
-							if (!(regex.test(ops[i].text))) {
-								this.diff.patch(ops[i].text,data.res.id);
+							if (!(regex.test(ops[j].text))) {
+								this.diff.patch(ops[j].text,data.res.id);
 								update = true;	
 							} else {
-								Hiro.sys.error('Received unknown note delta op',ops[i])
+								Hiro.sys.error('Received unknown note delta op',ops[j])
 							}							
 							break;	
 						// Set changed folio status							
 						case 'folio|set-status':
-							Hiro.folio.lookup[ops[i].path.split(':')[1]].status = ops[i].value;
+							Hiro.folio.lookup[ops[j].path.split(':')[1]].status = ops[j].value;
 							update = true;								
 							break;
 						default:
-							Hiro.sys.error('Received unknown change op from server',ops[i]);		
+							Hiro.sys.error('Received unknown change op from server',ops[j]);		
 					}
 				}		
 
@@ -1588,9 +1588,16 @@ var Hiro = {
 				this.tags.splice(this.tags.indexOf(data.tag),1);
 			// Respond if it was server initiated
 			} else {
-				// Send any edits waiting or an empty ack
-				// TODO Bruno: Answering with a commit here would be more efficient, find a good way to do so		
-				data.changes = (store.edits && store.edits.length > 0) ? store.edits : [{ clock: { cv: store.cv, sv: store.sv }, delta: []}];
+				// Send any edits as response if there are any waitingwaitingwaiting
+				if (store.edits && store.edits.length > 0) {
+					data.changes = store.edits;
+				// Make a quick diff to see if anything changed 
+				// The single = is interntional, as it sets the value of data.changes an evaluates the if in one go (i assume...)	
+				} else if (data.changes = this.diff.makediff(data.res.id)) {
+				// If there are no changes at all, send a blank ack
+				} else {
+					data.changes = [{ clock: { cv: store.cv, sv: store.sv }, delta: []}];
+				}		
 
 				// Send
 				this.ack(data);				
