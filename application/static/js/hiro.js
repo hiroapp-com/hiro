@@ -1515,7 +1515,7 @@ var Hiro = {
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
 			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind,
-				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, stack, regex = /^=[0-9]+$/;
+				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -1526,8 +1526,17 @@ var Hiro = {
 
 				// Log stuff to doublecheck which rules should be applied				
 				if (data.changes[i].clock.cv != store.cv || data.changes[i].clock.sv != store.sv) {
-					Hiro.sys.error('Sync rule was triggered, find out how to handle it',JSON.parse(JSON.stringify([data,store])));
-					// continue;
+					// Shorten before get crazy here
+					ssv = data.changes[i].clock.sv;
+					scv = data.changes[i].clock.cv
+
+					// Server sends an edit twice, so we just ignore it
+					if (ssv < store.sv) {
+						Hiro.sys.log('Server sent sv' + ssv + ' twice, local sv' + store.sv + ', ignoring changes:',data.changes[i].delta);
+					} else {
+						Hiro.sys.error('Unknown sync case with Server cv' + scv + ' sv' + ssv	+ ' and Client cv' + store.cv + ' sv' +  store.sv,JSON.parse(JSON.stringify([data,store])));
+					}
+					continue;
 				}	
 
 				// Iterate through delta msg's
