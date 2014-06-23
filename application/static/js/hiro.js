@@ -193,7 +193,7 @@ var Hiro = {
 			var d = document.createElement('div'),
 				id = folioentry.nid,
 				note = Hiro.data.get('note_' + id),
-				link, t, stats, a, time, tooltip, s, sn
+				link, t, stats, a, time, tooltip, s, sn, title,
 				title = note.c.title || ((id.length < 5) ? 'New Note' : 'Untitled Note');			
 
 			// Set note root node properties	
@@ -300,42 +300,65 @@ var Hiro = {
 		},
 
 		// Add a new note to folio and notes array, then open it 
-		newnote: function() {
+		newnote: function(id,status) {
 			var f = Hiro.data.get('folio'),
-				id = 1, i, l, folioc, folios, note;
+				id, i, l, folioc, folios, note;
 
-			// Find a good id we can use
-			for (i=0,l=f.c.length;i<l;i++) {
-				if (f.c[i].nid.length < 3) id++;
-			}	
+			// User clicked on "New Note" link 
+			if (!status) {
+				// Set initial id
+				id = 1;
 
-			// Convert id to string
-			id = id.toString();
+				// Find a good possible new one
+				for (i=0,l=f.c.length;i<l;i++) {
+					if (f.c[i].nid.length < 3) id++;
+				}	
 
-			// Build new note entries for folio, use status new on serverside to mark changes for deepdiff
-			folioc = {
-				nid: id,
-				status: 'active'
+				// Convert id to string
+				id = id.toString();	
+
+				// Build new note entries for folio, use status new on serverside to mark changes for deepdiff
+				folioc = { nid: id, status: 'active' }
+
+				// Sort folio first
+				this.sort();
+
+				// Add new item to beginning of array
+				f.c.unshift(folioc);						
+
+				// Build new note object for notes store
+				note = {
+					c: { text: '', title: '', peers: [] },
+					s: { text: '', title: '', peers: [] },							
+					sv: 0, cv: 0,
+					id: id,
+					kind: 'note',
+					_lasteditor: Hiro.data.stores.profile.c.uid,
+					_lastedit: new Date().toISOString(),
+					_ownedit: new Date().toISOString()				
+				}
+			// Server requested the creation of a new note					
+			} else {
+				// Build new note entries for folio, use status new on serverside to mark changes for deepdiff
+				folioc = {	nid: id, status: status	};
+				folios = {	nid: id, status: status	};
+
+				// Add new item to beginning of array
+				f.c.unshift(folioc);
+				f.s.unshift(folios);		
+
+				// Build new note object for notes store
+				note = {
+					c: { text: '', title: '', peers: [] },
+					s: { text: '', title: '', peers: [] },							
+					sv: 0, cv: 0,
+					id: id,
+					kind: 'note',			
+				}
 			}
 
-			// Sort folio first
-			this.sort();
 
-			// Add new item to beginning of array
-			f.c.unshift(folioc);		
-
-			// Build new note object for notes store
-			note = {
-				c: { text: '', title: '', peers: [] },			
-				sv: 0, cv: 0,
-				id: id,
-				kind: 'note',
-				_lasteditor: Hiro.data.stores.profile.c.uid,
-				_lastedit: new Date().toISOString(),
-				_ownedit: new Date().toISOString()				
-			}
-
-			// Add note and save						
+			// Save kick off setter flows						
 			Hiro.data.set('note_' + id,'',note);
 			Hiro.data.set('folio','',f);
 
@@ -1086,6 +1109,54 @@ var Hiro = {
             return o;
 		},
 
+		// Cleanly rename a store, we operate directly so no setters are triggered
+		rename: function(oldid,newid) {
+			var fs, i, l;
+
+			// If we try to rename something that doesn't exist
+			if (!this.stores[oldid]) {
+				Hiro.sys.error('Tried to rename unknown store',[oldid,newid])
+				return;
+			}				
+
+			// Copy object
+			this.stores[newid] = JSON.parse(JSON.stringify(this.stores[oldid]));
+
+			// In case of being a note, we also reset the folio and currentnote pointers to it
+			if (oldid.substring(0,5) == 'note_') {
+				// Update the client side of things
+				if (Hiro.folio.lookup[oldid.substring(5)]) Hiro.folio.lookup[oldid.substring(5)].nid = newid.substring(5);	
+				// Update the server side of things, removal first (we do splice and seperate push because the entry might not exist yet)
+				fs = this.get('folio','s');
+				for ( i = 0, l = fs.length; i < l ; i++ ) {
+					if (fs[i].id == oldid.substring(5)) {
+						fs.splice(i,1);
+						break;
+					}	
+				}
+				// Copy new one frome client to shadow (the lookup object isn't updated yet, so the key is still the old)
+				if (Hiro.folio.lookup[oldid.substring(5)]) fs.push(JSON.parse(JSON.stringify(Hiro.folio.lookup[oldid.substring(5)])));
+
+				// Set new currentnote id
+				if (Hiro.canvas.currentnote = oldid.substring(5)) Hiro.canvas.currentnote = newid.substring(5);
+
+				// Reset note id in store object
+				this.stores[newid].id = newid.substring(5);
+			}
+
+			// Delete old object and localstorage object
+			this.stores[oldid] = undefined;
+			if (localStorage && localStorage.getItem[oldid]) localStorage.removeItem[oldid];
+
+			// Update our state arrays
+			if (this.unsaved.indexOf(oldid) > -1) this.unsaved[this.unsaved.indexOf(oldid)] = newid;			
+			if (this.unsynced.indexOf(oldid) > -1) this.unsynced[this.unsynced.indexOf(oldid)] = newid;
+
+			// Save changes
+			this.local.quicksave(newid);
+			this.local.quicksave('folio');			
+		},
+
 		// Various handlers executed after stores values are set, bit of poor mans react
 		post: {
 			// After a note store was set
@@ -1470,7 +1541,9 @@ var Hiro = {
 			delete p.val;
 
 			// Save profile
-			Hiro.data.set('profile','',data.session.profile,'s');				 			
+			Hiro.data.set('profile','',data.session.profile,'s');	
+
+			console.log(data);
 
 			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
 			for (var note in data.session.notes) {
@@ -1559,11 +1632,21 @@ var Hiro = {
 								Hiro.sys.error('Received unknown note delta op',ops[j])
 							}							
 							break;	
+						// Set proper id of a new note					
+						case 'folio|set-nid':
+							// Rename existing store, this also takes care of the as of now missing folio shadow entry 
+							Hiro.data.rename('note_' + ops[j].path.split(':')[1],'note_' + ops[j].value);						
+							update = true;								
+							break;
 						// Set changed folio status							
 						case 'folio|set-status':
 							Hiro.folio.lookup[ops[j].path.split(':')[1]].status = ops[j].value;
 							update = true;								
-							break;
+							break;	
+						case 'folio|add-noteref':
+							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);
+							update = true;
+							break;													
 						default:
 							Hiro.sys.error('Received unknown change op from server',ops[j]);		
 					}
@@ -1925,6 +2008,7 @@ var Hiro = {
 			},
 
 			// Specific folio diff, returns proper changes format
+			// NOTE: This does not support deleted notes yet, switch to associative array lookup if we should start supporting that
 			difffolio: function(store) {
 				var i, l, delta;
 
@@ -1941,6 +2025,19 @@ var Hiro = {
 						// Set shadow to client version
 						store.s[i].status = Hiro.folio.lookup[store.s[i].nid].status;
 					}					
+				}
+
+				// Lookup new notes that aren't synced yet.
+				if ( store.s.length != store.c.length ) {
+					for ( i = 0, l = store.c.length; i < l; i++) {
+						if (store.c[i].nid.length < 5) {
+							// Create delta array if not done so yet
+							if (!delta) delta = [];	
+													
+							// Add appropriate op msg
+							delta.push({"op":"add-noteref", "path": "", "value": {"nid": store.c[i].nid, "status": store.c[i].status}})
+						}
+					}
 				}
 
 				// Return delta value if we have one or false
