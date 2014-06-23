@@ -1347,8 +1347,8 @@ var Hiro = {
 	        	// Logging
 				Hiro.sys.log('Startup completed with existing ID',user.sid);	
 
-				// Send			
-				this.commit();
+				// Send	a waiting commit or a client ack	
+				if (!this.commit()) this.ping();
 
 				// End bootstrapping logging group
 				Hiro.sys.log('',null,'groupEnd');				
@@ -1641,9 +1641,15 @@ var Hiro = {
 
 				// Send off
 				this.tx(newcommit);
+
+				// We did commit something!
+				return true;
 			} else {
 				// Release lock as no new commits were found
 				this.commitinprogress = false;
+
+				// Nothing committed
+				return false;
 			}	
 		},
 
