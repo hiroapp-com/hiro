@@ -38,7 +38,7 @@ def assets_env(app):
     env.register('new_js', 'js/hiro.js', filters='jsmin', output="javascript/hiro.%(version)s.js")      
     env.register('new_css', 'css/hiro.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")    
     env.register('cache_manifest', 'hiro.appcache', filters='appcache', output="appcache/hiro.%(version)s.appcache")    
-    if os.environ.get('SERVER_SOFTWARE', '').startswith('Devel'):
+    if os.environ.get('HIRO_DEBUG') is not None:
         env.debug = True
     return env
 
@@ -60,16 +60,12 @@ if __name__== "__main__":
 
     os.environ["SERVER_SOFTWARE"] = 'Devel'
 
-    gae_root = os.environ['GAE_ROOT']
-    sys.path.append(gae_root)
-
     # Windows shit
     if os.name == 'nt':
         print os.environ['GAE_ROOT']        
         from _python_runtime import fix_sys_path
         fix_sys_path()  
 
-    sys.path.append(os.path.join(gae_root, 'lib'))
     # setup flask app for context
     from flask import Flask
     app = Flask('application')
