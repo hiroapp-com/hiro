@@ -9,103 +9,12 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
   must be passed *username* as the argument.
 
 """
-import os
-import time
-import string
-import random
-import uuid
-import json
-
-from hashlib import sha512
-from collections import defaultdict
-from datetime import datetime
-
-
-from flask import request, session, render_template, redirect, url_for, jsonify, Response
-from flask_cache import Cache
-from flask.ext.login import current_user, login_user, logout_user, login_required
+from flask import request, session, render_template, jsonify, Response, redirect, url_for
 from flask.ext.oauth import OAuth
-from pattern.web import Yahoo
-from google.appengine.api import memcache, channel, taskqueue, urlfetch
-from google.appengine.ext import ndb
-from bs4 import BeautifulSoup
 
+from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
 
-from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET
-from application import app
-
-from .diffsync import SyncSession
-from .models import User, Document, Link, PasswordToken, SharingToken, DocAccess, DeltaLog
-from .forms import LoginForm, SignupForm
-from .decorators import limit_free_plans, root_required
-from .email_templates import send_mail_tpl
-
-
-DA_ROLE_ORDER = {
-        'owner': '1',
-        'collab': '2',
-        }
-DA_STATUS_ORDER = {
-        'active': '1',
-        'invited': '2',
-        'archived': '3',
-        }
-
-
-base_url = 'http://localhost:8080/' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com/'
-
-# Direct Templates
-
-def home():
-    return render_template('index.html')  
-
-def landing():
-    return render_template('landing_new.html')
-
-def settings():
-    return render_template('settings.html')
-
-def newlanding():
-    return render_template('hync_landing.html')  
-
-def newsettings():
-    return render_template('hync_settings.html')    
-
-def offline():
-    return render_template('hync_offline.html')     
-
-def newhome():
-    return render_template('hync_home.html')  
-
-def manifestwrapper():
-    return render_template('hync_manifestwrapper.html')           
-
-def test():
-    return render_template('test.html')   
-
-def static_manifest():
-    return Response(render_template('hiro.appcache'), mimetype="text/cache-manifest")
-
-
-yahoo = Yahoo(license=(YAHOO_CONSUMER_KEY, YAHOO_CONSUMER_SECRET))
-def search_yahoo(terms, num_results=20):
-    quoter = lambda s: u'"{0}"'.format(s) if ' ' in s else s
-    qry = u'+'.join(quoter(t) for t in terms)
-    cache_key = u'yahoo:{0}'.format(qry)
-    result = memcache.get(cache_key)
-    if result is None:
-        result = [{'url': link.url,
-                   'title': link.title,
-                   'description': link.text} for link in yahoo.search(qry, count=num_results)]
-        memcache.add(cache_key, result, time=60*60*3) # cache results for 3hrs max
-
-    return result
-
-gen_key = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 12))
-
-
-# Flask-Cache (configured to use App Engine Memcache API)
-cache = Cache(app)
+from models import User, Session
 
 oauth = OAuth()
 facebook = oauth.remote_app('facebook',
@@ -119,22 +28,127 @@ facebook = oauth.remote_app('facebook',
 )
 facebook.tokengetter(lambda: session.get('oauth_token'))
 
-def jsonify_err(status, *args):
-    resp = jsonify(errors=args)
-    resp.status = str(status)
-    return resp
+def home():
+    return render_template('home.html')  
 
-def logout():
-    logout_user()
-    return '', 204
+def anon():
+    return jsonify(token=User.anon_token())
 
+def login():
+    data  = request.json
+    sid = data.get('sid')
+    pwd = data.get('password')
+    if not pwd:
+        return jsonify_err(400, password="password required")
+
+    user = User(email=data.get('email'), phone=data.get('phone'))
+    if not user.pwlogin(pwd):
+        return jsonify_err(400, password="email/phone or password incorrect")
+    sess = Session.load(sid) if sid else None
+    if sess:
+        user.copy_noterefs_from(sess.user)
+    # TODO: delete old user/session?
+    return jsonify(token=user.token('login'))
+
+def register():
+    data  = request.json
+    sid = data.get('sid')
+    name = data.get('name', '')
+    email = valid_email(data.get('email', ''))
+    phone = data.get('phone', '')
+    pwd = data.get('password')
+    if email == phone == '':
+        return jsonify_err(403, email='email or phone required')
+    if passwd_check(pwd) is not None:
+        return jsonify_err(400, password=passwd_check(pwd))
+
+    sess = Session.load(sid) if sid else None
+    # if no sid: create new user and return new logintoken. 
+    # sends verify emails/texts if no password provided
+    if not sess:
+        return register_blank(name, email, phone, pwd)
+
+    # we have a valid session, yay!
+    if sess.user.tier > 0:
+        # session is already authenticated, abort
+        return jsonify_err(403, session='session already authenicated')
+    if not sess.user.signup(email, phone, pwd):
+        return jsonify_err(400, session='signup failed')
+    # check if we can auto-verify email or phone (and thus, merge his files over)
+    if sess.token_user:
+        # token used by session was a sharing token, targeted at a specific user
+        # check, if we can auto-verify some email or phone
+        if email and email == sess.token_user.email:
+            if sess.user.set_verified(email=email):
+                sess.user.copy_noterefs_from(sess.token_user)
+                #delete_user(sess.token_user.uid)
+        if phone and phone == sess.token_user.phone:
+            if sess.user.set_verified(phone=phone):
+                sess.user.copy_noterefs_from(sess.token_user)
+                #delete_user(sess.token_user.uid)
+    return jsonify(token=sess.user.token('login'))
+
+def register_blank(name, email, phone, pwd):
+    user = User.create(name=name, email=email, phone=phone, pwd=pwd)
+    if user is None:
+        return jsonify_err(400, email="Email already registered")
+
+    email_token, phone_token = user.token('verify-email'), user.token('verify-phone')
+    if email_token:
+        #TODO send email with verify token
+        print "generated verify-email token: ", email_token
+        if not pwd:
+            # send email with "set your pwd" copy
+            pass
+        else:
+            # send email with "verify your email" copy
+            pass
+
+    if phone_token:
+        print "generated verify-email token: ", phone_token
+        #TODO send email with verify token
+    # give him a login token for his new user
+    return jsonify(token=user.token('login'))
+
+def change_plan():
+    data = request.json or {}
+    sid, plan, token = data.get('sid'), data.get('plan'), data.get('stripeToken')
+    if not all(sid, plan, token):
+        return jsonify_err(400, error='sid, plan and stripe-token required')
+    sess = Session.load(sid)
+    err = sess.user.change_plan(plan,token)
+    if err:
+        return jsonify_err(400, error=err)
+    return jsonify(status="ok")
+
+# Direct Templates
+def landing():
+    return render_template('landing.html')  
+
+def settings():
+    return render_template('settings.html')    
+
+def offline():
+    return render_template('offline.html')     
+
+def note():
+    # TODO(flo) inject that no manifest is loaded if we're in the dev environment
+    return render_template('home.html')  
+
+def manifestwrapper():
+    return render_template('manifestwrapper.html')           
+
+def test():
+    return render_template('test.html')   
+
+def static_manifest():
+    return Response(render_template('hiro.appcache'), mimetype="text/cache-manifest")
 
 def fb_connect():
     return facebook.authorize(callback=url_for('fb_callback',
                               next=request.args.get('next') or request.referrer or None,
                               _external=True))
     
-
 def fb_callback():
     """ Verify fb-auth response (initiated by wonderpad or /connect/facebook flow"""
     if request.method == 'POST':
@@ -154,534 +168,37 @@ def fb_callback():
         resp.status = "401"
         return resp
 
-    # generally imply that user has granted email-scope
-    # and base database search on email 
-    user = User.query(User.email == me.data['email']).get()
+    # first search user by fb id
+    user = User.find_by_fb(me.data['id'])
+    if user is None and me.data.get('email'):
+        # let's try (verified) email
+        user = User.find_by_email(me.data['email'])
     if user is None:
-        user = User(email=me.data['email'],
-                    facebook_uid=me.data['id'],
-                    token=uuid.uuid4().hex)
-        user.put()
-    elif not user.facebook_uid:
-        user.facebook_uid = me.data['id']
-        user.put()
-    login_user(user, remember=True)
+        # well, lets create new one!
+        user = User.create(email=me.data.get('email', ''), fb_uid=me.data['id'])
+        user.set_verified(email=user.email)
+    elif not user.fb_uid:
+        user.update(fb_uid=me.data['id'])
     return {'GET': redirect(request.args.get('next', '/')),
-            'POST': jsonify(user.to_dict())
+            'POST': jsonify(token=user.token('login'))
             }[request.method]
 
 
-def login():
-    form = LoginForm(csrf_enabled=False)
-    if form.validate_on_submit():
-        # form-validation already checked whether given email is registered
-        user = User.query(User.email == form.email.data).get()
-        if user.check_password(form.password.data):
-            if login_user(user, remember=True):
-                # logged in; returning userinfo
-                return jsonify(user.to_dict())
-            else:
-                return "Could not login. Maybe account was suspended?", 401
-        else:
-            resp = jsonify(password=["Wrong Password"])
-            resp.status = "401"
-            return resp
-    else:
-        resp = jsonify(form.errors)
-        resp.status = "401"
-        return resp
 
-def register():
-    form = SignupForm(csrf_enabled=False)
-    if form.validate_on_submit():
-        user = User.query(User.email == form.email.data).get()
-        if user is not None:
-            if user.check_password(form.password.data):
-                login_user(user, remember=True)
-                return jsonify(user.to_dict())
-            else:
-                resp = jsonify(email=["E-Mail already registered"])
-                resp.status = "401"
-                return resp
-        user = User()
-        user.token = uuid.uuid4().hex
-        user.email = form.email.data
-        user.password = User.hash_password(form.password.data)
-        user.put()
-        login_user(user)
-        resp = jsonify(user.to_dict())
-        resp.status = "201" # Created
-        return resp
-    else:
-        resp = jsonify(form.errors)
-        resp.status = "401"
-        return resp
+# helper functions
+def valid_email(email):
+    if u'@' not in unicode(email):
+        return ""
+    return email
 
-def reset_password(token):
-    payload = request.json or {}
-    if not payload.get('password'):
-        return jsonify_err(400, 'password required')
-    token = PasswordToken.get_by_id(sha512(token).hexdigest())
-    if not token:
-        return jsonify_err(404, 'Token not found')
-    user = token.user.get()
-    user.password = User.hash_password(payload['password'])
-    user.put()
-    token.key.delete()
-    if login_user(user):
-        return jsonify(user.to_dict())
-    else:
-        return "Could not login. Maybe account was suspended?", 401
+def passwd_check(pwd):
+    if pwd is None:
+        return None
+    if len(pwd) < 6:
+        return "password to short (min 6chars)"
+    return None
 
-#@root_required
-def create_token():
-    email = request.form.get('email')
-    if not email:
-        return "Email required", 400
-    user = User.query(User.email == email).get()
-    if not user:
-        return 'Email not registered', 404
-    token = PasswordToken.create_for(user)
-    send_mail_tpl('resetpw', user.email, dict(url=base_url, token=token))
-    return "Reset-Link sent."
-
-
-@login_required
-def change_plan():
-    payload = request.json or {}
-    plan, token = payload.get('plan'), payload.get('stripeToken')
-    if not plan: 
-        return jsonify_err(400, 'plan field required')
-    ok, err = current_user.change_plan(plan, token)
-    if not ok:
-        return jsonify_err(400, err)
-    return jsonify(current_user.to_dict())
-
-def note(doc_id):
-    doc = Document.get_by_id(doc_id)
-    if doc and not doc.grant(current_user):
-        doc = None
-    return render_template('index.html', doc=doc)
-
-
-@login_required
-def profile():
-    user = current_user
-    if request.method == 'POST':
-        #for now, only User.name can be changed via that endpoint
-        payload = request.json or {}
-        user.name = payload.get('name', user.name)
-        if payload.get('limbo', '') == "!":
-            user.custom_css = ".canvas .page .content textarea { font-family: Inconsolata; font-size: 11px; font-weight: bold;}"
-        user.put()
-    return jsonify(user.to_dict()) 
-
-@ndb.tasklet
-def fetch_docinfo(da):
-    doc = yield da.doc.get_async()
-    last_update = None
-    if doc.last_update_by:
-        if doc.last_update_by != current_user.key:
-            last_editor = yield doc.last_update_by.get_async()
-            last_update = {
-                "updated": time.mktime(doc.last_update_at.timetuple()),
-                "name": last_editor.name if last_editor else None,
-                "email": last_editor.email if last_editor else None,
-                }
-        else:
-            # currently not really used/needed 
-            last_editor = current_user
-    raise ndb.Return({ 
-           "id": da.doc.id(),
-           "title": doc.title,
-           "status": da.status,
-           "role": da.role,
-           "created": time.mktime(da.created_at.timetuple()),
-           "updated": time.mktime(da.last_change_at.timetuple()),
-           "shared": len(doc.access_list) > 1,
-           "unseen": last_update is not None and doc.last_update_at > da.last_access_at,
-           "last_doc_update": last_update
-           })
-
-
-
-@login_required
-def list_documents():
-    group_by = request.args.get('group_by')
-    if group_by is None or group_by not in ('status', ):
-        #default
-        group_key = lambda d: 'documents' 
-    else:
-        group_key = lambda d: d.get(group_by)
-
-    docs = dict()
-    docs_fetcher = DocAccess.query(DocAccess.user == current_user.key).map(fetch_docinfo, limit=100)
-    for doc in docs_fetcher:
-        docs[doc['id']] = doc
-
-    # sort and filter the output
-    doclist = defaultdict(list)
-    for doc in sorted(docs.values(), key=lambda d: d.get('updated'), reverse=True):
-        doclist[group_key(doc)].append(doc)
-
-    # Add current app.yaml version here, so the client knows the latest server version even if tab isn't closed for days/weeks
-    doclist['hiroversion'] = os.environ['CURRENT_VERSION_ID'].split('.')[0];    
-    return jsonify(doclist)
-
-
-@login_required
-@ndb.toplevel
-def create_document():
-    #TODO sanitize & validate payload
-    data = request.json
-    if not data:
-        return "empty payload", 400
-    doc = Document(id=gen_key(), owner=current_user.key)
-    timestamp = data.get('created')
-    if timestamp is not None:
-        doc.created_at = datetime.fromtimestamp(timestamp)
-    doc.title = data.get('title') 
-    doc.text = data.get('text', '')
-    doc.cursor = data.get('cursor', 0)
-
-    links = data.get('links', {})
-    doc.sticky = links.get('sticky', [])
-    doc.blacklist = links.get('blacklist', [])
-    doc_id = doc.put()
-
-    da, _ = DocAccess.create(doc, 
-                             user=current_user, 
-                             role='owner', 
-                             status='active', 
-                             hidecontext=data.get('hidecontext', False),
-                             last_access_at=datetime.now(),
-                             last_change_at=datetime.now()) 
-    sess, _ = da.create_session()
-    resp = jsonify(doc_id=doc_id.id())
-    resp.status = '201'
-    resp.headers['Collab-Session-ID'] = sess['session_id']
-    resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
+def jsonify_err(status, **kwargs):
+    resp = jsonify(**kwargs)
+    resp.status = str(status)
     return resp
-
-
-@login_required
-def edit_document(doc_id):
-    data = request.json
-    if not data:
-        return "empty payload", 400
-    doc = Document.get_by_id(doc_id)
-    if not doc:
-        return "document not found", 404
-    access = doc.grant(current_user)
-    if not access:
-        return "access denied, sorry.", 403
-
-    # save Document specific data
-    doc.title = data.get('title', doc.title)
-    doc.cursor = data.get('cursor', doc.cursor)
-    links = data.get('links', {})
-    if links.get('sticky') is not None:
-        doc.sticky = links.get('sticky', [])
-    if links.get('blacklist') is not None:
-        doc.blacklist = links.get('blacklist', [])
-    doc.put()
-
-    # save DocAccess specific data
-    put_access = False
-    if data.get('status') in ('active', 'archived'):
-        access.status = data.get('status')
-        put_access = True
-    if data.get('hidecontext'):
-        access.hidecontext = data.get('hidecontext')
-        put_access = True
-    if put_access: 
-        access.put()
-
-    return "", 204
-
-@login_required
-@ndb.toplevel
-def get_document(doc_id):
-    doc = Document.get_by_id(doc_id)
-    if not doc:
-        return "document not found", 404
-    access = doc.grant(current_user, request.headers.get("accesstoken"))
-    if not access:
-        return "access denied, sorry.", 403
-
-    sess, _ = access.create_session()
-    docinfo = doc.api_dict()
-    docinfo.update({
-        'updated': time.mktime(access.last_change_at.timetuple()),
-        'hidecontext': access.hidecontext,
-        })
-    resp = jsonify(docinfo)
-    resp.headers['Collab-Session-ID'] = sess['session_id']
-    resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-    return resp
-
-
-@ndb.tasklet
-def fetch_collabinfo(da):
-    uid, name, email = None, None, da.email
-    if da.user:
-        user = yield da.user.get_async()
-        uid, name, email = user.key.id(), user.name, user.email
-    raise ndb.Return({"access_id": da.key.id(),
-            "role": da.role,
-            "status": da.status,
-            "created": time.mktime(da.created_at.timetuple()),
-            "user_id": uid,
-            "email": email,
-            "name": name,
-            })
-
-@login_required
-def doc_collaborators(doc_id):
-    doc = Document.get_by_id(doc_id)
-    if not doc:
-        return "document not found", 404
-    access = doc.grant(current_user)
-    if not access:
-        return "access denied, sorry.", 403
-
-    if request.method == 'POST':
-        if not request.json:
-            return 'payload missing', 400
-        pk = request.json.get('access_id')
-        email = request.json.get('email')
-        if pk and request.json.get('_delete'):
-            # revoke doc-access
-            da = DocAccess.get_by_id(pk)
-            if da and da.doc == doc.key and da.role != 'owner':
-                da.key.delete()
-                return "ok"
-            else:
-                return "document not found or insufficient right", 404
-        elif email:
-            return doc.invite(email, current_user)
-        else:
-            return "", 400
-    else: # GET 
-        res = list(DocAccess.query(DocAccess.doc == doc.key).map(fetch_collabinfo))
-        res.sort(key=lambda c: u''.join([DA_ROLE_ORDER[c['role']], DA_STATUS_ORDER[c['status']], str(c['created'])]))
-        return Response(json.dumps(res, indent=4), mimetype="application/json")
-
-
-def analyze_content():
-    tmpdoc = Document(text=request.form.get('content', ''))
-    return jsonify(tmpdoc.analyze())
-
-@limit_free_plans
-def relevant_links():
-    urls_seen, results = {}, []
-    if not request.json:
-        return 'payload missing', 400
-    shorten = request.json.get('use_shortening', True)
-
-    if 'text' in request.json:
-        terms = request.json['text'].strip().split(' ', 2)
-        if len(terms) > 2:
-            terms = Document(text=request.json['text']).analyze()['textrank_chunks']
-
-    elif 'terms' in request.json:
-        terms = request.json['terms']
-    else:
-        return '"text"(str) or "terms"(array) property mandatory, neither provided.', 400
-
-    if shorten:
-        while len(terms) > 0 and len(results) < 20:
-            serp = search_yahoo(terms) 
-            for result in serp:
-                if result['url'] not in urls_seen:
-                    urls_seen[result['url']] = True
-                    results.append(result)
-            terms = terms[:-2]
-    else:
-        results = search_yahoo(terms)
-    return jsonify(results=results)
-
-def verify_links():  
-    results = []
-    if not request.json:
-        return 'payload missing', 400
-    if 'links' in request.json:
-        links = request.json['links']
-        for url in links:
-            link = fetch_link(url)
-            results.append(link);   
-    else:
-        return 'No links provided', 400     
-    return jsonify(links=results)   
-
-def fetch_link(url):
-    # Fetch link via appengine fetch service
-    # TODO: Handle most common edge cases
-    # Create link object with initial URL (used as id in client)
-    link = {"url" : url}
-
-    # If URL doesn't have protocol, which fetch() needs
-    if not url.startswith('http'):
-        url = 'http://' + url;
-
-    # Fetch URL via Appengine Fetch
-    result = urlfetch.fetch(url, allow_truncated=True, deadline=10, validate_certificate=False)
-
-    if result.status_code == 200:
-        # Build bs object
-        doc = BeautifulSoup(result.content)
-
-        # Try to find title
-        if doc.title.string:
-            link['title'] = doc.title.string
-
-        # Try to find desciption in metatags, otherwise use body text
-        if doc.find("meta", {"name":"description"}):
-            link['description'] = doc.find("meta", {"name":"description"})['content'][:200]  
-        elif doc.find("meta", {"name":"og:description"}):
-            link['description'] = doc.find("meta", {"name":"og:description"})['content'][:200]                        
-        else:   
-            # Try to harvest enough p contents 
-            body = doc.find("body")
-            summary = '' 
-            for p in body.findAll('p'):
-                if len(summary) > 200:
-                    break
-                brz = ' '.join(p.findAll(text=True))
-                if len(brz) > 10: 
-                    summary = summary + brz
-                    continue
-            if len(summary) > 200:
-                link['description'] = summary[:200] + '...'
-
-            # Fall back to get raw textnode contents of body    
-            else:
-                link['description'] = body.get_text("|", strip=True)[200]   
-    else:
-        link['statuscode'] = result.status_code  
-
-    return link       
-
-@login_required
-def sync_doc(doc_id):
-    doc = Document.get_by_id(doc_id)
-    if not doc:
-        return "document not found", 404
-    access = doc.grant(current_user)
-    if not access:
-        return "access denied, sorry.", 403
-
-    cache = memcache.Client()
-    sess_id = request.json.get('session_id')
-    deltas = request.json.get('deltas', [])
-    cache_key = "doc:{0}".format(doc_id)
-    
-    retries = 5
-    while retries > 0:
-        retries -= 1
-        sess = SyncSession.fetch(sess_id, cache)
-        if not sess:
-            # session expired r not found, create new and request re-init on client side
-            # TODO refactor and DRY out the whole sess-create and populate headers flow
-            sess, future = access.create_session()
-            resp = jsonify(doc.api_dict())
-            resp.status = "412"
-            resp.headers['Collab-Session-ID'] = sess['session_id']
-            resp.headers['Channel-ID'] = channel.create_channel(sess['session_id'])
-            future.get_result() #wait for the access.put_async() to finish
-            return resp
-        elif not sess['user_id'] == current_user.key.id():
-            return "not your sync session {0} != {1}".format(sess['user_id'], current_user.key.id()), 403
-
-        if not cache.get(cache_key):
-            # make sure mastertext is in cache for later CAS retrieval
-            cache.set(cache_key, {'text': doc.text})
-        cached_doc = cache.gets(cache_key)
-        # N.B.: cached_doc will be modified inplace
-        changed = sess.sync_inbound(deltas, cached_doc)
-        if changed:
-            ok = cache.cas(cache_key, cached_doc) 
-            if ok:
-                sess.save()
-                taskqueue.add(payload="{0}-{1}".format(doc_id, sess_id), url='/_hro/notify_sessions')
-                # persist changes in datastore; fire and forget...
-                doc.text = cached_doc['text']
-                doc.put_async()
-                access.last_change_at = datetime.now()
-                #for d in deltas:
-                #    access.deltalog.insert(0, DeltaLog(delta=d['delta'], timestamp=access.last_change_at))
-            else:
-                # CAS timestamp expired, try all over again
-                continue
-        else:
-            # master doc not changed, only persist session
-            sess.save()
-
-        access.last_access_at = datetime.now()
-        access.put()
-        return jsonify(session_id=sess_id, deltas=sess['edit_stack'])
-    return jsonify_err(400, "could not acquire lock for masterdoc")
-
-
-def notify_sessions():
-    doc_id, sess_id = request.data.split('-', 1)
-    doc = Document.get_by_id(doc_id)
-    sess = SyncSession.fetch(sess_id)
-    if not doc or not sess or not sess['user_id']:
-        #something went wrong, e.g. session timed out etc
-        return 'noop'
-    user = User.get_by_id(sess['user_id'])
-    msg = {"kind": "edit", 
-           "doc_id": doc.key.id(), 
-           "origin": {
-               "session_id": sess['session_id'],
-               "email": user.email,
-               "name": user.name
-               }
-           }
-    for da in DocAccess.query(DocAccess.doc == doc.key):
-        if da.user:
-            u = da.user.get()
-            u.push_message(msg)
-    return "ok"
-
-
-def schemamigration(ptr=0):
-    import update_schema
-    from google.appengine.ext import deferred
-    deferred.defer(update_schema.UpdateSchema)
-    return 'ok'
-
-
-def update_doc_stats():
-    doc_id = request.form.get('doc_id')
-    doc = Document.get_by_id(doc_id)
-
-    # update timestamps
-    last_da = DocAccess.query(DocAccess.doc == doc.key).order(-DocAccess.last_change_at).get()
-    if doc.last_update_at == last_da :
-        return 'skipped; already uptodate'
-    doc.last_update_at = last_da.last_change_at
-    doc.last_update_by = last_da.user
-
-    # update access-list
-    doc.access_list = [k for k in DocAccess.query(DocAccess.doc == doc.key).iter(keys_only=True)]
-    doc.put()
-    return 'ok'
-
-
-@root_required
-def _manual_intervention():
-    """ View to be used for any manual intervention (e.g. change a doc-text) that you 
-    wish to run LIVE. Add your code here, deploy to non-public version and call /_magick 
-    while being logged in as a root user. 
-    """
-    return "ok"
-
-def warmup():
-    """App Engine warmup handler
-
-    See http://code.google.com/appengine/docs/python/config/appconfig.html#Warming_Requests
-
-    """
-    return ''

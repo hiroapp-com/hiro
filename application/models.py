@@ -1,133 +1,248 @@
-import os
 import uuid
-import time
+import random
+import string
+import datetime
 import calendar
 from hashlib import sha512
-from datetime import datetime
 
 import stripe
-from passlib.hash import pbkdf2_sha512
-from google.appengine.ext import ndb
-from google.appengine.api import memcache, taskqueue
-from flask.ext.login import UserMixin, AnonymousUser
-from flask import session, url_for
-from textmodels.textrank import get_top_keywords_list
+
 from settings import STRIPE_SECRET_KEY
+from hiro import get_db
+from passlib.hash import pbkdf2_sha512
 
-from .utils import get_sorted_chunks
-from .email_templates import send_mail_tpl
-from .diffsync import SyncSession
+gen_uid = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 8))
 
-from diff_match_patch import diff_match_patch 
+def gen_token():
+    token = uuid.uuid4().hex
+    key = sha512(token).hexdigest()
+    return token, key
 
-DMP = diff_match_patch()
-base_url = 'http://localhost:8080' if 'Development' in os.environ['SERVER_SOFTWARE'] else 'https://alpha.hiroapp.com'
-
-class PlanChange(ndb.Model):
-    created_at = ndb.DateTimeProperty(auto_now_add=True)
-    old = ndb.StringProperty()
-    new = ndb.StringProperty()
-
-class User(UserMixin, ndb.Model):
+class User(object):
     PLANS = {'free': 1,
              'starter': 2,
              'pro': 3
              }
     PAID_PLANS = ('starter', 'pro')
 
-    token = ndb.StringProperty()
-    email = ndb.StringProperty()
-    name = ndb.StringProperty(default='')
-    plan = ndb.StringProperty(default='free')
-    plan_history = ndb.StructuredProperty(PlanChange, repeated=True)
-    plan_expires_at = ndb.DateTimeProperty()
-    password = ndb.StringProperty()
-    signup_at =  ndb.DateTimeProperty(auto_now_add=True)
-    facebook_uid = ndb.StringProperty()
-    stripe_cust_id = ndb.StringProperty()
-    relevant_counter = ndb.IntegerProperty(default=0)
-    has_root = ndb.BooleanProperty(default=False)
-    tier = property(lambda self: User.PLANS.get(self.plan, 0))
-    has_paid_plan = property(lambda self: self.plan in User.PAID_PLANS)
-    latest_doc = property(lambda self: DocAccess.query(DocAccess.user == self.key).order(-DocAccess.last_change_at).get().doc.get())
+    def __init__(self, uid=None, name='', tier=None, email='', phone='', fb_uid=''):
+        self.uid = uid
+        self.tier = tier
+        self.email = email
+        self.phone = phone
+        self.fb_uid = fb_uid
 
-    signup_at_ts = property(lambda self: time.mktime(self.signup_at.timetuple()))
-    custom_css = ndb.StringProperty(default='')
+    @classmethod
+    def create(cls, name='', email='', phone='', fb_uid='', pwd=None):
+        conn = get_db()
+        uid = gen_uid()
+        passwd = pbkdf2_sha512.encrypt(pwd) if pwd is not None else None
+        with conn:
+            row = conn.execute("""SELECT 1, uid 
+                                FROM users 
+                                WHERE (email = ? AND email <> '' AND email_status IN ('unverified', 'verified'))
+                                    OR (phone = ? AND phone <> '' AND phone_status IN ('unverified', 'verified'))
+                                    OR (fb_uid <> '' AND fb_uid = ?)
+                               """, (email, phone, fb_uid)).fetchone()
+            print "ROW", row, email, phone, fb_uid
+            if row:
+                return None
+            conn.execute("""INSERT INTO users 
+                            (uid
+                            , name
+                            , email
+                            , phone
+                            , tier
+                            , email_status
+                            , phone_status
+                            , fb_uid
+                            , signup_at
+                            , created_at
+                            , password
+                            ) 
+                            VALUES (?
+                                  , ?
+                                  , ?
+                                  , ?
+                                  , 1
+                                  , 'unverified'
+                                  , 'unverified'
+                                  , ?
+                                  , datetime('now')
+                                  , datetime('now')
+                                  , ?
+                                  )""", (uid, name, email, phone, fb_uid, passwd))
+        conn.commit()
+        return User(uid=uid, name=name, email=email, phone=phone, fb_uid=fb_uid)
 
-
-    def push_message(self, msg):
-        i = 0
-        for da in DocAccess.query(DocAccess.user == self.key):
-            sess_ids = da.sync_sessions[:]
-            for sess_id in sess_ids:
-                sess = SyncSession.fetch(sess_id)
-                if sess:
-                    sess.push(msg)
-                    i += 1
-                else:
-                    # session expired, remove from list
-                    da.sync_sessions.remove(sess_id)
-
-            if len(da.sync_sessions) < len(sess_ids):
-                # session-list has been modified, save it!
-                da.put()
-        return i
-
-
-    @property
-    def active_cc(self):
-        #TODO: cache invalidation as soon as we support card edit/delete
-        if not self.stripe_cust_id:
+    @classmethod
+    def find_by_fb(cls, fb_uid):
+        conn = get_db()
+        row = conn.execute("SELECT uid FROM users WHERE fb_uid = ?", (fb_uid,)).fetchone()
+        if not row:
             return None
-        cache_key = 'stripe.active_card:{0}'.format(self.stripe_cust_id)
-        cc = memcache.get(cache_key)
-        if cc is None:
-            customer = self.get_stripe_customer()
-            if customer:
-                stripe_cc = customer.get('active_card', {})
-                cc = {u'type': stripe_cc.type,
-                      u'last4': stripe_cc.last4,
-                      u'exp_year': stripe_cc.exp_year,
-                      u'exp_month': stripe_cc.exp_month,
-                      }
-                memcache.set(cache_key, cc, time=60*60*2)
-        return cc
+        return User(uid=row[0])
 
+    @classmethod
+    def find_by_email(cls, email):
+        conn = get_db()
+        row = conn.execute("SELECT uid FROM users WHERE email = ? AND email_status = 'verified'", (email,)).fetchone()
+        if not row:
+            return None
+        return User(uid=row[0])
+
+    def update(self, **kwds):
+        if not kwds:
+            return None
+        conn = get_db()
+        setter = []
+        args = []
+        for k, v in kwds.iteritems():
+            setter.append(u'%s = ?'.format(k))
+            args.append(v)
+        args.append(self.uid)
+        conn.execute("UPDATE users SET %s WHERE uid = ?".format(u' '.join(setter)), tuple(args)).fetchone()
+        return True
+
+
+    def delete(self):
+        if not self.uid:
+            return False
+        conn = get_db()
+        # TODO make sure this behaves nicely
+        return bool(conn.execute("DELETE FROM users WHERE uid = ? AND tier < 0", (self.uid, )).rowcount)
+
+    def pwlogin(self, pwd):
+        conn = get_db()
+        rows = []
+        if self.email:
+            rows = conn.execute("SELECT uid, password FROM users WHERE email = ?", (self.email, ))
+        elif self.phone:
+            rows = conn.execute("SELECT uid, password FROM users WHERE phone = ?", (self.phone, ))
+        for row in rows.fetchall():
+            if not row[0] or not row[1]:
+                continue
+            if pbkdf2_sha512.verify(pwd, row[1]):
+                self.uid = row[0]
+                return True
+        return False
+
+    def signup(self, email, phone, pwd):
+        if not self.uid:
+            return False
+        cur = get_db().cursor()
+        passwd = pbkdf2_sha512.encrypt(pwd) if pwd is not None else None
+        cur.execute("UPDATE users SET tier = 1, email = ?, email_status = 'unverified', phone = ?, phone_status = 'unverified', password = ?, signup_at = datetime('now') WHERE uid = ?", (email, phone, passwd, self.uid))
+        return True
+
+    @staticmethod
+    def anon_token():
+        token, hashed = gen_token()
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO tokens (token, kind) VALUES (?, 'anon')", (hashed,))
+        cur.close()
+        return token
+
+    def token(self, kind):
+        if not self.uid:
+            return None
+        conn = get_db()
+        cur = conn.cursor()
+        token, hashed = gen_token()
+        if kind == 'login':
+            cur.execute("INSERT INTO tokens (token, kind, uid) VALUES (?, 'login', ?)", (hashed, self.uid))
+        elif kind == 'verify-email' and self.email:
+            cur.execute("INSERT INTO tokens (token, kind, uid, email) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.email))
+        elif kind == 'verify-phone' and self.phone:
+            cur.execute("INSERT INTO tokens (token, kind, uid, phone) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.phone))
+        else:
+            return None
+        cur.close()
+        return token
+
+    def set_phomail(self, email=None, phone=None):
+        if not self.uid:
+            return
+        conn = get_db()
+        if email:
+            conn.execute("""UPDATE users SET email = ?, email_status = 'unverified' 
+                                              WHERE uid = ? 
+                                           """, (email, self.uid))
+        if phone:
+            conn.execute("""UPDATE users SET phone = ?, phone_status = 'unverified' 
+                                              WHERE uid = ? 
+                                           """, (phone, self.uid))
+
+    def set_verified(self, email=None, phone=None):
+        if not self.uid:
+            return False
+        conn = get_db()
+        verified = False
+        if email:
+            verified |= bool(conn.execute("""UPDATE users SET email_status = 'verified' 
+                                              WHERE uid = ? 
+                                                AND email = ? 
+                                                AND (select count(uid) from users where email = ? and email_status = 'verified') = 0
+                                           """, (self.uid, email, email)).rowcount)
+        if phone:
+            verified |= bool(conn.execute("""UPDATE users SET phone_status = 'verified' 
+                                               WHERE uid = ? 
+                                                 AND phone = ? 
+                                                 AND (select count(uid) from users where phone = ? and phone_status = 'verified') = 0
+                                            """, (self.uid, phone, phone)).rowcount)
+        return verified
+
+    def copy_noterefs_from(self, user):
+        if not self.uid or not user.uid:
+            return None
+        conn = get_db()
+        cur = conn.cursor()
+        cnt = 0
+        for row in cur.execute("SELECT nid FROM noterefs WHERE uid = ?", (user.uid, )).fetchall():
+            # TODO make sure that (uid, nid) constraint fails silently
+            cnt += conn.execute("""INSERT INTO noterefs (nid, uid, status, role) 
+                                           VALUES (?, ?, 'active', 'active')
+                                """, (self.uid, row[0])).rowcount
+        return cnt
 
     def get_stripe_customer(self, token=None):
+        conn = get_db()
+        row = conn.execute("SELECT stripe_customer_id FROM users WHERE uid = ?", (self.uid,)).fetchone()
+        if not row:
+            raise Exception("cannot fetch stripe customer, uid (%s) does not exist".format(self.uid))
+        cust_id = row[0]
         stripe.api_key = STRIPE_SECRET_KEY
-        if not self.stripe_cust_id:
+        if not cust_id:
             if token is None:
                 return None
             customer = stripe.Customer.create(
                     card=token,
                     email=self.email
                     )
-            self.stripe_cust_id = customer.id
-            self.put()
+            conn.execute("UPDATE users SET  stripe_customer_id = ? WHERE uid = ?", (customer.id, self.uid,))
             return customer
         else:
-            return stripe.Customer.retrieve(self.stripe_cust_id)
-
-    def stripe_token_unused(self, token):
-        if not token:
-            return True
-        token_already_used = StripeToken.get_by_id(token)
-        return not token_already_used
+            return stripe.Customer.retrieve(cust_id)
 
     def change_plan(self, new_plan, token=None, force=False):
-        if not self.stripe_token_unused(token):
-            return None, "Raplay attempt, token already used"
+        if tokenhistory_seen(token):
+            return "Replay attempt, token already used"
         elif new_plan not in User.PLANS:
-            return None, "Trying to change to unknown plan, valid options: {0}".format(', '.join(User.PLANS.keys()))
-        elif self.plan == new_plan:
+            return "Trying to change to unknown plan, valid options: {0}".format(', '.join(User.PLANS.keys()))
+        conn = get_db()
+        row = conn.execute("SELECT plan FROM users WHERE uid = ?", (self.uid,)).fetchone()
+        if not row:
+            return "User with uid `%s` not found".format(self.uid)
+        current_plan = row[0]
+        if current_plan == new_plan:
             # makes no sense, dude
-            return None, "Cannot change to plan you already have"
+            return "Cannot change to plan you already have"
 
         # communicate changes to stripe, if necessary
         stripe_customer = self.get_stripe_customer(token)
-        if self.has_paid_plan and new_plan not in User.PAID_PLANS:
-            # cancel paid plan
+        if current_plan in User.PAID_PLANS and new_plan not in User.PAID_PLANS:
+            # downgrade, cancel paid plan
             if stripe_customer:
                 stripe_customer.cancel_subscription(at_period_end=True)
                 # subscription will end by the end of the month, save how
@@ -135,302 +250,63 @@ class User(UserMixin, ndb.Model):
                 # TODO: backgroundtask for expired plan cancelation
                 now = datetime.now()
                 last_day = calendar.monthrange(now.year, now.month)[1]
-                self.plan_expires_at = now.replace(day=last_day, hour=23, minute=59)
+                expiry = now.replace(day=last_day, hour=23, minute=59)
+                conn.execute("UPDATE users SET plan = ?, plan_expires_at = ? WHERE uid = ?", (new_plan, expiry, self.uid,))
         else:
             # handles up-/downgrades between paid plans and paid_upgade from free
             if stripe_customer:
                 # tell stripe about subscription change
                 stripe_customer.update_subscription(plan=new_plan)
                 if token:
-                    StripeToken(id=token, used_by=self.key).put()
+                    tokenhistory_add(token, self.uid)
             elif not force:
-                return None, "Trying non-forced upgrade to paid plan without valid stripeToken"
-            if self.plan_expires_at:
-                # do not expire plan if user upgraded to paid again after previous cancellation
-                self.plan_expires_at = None
-
-        plan_change = PlanChange(old=self.plan, new=new_plan)
-        self.plan_history.append(plan_change)
-        self.plan = new_plan
-        self.put()
-        return plan_change, ''
-
-    @classmethod
-    def hash_password(cls, pwd):
-        return pbkdf2_sha512.encrypt(pwd)
-
-    def check_password(self, candidate):
-        if self.password:
-            return pbkdf2_sha512.verify(candidate, self.password)
-        else:
-            # empty password is disabled password, e.g. fb connected user
-            return False
-
-    def get_id(self):
-        return unicode(self.key.id())
-
-    @property
-    def usage_quota(self):
-        if self.has_paid_plan:
-            return float('inf')
-        return 100
-
-    def _get_usage_ctr(self):
-        key = 'relevant.counter:{0}'.format(self.key.id())
-        cached = memcache.get(key)
-        return cached if cached is not None else self.relevant_counter
-
-    def _set_usage_ctr(self, val):
-        key = 'relevant.counter:{0}'.format(self.key.id())
-        memcache.set(key, val)
-        if val % 5 == 0:
-            # write to db at certain times:
-            # hope that changes only happen incremently
-            self.relevant_counter = val
-            self.put()
-
-    usage_ctr = property(_get_usage_ctr, _set_usage_ctr)
-    del _get_usage_ctr, _set_usage_ctr
-
-    def to_dict(self):
-        return {
-                'id': self.get_id(),
-                'name': self.name,
-                'email': self.email,
-                'tier': self.tier
-                }
+                return "Trying non-forced upgrade to paid plan without valid stripeToken"
+            # make sure, previous plan-expirations are unset after upgrade
+            conn.execute("UPDATE users SET plan = ?, plan_expires_at = '' WHERE uid = ?", (new_plan, self.uid))
+        return None
 
 
-class Anonymous(AnonymousUser):
-    name = u"Anonymous"
-    has_paid_plan = False
-    latest_doc = None
-    usage_quota = 10
-    has_root = False
-
-    def _get_usage_ctr(self):
-        return session.get('usage-relevant', 0)
-
-    def _set_usage_ctr(self, val):
-        session['usage-relevant'] = val
-
-    usage_ctr = property(_get_usage_ctr, _set_usage_ctr)
-    del _get_usage_ctr, _set_usage_ctr
-
-
-class Link(ndb.Model):
-    url = ndb.StringProperty(required=True)
-    title = ndb.StringProperty()
-    description = ndb.StringProperty()
-
-    def to_dict(self):
-        return {
-                'url': self.url,
-                'title': self.title,
-                'description': self.description
-                }
-     
-#NOTE SharingToken will be removed after migration to DocAccess
-class SharingToken(ndb.Model):
-    #hash of token is stored as the key
-    created_at = ndb.DateTimeProperty(auto_now_add=True)
-    email = ndb.StringProperty()
-    use_once = ndb.BooleanProperty()
-
-    doc = property(lambda(s): s.key.parent().get())
-
+class Session(object):
+    def __init__(self, sid):
+        self.sid = sid
+        self.user = None
+        self.token_user = None
 
     @classmethod
-    def create(cls, email, parent):
-        token = uuid.uuid4().hex
-        key = sha512(token).hexdigest()
-        cls(id=key, email=email, use_once=True, parent=parent).put()
-        return token
-
-
-    def send_invitation(self):
-        pass
-
-
-class Document(ndb.Model):
-    owner = ndb.KeyProperty(kind=User)
-    title = ndb.StringProperty()
-    status = ndb.StringProperty(default='active', choices=('active', 'archived')) 
-    text = ndb.TextProperty()
-    cursor = ndb.IntegerProperty(indexed=False)
-    hidecontext = ndb.BooleanProperty(indexed=False)
-    created_at = ndb.DateTimeProperty(auto_now_add=True)
-    #note: updated_at will soon be deprecated
-    updated_at = ndb.DateTimeProperty(auto_now=True)
-
-    # de-normalized properties updated async by TaskQueue
-    last_update_at = ndb.DateTimeProperty()
-    last_update_by = ndb.KeyProperty(kind=User)
-    access_list = ndb.KeyProperty(kind='DocAccess', repeated=True)
-
-    # contextual links
-    sticky = ndb.JsonProperty()
-    blacklist = ndb.JsonProperty()
-
-
-    excerpt = property(lambda s: s.text[:500])
-
-    def grant(self, user, token=None):
-        if not user.is_authenticated():
+    def load(cls, sid):
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""select users.uid as uid, 
+                              users.tier as tier, 
+                              sharee.uid as sharee_uid, 
+                              sharee.email as sharee_email,
+                              sharee.phone as sharee_phone
+                       FROM sessions
+                       JOIN users as users
+                         ON users.uid = sessions.uid 
+                       LEFT OUTER JOIN users as sharee 
+                         ON sharee.uid = (select uid from tokens where tokens.token = sessions.token_used AND tokens.kind IN ('share-email', 'share-phone'))
+                            AND sharee.tier = -1
+                       WHERE sessions.sid = ? 
+                    """, (sid,))
+        #TODO document tier = -1
+        row = cur.fetchone()
+        cur.close()
+        if not row:
             return None
-        token_hash = sha512(token).hexdigest() if token else ""
-        access = DocAccess.query(DocAccess.doc == self.key, ndb.OR(DocAccess.user == user.key,
-                                                                   ndb.AND(DocAccess.token_hash != "",
-                                                                           DocAccess.token_hash == token_hash))).get()
-        if access and not access.user:
-            #consume invite token
-            access.user = user.key
-            access.token_hash = ''
-            access.status = 'active'
-            access.put()
-        return access
+        sess = cls(sid)
+        uid, tier = row[0], row[1]
+        sharee_uid, sharee_email, sharee_phone = row[2], row[3], row[4]
+        sess.user = User(uid, tier)
+        if sharee_uid:
+            sess.token_user = User(sharee_uid, sharee_email, sharee_phone)
+        return sess
 
-    def analyze(self):
-        data = (self.title or '') + (self.text or '')
-        data = data.replace(os.linesep, ',') 
-        normal_noun_chunks, proper_noun_chunks = get_sorted_chunks(data)
-        textrank_chunks = get_top_keywords_list(data, 8)
-        return {'textrank_chunks': textrank_chunks, 
-                'noun_chunks': normal_noun_chunks, 
-                'proper_chunks':proper_noun_chunks
-                }
+def tokenhistory_add(token, uid):
+    conn = get_db()
+    conn.execute("INSERT INTO stripe_tokens (token, uid, seen_at) VALUES (?, ?, datetime('now'))", (token, uid))
 
-
-    def invite(self, email, invited_by):
-        if DocAccess.query(DocAccess.email == email, DocAccess.user == None).get():
-            return "invite pending", 302
-        user = User.query(User.email == email).get()
-        url = base_url + url_for("note", doc_id=self.key.id())
-        if not user:
-            da, token = DocAccess.create(self, email=email)
-            send_mail_tpl('invite', email, dict(invited_by=invited_by, url=url, token=token, doc=self))
-            return "ok", 200
-
-        if DocAccess.query(DocAccess.doc == self.key, DocAccess.user == user.key).get():
-            return "Already part of this clique", 302
-        else:
-            da, token = DocAccess.create(self, user=user, status='active')
-            #notify user
-            active_sessions = user.push_message({"kind": "share", 
-                                                 "doc_id": str(self.key.id()), 
-                                                 "origin": {
-                                                     "user_id": invited_by.get_id(),
-                                                     "email": invited_by.email,
-                                                     "name": invited_by.name
-                                                     }
-                                                 })
-            if not active_sessions:
-                send_mail_tpl('invite', email, dict(invited_by=invited_by, invitee=user, url=url, token=token, doc=self))
-            return "ok", 200
-
-
-
-    def api_dict(self):
-        return {
-                "id": self.key.id(),
-                "owner": str(self.owner.id()),
-                "status": self.status,
-                "title": self.title,
-                "text": self.text,
-                "created": time.mktime(self.created_at.timetuple()),
-                "updated": time.mktime(self.updated_at.timetuple()),
-                "cursor": self.cursor,
-                "hidecontext": self.hidecontext,
-                "shared": DocAccess.query(DocAccess.doc == self.key).count() > 1,
-                "links": {
-                    "normal": [], #TODO deprecate this in js client
-                    "sticky": self.sticky or [],
-                    "blacklist": self.blacklist or []
-                    }
-                }
-
-
-class DeltaLog(ndb.Model):
-    delta = ndb.JsonProperty('d', indexed=False)
-    timestamp = ndb.DateTimeProperty('ts', auto_now_add=True, indexed=False)
-
-
-class DocAccess(ndb.Model):
-    """ Generic Document access association and book-keeping. 
-    
-        User reference is optional (e.g. if invited but not accepted) 
-        and exact usage of token_hash is open to the creator (e.g. emailed or used as public hash)
-    """
-    # association and metainfo
-    #future status: 'public', 'declined', 'revoked'
-    role = ndb.StringProperty(default='collab', choices=('collab', 'owner')) 
-    status = ndb.StringProperty(default='invited', choices=('invited', 'active', 'archived')) 
-    doc = ndb.KeyProperty(kind=Document, required=True)
-    user = ndb.KeyProperty(kind=User)
-    email = ndb.StringProperty()
-    token_hash =  ndb.StringProperty()
-    hidecontext = ndb.BooleanProperty(default=False, indexed=False)
-    
-    # backlogs and session-references
-    #deltalog = ndb.StructuredProperty(DeltaLog, repeated=True, indexed=False)
-    sync_sessions = ndb.StringProperty(repeated=True, indexed=False)
-
-    # various timestamps
-    last_change_at = ndb.DateTimeProperty(default=datetime.min) # will not be updated on "=<len>"(no-op) deltas
-    last_access_at = ndb.DateTimeProperty(default=datetime.min)
-    created_at = ndb.DateTimeProperty(auto_now_add=True)
-
-    
-    @classmethod
-    def create(cls, doc, user=None, role='collab', status='invited', **kwargs):
-        token = uuid.uuid4().hex
-        hashed = sha512(token).hexdigest()
-        obj = cls(token_hash=hashed, doc=doc.key, role=role, status=status, **kwargs)
-        if user:
-            obj.user = user.key
-        obj.put()
-        return obj, token
-
-    def create_session(self):
-        sess = SyncSession.create(self.doc.get().text, user_id=(self.user.id() if self.user else None))
-        self.sync_sessions.append(sess['session_id'])
-        self.last_access_at = datetime.now()
-        return sess, self.put_async()
-
-    def _post_put_hook(self, future):
-        taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')
-
-    def _post_delete_hook(self):
-        taskqueue.add(params={'doc_id': self.doc.id()}, url='/_hro/update_doc', queue_name='docupdate')
-        
-
-
-
-class StripeToken(ndb.Model):
-    used_by = ndb.KeyProperty(kind=User)
-    created_at = ndb.DateTimeProperty(auto_now_add=True)
-
-class PasswordToken(ndb.Model):
-    user = ndb.KeyProperty(kind=User)
-    created_at = ndb.DateTimeProperty(auto_now_add=True)
-    #hash = ndb.StringProperty()
-
-    @classmethod
-    def create_for(cls, user):
-        # since we only store a hash of the token, we cannot
-        # reuse tokens. thus, clean up old ones before creating 
-        # a new one
-        PasswordToken.query(PasswordToken.user == user.key).map(lambda e: e.key.delete())
-        token = uuid.uuid4().hex
-        key = sha512(token).hexdigest()
-        obj = cls(id=key, user=user.key)
-        obj.put()
-        return token
-
-
-
-
-
-
-
-
+def tokenhistory_seen(token):
+    conn = get_db()
+    row = conn.execute("SELECT 1 FROM stripe_tokens WHERE token = ?", (token,)).fetchone()
+    return bool(row)
