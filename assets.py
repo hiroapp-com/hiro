@@ -8,7 +8,7 @@ if os.name == 'nt':
     # Set the absolute string on windows as quickfix
     root_dir = 'C:\local\editor'
 else:
-    root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.')
 
 if root_dir not in sys.path:
    sys.path.insert(0, root_dir)
@@ -69,7 +69,7 @@ if __name__== "__main__":
     # setup flask app for context
     from flask import Flask
     app = Flask('application')
-    app.config.from_object('application.settings')
+    app.config.from_object('settings')
     # build bundles
     env = assets_env(app)
     for bundle in list(env):
