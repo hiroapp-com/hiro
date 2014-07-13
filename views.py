@@ -29,7 +29,8 @@ facebook = oauth.remote_app('facebook',
 facebook.tokengetter(lambda: session.get('oauth_token'))
 
 def home():
-    return render_template('home.html')  
+    # TODO(flo) inject that no manifest is loaded if we're in the dev environment    
+    return render_template('hync_home.html')  
 
 def anon():
     return jsonify(token=User.anon_token())
@@ -123,20 +124,20 @@ def change_plan():
 
 # Direct Templates
 def landing():
-    return render_template('landing.html')  
+    return render_template('hync_landing.html')  
 
 def settings():
-    return render_template('settings.html')    
+    return render_template('hync_settings.html')    
 
 def offline():
-    return render_template('offline.html')     
+    return render_template('hync_offline.html')     
 
 def note():
-    # TODO(flo) inject that no manifest is loaded if we're in the dev environment
-    return render_template('home.html')  
+    # TODO(flo) never include manifest in template requested via /note/<id> 
+    return render_template('hync_home.html')  
 
 def manifestwrapper():
-    return render_template('manifestwrapper.html')           
+    return render_template('hync_manifestwrapper.html')           
 
 def test():
     return render_template('test.html')   
