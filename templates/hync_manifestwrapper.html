@@ -1,8 +1,6 @@
 <html manifest="{{ get_asset('cache_manifest') }}">
 	<head>
-	<script type="text/javascript">
-	window.applicationCache.addEventListener('updateready', function() { window.applicationCache.swapCache(); }, false);
-	</script>
+	<script type="text/javascript">var ac=window.applicationCache;ac.addEventListener('updateready', function() { window.applicationCache.swapCache();window.parent.Hiro.sys.versioncheck('{{ config.HIRO_VERSION }}'); document.location.reload(true); }, false);ac.addEventListener('noupdate', function() {window.parent.Hiro.sync.cachelock = false;}, false);ac.addEventListener('cached', function() {window.parent.Hiro.sync.cachelock = false;}, false);</script>
 	</head>
 	<body>
 	</body>

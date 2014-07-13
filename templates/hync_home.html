@@ -61,23 +61,23 @@
 					<div class="widget">
 						<a class="cancel" data-hiro-action="close" title="Cancel"></a>
 						<div class="title">Share this note with others:</div>
-						<form action="javascript:void(0);">
-							<input type="email" placeholder="E-Mail or Phone-Number" class="hiro">
+						<form action="javascript:void(0);" novalidate>
+							<input type="email" placeholder="E-Mail or Phone-Number" class="hiro" novalidate>
 							<div class="error" style="display: none;"></div>
+							<div class="peers"></div>
 							<input type="submit" value="foo" class="pseudobutton">
 						</form>
-						<a class="hirobutton green">Invite</a>
-						<small>You can revoke access at any time</small>
-						<div class="light">People who have access:</div>
+						<a class="hirobutton grey" data-hiro-action="invite">Invite</a>
+						<small>People who have access:</small>
 						<div class="peers"></div>
 					</div>	
 				</div>	
 			</div>	
-			<input class="title" id="pageTitle" value="">				
-			<textarea placeholder="Just write" id="pageContent"></textarea>
+			<input class="title" id="title" value="">				
+			<textarea placeholder="Just write" id="content"></textarea>
+			<pre id="overlay"></pre>			
 	        <div id="context">
-				<div id="status">&nbsp;</div>
-				<div id="errorstatus" title="Can't connect to Hiro.&#013;Please do not close Hiro before you went back online &amp; saved, or your changes will be lost.">&nbsp;</div>			
+				<div id="status">Loading...</div>		
 				<div id="results">	
 					<div id="msgresults"></div>
 					<div id="synresults"></div>				
@@ -93,7 +93,8 @@
 		</div>
 		
 		<div id="shield">
-			<div class="wrapper">				
+			<div class="wrapper">		
+				<div id="d_close"></div>					
 				<div id="d_logio">
 					<div id="s_signup">
 						<a class="fb hirobutton" data-hiro-action="fbauth">Sign-Up with&nbsp;<b>Facebook</b></a>
@@ -135,9 +136,8 @@
 					<div class="icon"></div>
 					<div class="message"><em>Hiro is currently offline.</em>Your settings will be available as soon as you come back online.</div>
 				</div>				
-				<div id="d_container"></div>
+				<div id="d_container"></div>				
 			</div>	
-			<div class="d_close"></div>
 		</div>	
 
 		<div id="hprogress"><div class="bar" role="bar"><div class="peg"></div></div></div>
