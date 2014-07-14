@@ -4229,7 +4229,7 @@ var Hiro = {
 			load: function() {
 				// Send off AJAX request
 				Hiro.sync.ajax.send({
-					url: '/newsettings/',
+					url: '/component/settings/',
 					success: function(req,data) {
 						if (data) {
 							Hiro.ui.render(function(){

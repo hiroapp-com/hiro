@@ -1,21 +1,21 @@
 CACHE MANIFEST{{ "\n" }}
-# We generate it via assets.py, thus changes to either css or js
-# also update the content of the mafiest file (via file hash).
-# Thus new assets should trigger a cache reload.{{ "\n" }}
+# v {{ config.HIRO_VERSION }}{{ "\n" }}
 
 CACHE:{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
 {{ get_asset_url('new_js') }}{{ "\n" }}
 /static/img/icons.3.png{{ "\n" }}
+/static/img/site/landing.mobile.3.png{{ "\n" }}
+/static/img/site/landing.3.png{{ "\n" }}
 /static/img/favicon.png{{ "\n" }}
 /static/img/faviconred.png{{ "\n" }}
+/static/sounds/unseen.wav{{ "\n" }}
 
 FALLBACK:{{ "\n" }}
-# Make sure all requests (eg /note/foo) go to a standard offline template.
-# This template doesn't have any landing page overlay, tracking etc.{{ "\n" }}
 / /offline/app.html{{ "\n" }}
 
 NETWORK:{{ "\n" }}
+/component/settings/{{ "\n" }}
 *{{ "\n" }}
 http://*{{ "\n" }}
 https://*
