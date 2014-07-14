@@ -22,17 +22,11 @@
 		<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png"/>	
 		<meta name="apple-mobile-web-app-status-bar-style" content="black">		
 		<link rel="canonical" href="https://www.hiroapp.com"/>	
-        <style type="text/css">
-            /* limbo! */
-            {{ current_user.custom_css }}
-        </style>
 	</head>
 	<body>
 		<div id="fb-root"></div>		
 
-		{% if not current_user.is_authenticated() %}
-			<iframe src="/newlanding/" scrollbar="no" id="landing"></iframe>	
-		{% endif %}	
+		<iframe src="/newlanding/" scrollbar="no" id="landing"></iframe>		
 
 		<div id="showmenu">
 			<div class="bubble red">8</div>
@@ -145,4 +139,4 @@
 		<div id="wastebin"></div>
 	
         {{ get_asset('new_js') }}
-        <script type="text/javascript">window.analytics||(window.analytics=[]);Hiro.sys.init({{ current_user.tier or '0' }},'{{ config.WS_URL }}');</script></body></html>
+        <script type="text/javascript">window.analytics||(window.analytics=[]);Hiro.sys.init(0,'{{ config.WS_URL }}');</script></body></html>
