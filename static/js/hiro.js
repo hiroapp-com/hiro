@@ -494,7 +494,7 @@ var Hiro = {
 						Hiro.canvas.writelock = null;
 
 						// Save cache
-						if (cache._changed && !lock) Hiro.canvas.save();
+						if (cache._changed) Hiro.canvas.save();
 					},Hiro.canvas.delay);
 
 					// Save cache data
