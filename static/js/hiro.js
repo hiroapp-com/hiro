@@ -1949,7 +1949,7 @@ var Hiro = {
 					this.todisk(key,value)						
 				}
 
-				// Persist list of unsynced values and msg queue
+				// Persist list of unsynced values and tokens
 				this.todisk('unsynced',Hiro.data.unsynced);
 
 				// Empty array
@@ -2061,8 +2061,8 @@ var Hiro = {
 		synconline: false,
 		webonline: false,
 
-		// Token we will try to fallback on
-		token: null,
+		// Token(s) we will try to fallback on
+		tokens: [],
 
 		// Init sync
 		init: function(ws_url) {
@@ -2142,7 +2142,7 @@ var Hiro = {
 			if (!this.synconline) return;
 
 			// Look into tokenbag as fallback (most likely by URL hash at this point)
-			token = token || this.token;			
+			if (!token && this.tokens.length > 0) token = this.tokens[0];	
 
 			// See if a token was provided
 			if (token) {
@@ -2187,7 +2187,7 @@ var Hiro = {
 				},
 				error: function(req,data) {	
 		        	// Logging
-					Hiro.sys.error('UNable to fetch Anon token',req);                 		                    						                    
+					Hiro.sys.error('Unable to fetch Anon token',req);                 		                    						                    
 				}										
 			});			
 		},
