@@ -1,4 +1,3 @@
-{% if current_user.is_authenticated() %}
 <div id="s_account">
 	<div class="header">
 		<a class="active">You<em>r Account</em></a>
@@ -7,17 +6,17 @@
 	</div>	
 	<div class="accountdetails">
 		<form id="accountform" action="javascript:void(0);">
-			<input type="text" value="{{ current_user.name }}" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
-			<input type="text" value="{{ current_user.email }}" disabled></input>{% if current_user.facebook_uid %}<div class="ioption">via&nbsp;<a href="https://www.facebook.com/{{ current_user.facebook_uid }}" class="facebook" target="_blank">Facebook</a></div>{% endif %}
-			<input type="text" value="Member since:&nbsp;{{ current_user.signup_at.strftime('%B %d, %Y') }}" disabled></input><div class="ioption nomobile">Thanks!</div>
-			<input type="text" value="{% if current_user.tier==1 %}Basic{% elif current_user.tier==2 %}Advanced{% else %}Pro{% endif %}&nbsp;Plan" disabled></input><div class="ioption upgradelink"><a data-hiro-action="upgrade">Upgrade</a></div>
+			<input type="text" value="" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
+			<input type="text" value="" disabled></input>
+			<input type="text" value="Member since:" disabled></input><div class="ioption nomobile">Thanks!</div>
+			<input type="text" value="" disabled></input><div class="ioption upgradelink"><a data-hiro-action="upgrade">Upgrade</a></div>
 			<input type="submit" value="foo" onclick="Hiro.sys.user.namesave(event); return false;" class="pseudobutton"></input>			
 		</form>		
 		<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
-		<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share fb" onclick="Hiro.ui.facebookshare(); return false;">via&nbsp;<b>Facebook</b></a>
-		<a href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');if (analytics) window.parent.analytics.track('Shares App',{channel:'Twitter'});return false;" class="hirobutton share tw">via&nbsp;<b>Twitter</b></a>	
-		<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20little%20app%20for%20daily%20note-taking%3A%20www.hiroapp.com" class="hirobutton share mail green" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'Mail'});" target="_blank">via&nbsp;<b>Mail</b></a>	
-		<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F%20%27Notes%20With%20Friends%27" onclick="if (analytics) window.parent.analytics.track('Shares App',{channel:'SMS'});" class="hirobutton share sms">via&nbsp;<b>SMS</b></a>
+		<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share fb">via&nbsp;<b>Facebook</b></a>
+		<a href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');" class="hirobutton share tw">via&nbsp;<b>Twitter</b></a>	
+		<a href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20little%20app%20for%20daily%20note-taking%3A%20www.hiroapp.com" class="hirobutton share mail green" target="_blank">via&nbsp;<b>Mail</b></a>
+		<a href="sms://?body=Hey%2C%20do%20you%20know%20www.hiroapp.com%3F%20%27Notes%20With%20Friends%27" class="hirobutton share sms">via&nbsp;<b>SMS</b></a>
 	</div>					
 </div>
 	
@@ -83,51 +82,6 @@
 		<a data-hiro-action="switch_s_about">About</a>		
 	</div>
 	<div class="checkoutdetails">	
-		{% if current_user.active_cc %}
-			<form id="checkoutform">
-				<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan" data-hiro-action="changeplan"><a>Change</a></div>
-				<input type="text" disabled value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number"></input><div class="ioption"></div>
-				<input type="text" disabled value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month"></input>&nbsp;/&nbsp;<input type="text" disabled  value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year"></input>	
-				<input type="text" disabled value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc"></input>	
-				<div class="small" id="checkout_error"></div>			
-				<a class="hirobutton green" id="checkoutbutton">
-				Upgrade</a>	
-				<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payment powered by&nbsp;<b>stripe</b></div>
-				<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
-			</form>						
-			<script type="text/javascript">
-				{% with cc = current_user.active_cc %}
-				var hirostripecard = {
-					cc_number: "{{ cc['type'] }}: " + '•••• •••• •••• ' + "{{ cc['last4'] }}",
-					cc_exp_month: "{{ cc['exp_month'] }}",
-					cc_exp_year: "{{ cc['exp_year'] }}",
-					cc_cvc: '•••'
-				};
-				{% endwith %}
-				var usehirostripecard = true;
-				function fillccform() {
-					for (var key in hirostripecard) {
-					   if (hirostripecard.hasOwnProperty(key)) {
-					   	var el = document.getElementById(key); 
-					   	el.value = hirostripecard[key];
-					   	if (key=='cc_number') el.addEventListener('click', clearccform(el));
-					   }
-					}
-				}
-				var clearccform = function(el) {
-				    var handler = function(event) {
-				    	var fields = el.parentNode.getElementsByTagName('input');
-				    	for (i=0,l=fields.length;i<l;i++) {
-				    		if (i>0) fields[i].value = '';
-				    	}
-				    	usehirostripecard = false;
-	           			el.removeEventListener('click', handler);
-				    };
-				    return handler;
-				};
-				fillccform();						
-			</script>
-		{% else %}	
 		<form id="checkoutform">
 			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a data-hiro-action="changeplan">Change</a></div>
 			<input type="text" pattern="[0-9]*" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number"></input><div class="ioption"></div>
@@ -140,7 +94,6 @@
 			<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by&nbsp;<b>stripe</b></div>						
 			<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
 		</form>						
-		{% endif %}
 	</div>	
 </div>
 
@@ -176,23 +129,8 @@
 
 <script type="text/javascript">
 	// Various startup functions
-	Hiro.lib.loguser('{{ current_user.token }}',{
-	email: '{{ current_user.email }}',
-	plan: '{{ current_user.plan }}',
-	created: '{{ current_user.signup_at_ts }}',
-	name: '{{ current_user.name }}'
-	});
-	Hiro.ui.setplans({{ current_user.tier }});  		  		
-	Hiro.lib.init();
 	Hiro.lib.defer({
 		facebook: '{{ config.FACEBOOK_APP_ID }}',
 		stripe: '{{ config.STRIPE_PUBLIC_KEY }}'  			
 	});  								
 </script>
-{% else %}
-<script type="text/javascript">
-(function() {
-	console.log('Not logged in');
-}());  								
-</script>
-{% endif %}	

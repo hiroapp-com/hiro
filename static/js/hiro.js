@@ -824,7 +824,7 @@ var Hiro = {
 		// we only have to decide which DOM branch we use in the first line
 		logio: function(event,login) {
 			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register, 
-				url = (login) ? '/login' : '/register', 
+				url = (login) ? '/tokens/login' : '/tokens/signup', 
 				b = branch.getElementsByClassName('hirobutton')[1],
 				v = branch.getElementsByTagName('input'),							
 				e = branch.getElementsByClassName('mainerror')[0],
@@ -851,12 +851,12 @@ var Hiro = {
 			Hiro.sync.ajax.send({
 				url: url,
 	            type: "POST",
-	            contentType: "application/x-www-form-urlencoded",
 	            payload: payload,
 				success: function(req,data) {
 					Hiro.user.logiocomplete(data,login);										                    
 				},
-				error: function(req,data) {				
+				error: function(req,data) {	
+				console.log('errrrooooorrrr',data);			
 	                b.innerText = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;						
 					if (req.status==500) {
@@ -866,11 +866,11 @@ var Hiro = {
 					}
 	                if (data.email) {
 	                	v[0].className += ' error';
-	                	v[0].nextSibling.innerText = data.email[0];
+	                	v[0].nextSibling.innerText = data.email;
 	                }	
 	                if (data.password) {
 	                	v[1].className += ' error';	                    	
-	                	v[1].nextSibling.innerText = data.password[0];  
+	                	v[1].nextSibling.innerText = data.password;  
 	                }	                 		                    						                    
 				}										
 			});	
@@ -880,6 +880,8 @@ var Hiro = {
 		// TODO Bruno: Pack all the good logic in here once we get tokens from server, eg 
 		// > Send local notes to server 
 		logiocomplete: function(data,login) {
+
+			console.log(data);			
 			// Fire refresh to other tabs
 			Hiro.sync.tabtx('location.reload()');
 
