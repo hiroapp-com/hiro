@@ -855,8 +855,7 @@ var Hiro = {
 				success: function(req,data) {
 					Hiro.user.logiocomplete(data,login);										                    
 				},
-				error: function(req,data) {	
-				console.log('errrrooooorrrr',data);			
+				error: function(req,data) {			
 	                b.innerText = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;						
 					if (req.status==500) {
@@ -879,9 +878,7 @@ var Hiro = {
 		// Post successfull auth stuff
 		// TODO Bruno: Pack all the good logic in here once we get tokens from server, eg 
 		// > Send local notes to server 
-		logiocomplete: function(data,login) {
-
-			console.log(data);			
+		logiocomplete: function(data,login) {			
 			// Fire refresh to other tabs
 			Hiro.sync.tabtx('location.reload()');
 
@@ -1641,9 +1638,6 @@ var Hiro = {
 		// Name of stores that are synced with the server
 		onlinestores: ['folio','profile'],
 
-		// Config
-		loaded: false,
-
 		// Log which data isn't saved and/or synced
 		unsaved: [],
 		unsynced: [],
@@ -1669,10 +1663,7 @@ var Hiro = {
 				this.set('folio','',this.local.fromdisk('folio'),'l');
 
 				// Log 
-				Hiro.sys.log('Found existing data in localstorage',localStorage);		
-
-				// Set loaded flag
-				this.loaded = true;		
+				Hiro.sys.log('Found existing data in localstorage',localStorage);			
 
 				// Commit any unsynced data to server
 				Hiro.sync.commit();
@@ -1702,9 +1693,6 @@ var Hiro = {
 
 			// Create new Note
 			Hiro.folio.newnote();			
-
-			// Set loaded flag to true
-			this.loaded = true;
 
 			// End loading bar
 			Hiro.ui.hprogress.done();
@@ -2120,9 +2108,6 @@ var Hiro = {
 		auth: function(token) {
 			var user = Hiro.data.get('profile','c'), payload;
 
-			// Grab token from init if none was provided
-			token = token || this.token;
-
 			// Just quick ehlo with to make sure session is still valid
 			if (user && user.sid) {	
 				// End bootstrapping logging group
@@ -2132,18 +2117,8 @@ var Hiro = {
 				if (!this.commit()) this.ping();			
 			// Hm, no session ID, request a new one with a token
 			} else if (token) {
-				// Apply token
-				payload = {
-					"name": "session-create",
-	        		"token": token 
-	        	};
-
-	        	// Logging
-				Hiro.sys.log('Requesting new session with token ',token);			
-
-				// Sending data
-				this.tx(payload);
-
+				// Create session with provided token
+				this.createsession(token);		
 			// We had neither a session nor a token  	
 			} else if (!user) {
 	        	// Logging
@@ -2152,11 +2127,67 @@ var Hiro = {
 				// Bootstrap local only workspace
 				Hiro.data.bootstrap();	
 
+				// Create session with new anontoken				
+				this.createsession();				
 			// We should have all cases covered, log error if something else happens				
 			} else {
-				Hiro.sys.error('Invalid auth case with user/token:',[user,token]);
+				// Log 
+				Hiro.sys.log('User was never handed a session yet, creating anon session from blank');
+
+				// Create session with new anontoken				
+				this.createsession();					
 			}
-		},		
+		},	
+
+		// Create session handler
+		createsession: function(token) {
+			var r = { "name": "session-create" };
+
+			// Abort if sync is not connected
+			if (!this.synconline) return;
+
+			// Look into tokenbag as fallback (most likely by URL hash at this point)
+			token = token || this.token;			
+
+			// See if a token was provided
+			if (token) {
+				// Add token to request
+				r.token = token;
+
+	        	// Logging
+				Hiro.sys.log('Requesting new session with token ',token);				
+
+				// Sending request
+				this.tx(r)				
+			// No token provided, get one now	
+			} else {
+				// Get token (fires createsession again if successful)				
+				this.getanontoken();
+			}
+		},	
+
+		// Get token from Flask and use it to create new session
+		getanontoken: function() {
+        	// Logging
+			Hiro.sys.log('Requesting anonymous token');		
+
+			// Send request to backend
+			Hiro.sync.ajax.send({
+				url: '/tokens/anon',
+	            type: 'GET',
+				success: function(req,data) {
+		        	// Logging
+					Hiro.sys.log('Received anonymous token ' + data.token);	
+
+					// Request session					
+					Hiro.sync.createsession(data.token);										                    
+				},
+				error: function(req,data) {	
+		        	// Logging
+					Hiro.sys.error('UNable to fetch Anon token',req);                 		                    						                    
+				}										
+			});			
+		},
 
 		// Send message to server
 		tx: function(data) {
@@ -2279,9 +2310,6 @@ var Hiro = {
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
 			Hiro.data.set('folio','',cf,'s');	
-
-			// Set data loaded flag
-			if (!Hiro.data.loaded) Hiro.data.loaded = true;
 
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
@@ -2560,9 +2588,6 @@ var Hiro = {
 				case 'sync':
 					// Start trying to reconnect
 					this[this.protocol].reconnect();	
-
-					// If we at this point still have no data, try to bootstrap it
-					if (!Hiro.data.loaded) Hiro.data.bootstrap();
 
 					// If we already where offline abort here 
 					if (!this.synconline) return;
