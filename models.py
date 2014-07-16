@@ -139,9 +139,8 @@ class User(object):
     def anon_token():
         token, hashed = gen_token()
         conn = get_db()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO tokens (token, kind) VALUES (?, 'anon')", (hashed,))
-        cur.close()
+        conn.execute("INSERT INTO tokens (token, kind) VALUES (?, 'anon')", (hashed,))
+        conn.commit()
         return token
 
     def token(self, kind):
