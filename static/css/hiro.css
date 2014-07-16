@@ -1863,3 +1863,30 @@ body#landingPage2 .l_footer .l_box .l_header {
     position: absolute; 
   }  
 }
+
+
+
+/* ----- Print foooo -------*/
+
+@media print {
+
+#showmenu, #folio, #shield, #hprogress, #wastebin, #apps, #context, #canvas textarea {
+  display: none;
+}
+
+#canvas {
+  margin-left: 0;
+  border-left: 0;
+}
+
+#canvas input.title {
+  padding: 16mm 10% 0 10%;
+  color: #333; 
+}
+
+#canvas pre {
+  padding: 40mm 10% 10mm 10%;
+  color: #333;
+}
+
+} 
