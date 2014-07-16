@@ -40,11 +40,11 @@ def login():
     sid = data.get('sid')
     pwd = data.get('password')
     if not pwd:
-        return jsonify_err(400, password="password required")
+        return jsonify_err(400, password="Password required")
 
     user = User(email=data.get('email'), phone=data.get('phone'))
     if not user.pwlogin(pwd):
-        return jsonify_err(400, password="email/phone or password incorrect")
+        return jsonify_err(400, password="Wrong password")
     sess = Session.load(sid) if sid else None
     if sess:
         user.copy_noterefs_from(sess.user)
@@ -59,7 +59,7 @@ def register():
     phone = data.get('phone', '')
     pwd = data.get('password')
     if email == phone == '':
-        return jsonify_err(403, email='email or phone required')
+        return jsonify_err(403, email='Email or Phone required')
     if passwd_check(pwd) is not None:
         return jsonify_err(400, password=passwd_check(pwd))
 
@@ -196,7 +196,7 @@ def passwd_check(pwd):
     if pwd is None:
         return None
     if len(pwd) < 6:
-        return "password to short (min 6chars)"
+        return "Too short (6 or more)"
     return None
 
 def jsonify_err(status, **kwargs):

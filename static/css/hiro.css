@@ -1070,7 +1070,10 @@ input.pseudobutton {
   color: #333;
 }
 
-
+#d_logio .mainerror {
+  float: left;
+  margin-top: 4px;
+}
 
 
 

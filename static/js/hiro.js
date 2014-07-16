@@ -851,7 +851,7 @@ var Hiro = {
 			Hiro.sync.ajax.send({
 				url: url,
 	            type: "POST",
-	            payload: payload,
+	            payload: JSON.stringify(payload),
 				success: function(req,data) {
 					Hiro.user.logiocomplete(data,login);										                    
 				},
@@ -2703,7 +2703,7 @@ var Hiro = {
 		ajax: {
 			// When we deem a response successfull or let us know that the server is alive
 			successcodes: [200,204],
-			alivecodes: [403,404],
+			alivecodes: [400,403,404],
 
 			// Internal values
 			socket: null,

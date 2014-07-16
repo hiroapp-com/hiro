@@ -12,7 +12,7 @@ from assets import assets_env, get_html_output
 app = Flask('application')
 app.config.from_object('settings')
 
-DB_PATH = '/home/flo/git/hiro.beta/hiro.db'
+DB_PATH = 'C:\local\hync\hiro.db'
 
 
 # Enable jinja2 loop controls extension

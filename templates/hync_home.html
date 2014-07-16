@@ -94,8 +94,8 @@
 						<a class="fb hirobutton" data-hiro-action="fbauth">Sign-Up with&nbsp;<b>Facebook</b></a>
 						<div class="divider"><span class="or">or</span></div>
 						<form action="javascript:void(0);">
-							<input type="email" placeholder="E-Mail"></input><div class="inputerror"></div>				
-							<input type="password" placeholder="Choose a password"></input><div class="inputerror"></div>	
+							<input type="email" placeholder="E-Mail or Phone"></input><div class="inputerror error"></div>				
+							<input type="password" placeholder="Choose a password"></input><div class="inputerror error"></div>	
 							<input type="submit" value="foo" onclick="Hiro.user.logio(event);" class="pseudobutton"></input>
 						</form>		
 						<a class="hirobutton green" data-hiro-action="register">Create Account</a>	
@@ -106,17 +106,17 @@
 						<a class="fb hirobutton" data-hiro-action="fbauth">Log-In with&nbsp;<b>Facebook</b></a>
 						<div class="divider"><span class="or">or</span></div>
 						<form action="javascript:void(0);">
-							<input type="email" placeholder="E-Mail" id="signin_mail"></input><div class="inputerror"></div>
-							<input type="password" id="signin_pwd" placeholder="Password"></input><div class="inputerror"></div>
+							<input type="email" placeholder="E-Mail or Phone" id="signin_mail"></input><div class="inputerror error"></div>
+							<input type="password" id="signin_pwd" placeholder="Password"></input><div class="inputerror error"></div>
 							<input type="submit" value="foo" onclick="Hiro.user.logio(event,true);" class="pseudobutton"></input>
 						</form>		
 						<a class="hirobutton green" data-hiro-action="login">Log-In</a>	
-						<div class="mainerror"></div>				
-						<a class="small" data-hiro-action="requestpwdreset">Lost password?</a> &nbsp; <a class="small" data-hiro-action="switch_s_signup">Create an account</a>
+						<div class="mainerror error"></div>				
+						<a class="small" data-hiro-action="requestpwdreset">Lost password?</a><a class="small" data-hiro-action="switch_s_signup">Create an account</a>
 					</div>	
 					<div id="s_reset">
 						<form action="javascript:void(0);">
-							<input type="password" placeholder="New password" id="new_password"></input><div class="inputerror"></div>
+							<input type="password" placeholder="New password" id="new_password"></input><div class="inputerror error"></div>
 							<input type="password" placeholder="Repeat password"></input><div class="error"></div>
 							<input type="submit" value="foo" onclick="Hiro.user.resetpwd();" class="pseudobutton"></input>
 						</form>		
