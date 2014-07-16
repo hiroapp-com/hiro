@@ -16,6 +16,7 @@ FALLBACK:{{ "\n" }}
 
 NETWORK:{{ "\n" }}
 /component/settings/{{ "\n" }}
+/tokens/{{ "\n" }}
 *{{ "\n" }}
 http://*{{ "\n" }}
 https://*

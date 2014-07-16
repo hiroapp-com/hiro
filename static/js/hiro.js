@@ -680,7 +680,7 @@ var Hiro = {
 				if (Hiro.canvas.el_text.value != text) Hiro.canvas.el_text.value = text;		
 
 				// Fetch proper cursor
-				if (!Hiro.ui.el_landingpage || (Hiro.ui.el_landingpage && Hiro.ui.el_landingpage == 'none')) Hiro.canvas.setcursor(pos);					
+				if (Hiro.ui.el_landingpage.style.display == 'none') Hiro.canvas.setcursor(pos);					
 			});	
 
 			// Resize textarea
