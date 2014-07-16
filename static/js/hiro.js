@@ -792,7 +792,7 @@ var Hiro = {
 			paint: function(string) {
 				var el = this.el_root;
 				Hiro.ui.render(function(){
-					el.innerText = string;
+					el.innerText = string + ' ';
 				});
 			},
 
