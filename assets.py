@@ -29,8 +29,6 @@ def assets_env(app):
     env.manifest = ('file:' + os.path.join(root_dir,'webassets.manifest'))
     env.versions = 'hash:32'
     # create static bundles
-    env.register('hiro_js', 'js/client.js', filters='jsmin', output="javascript/hiro.%(version)s.js")  
-    env.register('hiro_css', 'css/wonderpad.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")
     env.register('new_js', 'js/hiro.js', filters='jsmin', output="javascript/hiro.%(version)s.js")      
     env.register('new_css', 'css/hiro.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")    
     env.register('cache_manifest', 'hiro.appcache', filters='appcache', output="appcache/hiro.%(version)s.appcache")    
@@ -65,7 +63,10 @@ if __name__== "__main__":
     # setup flask app for context
     from flask import Flask
     app = Flask('application')
-    app.config.from_object('settings')
+    if os.environ.get('HIRO_ENV', '') == 'live':
+        app.config.from_object('settings_live')
+    else:
+        app.config.from_object('settings_dev')
     # build bundles
     env = assets_env(app)
     for bundle in list(env):

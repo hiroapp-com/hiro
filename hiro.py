@@ -2,15 +2,21 @@
 Initialize Flask app
 
 """
+import os
 import sqlite3
 import views
+
+import click
 
 from flask import Flask, Markup, render_template, g
 from passlib.hash import pbkdf2_sha512
 from assets import assets_env, get_html_output
 
 app = Flask('application')
-app.config.from_object('settings')
+if os.environ.get('HIRO_ENV', '') == 'live':
+    app.config.from_object('settings_live')
+else:
+    app.config.from_object('settings_dev')
 
 DB_PATH = 'C:\local\hync\hiro.db'
 
@@ -59,7 +65,10 @@ def close_db(error):
         g.db.commit()
         g.db.close()
 
-if __name__ == '__main__':
+@click.command()
+@click.option('--addr', default='127.0.0.1', help='Bind http listener to this socket')
+@click.option('--port', default=5000, help='Listen on this port for incoming HTTP requests.')
+def run_server(addr, port):
     app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'])
     app.add_url_rule('/tokens/anon', 'anontoken', view_func=views.anon, methods=['GET'])
     app.add_url_rule('/tokens/login', 'login', view_func=views.login, methods=['POST'])
@@ -70,4 +79,7 @@ if __name__ == '__main__':
     app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
     app.add_url_rule('/offline/manifestwrapper/', 'manifestwrapper', view_func=views.manifestwrapper)
     app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)
-    app.run()
+    app.run(host=addr, port=port)
+
+if __name__ == '__main__':
+    run_server()

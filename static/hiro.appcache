@@ -1,5 +1,4 @@
 CACHE MANIFEST{{ "\n" }}
-# v {{ config.HIRO_VERSION }}{{ "\n" }}
 
 CACHE:{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
