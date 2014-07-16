@@ -2100,7 +2100,7 @@ var Hiro = {
 		},
 
 		// Authenticate connection
-		auth: function(token) {
+		auth: function() {
 			var user = Hiro.data.get('profile','c'), payload;
 
 			// Just quick ehlo with to make sure session is still valid
@@ -2110,14 +2110,10 @@ var Hiro = {
 
 				// Send	a waiting commit or a client ack	
 				if (!this.commit()) this.ping();			
-			// Hm, no session ID, request a new one with a token
-			} else if (token) {
-				// Create session with provided token
-				this.createsession(token);		
-			// We had neither a session nor a token  	
+			// We have no local at all 	
 			} else if (!user) {
 	        	// Logging
-				Hiro.sys.log('No token or user found, bootstrapping local workspace');
+				Hiro.sys.log('No user found, bootstrapping local workspace');
 
 				// Bootstrap local only workspace
 				Hiro.data.bootstrap();	
@@ -2127,7 +2123,7 @@ var Hiro = {
 			// We should have all cases covered, log error if something else happens				
 			} else {
 				// Log 
-				Hiro.sys.log('User was never handed a session yet, creating anon session from blank');
+				Hiro.sys.log('Existing user, but was never handed a session yet. Creating anon session.');
 
 				// Create session with new anontoken				
 				this.createsession();					
@@ -3189,7 +3185,7 @@ var Hiro = {
 
 			// Iterate through hash components
 			for (i = 0, l = h.length; i < l; i++) {
-				if (h[i].length == 32) Hiro.sync.token = h[i];
+				if (h[i].length == 32) Hiro.sync.tokens.push(h[i]);
 			}
 		},
 
