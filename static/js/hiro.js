@@ -876,17 +876,12 @@ var Hiro = {
 		},
 
 		// Post successfull auth stuff
-		// TODO Bruno: Pack all the good logic in here once we get tokens from server, eg 
-		// > Send local notes to server 
-		logiocomplete: function(data,login) {			
-			// Fire refresh to other tabs
-			Hiro.sync.tabtx('location.reload()');
-
+		logiocomplete: function(data,login) {	
 			// Close dialog
 			Hiro.ui.dialog.hide();
 
-			// Reset visual stage according to new user level
-			Hiro.ui.setstage(data.tier);		
+			// USe token to request new session
+			Hiro.sync.createsession(data.token);	
 		},
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
@@ -2141,7 +2136,7 @@ var Hiro = {
 
 		// Create session handler
 		createsession: function(token) {
-			var r = { "name": "session-create" };
+			var r = { "name": "session-create" }, sid = Hiro.data.get('profile','c.sid');
 
 			// Abort if sync is not connected
 			if (!this.synconline) return;
@@ -2151,8 +2146,16 @@ var Hiro = {
 
 			// See if a token was provided
 			if (token) {
-				// Add token to request
+				// Add token and optional session data to request
 				r.token = token;
+
+				// Add existing sid if present
+				if (sid) {
+					r.sid = sid;
+
+		        	// Logging
+					Hiro.sys.log('Requesting new session with existing SID ',sid,'warn');				
+				}
 
 	        	// Logging
 				Hiro.sys.log('Requesting new session with token ',token);				
@@ -2322,7 +2325,10 @@ var Hiro = {
 
 				// Do
 				Hiro.folio.newnote();			
-			}								
+			}				
+
+			// Reset UI
+			Hiro.ui.setstage(Hiro.data.get('profile','c.tier'));				
 
 			// Complete hprogress
 			Hiro.ui.hprogress.done();
@@ -3126,7 +3132,7 @@ var Hiro = {
 		production: (window.location.href.indexOf('hiroapp') != -1),	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
-		init: function(tier,ws_url) {
+		init: function(ws_url) {
 			// Begin startup logging
 			Hiro.sys.log('Hiro startup sequence','','group');		
 
@@ -3146,14 +3152,14 @@ var Hiro = {
 			// Setup other app parts
 			Hiro.folio.init();
 			Hiro.canvas.init();
-			Hiro.ui.init(tier);	
+			Hiro.ui.init();	
 			Hiro.data.init();			
 			Hiro.sync.init(ws_url);	
 			Hiro.lib.init();		
 			Hiro.apps.init();	
 
 			// Set up UI according to user level
-			Hiro.ui.setstage(Hiro.data.get('profile','c.tier') || tier || 0);			
+			Hiro.ui.setstage(Hiro.data.get('profile','c.tier'));			
 
 			// Load application cache
 			if (window.applicationCache) {
@@ -3282,7 +3288,7 @@ var Hiro = {
 		focus: false,
 
 		// Setup and browser capability testing
-		init: function(tier) {
+		init: function() {
 			var style = this.el_wastebin.style,
 				v = this.vendors, i, l, v, r, measure;
 
@@ -3470,11 +3476,22 @@ var Hiro = {
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
-			// Always load settings from server to determine contents and webserver availability
-			this.dialog.load();	
+			// Set tier if none is provided 
+			tier = tier || 0;
 
 			// Store latest tier in profile object if it already exists
-			if (tier && Hiro.data.get('profile')) Hiro.data.set('profile','c.tier',tier);
+			if (tier && Hiro.data.get('profile')) {
+				// Abort if tier didn't change
+				if (tier == Hiro.data.get('profile','c.tier')) return;
+
+				Hiro.data.set('profile','c.tier',tier);				
+			} 
+
+			// Always load settings from server to determine contents and webserver availability
+			this.dialog.load();				
+
+			// Send tier setting to other tabs
+			Hiro.sync.tabtx('Hiro.ui.setstage(tier);');
 
 			// Switch designs
 			switch (tier) {
