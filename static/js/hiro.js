@@ -2190,6 +2190,7 @@ var Hiro = {
 
 		// Send message to server
 		tx: function(data) {
+			var sid = Hiro.data.get('profile','c.sid');
 			if (!data) return;				
 
 			// Make sure we always send an array
@@ -2205,7 +2206,7 @@ var Hiro = {
 				this.lastsend = Hiro.util.now();	
 
 				// Enrich data object with sid (if we have one) & tag
-				if (!data[i].sid && Hiro.data.get('profile')) data[i].sid = Hiro.data.get('profile','c').sid;				
+				if (!data[i].sid && sid) data[i].sid = sid;				
 				if (!data[i].tag) {
 					// Create tag and add it for later lookup
 					data[i].tag = Math.random().toString(36).substring(2,8);	
