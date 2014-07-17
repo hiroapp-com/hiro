@@ -31,7 +31,7 @@ def assets_env(app):
     # create static bundles
     env.register('new_js', 'js/hiro.js', filters='jsmin', output="javascript/hiro.%(version)s.js")      
     env.register('new_css', 'css/hiro.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")    
-    env.register('cache_manifest', 'hiro.appcache', filters='appcache', output="appcache/hiro.%(version)s.appcache")    
+    env.register('cache_manifest', 'hiro.appcache', filters='appcache', output="appcache/hiro.appcache")    
     if os.environ.get('HIRO_DEBUG') is not None:
         env.debug = True
     return env
