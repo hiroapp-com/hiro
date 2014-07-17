@@ -2125,9 +2125,6 @@ var Hiro = {
 		createsession: function(token) {
 			var r = { "name": "session-create" }, sid = Hiro.data.get('profile','c.sid');
 
-			// Abort if sync is not connected
-			if (!this.synconline) return;
-
 			// Look into tokenbag as fallback (most likely by URL hash at this point)
 			if (!token && this.tokens.length > 0) token = this.tokens[0];	
 
