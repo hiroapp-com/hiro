@@ -3,6 +3,7 @@ Initialize Flask app
 
 """
 import os
+import sys
 import sqlite3
 import views
 
@@ -18,7 +19,10 @@ if os.environ.get('HIRO_ENV', '') == 'live':
 else:
     app.config.from_object('settings_dev')
 
-DB_PATH = 'C:\local\hync\hiro.db'
+if sys.platform.startswith('win'):
+    DB_PATH = 'C:\local\hync\hiro.db'
+else:
+    DB_PATH = './hiro.db'
 
 
 # Enable jinja2 loop controls extension
