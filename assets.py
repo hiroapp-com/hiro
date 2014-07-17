@@ -30,8 +30,7 @@ def assets_env(app):
     env.versions = 'hash:32'
     # create static bundles
     env.register('new_js', 'js/hiro.js', filters='jsmin', output="javascript/hiro.%(version)s.js")      
-    env.register('new_css', 'css/hiro.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")    
-    env.register('cache_manifest', 'hiro.appcache', filters='appcache', output="appcache/hiro.appcache")    
+    env.register('new_css', 'css/hiro.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")       
     if os.environ.get('HIRO_DEBUG') is not None:
         env.debug = True
     return env
@@ -39,7 +38,6 @@ def assets_env(app):
 asset_html = {
     'css': '<link rel="stylesheet" type="text/css" href="{url}">',
     'js': '<script src="{url}" type="text/javascript"></script>',
-    'appcache': '{url}'
     }
 
 def get_html_output(urls):
