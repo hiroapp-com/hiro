@@ -54,12 +54,6 @@ if __name__== "__main__":
 
     os.environ["SERVER_SOFTWARE"] = 'Devel'
 
-    # Windows shit
-    if os.name == 'nt':
-        print os.environ['GAE_ROOT']        
-        from _python_runtime import fix_sys_path
-        fix_sys_path()  
-
     # setup flask app for context
     from flask import Flask
     app = Flask('application')
