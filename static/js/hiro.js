@@ -1666,8 +1666,8 @@ var Hiro = {
 				// Load doc onto canvas
 				Hiro.canvas.load();
 			} else {
-				// Log
-				Hiro.sys.log('No local data found, sync will try to fetch new session workspace');
+				// Bootstrap local only workspace
+				Hiro.data.bootstrap();
 			}
 
 			// Attach localstore change listener
@@ -2101,29 +2101,20 @@ var Hiro = {
 
 		// Authenticate connection
 		auth: function() {
-			var user = Hiro.data.get('profile','c'), payload;
+			var sid = Hiro.data.get('profile','c.sid'), payload;
 
 			// Just quick ehlo with to make sure session is still valid
-			if (user && user.sid) {	
+			if (sid) {	
 				// End bootstrapping logging group
-				Hiro.sys.log('Startup completed with existing ID',user.sid,'groupEnd');		        	
+				Hiro.sys.log('Startup completed with existing ID',sid,'groupEnd');		        	
 
 				// Send	a waiting commit or a client ack	
-				if (!this.commit()) this.ping();			
-			// We have no local at all 	
-			} else if (!user) {
-	        	// Logging
-				Hiro.sys.log('No user found, bootstrapping local workspace');
+				if (!this.commit()) this.ping();	
 
-				// Bootstrap local only workspace
-				Hiro.data.bootstrap();	
-
-				// Create session with new anontoken				
-				this.createsession();				
-			// We should have all cases covered, log error if something else happens				
+			// We have no session! 	
 			} else {
-				// Log 
-				Hiro.sys.log('Existing user, but was never handed a session yet. Creating anon session.');
+	        	// Logging
+				Hiro.sys.log('No session found, creating new one');
 
 				// Create session with new anontoken				
 				this.createsession();					
