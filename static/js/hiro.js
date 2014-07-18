@@ -1717,7 +1717,7 @@ var Hiro = {
 			Hiro.ui.hprogress.done();
 
 			// Log
-			Hiro.sys.log('Spawned a new session in the client',[this.stores]);
+			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
 			Hiro.sys.log('',null,'groupEnd');				
 		},
 
@@ -2099,8 +2099,7 @@ var Hiro = {
 				this.protocol = 'ws';
 				this.ws.url = ws_url;
 			} else if (window.XMLHttpRequest) {
-				// Boostrap local env as long as we don't have any lp support
-				Hiro.data.bootstrap();
+				// Longpolling fallback
 				this.protocol = 'lp';			
 			} else {
 				Hiro.sys.error('Oh noes, no transport protocol available',navigator);					
@@ -2133,7 +2132,8 @@ var Hiro = {
 			// Just quick ehlo with to make sure session is still valid
 			if (sid) {	
 				// End bootstrapping logging group
-				Hiro.sys.log('Startup completed with existing ID',sid,'groupEnd');		        	
+				Hiro.sys.log('Startup completed with existing ID',sid);	
+				Hiro.sys.log('',undefined,'groupEnd');						        	
 
 				// Send	a waiting commit or a client ack	
 				if (!this.commit()) this.ping();	
@@ -2346,7 +2346,8 @@ var Hiro = {
 			Hiro.ui.hprogress.done();
 
 			// Log
-			Hiro.sys.log('New session created',data,null,'groupEnd');			
+			Hiro.sys.log('New session created',data);
+			Hiro.sys.log('',undefined,'groupEnd');						
 		},
 
 		// Process changes sent from server
@@ -2437,10 +2438,7 @@ var Hiro = {
 						// Set proper id of a new note					
 						case 'folio|set-nid':
 							// Rename existing store, this also takes care of the as of now missing folio shadow entry 
-							Hiro.data.rename('note_' + ops[j].path.split(':')[1],'note_' + ops[j].value);
-							// Send ping to tell server we change the ressource and are ready to get updates
-							this.ping('note_' + ops[j].value);						
-							update = true;								
+							Hiro.data.rename('note_' + ops[j].path.split(':')[1],'note_' + ops[j].value);												
 							break;
 						// Set changed folio status							
 						case 'folio|set-status':
@@ -2450,12 +2448,9 @@ var Hiro = {
 						// Add a new note to the folio	
 						case 'folio|add-noteref':
 							// Trigger newnote with know parameters
-							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);
-							// Send ping to tell server we created the resource and are ready to get updates
-							this.ping('note_' + ops[j].value.nid);								
+							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);							
 							// Add notification if we're not focused
 							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(ops[j].value.nid);							
-							update = true;
 							break;													
 						default:
 							Hiro.sys.error('Received unknown change op from server',ops[j]);		
@@ -4244,7 +4239,9 @@ var Hiro = {
 			// If the user clicks somewhere in the dialog 
 			clickhandler: function(action,type,target) {
 				var param = action.split(':')[1];
-					action = action.split(':')[0];	
+
+				// Split actions into array
+				action = action.split(':')[0];	
 
 				// Woop, we inited started fiddling with something relevant
 				if (type == 'half') {
