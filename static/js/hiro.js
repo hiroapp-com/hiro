@@ -120,7 +120,7 @@ var Hiro = {
 				// Go through cases
 				switch (id) {
 					case 'signin':
-						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
+						Hiro.ui.dialog.show('d_logio','s_signup',Hiro.user.el_register.getElementsByTagName('input')[0]);
 						break;										
 					case 'newnote':
 						Hiro.folio.newnote();
