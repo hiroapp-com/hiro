@@ -1234,22 +1234,17 @@ var Hiro = {
 				// Only one invite at a time
 				if (this.inviting) return;
 
-				var mailregex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-					type, error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0], 
+				var type, error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0], 
 					el_input = el.getElementsByTagName('input')[0], el_error = el.getElementsByClassName('error')[0],
-					string = string || el_input.value, nums = string.replace( /[^\d]/g, ''),
+					string = string || el_input.value, parse = Hiro.util.mailorphone(string),
 					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), i, l,
 					ta, el_ta = el.getElementsByClassName('peers')[0], 
 					el_sel = el.getElementsByClassName('selected')[0], oldsel, newsel;
 
 				// See if we have an email
-				if (mailregex.test(string)) {
-					type = 'email';
-				// See if we have a long enough number	
-				} else if (nums.length > 5) {
-					type = 'phone';
-					// see if we have a plus leading our number and convert string
-					string = (string.replace( /([^\d\+])/g, '').charAt(0) == '+' && '+' || '') + nums; 
+				if (parse) {
+					type = parse[0];
+					string = parse[1];
 				}
 
 				// Check for dupes 
@@ -4725,6 +4720,28 @@ var Hiro = {
 		// Return current timestamp in UTC unix msecs (or whatever format we'll decide to use)
 		now: function() {
 			return Date.now();
+		},
+
+		// Checks if a string resembles an email or phone number and returns [type,string]
+		mailorphone: function(string) {
+			var mailregex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+				nums = string.replace( /[^\d]/g, ''),
+				type;
+
+			// See if we have an email
+			if (mailregex.test(string)) {
+				type = 'email';
+			// See if we have a long enough number	
+			} else if (nums.length > 5) {
+				type = 'phone';
+				// see if we have a plus leading our number and convert string
+				string = (string.replace( /([^\d\+])/g, '').charAt(0) == '+' && '+' || '') + nums; 
+			// No good
+			} else {
+				return false;
+			}
+
+			return [type,string];
 		},
 
 		// Cross browser event registration
