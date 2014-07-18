@@ -1670,6 +1670,7 @@ iframe#landing  {
 body#landingPage2 {
   text-align: center;
   background-color: #fcfcfc;   
+  display: none;
 }
 
 @media (max-width: 550px) and (min-height: 370px) {

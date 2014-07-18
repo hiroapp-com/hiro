@@ -1666,7 +1666,7 @@ var Hiro = {
 			// If we do have data stored locally
 			if (p && n) {	
 				// Remove landing page
-				if (Hiro.ui.el_landingpage) Hiro.ui.el_landingpage.style.display = 'none';
+				Hiro.ui.el_landingpage.style.display = 'none';
 
 				// Load internal values
 				this.unsynced = this.local.fromdisk('unsynced');			
@@ -1687,6 +1687,9 @@ var Hiro = {
 				// Load doc onto canvas
 				Hiro.canvas.load();
 			} else {
+				// Show landing page contents
+				Hiro.ui.showlanding();
+
 				// Bootstrap local only workspace
 				Hiro.data.bootstrap();
 			}
@@ -3299,7 +3302,7 @@ var Hiro = {
 		// Setup and browser capability testing
 		init: function() {
 			var style = this.el_wastebin.style,
-				v = this.vendors, i, l, v, r, measure;
+				v = this.vendors, i, l, r, measure;
 
 			// Determine CSS opacity property
 			if (style.opacity !== undefined) this.opacity = 'opacity';
@@ -3371,9 +3374,6 @@ var Hiro = {
 
 			// Keyhandler for dialog
 			Hiro.util.registerEvent(this.dialog.el_root,'input',this.dialog.keyhandler);	
-
-			// Attach fastbuttons to landing page if it was to fast to do it itself
-			if (this.el_landingpage && this.el_landingpage.contentDocument.body) this.fastbutton.attach(this.el_landingpage.contentDocument.body,Hiro.ui.landingclick);		
 
 			// Attach focus change handler
 			this.attachfocuschange();
@@ -3523,6 +3523,21 @@ var Hiro = {
 					})									
 					break;
 			}
+		},
+
+		// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
+		// Whatever comes first to make sure it's bootstrapped properly
+		showlanding: function() {
+			var b = Hiro.ui.el_landingpage.contentDocument.body;
+
+			// Abort if there is no content yet
+			if (!b || b.style.display == 'none') return;
+
+			// Fade in contents
+			Hiro.ui.fade(b,1)
+
+			// Attach fastbuttons to landing page if it was to fast to do it itself
+			Hiro.ui.fastbutton.attach(b,Hiro.ui.landingclick);				
 		},
 
 		// Handle clicks on landingpage
