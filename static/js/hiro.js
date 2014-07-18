@@ -831,13 +831,33 @@ var Hiro = {
 				payload = {	
 					email: v[0].value.toLowerCase().trim(),
 					password: v[1].value
-				};
+				},
+				empty;
 
 			// Prevent default event if we have one from firing submit
-			if (event) Hiro.util.stopEvent(event);	
+			if (event) Hiro.util.stopEvent(event);				
 
 			// Preparation
 			if (this.authinprogress) return;
+
+			// Check for proper values
+			if (!v[0].value || !v[1].value) {
+				// Bit redundant but cleaner UX this way
+				if (!v[1].value) {
+                	v[1].className += ' error';
+                	v[1].nextSibling.innerText = "Your password";
+                	v[1].focus();					
+				}	
+				if (!v[0].value) {
+                	v[0].className += ' error';
+                	v[0].nextSibling.innerText = "Your Email or Phone #";
+                	v[0].focus();					
+				}				
+				// Abort here
+				return;			
+			}
+
+			// Letttsssss gooo
 			this.authinprogress = true;				
 			b.innerText = (login) ? 'Logging in...' : 'Signing Up...';
 
@@ -866,10 +886,12 @@ var Hiro = {
 	                if (data.email) {
 	                	v[0].className += ' error';
 	                	v[0].nextSibling.innerText = data.email;
+	                	v[0].focus();
 	                }	
 	                if (data.password) {
 	                	v[1].className += ' error';	                    	
 	                	v[1].nextSibling.innerText = data.password;  
+	                	v[1].focus();	                	
 	                }	                 		                    						                    
 				}										
 			});	
@@ -2722,7 +2744,7 @@ var Hiro = {
 		ajax: {
 			// When we deem a response successfull or let us know that the server is alive
 			successcodes: [200,204],
-			alivecodes: [400,403,404],
+			alivecodes: [400,403,404,500],
 
 			// Internal values
 			socket: null,
@@ -3347,6 +3369,9 @@ var Hiro = {
 
 			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up in the settings area
 			this.fastbutton.attach(this.dialog.el_root,Hiro.ui.dialog.clickhandler)
+
+			// Keyhandler for dialog
+			Hiro.util.registerEvent(this.dialog.el_root,'input',this.dialog.keyhandler);	
 
 			// Attach fastbuttons to landing page if it was to fast to do it itself
 			if (this.el_landingpage && this.el_landingpage.contentDocument.body) this.fastbutton.attach(this.el_landingpage.contentDocument.body,Hiro.ui.landingclick);		
@@ -4255,6 +4280,22 @@ var Hiro = {
 							break;						
 					}
 				}
+			},
+
+			// CLean up errors etc
+			keyhandler: function(event) {
+				var t = event.target || event.srcElement,
+					c = t.getAttribute('class');
+
+				// If we had an error in the input field
+				if (c && c.indexOf('error') > 0) t.setAttribute('class',c.replace('error',''))
+				 
+				// Remove error from input error overlay
+				if (t.nextSibling.innerHTML.length > 0) t.nextSibling.innerHTML = ''; 
+
+				// COpy values to other input if it happens on login
+				if (t.id == 'signin_mail') document.getElementById('signup_mail').value = t.value;
+				if (t.id == 'signup_mail') document.getElementById('signin_mail').value = t.value;
 			},
 
 			// Fetch latest settings template from server and load into placeholder div

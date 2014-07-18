@@ -177,9 +177,17 @@ input.pseudobutton {
     -webkit-border-radius: 4px;
 }
 
-.error {
+div.error {
   font-size: 14px;
   color: red;  
+}
+
+input.error {
+  border-color: red !important;
+}
+
+input.error:focus {
+  outline: rgba(255,0,0,0.5) auto 5px;
 }
 
 @media only screen and (min-device-width : 320px) and (max-device-width : 568px) { 

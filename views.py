@@ -59,7 +59,7 @@ def register():
     phone = data.get('phone', '')
     pwd = data.get('password')
     if email == phone == '':
-        return jsonify_err(403, email='Email or Phone required')
+        return jsonify_err(403, email='Your Email or Phone #')
     if passwd_check(pwd) is not None:
         return jsonify_err(400, password=passwd_check(pwd))
 

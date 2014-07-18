@@ -94,7 +94,7 @@
 						<a class="fb hirobutton" data-hiro-action="fbauth">Sign-Up with&nbsp;<b>Facebook</b></a>
 						<div class="divider"><span class="or">or</span></div>
 						<form action="javascript:void(0);">
-							<input type="email" placeholder="E-Mail or Phone"></input><div class="inputerror error"></div>				
+							<input type="email" placeholder="E-Mail or Phone" id="signup_mail"></input><div class="inputerror error"></div>				
 							<input type="password" placeholder="Choose a password"></input><div class="inputerror error"></div>	
 							<input type="submit" value="foo" onclick="Hiro.user.logio(event);" class="pseudobutton"></input>
 						</form>		
@@ -107,7 +107,7 @@
 						<div class="divider"><span class="or">or</span></div>
 						<form action="javascript:void(0);">
 							<input type="email" placeholder="E-Mail or Phone" id="signin_mail"></input><div class="inputerror error"></div>
-							<input type="password" id="signin_pwd" placeholder="Password"></input><div class="inputerror error"></div>
+							<input type="password" placeholder="Password"></input><div class="inputerror error"></div>
 							<input type="submit" value="foo" onclick="Hiro.user.logio(event,true);" class="pseudobutton"></input>
 						</form>		
 						<a class="hirobutton green" data-hiro-action="login">Log-In</a>	
