@@ -396,7 +396,9 @@ input.error:focus {
   background-repeat: no-repeat;
   background-size: 108px auto;
   padding: 15px 10px 15px 50px;
-  float: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 } 
 
 #folio .footer a.icon {
@@ -414,6 +416,7 @@ input.error:focus {
 
 #folio .footer a.archivelink {
   background-position: -68px -68px;
+  float: left;  
 }
 
 #folio .footer a.settings {
