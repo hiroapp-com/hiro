@@ -1703,6 +1703,9 @@ var Hiro = {
 			// IE maps the event to window
 			event = event || window.event;
 
+			// Some browser fire the event in their own window (that wrote to localstorage), we prevent this here
+			if (Hiro.ui.focus) return;
+
 			// Extract proper key
 			var k = event.key.split('.')[1];
 
