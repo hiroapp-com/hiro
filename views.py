@@ -127,14 +127,13 @@ def landing():
     return render_template('hync_landing.html')  
 
 def settings():
-    return render_template('hync_settings.html')    
-
-def offline():
-    return render_template('hync_offline.html')     
+    return render_template('hync_settings.html')       
 
 def note():
     # TODO(flo) never include manifest in template requested via /note/<id> 
-    return render_template('hync_home.html')  
+    return render_template('hync_home.html') 
+def offline():
+    return render_template('hync_home.html')       
 
 def manifestwrapper():
     return render_template('hync_manifestwrapper.html')           
