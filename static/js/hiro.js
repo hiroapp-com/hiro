@@ -829,10 +829,10 @@ var Hiro = {
 				v = branch.getElementsByTagName('input'),							
 				e = branch.getElementsByClassName('mainerror')[0],
 				payload = {	
-					email: v[0].value.toLowerCase().trim(),
 					password: v[1].value
 				},
-				empty;
+				parse = Hiro.util.mailorphone(v[0].value),
+				sid = Hiro.data.get('profile','c.sid');
 
 			// Prevent default event if we have one from firing submit
 			if (event) Hiro.util.stopEvent(event);				
@@ -841,14 +841,14 @@ var Hiro = {
 			if (this.authinprogress) return;
 
 			// Check for proper values
-			if (!v[0].value || !v[1].value) {
+			if (!parse || !v[1].value) {
 				// Bit redundant but cleaner UX this way
 				if (!v[1].value) {
                 	v[1].className += ' error';
                 	v[1].nextSibling.innerText = "Your password";
                 	v[1].focus();					
 				}	
-				if (!v[0].value) {
+				if (!parse) {
                 	v[0].className += ' error';
                 	v[0].nextSibling.innerText = "Your Email or Phone #";
                 	v[0].focus();					
@@ -856,6 +856,10 @@ var Hiro = {
 				// Abort here
 				return;			
 			}
+
+			// Add data to payload
+			payload[parse[0]] = parse[1];
+			if (sid) payload.sid = sid;
 
 			// Letttsssss gooo
 			this.authinprogress = true;				
