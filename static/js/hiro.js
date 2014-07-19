@@ -1883,6 +1883,25 @@ var Hiro = {
 			this.local.quicksave('folio');			
 		},
 
+		// Remove all synced data, this happens if we get new session data
+		cleanup: function() {
+			var i, l, f = this.get('folio');
+
+			// Iterate through all folio docs
+			for (i = f.c.length; i >= 0; i--) {
+				// Do not cleanup unsynced notes
+				if (f.c[i].nid.length == 4) continue;
+
+				// Delete synced notes
+				this.destroy('note_' + f.c[i].nid);
+
+				// Remove this entry from folio
+				f.c.splice(i,1);
+			}
+
+			// TODO Bruno: remove contacts?
+		},
+
 		// Remove Note from memory & localstorage
 		destroy: function(id) {
 			this.stores[id] = null;
@@ -2271,43 +2290,42 @@ var Hiro = {
 		// Overwrite local state with servers on login, session create or fatal errors
 		// TODO Bruno: Refactor once protocol is set
 		rx_session_create_handler: function(data) {
-			var n, note, sf, cf, fv, peers, req, sp, cp, peers, i, l;
+			var n, note, sf, cf, fv, peers, req, sp, cp, peers, user, i, l;
 
-			// Copy server profile data to client profile data
+			// Remove all synced data
+			Hiro.data.cleanup();
+
+			// CReate new blank profile object
 			sp = data.session.profile; 
-			cp = Hiro.data.get('profile') || {};
-			if (!cp.c) cp.c = {}; 
-			if (!cp.s) cp.s = {};
+			cp = {};
 
-			// Copy strings to client and server version
-			cp.c.email = cp.s.email = sp.val.user.email;
-			cp.c.name = cp.s.name = sp.val.user.name;	
-			cp.c.uid = cp.s.uid = sp.val.user.uid;
-			cp.c.sid = cp.s.sid = data.session.sid;
-			cp.cv = cp.sv = 0;			
-			// Stringify contact array, parse and add to existing contacts
-			peers = JSON.stringify(sp.val.contacts);
-			cp.c.contacts = (cp.c.contacts) ? cp.c.contacts.concat(JSON.parse(peers)) : JSON.parse(peers); 
-			cp.s.contacts = (cp.s.contacts) ? cp.s.contacts.concat(JSON.parse(peers)) : JSON.parse(peers);
+			// Set versions and other basics
+			cp.cv = cp.sv = 0;	
 			cp.kind = sp.kind;
-			cp.id = sp.id;			
+			cp.id = sp.id;
+
+			// Stringify contact array 
+			peers = JSON.stringify(sp.val.contacts);
+			user = JSON.stringify(sp.val.user)
+
+			// Add data to profile object
+			cp.c = JSON.parse(user); 
+			cp.s = JSON.parse(user);
+
+			// Add contacts & session
+			cp.c.contacts = JSON.parse(peers); 
+			cp.s.contacts = JSON.parse(peers);
+			cp.c.sid = cp.s.sid = sp.sid;		
 
 			// Save profile, overwriting existing data
 			Hiro.data.set('profile','',cp,'s');			
 
-			// Session reset doesn't give us cv/sv/shadow/backup etc, so we create them now
+			// Create notes
 			for (note in data.session.notes) {
 				if (!data.session.notes.hasOwnProperty(note)) continue;
+
+				// Note format is similar than our client format
 				n = data.session.notes[note];
-				peers = (n.val.peers) ? JSON.parse(JSON.stringify(n.val.peers)) : [];
-				n.sv = n.cv = 0;
-				n.c = {};
-				n.s = {};
-				n.c.text = n.s.text = n.val.text;
-				n.c.title = n.s.title = n.val.title;
-				n.c.peers = peers;
-				n.s.peers = peers;				
-				delete n.val;
 
 				// Create a dedicated store for each note
 				Hiro.data.set('note_' + note,'',n,'s');				
@@ -2340,7 +2358,7 @@ var Hiro = {
 			}				
 
 			// Reset UI
-			Hiro.ui.setstage(Hiro.data.get('profile','c.tier'));				
+			Hiro.ui.setstage();				
 
 			// Complete hprogress
 			Hiro.ui.hprogress.done();
@@ -3486,7 +3504,7 @@ var Hiro = {
 			var t = Hiro.data.get('profile','c.tier');
 
 			// If we want to set it to the current level
-			if (tier == t) return;
+			if (tier && tier == t) return;
 
 			// Set tier if none is provided 
 			tier = tier || Hiro.data.get('profile','c.tier') || 0; 
