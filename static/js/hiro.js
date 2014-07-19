@@ -3166,7 +3166,7 @@ var Hiro = {
 			Hiro.apps.init();	
 
 			// Set up UI according to user level
-			Hiro.ui.setstage(Hiro.data.get('profile','c.tier'));			
+			Hiro.ui.setstage();			
 
 			// Load application cache
 			if (window.applicationCache) {
@@ -3483,22 +3483,19 @@ var Hiro = {
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
+			var t = Hiro.data.get('profile','c.tier');
+
+			// If we want to set it to the current level
+			if (tier == t) return;
+
 			// Set tier if none is provided 
-			tier = tier || 0;
-
-			// Store latest tier in profile object if it already exists
-			if (tier && Hiro.data.get('profile')) {
-				// Abort if tier didn't change
-				if (tier == Hiro.data.get('profile','c.tier')) return;
-
-				Hiro.data.set('profile','c.tier',tier);				
-			} 
+			tier = tier || Hiro.data.get('profile','c.tier') || 0; 
 
 			// Always load settings from server to determine contents and webserver availability
 			this.dialog.load();				
 
 			// Send tier setting to other tabs
-			Hiro.sync.tabtx('Hiro.ui.setstage(tier);');
+			Hiro.sync.tabtx('Hiro.ui.setstage(' + tier + ');');
 
 			// Switch designs
 			switch (tier) {
