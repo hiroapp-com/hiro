@@ -267,7 +267,7 @@ var Hiro = {
 			}
 
 			// Get basic time string
-			time = (note._lastedit) ? Hiro.util.humantime(note._lastedit) + ' ago': 'Note saved yet';
+			time = (note._lastedit) ? Hiro.util.humantime(note._lastedit) + ' ago': 'Not saved yet';
 
 			// Attach elements to root node
 			link.appendChild(t);
@@ -664,7 +664,8 @@ var Hiro = {
 			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
 
 			var n = Hiro.data.get('note_' + this.currentnote), text = n.c.text, title = n.c.title, 
-				pos = (this.cache._me) ? this.cache._me.cursor : n._cursor || 0;		
+				pos = (this.cache._me) ? this.cache._me.cursor : n._cursor || 0;	
+			console.log(this,n,n.c)					
 
 			// Render overlay
 			this.overlay.paint(text);
@@ -877,11 +878,19 @@ var Hiro = {
 	            type: "POST",
 	            payload: JSON.stringify(payload),
 				success: function(req,data) {
+					// Reset DOM & flag	
+	                b.innerText = (login) ? 'Log-In' : 'Create Account';
+	                Hiro.user.authinprogress = false;
+
+	                // Process login					
 					Hiro.user.logiocomplete(data,login);										                    
 				},
-				error: function(req,data) {			
+				error: function(req,data) {		
+					// Reset DOM & flag	
 	                b.innerText = (login) ? 'Log-In' : 'Create Account';
-	                Hiro.user.authinprogress = false;						
+	                Hiro.user.authinprogress = false;
+
+	                // Show error						
 					if (req.status==500) {
 						e.innerText = "Something went wrong, please try again.";
 						Hiro.sys.error('Auth server error for ' + payload.email,req);							
@@ -905,6 +914,9 @@ var Hiro = {
 		logiocomplete: function(data,login) {	
 			// Close dialog
 			Hiro.ui.dialog.hide();
+
+			// Begin loading bar
+			Hiro.ui.hprogress.begin();			
 
 			// USe token to request new session
 			Hiro.sync.createsession(data.token);	
@@ -1888,7 +1900,7 @@ var Hiro = {
 			var i, l, f = this.get('folio');
 
 			// Iterate through all folio docs
-			for (i = f.c.length; i >= 0; i--) {
+			for (i = f.c.length - 1; i >= 0; i--) {
 				// Do not cleanup unsynced notes
 				if (f.c[i].nid.length == 4) continue;
 
@@ -1918,7 +1930,7 @@ var Hiro = {
 					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// If the whole thing or client title changed, repaint the folio
-				if ( key == 'c.title' || (!n.c.title && key == 'c.text')) Hiro.folio.paint();
+				if ( key == 'c.title' || key == 'c.text' && !n.c.title) Hiro.folio.paint();
 				else if (!key || key == 'c' || key == '_unseen') Hiro.folio.paint(true);	
 
 				// If the update wasn't by client and concerns the current note
@@ -2288,7 +2300,6 @@ var Hiro = {
 		},
 
 		// Overwrite local state with servers on login, session create or fatal errors
-		// TODO Bruno: Refactor once protocol is set
 		rx_session_create_handler: function(data) {
 			var n, note, sf, cf, fv, peers, req, sp, cp, peers, user, i, l;
 
@@ -2305,7 +2316,7 @@ var Hiro = {
 			cp.id = sp.id;
 
 			// Stringify contact array 
-			peers = JSON.stringify(sp.val.contacts);
+			peers = JSON.stringify(sp.val.contacts || []);
 			user = JSON.stringify(sp.val.user)
 
 			// Add data to profile object
@@ -2315,7 +2326,7 @@ var Hiro = {
 			// Add contacts & session
 			cp.c.contacts = JSON.parse(peers); 
 			cp.s.contacts = JSON.parse(peers);
-			cp.c.sid = cp.s.sid = sp.sid;		
+			cp.c.sid = cp.s.sid = data.sid;	
 
 			// Save profile, overwriting existing data
 			Hiro.data.set('profile','',cp,'s');			
@@ -2324,14 +2335,36 @@ var Hiro = {
 			for (note in data.session.notes) {
 				if (!data.session.notes.hasOwnProperty(note)) continue;
 
-				// Note format is similar than our client format
-				n = data.session.notes[note];
+				// Create client and server references
+				sn = data.session.notes[note];	
+				cn = {};
+
+				// Set versions and other basics
+				cn.cv = cn.sv = 0;	
+				cn.kind = sn.kind;
+				cn.id = sn.id;			
+
+				// Set custom internal values
+				// TODO Bruno: Find a good way to extract/create internal values like _lastedit, _cursor etc
+				cn._token = sp.sharing_token;	
+
+				// Build client and shadow versions
+				cn.c = {}; cn.s = {};
+
+				// Copy peer array 
+				peers = JSON.stringify(sn.val.peers || []);
+				cn.c.peers = JSON.parse(peers);
+				cn.s.peers = JSON.parse(peers);
+
+				// Set text & title
+				cn.c.text = cn.s.text = sn.val.text;
+				cn.c.title = cn.s.title = sn.val.title;
 
 				// Create a dedicated store for each note
-				Hiro.data.set('note_' + note,'',n,'s');				
+				Hiro.data.set('note_' + note,'',cn,'s');				
 			}		
 
-			// Clean up folio
+			// Add notes to folio
 			sf = data.session.folio; 
 			cf = Hiro.data.get('folio') || {};
 			cf.cv = cf.sv = 0;
