@@ -664,8 +664,7 @@ var Hiro = {
 			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
 
 			var n = Hiro.data.get('note_' + this.currentnote), text = n.c.text, title = n.c.title, 
-				pos = (this.cache._me) ? this.cache._me.cursor : n._cursor || 0;	
-			console.log(this,n,n.c)					
+				pos = (this.cache._me) ? this.cache._me.cursor : n._cursor || 0;					
 
 			// Render overlay
 			this.overlay.paint(text);
@@ -927,24 +926,14 @@ var Hiro = {
 			// Wipe local data immediately 
 			Hiro.data.local.wipe();
 
-			// Notifiy server
-			Hiro.sync.ajax.send({
-				url: "/logout",
-                type: "POST",
-				success: function() {
-					// Log
-					Hiro.sys.log('Logged out properly, reloading page');
+			// Log
+			Hiro.sys.log('Local data wiped, reloading page');
 
-					// Make sure other tabs refresh as well
-					Hiro.sync.tabtx('window.location.href = "/shiny/"');
+			// Make sure other tabs refresh as well
+			Hiro.sync.tabtx('window.location.href = "/"');						                    		
 
-					// Reload page
-                    window.location.href = '/shiny/';							                    
-				}									
-			});			
-
-			// Start fading out body
-			Hiro.ui.fade(document.body,-1,400);			
+			// Start fading out body, reload our own window after that
+			Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/" });			
 		},	
 
 		// Request password reset
@@ -3573,8 +3562,10 @@ var Hiro = {
 		showlanding: function() {
 			var b = Hiro.ui.el_landingpage.contentDocument.body;
 
-			// Abort if there is no content yet
-			if (!b || b.style.display == 'none') return;
+			console.log('HHHHHHHave landing overlay ' + (Hiro.ui.el_landingpage) + ' with display ' + ' and body ' + (b))
+
+			// Abort if there is no content yet or we already hid the landing page iframe
+			if (!b || Hiro.ui.el_landingpage.style.display == 'none') return;
 
 			// Fade in contents
 			Hiro.ui.fade(b,1)
