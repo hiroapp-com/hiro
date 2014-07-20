@@ -6,11 +6,11 @@
 	</div>	
 	<div class="accountdetails">
 		<form id="accountform" action="javascript:void(0);">
-			<input type="text" value="" placeholder="Your name (for shared editing)"></input><div class="ioption save"><a onclick="Hiro.sys.user.namesave(event);">Save Changes</a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
+			<input type="text" value="" maxlength="40" placeholder="Your name (for shared editing)" data-hiro-value="name"></input><div class="ioption save"><a data-hiro-action="savename"></a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
 			<input type="text" value="" disabled></input>
 			<input type="text" value="Member since:" disabled></input><div class="ioption nomobile">Thanks!</div>
 			<input type="text" value="" disabled></input><div class="ioption upgradelink"><a data-hiro-action="upgrade">Upgrade</a></div>
-			<input type="submit" value="foo" onclick="Hiro.sys.user.namesave(event); return false;" class="pseudobutton"></input>			
+			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('savename','full');" class="pseudobutton"></input>			
 		</form>		
 		<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 		<a href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share fb">via&nbsp;<b>Facebook</b></a>
@@ -84,7 +84,7 @@
 	<div class="checkoutdetails">	
 		<form id="checkoutform">
 			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a data-hiro-action="changeplan">Change</a></div>
-			<input type="text" pattern="[0-9]*" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number"></input><div class="ioption"></div>
+			<input type="text" maxlength="22" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number"></input><div class="ioption"></div>
 			<input type="text" pattern="[0-9]*" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month"></input> /
 			<input type="text" pattern="[0-9]*" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year"></input>	
 			<input type="text" pattern="[0-9]*" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc"></input>	

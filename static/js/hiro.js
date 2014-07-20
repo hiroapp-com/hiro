@@ -2339,11 +2339,6 @@ var Hiro = {
 				cn.kind = sn.kind;
 				cn.id = sn.id;			
 
-				// Set custom internal values
-				// TODO Bruno: Find a good way to extract/create internal values like _lastedit, _cursor etc
-				cn._token = sp.sharing_token;	
-				cn._owner = (sn.val.created_by.uid);
-
 				// Build client and shadow versions
 				cn.c = {}; cn.s = {};
 
@@ -2351,6 +2346,12 @@ var Hiro = {
 				peers = JSON.stringify(sn.val.peers || []);
 				cn.c.peers = JSON.parse(peers);
 				cn.s.peers = JSON.parse(peers);
+
+				// Set custom internal values
+				// TODO Bruno: Find a good way to extract/create internal values like _lastedit, _cursor etc
+				cn._token = sp.sharing_token;	
+				cn._owner = sn.val.created_by.uid;
+				cn._created = sn.val.created_at;				
 
 				// Set text & title
 				cn.c.text = cn.s.text = sn.val.text;
@@ -3569,8 +3570,6 @@ var Hiro = {
 		showlanding: function() {
 			var b = Hiro.ui.el_landingpage.contentDocument.body;
 
-			console.log('HHHHHHHave landing overlay ' + (Hiro.ui.el_landingpage) + ' with display ' + ' and body ' + (b))
-
 			// Abort if there is no content yet or we already hid the landing page iframe
 			if (!b || Hiro.ui.el_landingpage.style.display == 'none') return;
 
@@ -4306,7 +4305,7 @@ var Hiro = {
 
 			// If the user clicks somewhere in the dialog 
 			clickhandler: function(action,type,target) {
-				var param = action.split(':')[1];
+				var param = action.split(':')[1], el;
 
 				// Split actions into array
 				action = action.split(':')[0];	
@@ -4356,7 +4355,16 @@ var Hiro = {
 						case 'selectplan':
 							// 
 							Hiro.user.checkout.show(param);
-							break;						
+							break;	
+						case 'savename':
+							// Get name field
+							el = Hiro.ui.dialog.el_settings.getElementsByTagName('input')[0];
+							// Save name & update link text
+							Hiro.data.set('profile','c.name',el.value);
+							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
+							target = target || el.nextSibling.firstChild;
+							target.innerText = 'Saved!';
+							break;				
 					}
 				}
 			},
@@ -4364,17 +4372,29 @@ var Hiro = {
 			// Clean up errors etc and handle input actions (namechange, cc etc)
 			keyhandler: function(event) {
 				var t = event.target || event.srcElement,
-					c = t.getAttribute('class');
+					c = t.getAttribute('class'), id = t.id || t.getAttribute('data-hiro-value'),
+					name = Hiro.data.get('profile','c.name'), el;
+
+				// Remove error from input error overlay
+				if (t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = ''; 
 
 				// If we had an error in the input field
 				if (c && c.indexOf('error') > 0) t.setAttribute('class',c.replace('error',''))
-				 
-				// Remove error from input error overlay
-				if (t.nextSibling.innerHTML.length > 0) t.nextSibling.innerHTML = ''; 
 
 				// COpy values to other input if it happens on login
 				if (t.id == 'signin_mail') document.getElementById('signup_mail').value = t.value;
 				if (t.id == 'signup_mail') document.getElementById('signin_mail').value = t.value;
+
+				switch (id) {
+					case 'name':		
+						if (t.value != name) {
+							t.nextSibling.style.display = 'block';
+							t.nextSibling.firstChild.innerText = 'Save changes';
+						} else {
+							t.nextSibling.style.display = 'none';							
+						}
+						break;
+				}
 			},
 
 			// Fetch latest settings template from server and load into placeholder div
