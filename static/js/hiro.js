@@ -3089,8 +3089,21 @@ var Hiro = {
 			},
 
 			// Specific profile diff, returns proper changes format
-			diffprofile: function() {
-				
+			diffprofile: function(store) {
+				var delta;
+
+				// If name changed
+				if (store.c.name != store.s.name) {
+					// First if, create delta 
+					delta = [];
+					// Add op
+					delta.push({ "op": "set-name", "path": "user/uid:" + store.c.uid, "value": store.c.name });
+					// Copy value
+					store.s.name = store.c.name;			
+				}
+
+				// Return
+				return delta || false;
 			},	
 
 			// Generic function that takes two arrays and returns a list of items that where 
