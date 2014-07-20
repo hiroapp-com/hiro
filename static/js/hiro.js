@@ -98,13 +98,13 @@ var Hiro = {
 
 		// If the user clicked somewhere in the folio
 		folioclick: function(id,type,target) {	
-			var user; 	
+			var tier = Hiro.data.get('profile','c.tier'); 	
+
 			// Clicks on the main elements, fired immediately on touchstart/mousedown
 			if (type == 'half') {				
 				switch (id) {					
-					case 'archivelink':
-						user = Hiro.data.get('profile');					
-						if (user.c && user.c.tier && user.c.tier > 1) Hiro.folio.archiveswitch();
+					case 'archivelink':				
+						if (tier > 1) Hiro.folio.archiveswitch();
 						break;
 					case 'showmenu':					
 						var d = (!Hiro.folio.open || Hiro.ui.slidedirection == -1) ? 1 : -1;
@@ -125,9 +125,8 @@ var Hiro = {
 					case 'newnote':
 						Hiro.folio.newnote();
 						break;
-					case 'archivelink':
-						user = Hiro.data.get('profile');					
-						if (!user.c || !user.c.tier || user.c.tier < 2) Hiro.ui.dialog.suggestupgrade('<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; more</em>');
+					case 'archivelink':				
+						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; more</em>');
 						break;							
 					case 'settings':
 						Hiro.ui.dialog.show('d_settings','s_account','',true);
@@ -135,6 +134,11 @@ var Hiro = {
 					case 'note':
 						// If the click was on an archive icon
 						if (target.className == 'archive') {
+							// Abort if user doesn't have archive yet
+							if (tier < 2) {
+								Hiro.ui.dialog.suggestupgrade('<em>Upgrade now to </em><b>archive notes</b><em> &amp; more</em>');	
+								return;							
+							}
 							// Directly set status
 							Hiro.folio.lookup[noteid].status = (Hiro.folio.lookup[noteid].status == 'active') ? 'archived' : 'active';
 							// Getset hack to kick off persistence / sync
@@ -431,7 +435,7 @@ var Hiro = {
 	canvas: {
 		// Internal values
 		currentnote: undefined,
-		quoteshown: true,
+		quoteshown: false,
 		textheight: 0,
 
 		// DOM IDs
@@ -556,6 +560,7 @@ var Hiro = {
 
 				// Reposition cursor
 				Hiro.canvas.setcursor(c[1] + 1);
+				
 			// If the user presses Arrowup or Pageup at position 0				
 			} else if (event.keyCode == 38 || event.keyCode == 33) {
 				c = Hiro.canvas.getcursor();
@@ -632,7 +637,7 @@ var Hiro = {
 			// Check if cache of previous note was saved
 			if (this.cache._changed) this.save();			
 
-			// Start hprogress bar
+			// Start hprogress bar, desktop only as mobiles are too slow
 			Hiro.ui.hprogress.begin();	
 
 			// Set internal values
@@ -651,8 +656,7 @@ var Hiro = {
 			this.paint();
 
 			// Update sharing stuff
-			Hiro.apps.close();
-			Hiro.apps.sharing.update();
+			Hiro.apps.sharing.update();		
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
@@ -683,10 +687,10 @@ var Hiro = {
 				}
 						
 				// Set text		
-				if (Hiro.canvas.el_text.value != text) Hiro.canvas.el_text.value = text;		
+				if (Hiro.canvas.el_text.value != text) Hiro.canvas.el_text.value = text;	
 
-				// Fetch proper cursor
-				if (Hiro.ui.el_landingpage.style.display == 'none') Hiro.canvas.setcursor(pos);					
+				// Set cursor (this should not fire as it's called from a new requestanimationframe stack)
+				Hiro.canvas.setcursor();										
 			});	
 
 			// Resize textarea
@@ -768,8 +772,11 @@ var Hiro = {
 		setcursor: function(pos) {
 			var el = this.el_text;
 
+			// Never set focus in moving or open folio on touch devices (pulls up keyboard)
+			if (Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1)) return;			
+
 			// Set default value
-			pos = pos || Hiro.data.get('note_' + this.currentnote).c.cursor_pos || 0;
+			pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
 
 			// Create array if we only got a number
 			if (typeof pos == 'number') pos = [pos,pos];
@@ -1197,6 +1204,9 @@ var Hiro = {
 				document.getElementById('app_' + this.open[i - 1]).getElementsByClassName('widget')[0].style.display = 'none';
 				this.open.pop();
 			}
+
+			// Set focus back on current doc
+			Hiro.canvas.setcursor();
 		},
 
 		// OK, fuck it, no time to rewrite vue/angular
@@ -3638,7 +3648,7 @@ var Hiro = {
 		},		
 
 		// Slide folio: 1 to open, -1 to close
-		slidefolio: function(direction,slideduration,force) {
+		slidefolio: function(direction,slideduration,force,callback) {
 			// Catch cases where sliding makes no sense
 			if ((direction < 0 && this.slidepos === 0) ||  
 				(direction > 0 && this.slidepos > 100) ||
@@ -3649,7 +3659,7 @@ var Hiro = {
 			if (!direction) direction = (this.slidedirection == 1 || Hiro.folio.open) ? -1 : 1;	
 
 			// Repaint folio
-			if (direction == 1) Hiro.folio.paint(true);			
+			if (direction == 1) Hiro.folio.paint(true);		
 
 			// Local vars
 			var // Make sure we always have 50px on the right, even on narrow devices
@@ -3666,6 +3676,9 @@ var Hiro = {
 				duration = sd / distance * Math.abs(dx),
 				start = Hiro.util.now(),
 				_this = this;	
+
+			// Set direction
+			_this.slidedirection = direction;				
 
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
@@ -3704,10 +3717,13 @@ var Hiro = {
 				if (done) {
 					// Timessssup
 					Hiro.folio.open = (direction > 0) ? true : false;
-					_this.direction = 0;
+					_this.slidedirection = 0;
 					_this.slidetimer = 0;
-				} 
-				else _this.slidetimer = requestAnimationFrame(step);
+					// Callback
+					if (callback) callback();
+				} else {
+					_this.slidetimer = requestAnimationFrame(step);
+				}	
 			}
 
 			// Kick off stepping loop
@@ -4334,6 +4350,10 @@ var Hiro = {
 							break;		
 					}
 				} else if (type == 'full') {
+					// Kill focus on mobile devices if we execute an action
+					if (target.tagName.toLowerCase() != 'input' && Hiro.ui.mini() && document.activeElement && document.activeElement.tagName.toLowerCase() == 'input') document.activeElement.blur();
+
+					// 'hexecute'
 					switch (action) {
 						case 'd_msg':
 						case 'd_close':	

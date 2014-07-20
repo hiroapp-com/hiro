@@ -518,7 +518,8 @@ input.error:focus {
   position: absolute;
   z-index: 2030;
   bottom: 54px;
-  left: 95px;  
+  left: 95px; 
+  display: none; 
 }
 
 #nicequote .quote {
