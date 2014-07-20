@@ -78,9 +78,9 @@ var Hiro = {
 		el_archivelink: document.getElementById('archivelink'),		
 
 		// Internal values
-		autoupdate: null,
 		archivecount: 0,
 		unseencount: 0,
+		owncount: 0,
 
 		// Use lookup[id] to lookup folio element by id (note: this isn't the note itself, just the folio entry)
 		lookup: {},
@@ -175,7 +175,7 @@ var Hiro = {
 			if (!data) return;
 
 			// Reset archivecount
-			that.archivecount = that.unseencount = 0;
+			that.archivecount = that.unseencount = that.owncount = 0;
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
@@ -275,6 +275,9 @@ var Hiro = {
 
 			// If we have two users or more, or if the only user has no uid now (meaning we are absent from peers & everything happened offline)
 			if (note.c.peers.length > 1 || (note.c.peers.length == 1 && !note.c.peers[0].user.uid)) {
+				// Check if we are the owner
+				if (note._owner == Hiro.data.get('profile','c.uid')) this.owncount++;
+
 				// Add sharing icon to document and change class to shared
 				s = document.createElement('div');
 				s.className = 'sharing';
@@ -310,6 +313,9 @@ var Hiro = {
 					// Complete string
 					time = time + ' by ' + ((user) ? user.name || user.email || user.phone || 'Anonymous' : 'Anonymous');	
 				}					
+			} else {
+				// Iterate owncounter
+				this.owncount++;
 			}
 
 			// Append stats with time indicator
@@ -2336,6 +2342,7 @@ var Hiro = {
 				// Set custom internal values
 				// TODO Bruno: Find a good way to extract/create internal values like _lastedit, _cursor etc
 				cn._token = sp.sharing_token;	
+				cn._owner = (sn.val.created_by.uid);
 
 				// Build client and shadow versions
 				cn.c = {}; cn.s = {};
@@ -4210,6 +4217,9 @@ var Hiro = {
 
 				// Change visibility etc
 				Hiro.ui.render(function(){
+					// Update contents
+					if (container == 'd_settings') Hiro.ui.dialog.update();
+
 					// Show or hide close button, has to have own rAF because switchview above does too				
 					Hiro.ui.dialog.el_close.style.display = (close) ? 'block' : 'none';
 
@@ -4226,6 +4236,25 @@ var Hiro = {
 				// Attach event and set internal value
 				Hiro.util.registerEvent(window,'resize',Hiro.ui.dialog.center);
 				this.open = true;
+			},
+
+			// Fill data into settings dialog & and other preparations
+			update: function() {
+				var user = Hiro.data.get('profile','c'), fields = this.el_settings.getElementsByTagName('input'), d,
+					plans = ['Anonymous','Basic','Advanced'];
+
+				// Abort here if user is not signed up yet
+				if (!(user.tier > 0)) return;
+
+				// Fill the fields
+				fields[0].value = user.name || '';
+				fields[1].value = user.email || user.phone || '';
+				fields[2].value = 'Member Since: ' + Hiro.util.monthddyyyy(user.signup_at) || 'Some time';
+				fields[3].value = plans[user.tier] + ((Hiro.ui.mini()) ? '' : ' plan') + ': ' + Hiro.folio.owncount + ((user.tier < 2) ? ' of 10' : '') + ' notes';	
+
+				// Remove upgrade link if user is already aying customer
+				fields[3].nextSibling.style.display = (user.tier > 1) ? 'none' : 'block';			
+
 			},
 
 			// Close the dialog 
@@ -4332,7 +4361,7 @@ var Hiro = {
 				}
 			},
 
-			// CLean up errors etc
+			// Clean up errors etc and handle input actions (namechange, cc etc)
 			keyhandler: function(event) {
 				var t = event.target || event.srcElement,
 					c = t.getAttribute('class');
@@ -4770,6 +4799,22 @@ var Hiro = {
 			// if less two years ago
 			if (t<63072000) return "More than a year";			
 			return Math.round(t/31536000) + " years";					
+		},
+
+		// Returns Month DD, YYYY
+		monthddyyyy: function(ts) {
+			var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+				d;
+
+			// Get current date if none provided
+			ts = ts || this.now();
+
+			// Get proper date object
+			d = new Date(ts);
+
+			// Return string
+			return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+
 		},	
 
 		// Return current timestamp in UTC unix msecs (or whatever format we'll decide to use)
