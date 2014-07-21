@@ -1081,12 +1081,13 @@ var Hiro = {
 		checkout: {
 			// Internals
 			targettier: 0,
+			active: false,
 
 			// Prepare checkout form
 			show: function(tt) {
 				var ct = Hiro.data.get('profile','c.tier') || 0,
 					root = document.getElementById('s_checkout'),
-					el_cc = document.getElementById('cc_number'),
+					fields = root.getElementsByTagName('input'),
 					d, tip, action;
 
 				// Set local vars
@@ -1122,12 +1123,84 @@ var Hiro = {
 					Hiro.ui.switchview(document.getElementById('s_checkout'));
 
 					// Focus CC
-					el_cc.focus();
+					fields[1].focus();
 				// User wants to downgrade	
 				} else if (tt < ct) {
 					this.downgrade();
 				}
-			} 
+			},
+
+			// Validate form and send to stripe if ok
+			validate: function() {
+				var root = document.getElementById('s_checkout'),
+					form, fields, button, subscription, plans = [0,1,'Advanced','Pro'], Stripe;
+
+				// Fatal!
+				if (!Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
+
+				// One try at a time
+				if (this.active || !root) return;
+
+				// Grab form and other elements
+				form = root.getElementsByTagName('form')[0];
+				button = root.getElementsByClassName('hirobutton')[0];
+				fields = root.getElementsByTagName('input');
+
+				// Show user whats going on
+				button.innerText = 'Validating...';
+
+				// Build subscription object
+				subscription = {};
+				subscription.plan = plans[this.targettier];
+
+				console.log('checkpouts!',subscription,button);				
+
+				// Ping Stripe for token
+				Stripe.createToken(form, function(status,response) {					
+					if (response.error) {
+						// Our IDs are named alongside the stripe naming conventions
+						// TODO Bruno: Lookup if we can use data tags for dom lookups reliably or use fields array
+						if (response.error.param) frame.getElementById('cc_'+response.error.param).className += " error";
+						if (response.error.param == 'number') {
+							var el = frame.getElementById('cc_'+response.error.param).nextSibling;
+							el.innerHTML = response.error.message;	
+							el.className += ' error';						
+						} else {
+							frame.getElementById('checkout_error').innerHTML = response.error.message;
+						}
+						// Reset
+						Hiro.user.checkout.active = false;
+						button.innerText = "Try again";
+						// Log & return
+						Hiro.sys.error('CC check gone wrong, STripe sez:',response);							
+						return;
+					} else {
+						// add new stripe data to subscription object
+						subscription.token = response.id;								
+					}				
+				});								
+
+				// Send data to backend if successful
+				if (subscription.token) {
+					Hiro.sync.ajax({
+						url: "/settings/plan",
+		                type: "POST",
+		                payload: JSON.stringify(subscription),
+						success: function(req,data) {
+							// w00p w00p, set stage and everything
+		                    Hiro.ui.setstage(data.tier);	
+		                    Hiro.user.checkout.active = false;	
+		                    Hiro.ui.dialog.hide();			                    						                    
+						},
+		                error: function(req,data) {
+		                	Hiro.sys.error('Checkout went wrong on our side: ', data);		                	
+		                }					
+					});	
+				}
+
+				// Clean up form in any case
+				button.innerText = 'Upgrade';
+			}
 		}
 	},
 
@@ -4351,7 +4424,7 @@ var Hiro = {
 					}
 				} else if (type == 'full') {
 					// Kill focus on mobile devices if we execute an action
-					if (target.tagName.toLowerCase() != 'input' && Hiro.ui.mini() && document.activeElement && document.activeElement.tagName.toLowerCase() == 'input') document.activeElement.blur();
+					if (target && target.tagName.toLowerCase() != 'input' && Hiro.ui.mini() && document.activeElement && document.activeElement.tagName.toLowerCase() == 'input') document.activeElement.blur();
 
 					// 'hexecute'
 					switch (action) {
@@ -4397,6 +4470,10 @@ var Hiro = {
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
 							target.innerText = 'Saved!';
+							break;	
+						case 'checkout':
+							// Calls teh checkout
+							Hiro.user.checkout.validate();
 							break;				
 					}
 				}
@@ -4409,7 +4486,7 @@ var Hiro = {
 					name = Hiro.data.get('profile','c.name'), el;
 
 				// Remove error from input error overlay
-				if (t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = ''; 
+				if (t.nextSibling.innerHTML && t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = ''; 
 
 				// If we had an error in the input field
 				if (c && c.indexOf('error') > 0) t.setAttribute('class',c.replace('error',''))

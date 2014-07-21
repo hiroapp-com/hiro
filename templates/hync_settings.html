@@ -5,7 +5,7 @@
 		<a data-hiro-action="switch_s_about">About</a>	
 	</div>	
 	<div class="accountdetails">
-		<form id="accountform" action="javascript:void(0);">
+		<form action="javascript:void(0);">
 			<input type="text" value="" maxlength="40" placeholder="Your name (for shared editing)" data-hiro-value="name"></input><div class="ioption save"><a data-hiro-action="savename"></a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
 			<input type="text" value="" disabled></input>
 			<input type="text" value="Member since:" disabled></input><div class="ioption nomobile">Thanks!</div>
@@ -82,17 +82,17 @@
 		<a data-hiro-action="switch_s_about">About</a>		
 	</div>
 	<div class="checkoutdetails">	
-		<form id="checkoutform">
+		<form action="javascript:void(0);">
 			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a data-hiro-action="changeplan">Change</a></div>
-			<input type="text" maxlength="22" value="" placeholder="Credit Card Number" id="cc_number" data-stripe="number"></input><div class="ioption"></div>
-			<input type="text" pattern="[0-9]*" value="" placeholder="Month" id="cc_exp_month" class="small" title="Expiration Month" data-stripe="exp-month"></input> /
-			<input type="text" pattern="[0-9]*" value="" placeholder="Year" id="cc_exp_year" class="small" title="Expiration Year" data-stripe="exp-year"></input>	
-			<input type="text" pattern="[0-9]*" value="" placeholder="CVC" id="cc_cvc" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc"></input>	
-			<div class="small" id="checkout_error"></div>			
-			<a class="hirobutton green" id="checkoutbutton">
+			<input type="text" maxlength="22" placeholder="Credit Card Number" data-stripe="number"></input><div class="ioption"></div>
+			<input type="text" pattern="[0-9]*" placeholder="Month" class="small" title="Expiration Month" data-stripe="exp-month"></input> /
+			<input type="text" pattern="[0-9]*" placeholder="Year" class="small" title="Expiration Year" data-stripe="exp-year"></input>	
+			<input type="text" pattern="[0-9]*" placeholder="CVC" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc"></input>	
+			<div class="mainerror error"></div>		
+			<a class="hirobutton green" data-hiro-action="checkout">
 			Upgrade</a>	
 			<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by&nbsp;<b>stripe</b></div>						
-			<input type="submit" value="foo" onclick="Hiro.sys.user.checkout(); return false;" class="pseudobutton"></input>
+			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('checkout','full');" class="pseudobutton"></input>
 		</form>						
 	</div>	
 </div>
@@ -108,9 +108,9 @@
 		<div class="claim"><em>Hiro is for people with big ideas</em><br />
 		who want a better tool to keep them.</div>
 
-		Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services or 3 menus before you can do anything. Something you open when an idea you don't want to lose crosses your mind. A place where it is <em>safe and not accessed by anybody else</em>.<br /><br />
+		Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services or 3 menus before you can do anything. Something you open when an idea you don't want to lose crosses your mind. A place where it is&nbsp;<em>safe and not accessed by anybody else</em>.<br /><br />
 
-		<span class="contact">We hope you like Hiro as much as we do. We're always there at <a href="mailto:hello@hiroapp.com" target="_blank">hello@hiroapp.com</a> and share the best tricks of how people manage their ideas on <a href="https://www.facebook.com/hiroapp" target="_new">facebook.com/hiroapp</a>.</span>
+		<span class="contact">We hope you like Hiro as much as we do. We're always there at&nbsp;<a href="mailto:hello@hiroapp.com" target="_blank">hello@hiroapp.com</a>&nbsp;and share the best tricks of how people manage their ideas on&nbp;<a href="https://www.facebook.com/hiroapp" target="_new">facebook.com/hiroapp</a>.</span>
 	</div>	
 </div>
 
