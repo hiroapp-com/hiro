@@ -1126,7 +1126,7 @@ var Hiro = {
 					fields[1].focus();
 				// User wants to downgrade	
 				} else if (tt < ct) {
-					this.downgrade();
+					this.downgrade(tt);
 				}
 			},
 
@@ -1140,6 +1140,9 @@ var Hiro = {
 
 				// One try at a time
 				if (this.active || !root) return;
+
+				// set lock flag
+				this.active = true;
 
 				// Grab form and other elements
 				form = root.getElementsByTagName('form')[0];
@@ -1200,6 +1203,32 @@ var Hiro = {
 
 				// Clean up form in any case
 				button.innerText = 'Upgrade';
+			},
+
+			// Sniiieff, so loooneeesssoooommmmeee tonight
+			downgrade: function(tier) {
+				var root = document.getElementById('s_plan'), button;
+
+				// check & set flag
+				if (this.active || !root) return;
+				this.active = true;
+
+				// Get box & render button content
+				button = root.getElementsByClassName(tier)[0].getElementsByClassName('light')[0];
+				button.innerText = 'Downgrading...';
+
+				// Post to server, bitterly
+				Hiro.sync.ajax({
+					url: "/settings/plan",
+	                type: "POST",
+	                payload: JSON.stringify({plan:tier}),
+					success: function(req,data) {
+	                    Hiro.ui.setstage(data.tier);	
+	                    Hiro.user.checkout.active = false;	
+		                   Hiro.ui.dialog.hide();	                    
+	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);					                    
+					}
+				});					
 			}
 		}
 	},
@@ -4460,7 +4489,7 @@ var Hiro = {
 							break;	
 						case 'selectplan':
 							// 
-							Hiro.user.checkout.show(param);
+							Hiro.user.checkout.show(param,target);
 							break;	
 						case 'savename':
 							// Get name field
@@ -4553,13 +4582,13 @@ var Hiro = {
 						boxes[2].getElementsByClassName('green')[0].style.display = 'block';
 						break;
 					case 2:
-						boxes[0].getElementsByClassName('red')[0].style.display = 
+						boxes[0].getElementsByClassName('light')[0].style.display = 
 						boxes[1].getElementsByClassName('grey')[0].style.display = 
 						boxes[2].getElementsByClassName('green')[0].style.display = 'block';
 					 	break;
 					case 3:
-						boxes[0].getElementsByClassName('red')[0].style.display = 
-						boxes[1].getElementsByClassName('red')[0].style.display = 
+						boxes[0].getElementsByClassName('light')[0].style.display = 
+						boxes[1].getElementsByClassName('light')[0].style.display = 
 						boxes[2].getElementsByClassName('grey')[0].style.display = 'block';
 						break;
 				}				
