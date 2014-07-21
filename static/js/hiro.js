@@ -1185,7 +1185,7 @@ var Hiro = {
 
 				// Send data to backend if successful
 				if (subscription.token) {
-					Hiro.sync.ajax({
+					Hiro.sync.ajax.send({
 						url: "/settings/plan",
 		                type: "POST",
 		                payload: JSON.stringify(subscription),
@@ -1218,14 +1218,14 @@ var Hiro = {
 				button.innerText = 'Downgrading...';
 
 				// Post to server, bitterly
-				Hiro.sync.ajax({
+				Hiro.sync.ajax.send({
 					url: "/settings/plan",
 	                type: "POST",
 	                payload: JSON.stringify({plan:tier}),
 					success: function(req,data) {
 	                    Hiro.ui.setstage(data.tier);	
 	                    Hiro.user.checkout.active = false;	
-		                   Hiro.ui.dialog.hide();	                    
+		                Hiro.ui.dialog.hide();	                    
 	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);					                    
 					}
 				});					
