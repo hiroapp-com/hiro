@@ -158,7 +158,7 @@ var Hiro = {
 
 			// Open the folio
 			if (!Hiro.folio.open) {
-				Hiro.ui.slidefolio(1,200);
+				Hiro.ui.slidefolio(1,170);
 			}		
 		},
 
@@ -4364,6 +4364,16 @@ var Hiro = {
 						Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
 					});
 				});
+
+				// Load facebook on first open
+				if (!window.FB) {
+					// Load facebook
+					Hiro.lib.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
+						window.fbAsyncInit = function() {	
+							FB.init({ appId : Hiro.lib.keys.fb, status : true, xfbml : true }); 
+						};
+					},true,0);					
+				}
 
 				// Set wanted areas to display block
 				if (container) Hiro.ui.switchview(container);
