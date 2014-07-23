@@ -4369,9 +4369,8 @@ var Hiro = {
 				if (!window.FB) {
 					// Load facebook
 					Hiro.lib.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
-						window.fbAsyncInit = function() {	
-							FB.init({ appId : Hiro.lib.keys.fb, status : true, xfbml : true }); 
-						};
+						// Init after loading
+						FB.init({ appId : Hiro.lib.keys.fb, version: 'v2.0', status : false, xfbml : false }); 
 					},true,0);					
 				}
 
