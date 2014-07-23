@@ -1457,7 +1457,7 @@ input.error:focus {
     padding-bottom: 8px;
   }
 
-  #d_settings .accountdetails {
+  #d_settings .accountdetails, #d_settings .checkoutdetails {
     position: absolute;
     margin: 0;
     top: 60px;
@@ -1471,12 +1471,6 @@ input.error:focus {
     padding: 19px 16px 15px 16px; 
     width: auto;     
   }  
-
-  #d_settings .checkoutdetails {
-    width: 90%;
-    margin-top: 17px;   
-    position: relative; 
-  }
 
   #d_settings .accountdetails form, #d_settings .checkoutdetails form {
     margin-top: 0;   
@@ -1536,12 +1530,17 @@ input.error:focus {
     top: 60px;
     left: 0;
     right: 0;
-    bottom: 47px;
+    bottom: 0;
     overflow-x: hidden; 
     overflow-y: auto;
     -webkit-overflow-scrolling: touch; 
-    border-bottom: 1px dotted #ddd;    
+    border-bottom: none;    
   }  
+
+  #s_plan.teaser .plans {
+    bottom: 47px;
+    border-bottom: 1px dotted #ddd;    
+  }   
 
   #s_plan .box {
     float: none;
@@ -1615,8 +1614,8 @@ input.error:focus {
   }
 
   #s_checkout form .ioption.changeplan {
-    top: 49px;
-    right: 0; 
+    top: 68px;
+    right: 17px;
   }
 
   #s_checkout .checkoutdetails form input.small, #s_checkout .checkoutdetails form input.small.cvc {

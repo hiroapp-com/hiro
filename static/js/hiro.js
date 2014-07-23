@@ -1144,7 +1144,7 @@ var Hiro = {
 			// Validate form and send to stripe if ok
 			validate: function() {
 				var root = document.getElementById('s_checkout'),
-					form, fields, ccfields, el, button, subscription, plans = [0,1,'Advanced','Pro'];
+					form, fields, ccfields, el, me, button, subscription, plans = [0,1,'Advanced','Pro'];
 
 				// Fatal!
 				if (!window.Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
@@ -1159,6 +1159,7 @@ var Hiro = {
 				form = root.getElementsByTagName('form')[0];
 				button = root.getElementsByClassName('hirobutton')[0];
 				fields = root.getElementsByTagName('input');
+				me = form.getElementsByClassName('mainerror')[0];
 
 				// Show user whats going on
 				button.innerText = 'Validating...';
@@ -1177,20 +1178,20 @@ var Hiro = {
 						if (ccfields.indexOf(response.error.param) > 0) {
 							el = fields[ccfields.indexOf(response.error.param)];
 							el.className += ' error';	
+							// FOcus on problematic field
 							el.focus();
-						}						
-						
-						// Get main error DOM element
-						el = form.getElementsByClassName('mainerror')[0];	
+						}											
 
 						// Add error message for number
 						if (response.error.param == 'number') {							
 							fields[1].nextSibling.innerText = response.error.message;
 							fields[1].nextSibling.className += ' error';
+
 						// Or all other errors to generic field											
-						} else if (el) {
-							el.innerText = response.error.message;							
+						} else if (me) {
+							me.innerText = response.error.message;							
 						}
+
 						// Reset
 						Hiro.user.checkout.active = false;
 						button.innerText = "Try again";
@@ -1212,16 +1213,20 @@ var Hiro = {
 								// w00p w00p, set stage and everything
 			                    Hiro.ui.setstage(data.tier);	
 			                    Hiro.user.checkout.active = false;	
-			                    Hiro.ui.dialog.hide();			                    						                    
+			                    Hiro.ui.dialog.hide();	
+								// Clean up form 
+								button.innerText = 'Upgrade';			                    		                    						                    
 							},
 			                error: function(req,data) {
-			                	Hiro.sys.error('Checkout went wrong on our side: ', data);		                	
+			                	// Log
+			                	Hiro.sys.error('Checkout went wrong on our side: ', data);		
+			                	// Reset and show
+			                    Hiro.user.checkout.active = false;
+			                    me.innerText = "Hiro wasn't available, please try again a little bit later";
+								button.innerText = "Try again";			                    				                	                	
 			                }					
 						});														
-					}
-
-					// Clean up form in any case
-					button.innerText = 'Upgrade';								
+					}								
 				});								
 			},
 
@@ -4407,6 +4412,8 @@ var Hiro = {
 				// Remove upgrade link if user is already aying customer
 				fields[3].nextSibling.style.display = (user.tier > 1) ? 'none' : 'block';			
 
+				// Update the boxes
+				this.paintboxes();
 			},
 
 			// Close the dialog 
@@ -4534,18 +4541,27 @@ var Hiro = {
 			keyhandler: function(event) {
 				var t = event.target || event.srcElement,
 					c = t.getAttribute('class'), id = t.id || t.getAttribute('data-hiro-value'),
-					name = Hiro.data.get('profile','c.name'), el;
+					name = Hiro.data.get('profile','c.name'), el, mains, i, l;
 
 				// Remove error from input error overlay
 				if (t.nextSibling.innerHTML && t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = ''; 
 
-				// If we had an error in the input field
-				if (c && c.indexOf('error') > 0) t.setAttribute('class',c.replace('error',''))
+				// If we had an error CSS class in the input field
+				if (c && c.indexOf('error') > 0) {
+					// Reset CSS
+					t.setAttribute('class',c.replace('error',''))
+					// Get & empty all mainerrors
+					mains = this.getElementsByClassName('mainerror');
+					for (i = 0, l = mains.length; i < l; i++ ) {
+						if (mains[i].innerHTML) mains[i].innerHTML = '';
+					}					
+				}	
 
-				// COpy values to other input if it happens on login
+				// Copy values to other input if it happens on login
 				if (t.id == 'signin_mail') document.getElementById('signup_mail').value = t.value;
 				if (t.id == 'signup_mail') document.getElementById('signin_mail').value = t.value;
 
+				// Small overlay helpers for input fields
 				switch (id) {
 					case 'name':		
 						if (t.value != name) {
@@ -4567,7 +4583,7 @@ var Hiro = {
 						if (data) {
 							Hiro.ui.render(function(){
 								Hiro.ui.dialog.el_settings.innerHTML = data;
-								Hiro.ui.dialog.paint();
+								Hiro.ui.dialog.paintboxes();
 							});						
 						}	
 					},
@@ -4577,17 +4593,17 @@ var Hiro = {
 				});					
 			},
 
-			// Javascript part of dialog rendering
-			paint: function() {
-				var root = document.getElementById('s_planboxes'),
-					tier = Hiro.data.get('profile','c.tier'), i, l;
+			// Choose which buttons to display in plan selection boxes
+			paintboxes: function() {
+				var root = document.getElementById('s_plan').getElementsByClassName('plans')[0],
+					tier = Hiro.data.get('profile','c.tier'), i, l, boxes, buttons;
 
 				// Abort if dialog shouldn't be here for any reason
 				if (!root) return;
 
 				// Get remaining vars
-				var boxes = root.getElementsByClassName('box'),
-					buttons = root.getElementsByTagName('a');
+				boxes = root.getElementsByClassName('box');
+				buttons = root.getElementsByTagName('a');
 
 				// Set all buttons to display none & reset content first
 				for (i=0,l=buttons.length;i<l;i++) {
