@@ -158,7 +158,7 @@ var Hiro = {
 
 			// Open the folio
 			if (!Hiro.folio.open) {
-				Hiro.ui.slidefolio(1);
+				Hiro.ui.slidefolio(1,200);
 			}		
 		},
 
@@ -1101,6 +1101,17 @@ var Hiro = {
 
 				// User wants to upgrade
 				} else if (tt > ct) {
+					// Check if Stripe is already loaded or do so otherwise
+					if (!window.Stripe) {
+						Hiro.lib.loadscript('https://js.stripe.com/v2/',undefined,function(){
+							// Fetch key
+							var k = Hiro.lib.keys.stripe;
+							// Set or log error
+							if (k) Stripe.setPublishableKey(k);
+							else Hiro.sys.error('Tried to init Stripe, but no key found',Hiro.lib.keys)
+						},true,0);
+					}	
+									
 					// Set values for upgrade / preorder smoke test					
 					if (tt == 2) {
 						d = 'Advanced Plan: $ 9';
@@ -1133,13 +1144,13 @@ var Hiro = {
 			// Validate form and send to stripe if ok
 			validate: function() {
 				var root = document.getElementById('s_checkout'),
-					form, fields, button, subscription, plans = [0,1,'Advanced','Pro'], Stripe;
+					form, fields, button, subscription, plans = [0,1,'Advanced','Pro'];
 
 				// Fatal!
-				if (!Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
+				if (!window.Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
 
 				// One try at a time
-				if (this.active || !root) return;
+				if (this.active || !root || !window.Stripe) return;
 
 				// set lock flag
 				this.active = true;
@@ -1714,8 +1725,7 @@ var Hiro = {
 				if (Hiro.ui.mini()) peers.unshift(peer); 
 				else peers.push(peer);
 
-				// Set flag
-
+				// Save peer changes
 				Hiro.data.set('note_' + Hiro.canvas.currentnote,'c.peers',peers);
 
 				// Add copy of new peer to contacts as well
@@ -3312,12 +3322,15 @@ var Hiro = {
 		production: (window.location.href.indexOf('hiroapp') != -1),	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
-		init: function(ws_url) {
+		init: function(ws_url,keys) {
 			// Begin startup logging
 			Hiro.sys.log('Hiro startup sequence','','group');		
 
 			// Prevent initing twice
 			if (this.inited) return;
+
+			// Store keys
+			if (keys) Hiro.lib.keys = keys;
 
 			// Create DMP socket
 			Hiro.sync.diff.dmp = new diff_match_patch();	
@@ -4881,6 +4894,9 @@ var Hiro = {
 
 	// External js library handling (Facebook, Analytics, DMP etc)
 	lib: {
+
+		// Save keys by library name
+		keys: {},
 
 		// Load libraries
 		init: function() {
