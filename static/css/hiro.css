@@ -179,7 +179,7 @@ input.pseudobutton {
 
 div.error {
   font-size: 14px;
-  color: red;  
+  color: red !important;  
 }
 
 input.error {
@@ -1335,6 +1335,7 @@ input.error:focus {
 #s_checkout .checkoutdetails form input.small {
   width: 100px;
   display: inline-block;
+  margin-bottom: 5px;  
 }
 
 #s_checkout .checkoutdetails form input.small.cvc {
@@ -1349,6 +1350,7 @@ input.error:focus {
 
 #s_checkout .checkoutdetails a.hirobutton {
   text-align: center;
+  margin-top: 5px;  
 }
 
 #s_checkout .checkoutdetails #checkout_error {

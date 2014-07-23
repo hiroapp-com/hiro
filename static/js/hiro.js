@@ -1144,7 +1144,7 @@ var Hiro = {
 			// Validate form and send to stripe if ok
 			validate: function() {
 				var root = document.getElementById('s_checkout'),
-					form, fields, button, subscription, plans = [0,1,'Advanced','Pro'];
+					form, fields, ccfields, el, button, subscription, plans = [0,1,'Advanced','Pro'];
 
 				// Fatal!
 				if (!window.Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
@@ -1172,48 +1172,57 @@ var Hiro = {
 				// Ping Stripe for token
 				Stripe.createToken(form, function(status,response) {					
 					if (response.error) {
-						// Our IDs are named alongside the stripe naming conventions
-						// TODO Bruno: Lookup if we can use data tags for dom lookups reliably or use fields array
-						if (response.error.param) frame.getElementById('cc_'+response.error.param).className += " error";
-						if (response.error.param == 'number') {
-							var el = frame.getElementById('cc_'+response.error.param).nextSibling;
-							el.innerHTML = response.error.message;	
-							el.className += ' error';						
-						} else {
-							frame.getElementById('checkout_error').innerHTML = response.error.message;
+						// Form field list to Stripe field name mapping and add error class
+						ccfields = [0,'number','exp_month','exp_year','cvc'];
+						if (ccfields.indexOf(response.error.param) > 0) {
+							el = fields[ccfields.indexOf(response.error.param)];
+							el.className += ' error';	
+							el.focus();
+						}						
+						
+						// Get main error DOM element
+						el = form.getElementsByClassName('mainerror')[0];	
+
+						// Add error message for number
+						if (response.error.param == 'number') {							
+							fields[1].nextSibling.innerText = response.error.message;
+							fields[1].nextSibling.className += ' error';
+						// Or all other errors to generic field											
+						} else if (el) {
+							el.innerText = response.error.message;							
 						}
 						// Reset
 						Hiro.user.checkout.active = false;
 						button.innerText = "Try again";
+
 						// Log & return
-						Hiro.sys.error('CC check gone wrong, STripe sez:',response);							
+						Hiro.sys.error('CC check gone wrong, Stripe sez:',response);							
 						return;
+
 					} else {
 						// add new stripe data to subscription object
-						subscription.token = response.id;								
-					}				
+						subscription.token = response.id;	
+
+						// Send token to backend
+						Hiro.sync.ajax.send({
+							url: "/settings/plan",
+			                type: "POST",
+			                payload: JSON.stringify(subscription),
+							success: function(req,data) {
+								// w00p w00p, set stage and everything
+			                    Hiro.ui.setstage(data.tier);	
+			                    Hiro.user.checkout.active = false;	
+			                    Hiro.ui.dialog.hide();			                    						                    
+							},
+			                error: function(req,data) {
+			                	Hiro.sys.error('Checkout went wrong on our side: ', data);		                	
+			                }					
+						});														
+					}
+
+					// Clean up form in any case
+					button.innerText = 'Upgrade';								
 				});								
-
-				// Send data to backend if successful
-				if (subscription.token) {
-					Hiro.sync.ajax.send({
-						url: "/settings/plan",
-		                type: "POST",
-		                payload: JSON.stringify(subscription),
-						success: function(req,data) {
-							// w00p w00p, set stage and everything
-		                    Hiro.ui.setstage(data.tier);	
-		                    Hiro.user.checkout.active = false;	
-		                    Hiro.ui.dialog.hide();			                    						                    
-						},
-		                error: function(req,data) {
-		                	Hiro.sys.error('Checkout went wrong on our side: ', data);		                	
-		                }					
-					});	
-				}
-
-				// Clean up form in any case
-				button.innerText = 'Upgrade';
 			},
 
 			// Sniiieff, so loooneeesssoooommmmeee tonight
