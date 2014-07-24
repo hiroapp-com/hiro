@@ -1684,6 +1684,12 @@ body#landingPage2 {
     background-size: 100% auto;
     background-position: center bottom; 
   }  
+  body#landingPage2 .l_container .l_overlay {
+    top: 220px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }  
 }
 
 @media (max-width: 550px) and (max-height: 369px) {
@@ -1691,7 +1697,13 @@ body#landingPage2 {
     background: url(../img/site/landing.mobile.3.png) no-repeat;
     background-size: 100% auto;
     background-position: center 200px; 
-  }  
+  }
+  body#landingPage2 .l_container .l_overlay {
+    top: 220px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }     
 }
 
 body#landingPage2 .l_container .l_canvas {
@@ -1701,6 +1713,13 @@ body#landingPage2 .l_container .l_canvas {
   left: 30px;
   right: 30px;
   text-align: left;   
+}
+
+body#landingPage2 .l_container .l_overlay {
+  margin: 0;
+  position: absolute;
+  display: block;
+  width: 45%;
 }
 
 body#landingPage2 .l_container .l_canvas h1 {
@@ -1797,15 +1816,11 @@ body#landingPage2 .l_footer .l_box .l_header {
   }
 
   body#landingPage2 .l_container .l_overlay {
-    margin: 0;
-    position: absolute;
     top: 0; 
     left: 0; 
     bottom: 10%; 
-    display: block;
     width: 45%;
-    cursor: pointer;
-  }
+  }    
 
   body#landingPage2 .l_container .l_canvas {
     left: 50%;

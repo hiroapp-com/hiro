@@ -3272,8 +3272,6 @@ var Hiro = {
 					store._contacthash = h;
 				}
 
-				console.log('profile delta foo',delta);
-
 				// Return
 				return delta || false;
 			},	
