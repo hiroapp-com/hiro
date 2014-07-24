@@ -287,7 +287,8 @@ var Hiro = {
 				s.className = 'sharing';
 
 				// Add sharing hover tooltip
-				tooltip = 'Shared with ' + (note.c.peers.length - 1) + ' other';	
+				// TODO Bruno: This doesn'T count properly between offline (no own peer) and online created notes, pls fix
+				tooltip = 'Shared with ' + (note.c.peers.length - 1 || 1) + ' other';	
 				if (note.c.peers.length > 2) tooltip = tooltip + 's';
 				s.setAttribute('title',tooltip);	
 				link.appendChild(s);		
