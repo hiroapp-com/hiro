@@ -3226,7 +3226,7 @@ var Hiro = {
 
 			// Specific profile diff, returns proper changes format
 			diffprofile: function(store) {
-				var delta;
+				var delta, h = Hiro.util.hash(store.c.contacts), i, l, c, p;
 
 				// If name changed
 				if (store.c.name != store.s.name) {
@@ -3237,6 +3237,38 @@ var Hiro = {
 					// Copy value
 					store.s.name = store.c.name;			
 				}
+
+				// Check if contacts hash changed
+				if (h != store._contacthash) {
+					// Go through the client side to find unsynced contacts
+					for (i = 0, l = store.c.contacts.length; i < l; i++ ) {
+						// If the user has an ID ( == is already synced), continue
+						if (store.c.contacts[i].uid) continue;
+
+						// Build delta if not done yet and create c shorthand
+						delta = delta || [];
+						c = store.c.contacts[i];
+
+						// Create new delta object
+						delta[delta.length] = { op: 'add-user', path: 'contacts/', value: {} };
+
+						// Get properties
+						for (p in c) {
+							// Check for own & non uid properties
+							if (c.hasOwnProperty(p) && p != 'uid') {
+								// Add all available fields to user object
+								delta[delta.length - 1].value[p] = c[p];
+							}
+						}			
+					}
+
+					// TODO Bruno: Look through all known contacts if any values changed. Do we need this?				
+
+					// Save new hash value
+					store._contacthash = h;
+				}
+
+				console.log('profile delta foo',delta);
 
 				// Return
 				return delta || false;
