@@ -1049,31 +1049,26 @@ var Hiro = {
 				// Abort if we don not have contacts yet but for some reason managed to call this
 				if (!contacts) return;
 
-				// Set flag for diff shortcut if contact is already synced
-				if (obj.uid) {
-					obj._action = 'remove';
-				// Delete right away	
-				} else {
-					// If we have multiple properties
-					for (prop in obj) {
-						if (obj.hasOwnProperty(prop)) {
-							// See if we can find what we're looking for		
-							for ( i = 0, l = contacts.length; i < l; i++ ) {
-								if (contacts[i][prop] == obj[prop]) {
-									// Remove contact from array
-									contacts.splice(i,1);
+				console.log(obj);
 
-									// Write back array
-									Hiro.data.set('profile','c.contacts',contacts);
+				// If we have multiple properties
+				for (prop in obj) {
+					if (obj.hasOwnProperty(prop)) {
+						// See if we can find what we're looking for		
+						for ( i = 0, l = contacts.length; i < l; i++ ) {
+							if (contacts[i][prop] == obj[prop]) {
+								// Remove contact from array
+								contacts.splice(i,1);
 
-									// End here
-									return;
-								}
+								// Write back array
+								Hiro.data.set('profile','c.contacts',contacts);
+
+								// End here
+								return;
 							}
 						}
 					}
-				}					
-
+				}				
 			}
 		},
 
@@ -2538,7 +2533,7 @@ var Hiro = {
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
 			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, 
-				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/;
+				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -2579,10 +2574,10 @@ var Hiro = {
 						// TODO Bruno: Move this to user.contact or sharing for extended logic 		
 						case 'note|add-peer':
 							// Stringify peer object to make it unique
-							peer = JSON.stringify(ops[j].value);						
+							obj = JSON.stringify(ops[j].value);						
 							// Add peer to both versions
-							store.s.peers.push(JSON.parse(peer));
-							store.c.peers.push(JSON.parse(peer));	
+							store.s.peers.push(JSON.parse(obj));
+							store.c.peers.push(JSON.parse(obj));	
 							// Repaint folio and sharing if applicable
 							Hiro.folio.paint(true);
 							// If the peers was added to the current note
@@ -2635,7 +2630,16 @@ var Hiro = {
 							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);							
 							// Add notification if we're not focused
 							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(ops[j].value.nid);							
-							break;													
+							break;	
+						// Remove a user from the contact list
+						case 'profile|rem-user':
+							// Build quick object
+							obj = {};
+							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
+							// Remove
+							Hiro.user.contacts.remove(obj);
+							update = true;
+							break; 													
 						default:
 							Hiro.sys.error('Received unknown change op from server',ops[j]);		
 					}
