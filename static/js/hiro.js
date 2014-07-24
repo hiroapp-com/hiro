@@ -5053,6 +5053,38 @@ var Hiro = {
 			return [type,string];
 		},
 
+		// Returns a hash for simple or complex object provided
+		// According to http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
+		// and it's links this produces the best results for our contacts use case 
+		hash: function(s) {
+			var h = 0, i, chr, l;
+
+			// Check for & convert to string
+			if (typeof s != 'string') s = JSON.stringify(s);
+
+			// Return 0 if length is 0
+			if (s.length == 0) return h;
+
+			// Use reduce on modern browsers
+		    if (Array.prototype.reduce) {
+		        return s.split('').reduce( function(a,b) { 
+		        	a = ( ( a << 5 ) - a ) + b.charCodeAt(0); 
+		        	return a & a;
+		        },0); 
+		    // Use for loop on older ones          
+		    } else {
+				for (i = 0, l = s.length; i < l; i++) {
+					// Grab next char
+					c = s.charCodeAt(i);
+					// Shift bitwise
+					h = ((h << 5) - h) + c;
+					// Convert to 32bit integer
+					h |= 0; 
+				}
+				return h;
+		    }		
+		},
+
 		// Cross browser event registration
 		registerEvent: function(obj, eventType, handler, capture) {
 			// Set default value for capture
