@@ -207,8 +207,8 @@ var Hiro = {
 				that.el_showmenu.firstChild.style.display = (that.unseencount) ? 'block' : 'none';
 
 				// Copy innerHTML
-				that.el_notelist.innerHTML = f0.innerHTML || '';
-				that.el_archivelist.innerHTML = f1.innerHTML || '';
+				that.el_notelist.innerHTML = (f0) ? f0.innerHTML : '';
+				that.el_archivelist.innerHTML = (f1) ? f1.innerHTML : '';
 
 				// Update text contents of archivelink
 				if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
@@ -673,7 +673,7 @@ var Hiro = {
 			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
 			// Visual update
-			this.paint();
+			this.paint(true);
 
 			// Update sharing stuff
 			Hiro.apps.sharing.update();		
@@ -2186,7 +2186,7 @@ var Hiro = {
 				else if (!key || key == 'c' || key == '_unseen') Hiro.folio.paint(true);	
 
 				// If the update wasn't by client and concerns the current note
-				if (source != 'c' && current) Hiro.canvas.paint(false);	
+				if (source != 'c' && current) Hiro.canvas.paint();	
 
 				// Abort here if the update came from localStorage to avoid infinite save loops
 				if (source == 'l')  return;
@@ -2605,7 +2605,7 @@ var Hiro = {
 				cn.s.peers = JSON.parse(peers);
 
 				// Set custom internal values
-				cn._token = sp.sharing_token;	
+				cn._token = sn.val.sharing_token;	
 				cn._owner = sn.val.created_by.uid;
 				cn._created = sn.val.created_at;
 
