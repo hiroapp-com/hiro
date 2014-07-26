@@ -651,7 +651,7 @@ var Hiro = {
 			};
 
 			// Mount me reference
-			this.cache._me = this.getme() || undefined;				
+			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
 			// Visual update
 			this.paint();
@@ -718,22 +718,6 @@ var Hiro = {
 				Hiro.canvas.cache._height = Hiro.canvas.overlay.el_root.scrollHeight;
 				Hiro.canvas.el_text.style.height = (Hiro.canvas.cache._height + 50).toString() + 'px';
 			})
-		},
-
-		// Lookup current user in peers array
-		getme: function() {
-			var peers = Hiro.data.get('note_' + this.currentnote,'c.peers'), i, l;
-
-			// No peers yet
-			if (!peers || peers.length == 0) return false;
-
-			// Iterate through peers and return reference to user if found
-			for (i = 0, l = peers.length; i < l; i++ ) {
-				if (peers[i].user.uid && peers[i].user.uid == Hiro.data.get('profile','c.uid') ) return peers[i];
-			}
-
-			// If we got no results return consistent false
-			return false;
 		},
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
@@ -1783,6 +1767,8 @@ var Hiro = {
 					// Go through all properties of the user object
 					for (p in peers[i].user) {
 						if (peers[i].user.hasOwnProperty(p)) {
+							// Ignore all properties except those
+							if (p != 'uid' && p != 'email' && p != 'phone') continue;							
 							// Compare the unique peers[i] properties with the one of our provided user
 							if (peer.user[p] == peers[i].user[p]) return peers[i];
 						}
@@ -1808,6 +1794,8 @@ var Hiro = {
 					// Go through all properties of the user object
 					for (p in peers[i].user) {
 						if (peers[i].user.hasOwnProperty(p)) {
+							// Ignore all properties except those
+							if (p != 'uid' && p != 'email' && p != 'phone') continue;
 							// Compare the unique peers[i] properties with the one of our provided user
 							if (peer.user[p] == peers[i].user[p]) {
 								// Splice peer from array
@@ -3271,6 +3259,8 @@ var Hiro = {
 
 				// If we have any updates until here, we also update our own timestamps & cursor position
 				if (delta && delta.length > 0) {
+					// Retrieve peer
+
 					// Add timestamps
 					delta.push({"op": "set-ts", "path": "peers/uid:" + Hiro.data.get('profile','c.uid'), "value": { "seen": Hiro.util.now(), "edit": Hiro.util.now() } });					
 				}
