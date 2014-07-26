@@ -627,7 +627,10 @@ var Hiro = {
 			// Fetch peer, check for abort & change timestamp
 			peer = Hiro.apps.sharing.getpeer({ user: { uid: uid} },noteid);
 			if (!peer) return;
-			peer.last_seen = Hiro.util.now();		
+			peer.last_seen = Hiro.util.now();
+
+			// Shut up statsy
+			Hiro.ui.statsy.shutup(200);		
 
 			// Set flag & kick off commit
 			Hiro.data.set('note_' + noteid,'_peerchange',true);
@@ -689,7 +692,7 @@ var Hiro = {
 		},
 
 		// Paint canvas
-		paint: function() {
+		paint: function(setcursor) {
 			// Make sure we have a current note
 			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
 
@@ -710,7 +713,7 @@ var Hiro = {
 				if (Hiro.canvas.el_text.value != text) Hiro.canvas.el_text.value = text;	
 
 				// Set cursor (this should not fire as it's called from a new requestanimationframe stack)
-				Hiro.canvas.setcursor();										
+				if (setcursor) Hiro.canvas.setcursor();										
 			});	
 
 			// Resize textarea
@@ -1473,7 +1476,10 @@ var Hiro = {
 						// Add copy of new peer to contacts as well
 						contact = {};
 						contact[type] = string;
-						Hiro.user.contacts.add(contact);						
+						Hiro.user.contacts.add(contact);
+
+						// Show quick inviting
+						Hiro.ui.statsy.add('invite',0,'Inviting...','info',300);				
 
 						// Set inviting so render below can work properly
 						this.inviting = true;
@@ -1545,7 +1551,10 @@ var Hiro = {
 
 						// Switch button to standard
 						el_button.className = 'hirobutton grey';
-						el_button.innerHTML = (Hiro.ui.mini()) ? 'Invite next' : 'Added! Invite next';												
+						el_button.innerHTML = (Hiro.ui.mini()) ? 'Invite next' : 'Added! Invite next';	
+
+						// Show quick inviting
+						Hiro.ui.statsy.add('invite',3,'Invited');																	
 					// We have a dupe
 					} else if (type == 'dupe') {
 						// Change button
@@ -2177,7 +2186,7 @@ var Hiro = {
 				else if (!key || key == 'c' || key == '_unseen') Hiro.folio.paint(true);	
 
 				// If the update wasn't by client and concerns the current note
-				if (source != 'c' && current) Hiro.canvas.paint();	
+				if (source != 'c' && current) Hiro.canvas.paint(false);	
 
 				// Abort here if the update came from localStorage to avoid infinite save loops
 				if (source == 'l')  return;
@@ -3633,7 +3642,7 @@ var Hiro = {
 			this.inited = true;		
 
 			// Yay, nothing went fatally wrong (This has a very long time so "Ready/Offline" doesn't get overwritten by the initial save)
-			Hiro.ui.statsy.add('startup',0,((!Hiro.sync.synconline || Hiro.data.get('profile','c.tier') == 0) && 'Ready.' || 'Offline.'),'info',3000);				
+			Hiro.ui.statsy.add('startup',0,((!Hiro.sync.synconline || Hiro.data.get('profile','c.tier') == 0) && 'Ready.' || 'Offline.'),'info',1000);				
 
 			// Log completion
 			Hiro.sys.log('Hiro.js fully inited');
@@ -5051,11 +5060,6 @@ var Hiro = {
 		// User Notification lib
 		statsy: {
 			// Sequence object of UI notifications:
-			// id: unique ID of the status chain
-			// type: success, info, warn, fatal
-			// chain: array with arbitrarely assignable positions
-			// phase: currently shown position
-			// timeout: timeout id
 			statuschain: {
 				chain: []
 			},
@@ -5066,10 +5070,13 @@ var Hiro = {
 
 			// Add status to the status chain, id 0 always starts a new chain
 			add: function(id,phase,value,type,lock) {
-				var s = this.statuschain;	 								
+				var s = this.statuschain;	 							
 
 				// Start a new sequence if we're ready (no messages before that, nervous flashing)
 				if (phase == 0 && Hiro.sys.inited) {
+					// Do not overwrite if we already have a chain
+					if (this.locked) return;
+
 					// Clear previous timeout
 					clearTimeout(this.timeout);
 
@@ -5099,6 +5106,19 @@ var Hiro = {
 					// If our timeout died somewhere along the way we continue from last shown chain phase
 					if (!this.timeout) this.show();					
 				}						
+			},
+
+			// Disable statsy for a brief time
+			shutup: function(time) {
+				if (this.locked || !time || !Hiro.sys.inited) return;
+
+				// Disable if we have a timestamp
+				this.locked = true;
+
+				// Reenable after x ms
+				setTimeout(function(){
+					Hiro.ui.statsy.locked = false;
+				},time)
 			},
 
 			// Status logger, over time we could build this around the more state machiny stuff but for now it's simply showing the user msg'es
