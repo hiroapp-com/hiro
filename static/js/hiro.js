@@ -169,7 +169,7 @@ var Hiro = {
 
 			// that scope because it's called by timeout as well
 			var that = Hiro.folio, i, l, data, 
-				f0 = document.createDocumentFragment(), f1, link;
+				f0 = document.createElement('div'), f1, link;
 
 			// Kick off regular updates, only once
 			if (!that.updatetimeout) that.updatetimeout = setInterval( function(){ Hiro.folio.paint(true) },61000);
@@ -189,7 +189,7 @@ var Hiro = {
 					if (link) f0.appendChild(link);
 				// If we didn't have an archived Note yet create the fragment	
 				} else if (data[i].status == 'archived') {
-					if (!f1) f1 = document.createDocumentFragment();
+					if (!f1) f1 = document.createElement('div');
 					link = that.renderlink(data[i]);
 					if (link) f1.appendChild(link);
 				} else {
@@ -206,12 +206,9 @@ var Hiro = {
 				that.el_showmenu.firstChild.innerHTML = that.unseencount;
 				that.el_showmenu.firstChild.style.display = (that.unseencount) ? 'block' : 'none';
 
-				// Empty
-				that.el_notelist.innerHTML = that.el_archivelist.innerHTML = '';
-
-				// Append
-				if (f0) that.el_notelist.appendChild(f0);				
-				if (f1) that.el_archivelist.appendChild(f1);
+				// Copy innerHTML
+				that.el_notelist.innerHTML = f0.innerHTML || '';
+				that.el_archivelist.innerHTML = f1.innerHTML || '';
 
 				// Update text contents of archivelink
 				if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
