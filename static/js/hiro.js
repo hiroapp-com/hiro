@@ -1346,6 +1346,8 @@ var Hiro = {
 
 			// Default clickhandler
 			clickhandler: function(id,type,target,branch,event) {
+				var peer, contact;
+
 				// Split id
 				id = id.split(':');
 
@@ -1365,7 +1367,21 @@ var Hiro = {
 							break;						
 						// Exisitng peer list click/tap	
 						case 'peer':
-							if (target.className == 'remove') this.removepeer(id);
+							if (target.className == 'remove') {
+								// Build object of peer to remove
+								peer = { user: {} };
+								peer.user[id[1]] = id[2];
+
+								// Remove peer from peers
+								this.removepeer(peer);
+
+								// If we also got a temporary user, remove it from contacts too
+								if (id[1] != 'uid') {
+									contact = {};
+									contact[id[1]] = id[2];
+									Hiro.user.contacts.remove(contact);
+								}								
+							}	
 							break;
 					}
 				}				
@@ -1774,38 +1790,40 @@ var Hiro = {
 				}
 			},
 
-			// Removepeer from peers and if it's only a phone/mail also from contacts
-			removepeer: function(peer) {
-				var type = peer[1], string = peer[2], peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), 
-					contact, i, l;
+			// Remove peer from peers
+			removepeer: function(peer, noteid) {
+				var peers, i, l, p;
+
+				// Default to current note
+				noteid = noteid || Hiro.canvas.currentnote;
+
+				// Get peers array
+				peers = Hiro.data.get('note_' + noteid,'c.peers');
+
+				// Abort if there are no peers
+				if (!peers || peers.length == 0) return false;
 
 				// Iterate through peers
-				for ( i = 0, l = peers.length; i < l; i++ ) {
-					// Delete peer and stop loop if successfull
-					if (peers[i].user[type] == string) {
-						// Remove from array
-						peers.splice(i,1);	
-
-						// Write back data	
-						Hiro.data.set('note_' + Hiro.canvas.currentnote,'c.peers',peers)	
-
-						// Rerender
-						this.update(true);
-
-						// End loop			
-						break;
-					}	
-				} 
-
-				// If we also got a temporary user, remove it from contacts too
-				if (type != 'uid') {
-					contact = {};
-					contact[type] = string;
-					Hiro.user.contacts.remove(contact);
-				}
-
-				// Repaint folio
-				if (peers.length <= 1) Hiro.folio.paint();					
+				for (i = 0, l = peers.length; i < l; i++ ) {
+					// Go through all properties of the user object
+					for (p in peers[i].user) {
+						if (peers[i].user.hasOwnProperty(p)) {
+							// Compare the unique peers[i] properties with the one of our provided user
+							if (peer.user[p] == peers[i].user[p]) {
+								// Splice peer from array
+								peers.splice(i,1);
+								// Save peers
+								Hiro.data.set('note_' + noteid,'c.peers',peers);
+								// Paint folio to update counters
+								Hiro.folio.paint();
+								// Rerender peers widget if operation concerns current peer
+								if (noteid == Hiro.canvas.currentnote) this.update();
+								// Ack deletion
+								return true;
+							}
+						}
+					}
+				}					
 			}		
 		} 
 
