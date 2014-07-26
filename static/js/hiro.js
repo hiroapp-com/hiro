@@ -528,10 +528,10 @@ var Hiro = {
 				note._lasteditor = Hiro.data.get('profile','c.uid');
 				note._cursor = that.getcursor()[1];
 
-				// Set own peer entry data via ._me reference
+				// Set own peer entry data via .me reference
 				if (me) {
 					me.last_seen = me.last_edit = note._ownedit;
-					me.cursor = note._cursor;
+					me.cursor_pos = note._cursor;
 				}
 
 				// Set text & title
@@ -614,6 +614,12 @@ var Hiro = {
 				// Kill the event here to make UI more stable on mobiles	
 				if (Hiro.ui.touch && event.type == 'touchstart') Hiro.util.stopEvent(event);		
 			}	
+		},
+
+		// Emits a current seen event to the server
+		// TODO Bruno: Find out when/how we do this for the currently open document
+		seen: function() {
+
 		},
 
 		// Load a note onto the canvas
@@ -1736,7 +1742,7 @@ var Hiro = {
 
 			// Check if proper & execute invite
 			addpeer: function(peer,noteid,source) {
-				var peers, shadow;
+				var peers, shadow, note;
 
 				// Default to current note if none is provided
 				noteid = noteid || Hiro.canvas.currentnote;
@@ -1750,7 +1756,20 @@ var Hiro = {
 				else peers.push(peer);
 
 				// If the server triggered the add 
-				if (source == 's') shadow.push(JSON.parse(JSON.stringify(peer)));
+				if (source == 's') {
+					// Also add it to the shadow
+					shadow.push(JSON.parse(JSON.stringify(peer)));
+
+					// Get full note
+					note = Hiro.data.get('note_' + noteid);
+
+					// See if we have a new edit timestamp thats more recent
+					if (peer.last_edit && peer.last_edit > note._lastedit) {
+						// Update values (will be saved by set below)
+						note._lastedit = peer.last_edit;
+						note._lasteditor = peer.user.uid;
+					}
+				}	
 
 				// Save peer changes
 				Hiro.data.set('note_' + noteid,'c.peers',peers,source);
@@ -2486,7 +2505,7 @@ var Hiro = {
 
 		// Overwrite local state with servers on login, session create or fatal errors
 		rx_session_create_handler: function(data) {
-			var n, note, sf, cf, fv, peers, req, sp, cp, peers, user, i, l;
+			var n, note, sf, cf, fv, peers, req, sp, cp, peer, user, i, l;
 
 			// Remove all synced data
 			Hiro.data.cleanup();
@@ -2538,10 +2557,29 @@ var Hiro = {
 				cn.s.peers = JSON.parse(peers);
 
 				// Set custom internal values
-				// TODO Bruno: Find a good way to extract/create internal values like _lastedit, _cursor etc
 				cn._token = sp.sharing_token;	
 				cn._owner = sn.val.created_by.uid;
-				cn._created = sn.val.created_at;				
+				cn._created = sn.val.created_at;
+
+				// Loop through peers	
+				// NOTE: We can't work with simple references and keep all data in the respective peer elements
+				// because simple references become their own objects after writing/reading them to/from localstorage
+				for (i = 0, l = cn.c.peers.length; i < l; i++ ) {
+					// Shortcut
+					peer = cn.c.peers[i];
+
+					// Set latest editor if we have none yet or overwrite if more recent
+					if (!cn._lasteditor || cn._lastedit < peer.last_edit) {
+						cn._lasteditor = peer.user.uid;
+						cn._lastedit = peer.last_edit;
+					}
+
+					// Set our own data
+					if (peer.user.uid == cp.c.uid) {
+						cn._ownedit = peer.last_edit;
+						cn._cursor = peer.cursor_pos;
+					}
+				}			
 
 				// Set text & title
 				cn.c.text = cn.s.text = sn.val.text;
@@ -3291,16 +3329,16 @@ var Hiro = {
 					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
 
 					// Add timestamps if we already have a proper syncable peer object of ourselves
-					if (peer) delta.push({"op": "set-ts", "path": "peers/uid:" + peer.user.uid, "value": { 
-						"seen": peer.last_seen || note._ownedit || Hiro.util.now(), 
-						"edit": peer.last_edit || note._ownedit || Hiro.util.now() 
-					}});	
+					if (peer) {
+						delta.push({"op": "set-ts", "path": "peers/uid:" + peer.user.uid, "value": { 
+							"seen": peer.last_seen || Hiro.util.now(), 
+							"edit": peer.last_edit || Hiro.util.now() 
+						}});	
 
-					// Set cursor
-					cursor = peer.cursor || note._cursor;				
+						// Add cursor op 
+						if (peer.cursor_pos) delta.push({"op": "set-cursor", "path": "peers/uid:" + peer.user.uid, "value": peer.cursor_pos })
 
-					// Add cursor op 
-					if (peer && cursor) delta.push({"op": "set-cursor", "path": "peers/uid:" + peer.user.uid, "value": cursor })
+					} 
 				}
 
 				// Peers changed
