@@ -627,10 +627,10 @@ var Hiro = {
 			// Fetch peer, check for abort & change timestamp
 			peer = Hiro.apps.sharing.getpeer({ user: { uid: uid} },noteid);
 			if (!peer) return;
-			peer.last_seen = Hiro.util.now();
+			peer.last_seen = Hiro.util.now();		
 
-			// Shut up statsy
-			Hiro.ui.statsy.shutup(200);		
+			// Briefly block statsy
+			Hiro.ui.statsy.shutup(100);				
 
 			// Set flag & kick off commit
 			Hiro.data.set('note_' + noteid,'_peerchange',true);
@@ -678,6 +678,9 @@ var Hiro = {
 			// Update sharing stuff
 			Hiro.apps.sharing.update();		
 
+			// Show ready
+			Hiro.ui.statsy.add('ready',0,'Ready.','info',300);
+			
 			// Emit seen ts
 			this.seen(id);
 
@@ -744,19 +747,19 @@ var Hiro = {
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
 		getcursor: function() {
-		    var el = this.el_text, x, y, content;	
+		    var el = this.el_text, x, y, content, l, part, full;	
 
 		    if ('selectionStart' in el) {
 		    	//Mozilla and DOM 3.0
 		        x = el.selectionStart;
 				y = el.selectionEnd;
-				var l = el.selectionEnd - el.selectionStart;
+				l = el.selectionEnd - el.selectionStart;
 				content = el.value.substr(el.selectionStart, l)
 		    } else if (document.selection) {
 		    	//IE
 		        el.focus();
 		        var r = document.selection.createRange(),
-		        	tr = el.createTextRange()
+		        	tr = el.createTextRange(),
 		        	tr2 = tr.duplicate();
 		        tr2.moveToBookmark(r.getBookmark());
 		        tr.setEndPoint('EndToStart',tr2);
@@ -766,10 +769,10 @@ var Hiro = {
 		        	content = '';
 		        	return [x, y, content];
 		        } 
-		        var text_part = r.text.replace(/[\r\n]/g,'.'); //for some reason IE doesn't always count the \n and \r in the length
-		        var text_whole = el.value.replace(/[\r\n]/g,'.');
-		        x = text_whole.indexOf(text_part,tr.text.length);
-		        y = x + text_part.length;
+		        part = r.text.replace(/[\r\n]/g,'.'); //for some reason IE doesn't always count the \n and \r in the length
+		        full = el.value.replace(/[\r\n]/g,'.');
+		        x = whole.indexOf(part,tr.text.length);
+		        y = x + part.length;
 		        content = r.text;
 		    }  
 		    return [x, y, content];	
@@ -1037,7 +1040,7 @@ var Hiro = {
 							// 
 							if (contacts[i][prop] == obj[prop]) {
 								// Log
-								Hiro.sys.log('Already have contact with ' + prop + ' ' + obj.prop + ', aborting add',obj);
+								Hiro.sys.log('Already have contact with ' + prop + ' ' + obj[prop] + ', aborting add',obj);
 
 								// End here
 								return;
@@ -1554,7 +1557,8 @@ var Hiro = {
 						el_button.innerHTML = (Hiro.ui.mini()) ? 'Invite next' : 'Added! Invite next';	
 
 						// Show quick inviting
-						Hiro.ui.statsy.add('invite',3,'Invited');																	
+						Hiro.ui.statsy.add('invite',3,'Invited.');	
+
 					// We have a dupe
 					} else if (type == 'dupe') {
 						// Change button
@@ -4341,8 +4345,8 @@ var Hiro = {
 				if ((event.type == 'mousedown' || event.type == 'mouseup') && (button != 1 || event.touches)) return;				
 
 				// Properly define x/y: screen (mouseup/down), event.touches[0] (tocuhstart) or last know touch pos (touchend)
-				x = event.screenX || ((event.touches.length > 0) ? event.touches[0].screenX : that.touchx); 
-				y = event.screenY || ((event.touches.length > 0) ? event.touches[0].screenY : that.touchy);																		
+				x = (event.screenX >= 0) ? event.screenX : ((event.touches.length > 0) ? event.touches[0].screenX : that.touchx); 
+				y = (event.screenY >= 0) ? event.screenY : ((event.touches.length > 0) ? event.touches[0].screenY : that.touchy);																		
 				
 				// Stope events from propagating beyond our scope
 				event.stopPropagation();
