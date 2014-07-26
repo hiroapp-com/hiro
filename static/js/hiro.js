@@ -532,7 +532,6 @@ var Hiro = {
 				if (me) {
 					me.last_seen = me.last_edit = note._ownedit;
 					me.cursor = note._cursor;
-					note._peerchange = true;
 				}
 
 				// Set text & title
@@ -1002,7 +1001,7 @@ var Hiro = {
 
 			// Add a user to our contacts list
 			add: function(obj,source) {
-				var contacts = Hiro.data.get('profile','c.contacts') || [], shadow = Hiro.data.get('profile','s.contacts') || [];
+				var contacts = Hiro.data.get('profile','c.contacts') || [], shadow = Hiro.data.get('profile','s.contacts') || [],
 					prop, i, l;
 
 				// Check for duplicates, uid should never be used for adding contacts in the client
@@ -1425,6 +1424,9 @@ var Hiro = {
 						error = (peers.role ='invited') ? 'Already invited' : 'Already has access';
 					// Do some invite
 					} else if (type) {
+						// Set peerchange flag, shortcut (will be saved below)
+						Hiro.data.get('note_' + Hiro.canvas.currentnote)._peerchange = true;
+
 						// Create and add peer object to folio
 						newpeer = { role: 'invited', user: {}};
 						newpeer.user[type] = string;
@@ -1702,7 +1704,7 @@ var Hiro = {
 				matches = Hiro.user.contacts.search(string);
 
 				// If we got no matches then abort
-				if (matches.length == 0) return false;
+				if (!matches || matches.length == 0) return false;
 
 				// Fill fragment with up to 4 results
 				for (i = 0, l = matches.length; i < l; i++ ) {
@@ -3327,7 +3329,7 @@ var Hiro = {
 					}
 
 					// Compare the ones with UID
-					this.arraydiff(note.c.peers,note.s.peers,'uid');
+					this.arraydiff(note.c.peers,note.s.peers,'user.uid');
 
 					// Reset flag
 					note._peerchange = false;
@@ -3407,17 +3409,25 @@ var Hiro = {
 
 				// Build associative array and add all shadow IDs removed array
 				for (i = 0, l = shadow.length; i < l; i++) {
-					lookup[gn(shadow[i],id)] = shadow[i];
-					removed.push(gn(shadow[i],id));
+					// Get property
+					v = gn(shadow[i],id);
+					// Ignore if object doesn't have property
+					if (!v) continue;
+					// 	Build associative array and add to removed
+					lookup[v] = shadow[i];
+					removed.push(v);
 				}
 
 				// Cycle through current version
 				// TODO Bruno: See how indexOf works and if it screws our complexity
 				for (i = 0, l = current.length; i < l; i++) {
+					v = gn(current[i],id);
+					// Ignore if object doesn't have id we're looking for
+					if (!v) return;
 					// Remove from removed array as it's still there
-					if (removed.indexOf(gn(current[i],id)) > -1) removed.splice(removed.indexOf(gn(current[i],id)),1);
+					if (removed.indexOf(v) > -1) removed.splice(removed.indexOf(v),1);
 					// See if we can find it the lookup object
-					if (!lookup[gn(current[i],id)]) added.push(gn(current[i],id));
+					if (!lookup[v]) added.push(v);
 				}	
 
 				// Return false if nothing was added or removed
