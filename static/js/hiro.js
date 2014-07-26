@@ -1774,6 +1774,9 @@ var Hiro = {
 						}
 					}
 				}
+
+				// No peers found & returned above
+				return false;
 			},
 
 			// Remove peer from peers
@@ -1811,7 +1814,10 @@ var Hiro = {
 							}
 						}
 					}
-				}					
+				}
+
+				// No peers found & deleted above
+				return false;									
 			}		
 		} 
 
@@ -3232,7 +3238,7 @@ var Hiro = {
 
 			// Specific notes diff, returns proper changes format of all notes on client side
 			diffnote: function(note) {
-				var i, l, delta, peer;
+				var i, l, delta, peer, cursor;
 
 				// Do not diff notes that have no server ID yet
 				if (note.id.length < 5) return false;	
@@ -3260,9 +3266,19 @@ var Hiro = {
 				// If we have any updates until here, we also update our own timestamps & cursor position
 				if (delta && delta.length > 0) {
 					// Retrieve peer
+					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
 
-					// Add timestamps
-					delta.push({"op": "set-ts", "path": "peers/uid:" + Hiro.data.get('profile','c.uid'), "value": { "seen": Hiro.util.now(), "edit": Hiro.util.now() } });					
+					// Add timestamps if we already have a proper syncable peer object of ourselves
+					if (peer) delta.push({"op": "set-ts", "path": "peers/uid:" + peer.user.uid, "value": { 
+						"seen": peer.last_seen || note._ownedit || Hiro.util.now(), 
+						"edit": peer.last_edit || note._ownedit || Hiro.util.now() 
+					}});	
+
+					// Set cursor
+					cursor = peer.cursor || note._cursor;				
+
+					// Add cursor op 
+					if (peer && cursor) delta.push({"op": "set-cursor", "path": "peers/uid:" + peer.user.uid, "value": cursor })
 				}
 
 				// Return value
