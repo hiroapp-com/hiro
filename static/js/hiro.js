@@ -2101,21 +2101,28 @@ var Hiro = {
 
 		// Remove all synced data, this happens if we get new session data
 		cleanup: function() {
-			var i, l, f = this.get('folio');
+			var i, l, f = this.get('folio','c'), c = this.get('profile','c.contacts');
 
 			// Iterate through all folio docs
-			for (i = f.c.length - 1; i >= 0; i--) {
+			for (i = f.length - 1; i >= 0; i--) {
 				// Do not cleanup unsynced notes
-				if (f.c[i].nid.length == 4) continue;
+				if (f[i].nid.length == 4) continue;
 
 				// Delete synced notes
-				this.destroy('note_' + f.c[i].nid);
+				this.destroy('note_' + f[i].nid);
 
 				// Remove this entry from folio
-				f.c.splice(i,1);
+				f.splice(i,1);
 			}
 
-			// TODO Bruno: remove contacts?
+			// Remove contacts
+			for (i = c.length - 1; i >= 0; i--) {
+				// Do not cleanup unsynced contacts
+				if (c[i].user.uid) continue;
+
+				// Remove this entry from contacts
+				c.splice(i,1);
+			}			
 		},
 
 		// Remove Note from memory & localstorage
@@ -2528,7 +2535,7 @@ var Hiro = {
 			cp.s = JSON.parse(user);
 
 			// Add contacts & session
-			cp.c.contacts = JSON.parse(peers); 
+			cp.c.contacts = (cp.c.contacts) ? cp.c.contacts.concat(JSON.parse(peers)) : JSON.parse(peers);			
 			cp.s.contacts = JSON.parse(peers);
 			cp.c.sid = cp.s.sid = data.sid;	
 
@@ -2594,7 +2601,7 @@ var Hiro = {
 			cf = Hiro.data.get('folio') || {};
 			cf.cv = cf.sv = 0;
 			fv = JSON.stringify(sf.val);			
-			cf.s = (cf.s) ? cf.s.concat(JSON.parse(fv)) : JSON.parse(fv);
+			cf.s = JSON.parse(fv);
 			cf.c = (cf.c) ? cf.c.concat(JSON.parse(fv)) : JSON.parse(fv);	
 			cf.kind = sf.kind;
 			cf.id = sf.id;
