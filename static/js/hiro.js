@@ -1726,10 +1726,10 @@ var Hiro = {
 			},
 
 			// Check if proper & execute invite
-			addpeer: function(peer,noteid) {
+			addpeer: function(peer,noteid,source) {
 				var peers;
 
-				// Default to curren note if none is provided
+				// Default to current note if none is provided
 				noteid = noteid || Hiro.canvas.currentnote;
 
 				// Get peers push to array and save
@@ -1740,13 +1740,38 @@ var Hiro = {
 				else peers.push(peer);
 
 				// Save peer changes
-				Hiro.data.set('note_' + Hiro.canvas.currentnote,'c.peers',peers);
+				Hiro.data.set('note_' + noteid,'c.peers',peers,source);
 
 				// Update rendering
 				if (noteid == Hiro.canvas.currentnote) this.update(true);
 
 				// Repaint folio
 				Hiro.folio.paint();
+			},
+
+			// Fetch a certain peer, needs our standard peer format
+			getpeer: function(peer,noteid) {
+				var peers, i, l, p;
+
+				// Default to current note
+				noteid = noteid || Hiro.canvas.currentnote;
+
+				// Get peers array
+				peers = Hiro.data.get('note_' + noteid,'c.peers');
+
+				// Abort if there are no peers
+				if (!peers || peers.length == 0) return false;
+
+				// Iterate through peers
+				for (i = 0, l = peers.length; i < l; i++ ) {
+					// Go through all properties of the user object
+					for (p in peers[i].user) {
+						if (peers[i].user.hasOwnProperty(p)) {
+							// Compare the unique peers[i] properties with the one of our provided user
+							if (peer.user[p] == peers[i].user[p]) return peers[i];
+						}
+					}
+				}
 			},
 
 			// Removepeer from peers and if it's only a phone/mail also from contacts
