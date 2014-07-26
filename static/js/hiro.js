@@ -1379,7 +1379,7 @@ var Hiro = {
 				var type, error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0], 
 					el_input = el.getElementsByTagName('input')[0], el_error = el.getElementsByClassName('error')[0],
 					string = string || el_input.value, parse = Hiro.util.mailorphone(string),
-					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), i, l,
+					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), newpeer, contact, i, l,
 					ta, el_ta = el.getElementsByClassName('peers')[0], 
 					el_sel = el.getElementsByClassName('selected')[0], oldsel, newsel;
 
@@ -1419,7 +1419,14 @@ var Hiro = {
 					// Do some invite
 					} else if (type) {
 						// Create and add peer object to folio
-						this.addpeer(string,type);
+						newpeer = { role: 'invited', user: {}};
+						newpeer.user[type] = string;
+						this.addpeer(newpeer);
+
+						// Add copy of new peer to contacts as well
+						contact = {};
+						contact[type] = string;
+						Hiro.user.contacts.add(contact);						
 
 						// Set inviting so render below can work properly
 						this.inviting = true;
@@ -1719,15 +1726,14 @@ var Hiro = {
 			},
 
 			// Check if proper & execute invite
-			addpeer: function(string,type) {
-				var peers, contacts, contact = {}, peer = { role: 'invited', user: {} };
+			addpeer: function(peer,noteid) {
+				var peers;
 
-				// Add invite property we got
-				peer.user[type] = string;
-				contact[type] = string;
+				// Default to curren note if none is provided
+				noteid = noteid || Hiro.canvas.currentnote;
 
 				// Get peers push to array and save
-				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers') || [];
+				peers = Hiro.data.get('note_' + noteid, 'c.peers') || [];
 
 				// On small screens we add the new peer to the top of the array
 				if (Hiro.ui.mini()) peers.unshift(peer); 
@@ -1736,11 +1742,8 @@ var Hiro = {
 				// Save peer changes
 				Hiro.data.set('note_' + Hiro.canvas.currentnote,'c.peers',peers);
 
-				// Add copy of new peer to contacts as well
-				Hiro.user.contacts.add(contact);
-
 				// Update rendering
-				this.update(true);
+				if (noteid == Hiro.canvas.currentnote) this.update(true);
 
 				// Repaint folio
 				Hiro.folio.paint();
@@ -3223,6 +3226,12 @@ var Hiro = {
 					note.s.title = note.c.title;
 				}	
 
+				// If we have any updates until here, we also update our own timestamps & cursor position
+				if (delta && delta.length > 0) {
+					// Add timestamps
+					delta.push({"op": "set-ts", "path": "peers/uid:" + Hiro.data.get('profile','c.uid'), "value": { "seen": Hiro.util.now(), "edit": Hiro.util.now() } });					
+				}
+
 				// Return value
 				return delta || false;	
 			},
@@ -3265,7 +3274,8 @@ var Hiro = {
 						}			
 					}
 
-					// TODO Bruno: Look through all known contacts if any values changed. Do we need this?				
+					// TODO Bruno: Look through all known contacts if any values changed. 
+					// This should only happen on the client if we look at the phonebook again and find extra numbers, mails.				
 
 					// Save new hash value
 					store._contacthash = h;
