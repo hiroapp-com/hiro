@@ -1002,13 +1002,17 @@ var Hiro = {
 
 			// Add a user to our contacts list
 			add: function(obj,source) {
-				var contacts = Hiro.data.get('profile','c.contacts') || [], prop, i, l;
+				var contacts = Hiro.data.get('profile','c.contacts') || [], shadow = Hiro.data.get('profile','s.contacts') || [];
+					prop, i, l;
 
 				// Check for duplicates, uid should never be used for adding contacts in the client
 				for (prop in obj) {
 					if (obj.hasOwnProperty(prop) && prop != 'uid') {
 						// See if we already have a user with that property
 						for ( i = 0, l = contacts.length; i < l; i++ ) {
+							// Ignore irrelevant properties
+							if (prop != 'uid' && prop != 'email' && prop != 'phone') continue;
+							// 
 							if (contacts[i][prop] == obj[prop]) {
 								// Log
 								Hiro.sys.log('Already have contact with ' + prop + ' ' + obj.prop + ', aborting add',obj);
@@ -1022,6 +1026,9 @@ var Hiro = {
 
 				// Add contact to array
 				contacts.push(obj);
+
+				// Add copy to shadow if server created it
+				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
 
 				// Save data
 				Hiro.data.set('profile','c.contacts',contacts,source);
@@ -1727,17 +1734,21 @@ var Hiro = {
 
 			// Check if proper & execute invite
 			addpeer: function(peer,noteid,source) {
-				var peers;
+				var peers, shadow;
 
 				// Default to current note if none is provided
 				noteid = noteid || Hiro.canvas.currentnote;
 
-				// Get peers push to array and save
+				// Get peers
 				peers = Hiro.data.get('note_' + noteid, 'c.peers') || [];
+				shadow = Hiro.data.get('note_' + noteid, 's.peers') || [];
 
 				// On small screens we add the new peer to the top of the array
 				if (Hiro.ui.mini()) peers.unshift(peer); 
 				else peers.push(peer);
+
+				// If the server triggered the add 
+				if (source == 's') shadow.push(JSON.parse(JSON.stringify(peer)));
 
 				// Save peer changes
 				Hiro.data.set('note_' + noteid,'c.peers',peers,source);
@@ -3291,7 +3302,8 @@ var Hiro = {
 				}
 
 				// Peers changed
-				if (note._peerchange) {					
+				if (note._peerchange) {		
+
 					// Find the peers with no uid yet
 					for (i = 0, l = note.c.peers.length; i < l; i++ ) {
 						// Ignore those
@@ -3313,6 +3325,12 @@ var Hiro = {
 							};
 						}
 					}
+
+					// Compare the ones with UID
+					this.arraydiff(note.c.peers,note.s.peers,'uid');
+
+					// Reset flag
+					note._peerchange = false;
 				}
 
 				// Return value
@@ -3408,6 +3426,8 @@ var Hiro = {
 				// Build delta
 				if (removed.length > 0) delta.removed = removed;
 				if (added.length > 0) delta.added = added;
+
+				console.log(delta);
 
 				// Return
 				return delta;
