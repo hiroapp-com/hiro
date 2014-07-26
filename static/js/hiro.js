@@ -617,9 +617,23 @@ var Hiro = {
 		},
 
 		// Emits a current seen event to the server
-		// TODO Bruno: Find out when/how we do this for the currently open document
-		seen: function() {
+		seen: function(noteid) {
+			// Fetch peer object
+			var uid = Hiro.data.get('profile','c.uid'), peer;
 
+			// Do nothing if we don't have a uid (yet)
+			if (!uid) return;
+
+			// Fallback noteid
+			noteid = noteid || this.currentnote;
+
+			// Fetch peer, check for abort & change timestamp
+			peer = Hiro.apps.sharing.getpeer({ user: { uid: uid} },noteid);
+			if (!peer) return;
+			peer.last_seen = Hiro.util.now();		
+
+			// Set flag & kick off commit
+			Hiro.data.set('note_' + noteid,'_peerchange',true);
 		},
 
 		// Load a note onto the canvas
@@ -663,6 +677,9 @@ var Hiro = {
 
 			// Update sharing stuff
 			Hiro.apps.sharing.update();		
+
+			// Emit seen ts
+			this.seen(id);
 
 			// End hprogress
 			Hiro.ui.hprogress.done();
@@ -1035,16 +1052,31 @@ var Hiro = {
 				// Add copy to shadow if server created it
 				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
 
+				// Update lookup
+				this.update();
+
 				// Save data
 				Hiro.data.set('profile','c.contacts',contacts,source);
 			},
 
 			// Remove a user form the contacts list
 			remove: function(obj,source) {
-				var contacts = Hiro.data.get('profile','c.contacts'), i, l, prop, type;
+				var contacts = Hiro.data.get('profile','c.contacts'), shadow = Hiro.data.get('profile','s.contacts'),
+					i, l, prop, type;
 
 				// Abort if we don not have contacts yet but for some reason managed to call this
-				if (!contacts) return;
+				if (!contacts) return;	
+
+				// Remove from shadow if user obj has a uid
+				if (obj.uid) {
+					for ( i = 0, l = shadow.length; i < l; i++ ) {
+						if (shadow[i].uid && shadow[i].uid == obj.uid) {
+							// Remove from array, this means it has to be in contacts as well so we save below
+							shadow.splice(i,1);
+							break;
+						}	
+					}
+				}
 
 				// If we have multiple properties
 				for (prop in obj) {
@@ -1058,12 +1090,15 @@ var Hiro = {
 								// Write back array
 								Hiro.data.set('profile','c.contacts',contacts,source);
 
+								// Update lookup
+								this.update();									
+
 								// End here
 								return;
 							}
 						}
 					}
-				}				
+				}											
 			}
 		},
 
@@ -3305,15 +3340,13 @@ var Hiro = {
 
 			// Specific notes diff, returns proper changes format of all notes on client side
 			diffnote: function(note) {
-				var i, l, p, h, delta, op, peer, cursor;
+				var i, l, p, h, delta = [], op, peer, cursor, ad;
 
 				// Do not diff notes that have no server ID yet
 				if (note.id.length < 5) return false;	
 
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
-					// Create delta array
-					delta = [];
 					// Fill with dmp delta
 					delta.push({"op": "delta-text", "path": "", "value": this.delta(note.s.text,note.c.text)});
 					// Synchronize c/s text
@@ -3322,8 +3355,6 @@ var Hiro = {
 
 				// Check title	
 				if (note.c.title != note.s.title) {
-					// Create delta if we haven't so yet
-					if (!delta) delta = [];
 					// Add title op
 					delta.push({"op": "set-title", "path": "", "value": note.c.title });
 					// Copy c to s					
@@ -3331,7 +3362,7 @@ var Hiro = {
 				}	
 
 				// If we have any updates until here, we also update our own timestamps & cursor position
-				if (delta && delta.length > 0) {
+				if (delta.length > 0) {
 					// Retrieve peer
 					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
 
@@ -3350,15 +3381,12 @@ var Hiro = {
 
 				// Peers changed
 				if (note._peerchange) {		
-
 					// Find the peers with no uid yet
 					for (i = 0, l = note.c.peers.length; i < l; i++ ) {
 						// Ignore those
 						if (note.c.peers[i].user.uid) continue;
 						// Iterate through the others
-						for (p in note.c.peers[i].user) {
-							// Create delta if we haven't so yet
-							if (!delta) delta = [];							
+						for (p in note.c.peers[i].user) {					
 							// Grab the first prop
 							if (note.c.peers[i].user.hasOwnProperty(p)) {
 								// Prepare op object
@@ -3373,15 +3401,34 @@ var Hiro = {
 						}
 					}
 
-					// Compare the ones with UID
-					this.arraydiff(note.c.peers,note.s.peers,'user.uid');
+					// Compare the ones with UID to see if any were added / removed / changed
+					ad = this.arraydiff(note.c.peers,note.s.peers,'user.uid');
 
+					// Process arraydiff changes
+					if (ad && ad.changed) {
+						// Process changes
+						for ( i = 0, l = ad.changed.length; i < l; i++) {
+							// Compare seen timestamps
+							if (ad.changed[i].client.last_seen != ad.changed[i].shadow.last_seen) {
+								// Add op
+								delta.push({"op": "set-ts", "path": "peers/uid:" + ad.changed[i].client.user.uid, "value": { 
+									"seen": ad.changed[i].client.last_seen 
+								}});
+								// Equalize value
+								ad.changed[i].shadow.last_seen = ad.changed[i].client.last_seen;
+							}						
+						}
+					}
+					
 					// Reset flag
 					note._peerchange = false;
 				}
 
+				// Set delta to false if it has no content
+				if (delta.length == 0) delta = false;
+
 				// Return value
-				return delta || false;	
+				return delta;	
 			},
 
 			// Specific profile diff, returns proper changes format
@@ -3437,7 +3484,7 @@ var Hiro = {
 			// Added to current and/or removed from shadow
 			// This works independent of order but needs a unique ID property of the objects
 			arraydiff: function(current,shadow,id) {								
-				var delta = {}, removed = [], added = [], lookup = {}, i, l, v, p;
+				var delta = {}, removed = [], added = [], changed = [], lookup = {}, i, l, v, p, ch;
 
 				// Return if we didn't provide two arrays
 				if (!(current instanceof Array) || !(shadow instanceof Array)) return false;
@@ -3471,18 +3518,23 @@ var Hiro = {
 					if (!v) return;
 					// Remove from removed array as it's still there
 					if (removed.indexOf(v) > -1) removed.splice(removed.indexOf(v),1);
-					// See if we can find it the lookup object
-					if (!lookup[v]) added.push(v);
+					// See if we can find it the lookup object, if not it's been added
+					if (!lookup[v]) {
+						added.push(v);
+					// If yes, we check if it changed and add it to changed, right now we only do this for last seen	
+					} else if (current[i].last_seen && lookup[v].last_seen != current[i].last_seen) {
+						// Build change object & add to changed
+						changed.push({ id: v, shadow: lookup[v], client: current[i] });
+					}	
 				}	
 
 				// Return false if nothing was added or removed
-				if (removed.length == 0 && added.length == 0) return false;	
+				if (removed.length == 0 && added.length == 0 && changed.length == 0) return false;	
 
 				// Build delta
 				if (removed.length > 0) delta.removed = removed;
 				if (added.length > 0) delta.added = added;
-
-				console.log(delta);
+				if (changed.length > 0) delta.changed = changed;
 
 				// Return
 				return delta;
@@ -3875,7 +3927,12 @@ var Hiro = {
 	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.cleanup();
 
 	        	// Try immediate reconnect (eg focused because OS woke up)
-				if (!Hiro.sync.synconline || !Hiro.sync.webonline) Hiro.sync.reconnect();
+				if (!Hiro.sync.synconline || !Hiro.sync.webonline) {
+					Hiro.sync.reconnect();
+				// Sent new seen timestamp	
+				} else {
+					Hiro.canvas.seen();
+				}	
 	        // If the window blurs
 	        } else {
 
