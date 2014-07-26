@@ -1742,8 +1742,13 @@ var Hiro = {
 				// Save peer changes
 				Hiro.data.set('note_' + noteid,'c.peers',peers,source);
 
-				// Update rendering
-				if (noteid == Hiro.canvas.currentnote) this.update(true);
+				// If it concerns the current note
+				if (noteid == Hiro.canvas.currentnote) {
+					// Update counter / widget
+					this.update(true);
+					// Set cache reference to ourselves if not done yet
+					if (!Hiro.canvas.cache._me && peer.user.uid == Hiro.data.get('profile','c.uid')) Hiro.canvas.cache._me = peer;
+				}	
 
 				// Repaint folio
 				Hiro.folio.paint();
@@ -1780,7 +1785,7 @@ var Hiro = {
 			},
 
 			// Remove peer from peers
-			removepeer: function(peer, noteid) {
+			removepeer: function(peer, noteid,source) {
 				var peers, i, l, p;
 
 				// Default to current note
@@ -1809,6 +1814,8 @@ var Hiro = {
 								Hiro.folio.paint();
 								// Rerender peers widget if operation concerns current peer
 								if (noteid == Hiro.canvas.currentnote) this.update();
+								// Save changes
+								Hiro.data.set('note_' + noteid,'c.peers',peers,source);
 								// Ack deletion
 								return true;
 							}
@@ -2609,25 +2616,21 @@ var Hiro = {
 							store._token = ops[j].value;		
 							update = true;
 							break;						
-						// Add a peer to a note		
-						// TODO Bruno: Move this to user.contact or sharing for extended logic 		
+						// Add a peer to a note			
 						case 'note|add-peer':
-							// Stringify peer object to make it unique
-							obj = JSON.stringify(ops[j].value);						
-							// Add peer to both versions
-							store.s.peers.push(JSON.parse(obj));
-							store.c.peers.push(JSON.parse(obj));	
-							// Repaint folio and sharing if applicable
-							Hiro.folio.paint(true);
-							// If the peers was added to the current note
-							if (store.id == Hiro.canvas.currentnote) {
-								// Set ._me reference in cache
-								if (ops[j].value.user.uid == Hiro.data.get('profile','c.uid') ) Hiro.canvas.cache._me = Hiro.canvas.getme();
-								// Repaint sharing dialog
-								Hiro.apps.sharing.update();
-							}	
+							// Add to peers
+							Hiro.apps.sharing.addpeer(ops[j].value,store.id,'s');	
 							update = true;
-							break;						
+							break;	
+						// Add a peer to a note			
+						case 'note|rem-peer':
+							// Build peer object
+							obj = { user: {} };
+							obj.user[ops[j].path.split(':')[0].replace('peers/','')] = ops[j].path.split(':')[1];
+							// Send off for removal
+							Hiro.apps.sharing.removepeer(obj,store.id,'s');	
+							update = true;
+							break;													
 						// Update title if it's a title update					
 						case 'note|set-title':
 							// Set values
