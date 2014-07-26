@@ -996,7 +996,7 @@ var Hiro = {
 				else return;
 
 				// Impose length limits
-				if ( (l > 10 && string.length == 1) || (l > 100 && string.length == 2) ) return;			
+				if ( (l > 100 && string.length == 1) || (l > 500 && string.length == 2) ) return;			
 
 				// Iterate through contacts
 				for (i = 0; i < l ; i++) {	
