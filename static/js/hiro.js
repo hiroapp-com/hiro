@@ -1001,7 +1001,7 @@ var Hiro = {
 			},
 
 			// Add a user to our contacts list
-			add: function(obj) {
+			add: function(obj,source) {
 				var contacts = Hiro.data.get('profile','c.contacts') || [], prop, i, l;
 
 				// Check for duplicates, uid should never be used for adding contacts in the client
@@ -1024,7 +1024,7 @@ var Hiro = {
 				contacts.push(obj);
 
 				// Save data
-				Hiro.data.set('profile','c.contacts',contacts);
+				Hiro.data.set('profile','c.contacts',contacts,source);
 			},
 
 			// Remove a user form the contacts list
@@ -2681,7 +2681,13 @@ var Hiro = {
 							// Remove
 							Hiro.user.contacts.remove(obj,'s');
 							update = true;
-							break; 													
+							break; 	
+						// Add a user to the contact list
+						case 'profile|add-user':
+							// Add straight to contacts
+							Hiro.user.contacts.add(ops[j].value,'s');
+							update = true;
+							break; 																			
 						default:
 							Hiro.sys.error('Received unknown change op from server',ops[j]);		
 					}
