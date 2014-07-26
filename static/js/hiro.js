@@ -1044,13 +1044,11 @@ var Hiro = {
 			},
 
 			// Remove a user form the contacts list
-			remove: function(obj) {
+			remove: function(obj,source) {
 				var contacts = Hiro.data.get('profile','c.contacts'), i, l, prop, type;
 
 				// Abort if we don not have contacts yet but for some reason managed to call this
 				if (!contacts) return;
-
-				console.log(obj);
 
 				// If we have multiple properties
 				for (prop in obj) {
@@ -1062,7 +1060,7 @@ var Hiro = {
 								contacts.splice(i,1);
 
 								// Write back array
-								Hiro.data.set('profile','c.contacts',contacts);
+								Hiro.data.set('profile','c.contacts',contacts,source);
 
 								// End here
 								return;
@@ -2638,7 +2636,7 @@ var Hiro = {
 							obj = {};
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Remove
-							Hiro.user.contacts.remove(obj);
+							Hiro.user.contacts.remove(obj,'s');
 							update = true;
 							break; 													
 						default:
