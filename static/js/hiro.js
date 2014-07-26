@@ -3238,7 +3238,7 @@ var Hiro = {
 
 			// Specific notes diff, returns proper changes format of all notes on client side
 			diffnote: function(note) {
-				var i, l, delta, peer, cursor;
+				var i, l, p, h, delta, op, peer, cursor;
 
 				// Do not diff notes that have no server ID yet
 				if (note.id.length < 5) return false;	
@@ -3279,6 +3279,31 @@ var Hiro = {
 
 					// Add cursor op 
 					if (peer && cursor) delta.push({"op": "set-cursor", "path": "peers/uid:" + peer.user.uid, "value": cursor })
+				}
+
+				// Peers changed
+				if (note._peerchange) {					
+					// Find the peers with no uid yet
+					for (i = 0, l = note.c.peers.length; i < l; i++ ) {
+						// Ignore those
+						if (note.c.peers[i].user.uid) continue;
+						// Iterate through the others
+						for (p in note.c.peers[i].user) {
+							// Create delta if we haven't so yet
+							if (!delta) delta = [];							
+							// Grab the first prop
+							if (note.c.peers[i].user.hasOwnProperty(p)) {
+								// Prepare op object
+								op = {"op": "invite", "path": "peers/", "value": {}};
+								// Add property / value
+								op.value[p] = note.c.peers[i].user[p];
+								// Add to changes
+								delta.push(op);
+								// Break this obj iteration
+								break; 
+							};
+						}
+					}
 				}
 
 				// Return value
