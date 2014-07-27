@@ -73,18 +73,24 @@ def close_db(error):
 @click.option('--addr', default='127.0.0.1', help='Bind http listener to this socket')
 @click.option('--port', default=5000, help='Listen on this port for incoming HTTP requests.')
 def run_server(addr, port):
+    # main handlers
     app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'])
+    app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
+    # token handlers
     app.add_url_rule('/tokens/anon', 'anontoken', view_func=views.anon, methods=['GET'])
     app.add_url_rule('/tokens/login', 'login', view_func=views.login, methods=['POST'])
     app.add_url_rule('/tokens/signup', 'signup', view_func=views.register, methods=['POST'])
+    # components (e.g. landingpage, settings container)
     app.add_url_rule('/component/landing/', 'landing', view_func=views.landing)
     app.add_url_rule('/component/settings/', 'settings', view_func=views.settings)
     app.add_url_rule('/offline/app.html', 'offline', view_func=views.offline)
-    app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
     app.add_url_rule('/offline/manifestwrapper/', 'manifestwrapper', view_func=views.manifestwrapper)
     app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)
+    # facebook & stipe callbacks
     app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect)
     app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback)
+    app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan)
+    # root-based static files
     app.add_url_rule('/robots.txt', 'robots', view_func=root_static)
     app.run(host=addr, port=port)
 
