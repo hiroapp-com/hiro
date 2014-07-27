@@ -91,7 +91,7 @@
 				<div id="d_close"></div>					
 				<div id="d_logio">
 					<div id="s_signup">
-						<a class="fb hirobutton" data-hiro-action="fbauth">Sign-Up with&nbsp;<b>Facebook</b></a>
+						<a class="fb hirobutton" data-hiro-action="fbsignup">Sign-Up with&nbsp;<b>Facebook</b></a>
 						<div class="divider"><span class="or">or</span></div>
 						<form action="javascript:void(0);">
 							<input type="email" placeholder="E-Mail or Phone" id="signup_mail"></input><div class="inputerror error"></div>				
@@ -99,11 +99,11 @@
 							<input type="submit" value="foo" onclick="Hiro.user.logio(event);" class="pseudobutton"></input>
 						</form>		
 						<a class="hirobutton green" data-hiro-action="register">Create Account</a>	
-						<div class="mainerror"></div>
+						<div class="mainerror error"></div>
 						<a class="small" data-hiro-action="switch_s_signin">Already have an account?</a>			
 					</div>	
 					<div id="s_signin">
-						<a class="fb hirobutton" data-hiro-action="fbauth">Log-In with&nbsp;<b>Facebook</b></a>
+						<a class="fb hirobutton" data-hiro-action="fblogin">Log-In with&nbsp;<b>Facebook</b></a>
 						<div class="divider"><span class="or">or</span></div>
 						<form action="javascript:void(0);">
 							<input type="email" placeholder="E-Mail or Phone" id="signin_mail"></input><div class="inputerror error"></div>
@@ -121,7 +121,7 @@
 							<input type="submit" value="foo" onclick="Hiro.user.resetpwd();" class="pseudobutton"></input>
 						</form>		
 						<a class="hirobutton green" data-hiro-action="resetpwd">Reset Password</a>	
-						<div class="mainerror"></div>	
+						<div class="mainerror error"></div>	
 						<a class="small" data-hiro-action="switch_s_signin">Login with old password.</a>								
 					</div>			
 				</div>				
@@ -139,4 +139,4 @@
 		<div id="wastebin"></div>
 	
         {{ get_asset('new_js') }}
-        <script type="text/javascript">window.analytics||(window.analytics=[]);Hiro.sys.init('{{ config.WS_URL }}',{ stripe: '{{ config.STRIPE_PUBLIC_KEY }}', fb: '{{ config.FACEBOOK_APP_ID }}' });</script></body></html>
+        <script type="text/javascript">window.analytics||(window.analytics=[]);Hiro.sys.init({ws:'{{ config.WS_URL }}',stripe:'{{ config.STRIPE_PUBLIC_KEY }}',fb:'{{ config.FACEBOOK_APP_ID }}'});</script></body></html>

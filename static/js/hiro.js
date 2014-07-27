@@ -932,6 +932,88 @@ var Hiro = {
 			});	
 		},
 
+		// Handle Fb Signups / Logins
+		fbauth: function(target,login) {
+			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register, 	
+				button = branch.getElementsByClassName('fb')[0],						
+				e = branch.getElementsByClassName('mainerror')[0], fbtokens, reason;
+
+			// Only do one at a time
+			this.authinprogress = true;
+
+			// Set UI
+			button.innerText = 'Connecting...';
+
+			// Send action to FB
+			// TODO Bruno: See if new all.js supports mobiles better or if we still have to redirect to window.location = '/connect/facebook?next=/';
+			Hiro.lib.facebook.pipe({
+				todo: function(obj) {
+					// First try to get status
+					FB.getLoginStatus(function(response) {
+						// Logged into FB & Hiro authed
+						if (response.status === 'connected') {
+							// Create ref
+							fbtokens = response.authResponse;
+						// Not logged into FB or Hiro not authed	
+						} else { 
+							// Set reason for prompting login
+							reason = (response.status === 'not_authorized') ? 'auth' : 'login';
+
+							// Ask user to login and or auth Hiro on FB
+							FB.login(function(response) {
+								// Yay, user granted perms
+								if (response.authResponse) {
+									// Create ref
+									fbtokens = response.authResponse;
+								} 
+							// Add scope here
+							},{scope: 'email'});
+						}
+
+						// If we have got tokens
+						if (fbtokens) {
+							// Request token from backend
+							Hiro.sync.ajax.send({
+								url: "/_cb/facebook",
+				                type: "POST",
+				                payload: JSON.stringify(fbtokens),
+								success: function(data) {
+									obj.success(data);
+								},
+								error: function(data) {
+									obj.error('backend',data)
+								}
+							});							
+						} else {
+							// FB login or hiro auth process aborted by user
+							if (obj && obj.error) obj.error('abort' + reason)
+						}
+					});	
+				},
+				// If the TODO was successfully completed
+				success: function(data) {
+					// Forward to handler
+					Hiro.user.logiocomplete(data,login);
+					// Allow next try	
+					Hiro.user.authinprogress = false;						
+				},
+				// If something hapenned along the way
+				error: function(reason,data) {
+					// We screwed up
+					if (reason == 'backend') {
+						e.innerText = 'Hiro not available, please try a bit later.';	
+						button.innerText = 'Try again';	
+						Hiro.sys.error('Facebook login failed on our side',data);
+					// User aborted											
+					} else {
+						button.innerHTML = ((login) ? 'Log-In' : 'Sign-Up') + 'with <b>Facebook</b>';	
+					}
+					// Allow next try	
+					Hiro.user.authinprogress = false;					
+				}
+			});
+		},
+
 		// Post successfull auth stuff
 		logiocomplete: function(data,login) {	
 			// Close dialog
@@ -1130,15 +1212,7 @@ var Hiro = {
 				// User wants to upgrade
 				} else if (tt > ct) {
 					// Check if Stripe is already loaded or do so otherwise
-					if (!window.Stripe) {
-						Hiro.lib.loadscript('https://js.stripe.com/v2/',undefined,function(){
-							// Fetch key
-							var k = Hiro.lib.keys.stripe;
-							// Set or log error
-							if (k) Stripe.setPublishableKey(k);
-							else Hiro.sys.error('Tried to init Stripe, but no key found',Hiro.lib.keys)
-						},true,0);
-					}	
+					if (!window.Stripe) Hiro.lib.stripe.load();
 									
 					// Set values for upgrade / preorder smoke test					
 					if (tt == 2) {
@@ -3599,7 +3673,7 @@ var Hiro = {
 		production: (window.location.href.indexOf('hiroapp') != -1),	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
-		init: function(ws_url,keys) {
+		init: function(vars) {
 			// Begin startup logging
 			Hiro.sys.log('Hiro startup sequence','','group');		
 
@@ -3607,7 +3681,8 @@ var Hiro = {
 			if (this.inited) return;
 
 			// Store keys
-			if (keys) Hiro.lib.keys = keys;
+			if (vars.fb) Hiro.lib.facebook.key = vars.fb;
+			if (vars.stripe) Hiro.lib.stripe.key = vars.stripe;
 
 			// Create DMP socket
 			Hiro.sync.diff.dmp = new diff_match_patch();	
@@ -3624,7 +3699,7 @@ var Hiro = {
 			Hiro.canvas.init();
 			Hiro.ui.init();	
 			Hiro.data.init();			
-			Hiro.sync.init(ws_url);	
+			Hiro.sync.init(vars.ws);	
 			Hiro.lib.init();		
 			Hiro.apps.init();	
 
@@ -4633,14 +4708,8 @@ var Hiro = {
 					});
 				});
 
-				// Load facebook on first open
-				if (!window.FB) {
-					// Load facebook
-					Hiro.lib.loadscript('https://connect.facebook.net/en_US/all.js','facebook-jssdk',function(){
-						// Init after loading
-						FB.init({ appId : Hiro.lib.keys.fb, version: 'v2.0', status : false, xfbml : false }); 
-					},true,0);					
-				}
+				// Load facebook on first open, but do not init yet as this would blur on mobiles
+				if (!window.FB) Hiro.lib.facebook.load();
 
 				// Set wanted areas to display block
 				if (container) Hiro.ui.switchview(container);
@@ -4783,8 +4852,9 @@ var Hiro = {
 						case 'login':
 							Hiro.user.logio(event,(action == 'login'));
 							break;	
-						case 'fbauth':
-							Hiro.user.fbauth();
+						case 'fblogin':
+						case 'fbsignup':						
+							Hiro.user.fbauth(target,(action == 'fblogin'));
 							break;																		
 						case 'logout':
 							Hiro.user.logout();
@@ -5213,46 +5283,164 @@ var Hiro = {
 
 		// Load libraries
 		init: function() {
-			return;
-			// Load Google Diff Match Patch
-			this.loadscript('/static/js/diff_match_patch.js',undefined,function(){
-				Hiro.sync.diff.dmp = new diff_match_patch();
-			},true,0);		
+	
 		},
 
 		// Generic script loader
-		loadscript: function(url,id,callback,defer,delay) {
-			var delay = delay || 1000;
+		loadscript: function(obj) {
+			var head = document.getElementsByTagName("head")[0] || document.documentElement,
+				s = document.createElement('script'), done;
 
 			// Abort if we have no url
-			if (!url) return;	
+			if (!obj.url) return;
 
+			// Set default delay
+			obj.delay = obj.delay || 0;	
+
+			// Wrap in optional timeout
 			setTimeout(function(){
-				var d = document, t = 'script',
-					o = d.createElement(t),
-					s = d.getElementsByTagName(t)[0];
 
 				// Set DOM node params	
-				o.type="text/javascript"
-				o.src = url;
-				o.async = true;
-				if (defer) o.defer = true;
-				if (id) o.id = id;
-				// Attach callback
-				if (callback) { 
-					Hiro.util.registerEvent(o,'load',function(e){
-						try { callback(null, e); } 
-						catch (e) {
-							// Make sure this always happens
-							Hiro.sys.log('Scriptloader callback was not executed:',e)
-						}
-					}); 
-				}	
+				s.type="text/javascript"
+				s.src = obj.url;
+				s.async = true;
+				if (obj.defer === true) s.defer = true;
+				if (obj.id) s.id = obj.id;	
+
+				// Attach handlers for all browsers, nicked from jQuery
+				s.onload = s.onreadystatechange = function() {
+				    if ( !done && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") ) {
+				        // Set flag
+				        done = true;
+
+				        // Execute success
+				        if (obj.success) obj.success();
+
+				        // Handle memory leak in IE
+				        s.onload = s.onreadystatechange = null;
+				        if ( head && s.parentNode ) {
+				            head.removeChild( s );
+				        }
+				    }
+				};	
+
+				// Onerror for modern browsers
+				s.onerror = function() {
+				    if ( !done && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") ) {
+				        // Set flag
+				        done = true;
+
+				        // Execute success
+				        if (obj.error) obj.error();
+				    }					
+				}		
 
 				// Insert into DOM
-				s.parentNode.insertBefore(o, s);
-			},delay);					
-		},		
+				head.insertBefore(s, head.firstChild);
+			},obj.delay);					
+		},	
+
+		// Stripe
+		stripe: {
+			url: 'https://js.stripe.com/v2/',
+			key: undefined,
+			loaded: false,
+			inited: false,
+
+			// If user selects plan to upgrade to, init right away
+			load: function() {
+				var that = this;
+
+				// Call loadscript & init right away
+				Hiro.lib.loadscript({
+					url: that.url,
+					delay: 0,
+					success: function() {
+						// Set flag & init
+						that.loaded = true;
+						that.init();
+					}
+				});			
+			},
+
+			// Lib specific init stuff
+			init: function() {
+				var k = this.key;
+
+				// Check if we have a key
+				if (k) {
+					// Set key & flag
+					Stripe.setPublishableKey(k);
+					this.inited = true;
+
+				// Oh noes, no key					
+				} else {
+					Hiro.sys.error('Tried to init Stripe, but no key found',Hiro.lib.keys)
+				}
+			}
+		},
+
+		// Facebooks: Facebook is already preloaded when we open the dialog
+		facebook: {
+			js: 'https://connect.facebook.net/en_US/all.js',
+			key: undefined,
+			inited: false,
+			loaded: false,
+
+			// Load script, we do this when the user opens the dialog
+			load: function(cb) {
+				// If it'S already loaded
+				if (this.loaded) return;
+
+				// Do it!
+				Hiro.lib.loadscript({
+					url: this.js,					
+					id: 'facebook-jssdk',	
+					success: function() {
+						// Set flag
+						Hiro.lib.facebook.loaded = true;
+						// Fire callback if we have one
+						if (cb) cb();
+					}				
+				});				
+			},
+
+			// This blurs input, so we delay it until user selects first FB action
+			init: function(cb) {
+				var that = this;
+
+				// If we wrongly called it twice abort
+				if (this.inited) return;
+
+				// Init, which unfortunately offers no callback (anymore)
+			    FB.init({ appId : that.key, version: 'v2.0', status : false, xfbml : false });
+
+			    // Call 
+			    FB.getLoginStatus(function(response){
+			    	that.inited = true;
+			    	if (cb) cb();
+			    });				
+			},
+
+			// Abstract connectivity & lib specific foo
+			pipe: function(obj) {
+				var that = this;
+
+				// If script wasn't loaded yet
+				if (!this.loaded) {
+					that.load(function() { that.pipe(obj) });
+					return;
+				// Or not inited	
+				} else if (!this.inited) {
+					that.init(function() { that.pipe(obj) });
+					return;
+				}	
+
+				// Execute our command
+				if (obj && obj.todo) obj.todo(obj);			
+			}			
+
+		}	
 	},
 
 	// Generic utilities like event attachment etc
