@@ -1004,9 +1004,13 @@ var Hiro = {
 						e.innerText = 'Hiro not available, please try a bit later.';	
 						button.innerText = 'Try again';	
 						Hiro.sys.error('Facebook login failed on our side',data);
+					// FB not available or user offline										
+					} else if (reason == 'sourceoffline') {
+						e.innerText = 'Facebook not available, please try later.';	
+						button.innerText = 'Try again';	
 					// User aborted											
 					} else {
-						button.innerHTML = ((login) ? 'Log-In' : 'Sign-Up') + 'with <b>Facebook</b>';	
+						button.innerHTML = ((login) ? 'Log-In' : 'Sign-Up') + ' with <b>Facebook</b>';	
 					}
 					// Allow next try	
 					Hiro.user.authinprogress = false;					
@@ -5314,13 +5318,7 @@ var Hiro = {
 				        done = true;
 
 				        // Execute success
-				        if (obj.success) obj.success();
-
-				        // Handle memory leak in IE
-				        s.onload = s.onreadystatechange = null;
-				        if ( head && s.parentNode ) {
-				            head.removeChild( s );
-				        }
+				        if (obj.success) obj.success();				 
 				    }
 				};	
 
@@ -5330,8 +5328,12 @@ var Hiro = {
 				        // Set flag
 				        done = true;
 
-				        // Execute success
-				        if (obj.error) obj.error();
+				        // Execute error
+				        if (obj.error) obj.error('sourceoffline',s);
+
+				        // Handle memory leak in IE
+				        s.onload = s.onreadystatechange = null;
+				        if (head && s.parentNode) head.removeChild(s);				        
 				    }					
 				}		
 
@@ -5388,7 +5390,7 @@ var Hiro = {
 			loaded: false,
 
 			// Load script, we do this when the user opens the dialog
-			load: function(cb) {
+			load: function(success,error) {
 				// If it'S already loaded
 				if (this.loaded) return;
 
@@ -5401,7 +5403,8 @@ var Hiro = {
 						Hiro.lib.facebook.loaded = true;
 						// Fire callback if we have one
 						if (cb) cb();
-					}				
+					},
+					error: error				
 				});				
 			},
 
@@ -5428,11 +5431,11 @@ var Hiro = {
 
 				// If script wasn't loaded yet
 				if (!this.loaded) {
-					that.load(function() { that.pipe(obj) });
+					that.load(function() { that.pipe(obj) },obj.error);
 					return;
 				// Or not inited	
 				} else if (!this.inited) {
-					that.init(function() { that.pipe(obj) });
+					that.init(function() { that.pipe(obj) },obj.error);
 					return;
 				}	
 
