@@ -83,6 +83,8 @@ def run_server(addr, port):
     app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
     app.add_url_rule('/offline/manifestwrapper/', 'manifestwrapper', view_func=views.manifestwrapper)
     app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)
+    app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect)
+    app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback)
     app.run(host=addr, port=port)
 
 if __name__ == '__main__':
