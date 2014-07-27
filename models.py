@@ -147,17 +147,16 @@ class User(object):
         if not self.uid:
             return None
         conn = get_db()
-        cur = conn.cursor()
         token, hashed = gen_token()
         if kind == 'login':
-            cur.execute("INSERT INTO tokens (token, kind, uid) VALUES (?, 'login', ?)", (hashed, self.uid))
+            conn.execute("INSERT INTO tokens (token, kind, uid) VALUES (?, 'login', ?)", (hashed, self.uid))
         elif kind == 'verify-email' and self.email:
-            cur.execute("INSERT INTO tokens (token, kind, uid, email) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.email))
+            conn.execute("INSERT INTO tokens (token, kind, uid, email) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.email))
         elif kind == 'verify-phone' and self.phone:
-            cur.execute("INSERT INTO tokens (token, kind, uid, phone) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.phone))
+            conn.execute("INSERT INTO tokens (token, kind, uid, phone) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.phone))
         else:
             return None
-        cur.close()
+        conn.commit()
         return token
 
     def set_phomail(self, email=None, phone=None):
