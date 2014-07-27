@@ -9,7 +9,7 @@ import views
 
 import click
 
-from flask import Flask, Markup, render_template, g
+from flask import g, request, Flask, Markup, render_template, send_from_directory
 from passlib.hash import pbkdf2_sha512
 from assets import assets_env, get_html_output
 
@@ -85,7 +85,11 @@ def run_server(addr, port):
     app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)
     app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect)
     app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback)
+    app.add_url_rule('/robots.txt', 'robots', view_func=root_static)
     app.run(host=addr, port=port)
+
+def root_static():
+    return send_from_directory(app.static_folder, request.path[1:])
 
 if __name__ == '__main__':
     run_server()
