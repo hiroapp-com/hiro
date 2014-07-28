@@ -1001,7 +1001,7 @@ var Hiro = {
 				error: function(reason,data) {
 					// We screwed up
 					if (reason == 'backend') {
-						e.innerText = 'Hiro not available, please try a bit later.';	
+						e.innerText = 'Hiro not available, please try again later.';	
 						button.innerText = 'Try again';	
 						Hiro.sys.error('Facebook login failed on our side',data);
 					// FB not available or user offline										
@@ -4898,15 +4898,15 @@ var Hiro = {
 				if (t.nextSibling.innerHTML && t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = ''; 
 
 				// If we had an error CSS class in the input field
-				if (c && c.indexOf('error') > 0) {
-					// Reset CSS
-					t.setAttribute('class',c.replace('error',''))
-					// Get & empty all mainerrors
+				if (c && c.indexOf('error') > 0) t.setAttribute('class',c.replace('error',''));
+
+				// Get & empty all mainerrors
+				Hiro.ui.render(function(){
 					mains = this.getElementsByClassName('mainerror');
 					for (i = 0, l = mains.length; i < l; i++ ) {
 						if (mains[i].innerHTML) mains[i].innerHTML = '';
-					}					
-				}	
+					}
+				});	
 
 				// Copy values to other input if it happens on login
 				if (t.id == 'signin_mail') document.getElementById('signup_mail').value = t.value;
