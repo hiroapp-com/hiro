@@ -1665,11 +1665,19 @@ var Hiro = {
 			// Populate header and widget with data from currentnote, triggerd by show and peer changes from server
 			update: function() {
 				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers'),
+					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
-					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus;	
+					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus,
+					el_url = this.el_root.getElementsByTagName('input');	
 
-				// Render peers
+				// Preload facebook
+				if (!window.FB) Hiro.lib.facebook.load();	
+
+				// Populate!
 				Hiro.ui.render(function(){
+					// Insert URL into sharing part
+					if (token) el_url[el_url.length - 1].value = 'https://' + location.host + '/#' + token;
+
 					// Placeholder fragments
 					f = document.createDocumentFragment();
 
