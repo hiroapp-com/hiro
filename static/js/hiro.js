@@ -1530,7 +1530,10 @@ var Hiro = {
 								});
 							// Tweet (Love to 'Ooops, oh my' song by her)
 							} else if (id[1] == 'tw') {
-
+								Hiro.ui.tweet(note.text.substring(0,200) || title);
+							// Send mail	
+							} else if (id[1] == 'mail') {
+								Hiro.ui.mail(title,text);
 							}
 					}
 				}				
@@ -3857,8 +3860,9 @@ var Hiro = {
 		// General properties
 		// TODO Bruno: Compare with http://patrickhlauke.github.io/touch/tests/results/
 		touch: ('ontouchstart' in document.documentElement),
+		mobileapp: (window.navigator.standalone),
 		mini: function(){ return (document.body.offsetWidth < 481) },
-		midi: function(){ return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },
+		midi: function(){ return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },		
 
 		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
 		el_wastebin: document.getElementById('wastebin'),
@@ -4348,7 +4352,41 @@ var Hiro = {
 				// In old browsers we do it via embed
 				document.getElementById(this.wastebinid).innerHTML = '<embed src="' + url + '" hidden="true" autostart="true" loop="false" />';
 			}
-		}, 			
+		}, 	
+
+		// Little twitter helper
+		tweet: function(string) {
+			var a, e;
+			// ABort if no string
+			if (!string) return;
+
+			// Build proper string
+			string = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(string.substring(0,200));
+
+			// Open twitter window or redirect to twitter
+			if (this.mobileapp) {
+				// iOS hack from http://stackoverflow.com/questions/7930001/force-link-to-open-in-mobile-safari-from-a-web-app-with-javascript
+			    a = document.createElement('a');
+			    a.setAttribute("href", string);
+			    a.setAttribute("data-href", string);			    
+			    a.setAttribute("target", "_blank");
+
+			    e = document.createEvent("HTMLEvents");
+			    e.initEvent("click", true, true);
+			    a.dispatchEvent(e);
+			// Normal modal  
+			} else {
+				window.open(string,'twitter','height=282,width=600');
+			} 
+		},	
+
+		// Mail helper
+		mail: function(subject,text,recipients) {
+			var s =	'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+
+			// TODO Bruno: Proper mail client detection etc
+			window.location.href = s;
+		},	
 
 		// Left / right swipes
 		swipe: {
