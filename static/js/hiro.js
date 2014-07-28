@@ -1530,10 +1530,10 @@ var Hiro = {
 								});
 							// Tweet (Love to 'Ooops, oh my' song by her)
 							} else if (id[1] == 'tw') {
-								Hiro.ui.tweet(note.text.substring(0,200) || title);
+								Hiro.ui.tweet(url + ' ' + (note.text.substring(0,200) || title));
 							// Send mail	
 							} else if (id[1] == 'mail') {
-								Hiro.ui.mail(title,text);
+								Hiro.ui.mail(title, url + ' ' + text);
 							}
 					}
 				}				
