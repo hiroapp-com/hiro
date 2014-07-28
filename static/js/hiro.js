@@ -5298,48 +5298,41 @@ var Hiro = {
 			// Abort if we have no url
 			if (!obj.url) return;
 
-			// Set default delay
-			obj.delay = obj.delay || 0;	
+			// Set DOM node params	
+			s.type="text/javascript"
+			s.src = obj.url;
+			s.async = true;
+			if (obj.defer === true) s.defer = true;
+			if (obj.id) s.id = obj.id;	
 
-			// Wrap in optional timeout
-			setTimeout(function(){
+			// Attach handlers for all browsers, nicked from jQuery
+			s.onload = s.onreadystatechange = function() {
+			    if ( !done && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") ) {
+			        // Set flag
+			        done = true;
 
-				// Set DOM node params	
-				s.type="text/javascript"
-				s.src = obj.url;
-				s.async = true;
-				if (obj.defer === true) s.defer = true;
-				if (obj.id) s.id = obj.id;	
+			        // Execute success
+			        if (obj.success) obj.success();				 
+			    }
+			};	
 
-				// Attach handlers for all browsers, nicked from jQuery
-				s.onload = s.onreadystatechange = function() {
-				    if ( !done && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") ) {
-				        // Set flag
-				        done = true;
+			// Onerror for modern browsers
+			s.onerror = function() {
+			    if ( !done && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") ) {
+			        // Set flag
+			        done = true;
 
-				        // Execute success
-				        if (obj.success) obj.success();				 
-				    }
-				};	
+			        // Execute error
+			        if (obj.error) obj.error('sourceoffline',s);
 
-				// Onerror for modern browsers
-				s.onerror = function() {
-				    if ( !done && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") ) {
-				        // Set flag
-				        done = true;
+			        // Handle memory leak in IE
+			        s.onload = s.onreadystatechange = null;
+			        if (head && s.parentNode) head.removeChild(s);				        
+			    }					
+			}		
 
-				        // Execute error
-				        if (obj.error) obj.error('sourceoffline',s);
-
-				        // Handle memory leak in IE
-				        s.onload = s.onreadystatechange = null;
-				        if (head && s.parentNode) head.removeChild(s);				        
-				    }					
-				}		
-
-				// Insert into DOM
-				head.insertBefore(s, head.firstChild);
-			},obj.delay);					
+			// Insert into DOM
+			head.insertBefore(s, head.firstChild);					
 		},	
 
 		// Stripe
@@ -5401,10 +5394,10 @@ var Hiro = {
 					success: function() {
 						// Set flag
 						Hiro.lib.facebook.loaded = true;
-						// Init on non touch devices right away 
-						// FB switched to Popups only, which get blocked because we leave the stack with tthe timeout)
 						// Fire callback if we have one
 						if (success) success();
+						// Init right away on non-touch devices to avoid popup blockers (init below creates new stack)
+						else if (!Hiro.ui.touch) Hiro.lib.facebook.init();
 					},
 					error: error				
 				});				
