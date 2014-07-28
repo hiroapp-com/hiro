@@ -977,10 +977,10 @@ var Hiro = {
 								url: "/_cb/facebook",
 				                type: "POST",
 				                payload: JSON.stringify(fbtokens),
-								success: function(data) {
+								success: function(req,data) {
 									obj.success(data);
 								},
-								error: function(data) {
+								error: function(req,data) {
 									obj.error('backend',data)
 								}
 							});							
@@ -5401,6 +5401,8 @@ var Hiro = {
 					success: function() {
 						// Set flag
 						Hiro.lib.facebook.loaded = true;
+						// Init on non touch devices right away 
+						// FB switched to Popups only, which get blocked because we leave the stack with tthe timeout)
 						// Fire callback if we have one
 						if (success) success();
 					},
