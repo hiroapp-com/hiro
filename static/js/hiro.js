@@ -1458,7 +1458,7 @@ var Hiro = {
 
 			// Default clickhandler
 			clickhandler: function(id,type,target,branch,event) {
-				var peer, contact;
+				var peer, contact, el, url, note, title, text;
 
 				// Split id
 				id = id.split(':');
@@ -1495,6 +1495,43 @@ var Hiro = {
 								}								
 							}	
 							break;
+						// Switch between modes
+						case 'switch':
+							// Switch to desired part
+							Hiro.ui.switchview('widget:' + id[1]);
+							// Select input field contents
+							if (id[1] == 'share') document.getElementById('widget:share').getElementsByTagName('input')[0].select();
+							break;
+						// Teh shares! Teh shares!
+						case 'share':
+							// Get URL & current note with details
+							url = document.getElementById('widget:share').getElementsByTagName('input')[0].value;
+							note = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c');
+							text = note.text.substring(0,500) || 'Hiro is the easiest way to share notes with friends.';
+							title = note.title.substring(0,50) || 'Hiro.';
+							// On Fatzelboeks
+							if (id[1] == 'fb') {
+								// Send package to facebook
+								Hiro.lib.facebook.pipe({
+									todo: function(obj) {
+										// Open share dialog
+										FB.ui({							
+											method: 'share',
+											href: url,
+	           								name: title,
+	            							description: text,	           								
+	            							caption: 'https://' + location.host,
+								            actions: {
+								                name: 'Start Your Own',
+								                link: 'https://www.hiroapp.com/connect/facebook',
+								            }											
+										});
+									}
+								});
+							// Tweet (Love to 'Ooops, oh my' song by her)
+							} else if (id[1] == 'tw') {
+
+							}
 					}
 				}				
 			},			
