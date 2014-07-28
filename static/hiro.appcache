@@ -9,6 +9,9 @@ CACHE:{{ "\n" }}
 /static/img/favicon.png{{ "\n" }}
 /static/img/faviconred.png{{ "\n" }}
 /static/sounds/unseen.wav{{ "\n" }}
+/favicon.ico{{ "\n" }}
+/apple-touch-icon-precomposed.png{{ "\n" }}
+/og.png{{ "\n" }}
 
 FALLBACK:{{ "\n" }}
 / /offline/app.html{{ "\n" }}

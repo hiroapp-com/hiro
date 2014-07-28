@@ -92,7 +92,10 @@ def run_server(addr, port):
     app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, methods=['GET','POST'])
     app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan)
     # root-based static files
-    app.add_url_rule('/robots.txt', 'robots', view_func=root_static)
+    app.add_url_rule('/favicon.ico', 'favicon', view_func=root_static)
+    app.add_url_rule('/apple-touch-icon-precomposed.png', 'icon', view_func=root_static)   
+    app.add_url_rule('/og.png', 'og', view_func=root_static)     
+    app.add_url_rule('/robots.txt', 'robots', view_func=root_static)    
     app.run(host=addr, port=port)
 
 def root_static():
