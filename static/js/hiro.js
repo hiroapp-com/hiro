@@ -2328,7 +2328,7 @@ var Hiro = {
 
 				// Set flag and notify user
 				this.saving = true;
-				if (!Hiro.sync.synconline || Hiro.sync.cachelock || !Hiro.data.get('profile','c.sid') || Hiro.data.get('profile','c.tier') === 0 ) Hiro.ui.statsy.add('sns',0,'Saving...');
+				if (!Hiro.sync.synconline || Hiro.sync.cachelock || !Hiro.data.get('profile','c.tier')) Hiro.ui.statsy.add('sns',0,'Saving...');
 
 				// Start timer
 				start = Date.now(); 
@@ -2979,7 +2979,7 @@ var Hiro = {
 			// If we have any data in this commit, send it to the server now
 			if (newcommit && newcommit.length > 0) {
 				// Showit
-				if ( Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',0,'Syncing...');
+				if (Hiro.data.get('profile','c.tier')) Hiro.ui.statsy.add('sns',0,'Syncing...');
 
 				// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
 				Hiro.data.local.persist();
@@ -4891,8 +4891,8 @@ var Hiro = {
 			// Clean up errors etc and handle input actions (namechange, cc etc)
 			keyhandler: function(event) {
 				var t = event.target || event.srcElement,
-					c = t.getAttribute('class'), id = t.id || t.getAttribute('data-hiro-value'),
-					name = Hiro.data.get('profile','c.name'), el, mains, i, l;
+					c = t.getAttribute('class'), id = t.id || t.getAttribute('data-hiro-value'), 
+					name = Hiro.data.get('profile','c.name'), el, mains = this.getElementsByClassName('mainerror'), i, l;
 
 				// Remove error from input error overlay
 				if (t.nextSibling.innerHTML && t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = ''; 
@@ -4902,7 +4902,6 @@ var Hiro = {
 
 				// Get & empty all mainerrors
 				Hiro.ui.render(function(){
-					mains = this.getElementsByClassName('mainerror');
 					for (i = 0, l = mains.length; i < l; i++ ) {
 						if (mains[i].innerHTML) mains[i].innerHTML = '';
 					}

@@ -53,17 +53,28 @@
 						<div class="counter"></div>
 					</div>
 					<div class="widget">
-						<a class="cancel" data-hiro-action="close" title="Cancel"></a>
-						<div class="title">Invite others:</div>
-						<form action="javascript:void(0);" novalidate>
-							<input type="email" placeholder="E-Mail or Phone-Number" class="hiro" novalidate>
-							<div class="error" style="display: none;"></div>
+						<div style="display:none;">
+							<a class="cancel" data-hiro-action="close" title="Cancel"></a>
+							<div class="title">Invite others:</div>
+							<form action="javascript:void(0);" novalidate>
+								<input type="email" placeholder="E-Mail or Phone-Number" class="hiro" novalidate>
+								<div class="error" style="display: none;"></div>
+								<div class="peers"></div>
+								<input type="submit" value="foo" class="pseudobutton">
+							</form>
+							<a class="hirobutton grey" data-hiro-action="invite">Invite</a>
+							<small>People who have access:</small>
 							<div class="peers"></div>
-							<input type="submit" value="foo" class="pseudobutton">
-						</form>
-						<a class="hirobutton grey" data-hiro-action="invite">Invite</a>
-						<small>People who have access:</small>
-						<div class="peers"></div>
+						</div>
+						<div>
+							<a class="cancel" data-hiro-action="close" title="Cancel"></a>
+							<div class="title">Share a link:</div>		
+							<input type="text" value="http://localhost:5000/#7hfiq7324hoi23849uahfra4873465">
+							<small>Everybody who has this link can join.</small>	
+							<a class="hirobutton fb" data-hiro-action="share:fb">Post on Facebook</a>							
+							<a class="hirobutton tw" data-hiro-action="share:tw">Tweet</a>										
+							<a class="hirobutton green" data-hiro-action="share:mail">Mail</a>																
+						</div>
 					</div>	
 				</div>	
 			</div>	

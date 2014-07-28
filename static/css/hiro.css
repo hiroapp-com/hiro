@@ -119,6 +119,14 @@ a.hirobutton.light {
   background-color: #aaa;
 }
 
+a.hirobutton.fb {
+  background-color: #3b5998;
+}
+
+a.hirobutton.tw {
+  background-color: #0271bf;
+}
+
 a.hirobutton:hover {
   color: rgba(255,255,255,1);
   opacity: 1;
@@ -735,6 +743,10 @@ input.error:focus {
   margin-bottom: 8px;
 }
 
+#apps .app .widget a.hirobutton.fb  {
+  margin-top: 5px;
+}
+
 #apps .app.app_sharing .icon .symbol {
   background-position: -75px -390px; 
 }
@@ -1242,14 +1254,6 @@ input.error:focus {
 
 #s_account .accountdetails a.hirobutton.share b {
   font-size: 18px;
-}
-
-#s_account .accountdetails a.hirobutton.share.fb {
-  background-color: #3b5998;
-}
-
-#s_account .accountdetails a.hirobutton.share.tw {
-  background-color: #0271bf;
 }
 
 #s_account .accountdetails a.hirobutton.share.mail {
