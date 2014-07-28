@@ -3158,7 +3158,7 @@ var Hiro = {
 		ajax: {
 			// When we deem a response successfull or let us know that the server is alive
 			successcodes: [200,204],
-			alivecodes: [400,403,404,500],
+			alivecodes: [400,403,404,405,500],
 
 			// Internal values
 			socket: null,
@@ -5402,14 +5402,14 @@ var Hiro = {
 						// Set flag
 						Hiro.lib.facebook.loaded = true;
 						// Fire callback if we have one
-						if (cb) cb();
+						if (success) success();
 					},
 					error: error				
 				});				
 			},
 
 			// This blurs input, so we delay it until user selects first FB action
-			init: function(cb) {
+			init: function(success) {
 				var that = this;
 
 				// If we wrongly called it twice abort
@@ -5421,7 +5421,7 @@ var Hiro = {
 			    // Call 
 			    FB.getLoginStatus(function(response){
 			    	that.inited = true;
-			    	if (cb) cb();
+			    	if (success) success();
 			    });				
 			},
 

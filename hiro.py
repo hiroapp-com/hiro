@@ -19,6 +19,7 @@ if os.environ.get('HIRO_ENV', '') == 'live':
 else:
     app.config.from_object('settings_dev')
 
+# Lol
 if sys.platform.startswith('win'):
     DB_PATH = 'C:\local\hync\hiro.db'
 else:
@@ -88,7 +89,7 @@ def run_server(addr, port):
     app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)
     # facebook & stipe callbacks
     app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect)
-    app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback)
+    app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, methods=['GET','POST'])
     app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan)
     # root-based static files
     app.add_url_rule('/robots.txt', 'robots', view_func=root_static)
