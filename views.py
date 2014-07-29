@@ -142,7 +142,11 @@ def test():
     return render_template('test.html')   
 
 def static_manifest():
-    return Response(render_template('hiro.appcache'), mimetype="text/cache-manifest")
+    resp =  Response(render_template('hiro.appcache'), mimetype="text/cache-manifest")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 def fb_connect():
     return facebook.authorize(callback=url_for('fb_callback',
