@@ -2859,7 +2859,18 @@ var Hiro = {
 							// Send off for removal
 							Hiro.apps.sharing.removepeer(obj,store.id,'s');	
 							update = true;
-							break;													
+							break;
+						// Swap an existing peer for a new one or change it's role		
+						case 'note|swap-user':
+						case 'note|change-role':						
+							// Build peer object
+							obj = { user: {} };
+							obj.user[ops[j].path.split(':')[0].replace('peers/','')] = ops[j].path.split(':')[1];
+							// Reset values (hackich shortcut depending on ops name not changing)
+							Hiro.apps.sharing.getpeer(obj)[ops[j].op.split('-')[1]] = ops[j].value;	
+							// Add new user
+							update = true;
+							break;																										
 						// Update title if it's a title update					
 						case 'note|set-title':
 							// Set values
