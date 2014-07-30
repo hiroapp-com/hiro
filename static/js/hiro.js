@@ -2627,9 +2627,7 @@ var Hiro = {
 			if (!data) return;				
 
 			// Make sure we always send an array
-			if (!(data instanceof Array)) {
-				data = [ data ];
-			}			
+			if (!(data instanceof Array)) data = [ data ];			
 
 			for (var i=0,l=data.length;i<l;i++) {	
 				// Make sure no empty or null/undefined messages get sent
@@ -2783,12 +2781,12 @@ var Hiro = {
 			cf.id = sf.id;
 
 			// Update tokens
-			if (this.tokens.indexOf(data.session.token) > -1) {
+			if (this.tokens.indexOf(data.token) > -1) {
 				// Remove token
-				this.tokens.splice(this.tokens.indexOf(data.session.token));
+				this.tokens.splice(this.tokens.indexOf(data.token),1);
 
 				// Log
-				Hiro.sys.log('Succesfully consumed token ' + data.session.token + ' on session create.')	
+				Hiro.sys.log('Succesfully consumed token ' + data.token + ' on session create.')	
 			}
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
@@ -3046,6 +3044,27 @@ var Hiro = {
 			if (dosave) Hiro.data.set(id,'',store,'s');								
 		},
 
+		// Process consume token response
+		rx_token_consume_handler: function(data) {
+			// Remove data from tokens
+			if (this.tokens.indexOf(data.token) > -1) {
+				// Remove token
+				this.tokens.splice(this.tokens.indexOf(data.token),1);
+
+				// Save
+				Hiro.data.local.todisk('tokens',this.tokens);				
+
+				// Log
+				Hiro.sys.log('Succesfully consumed token ' + data.token);
+
+				// See if we got any other token waiting and consume again
+				if (this.tokens.length > 0) this.consumetoken();
+			// Strange, we received an unknown token
+			} else {
+				Hiro.sys.error('Server said it consumed token unknown to us',[this.tokens,data]);
+			}
+		},
+
 		// Send simple ping to server, either generic if no store id is provided or latest store edits / empty delta
 		ping: function(storeid) {
 			var sid = Hiro.data.get('profile','c.sid'), store, data = {};
@@ -3128,6 +3147,30 @@ var Hiro = {
 
 			// Return r
 			return r;	
+		},
+
+		// Consume a provided token
+		consumetoken: function(token) {
+			var sid = Hiro.data.get('profile','c.sid'),
+				msg = {
+					name: 'token-consume',
+					token: token || this.tokens[0],
+					sid: sid					
+				};
+
+			// Abort if there's absolutely no token or session
+			if (!sid || (!token && (!this.tokens || this.tokens.length == 0 ))) return;
+
+			// Save provided token if not done so
+			if (this.tokens.indexOf(token) == -1) {
+				// Add
+				this.tokens.push(token);
+				// Save
+				Hiro.data.local.todisk('tokens',this.tokens);
+			}		
+
+			// Else send it
+			this.tx(msg);
 		},
 
 		// If either sync or template server just timed out or got a fatal response
