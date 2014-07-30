@@ -1611,6 +1611,9 @@ var Hiro = {
 				// Check for cursor up (38) & down (40), maybe left (37) or right (39) for typeahead	
 				} else if (event.keyCode == 40 || event.keyCode == 38) {
 
+					// Abort if we have no typeahead suggestions
+					if (!el_ta.firstChild) return;
+
 					// Noes, no seleted node
 					if (!el_sel) {
 						// Select first or last element
@@ -2057,6 +2060,7 @@ var Hiro = {
 
 				// Load internal values
 				this.unsynced = this.local.fromdisk('unsynced');			
+				Hiro.sync.tokens = this.local.fromdisk('tokens');
 
 				// Load stores into memory
 				this.set('profile','',p,'l');
@@ -2391,6 +2395,7 @@ var Hiro = {
 
 				// Persist list of unsynced values and tokens
 				this.todisk('unsynced',Hiro.data.unsynced);
+				this.todisk('tokens',Hiro.sync.tokens);				
 
 				// Empty array
 				Hiro.data.unsaved = [];
@@ -2776,6 +2781,15 @@ var Hiro = {
 			cf.c = (cf.c) ? cf.c.concat(JSON.parse(fv)) : JSON.parse(fv);	
 			cf.kind = sf.kind;
 			cf.id = sf.id;
+
+			// Update tokens
+			if (this.tokens.indexOf(data.session.token) > -1) {
+				// Remove token
+				this.tokens.splice(this.tokens.indexOf(data.session.token));
+
+				// Log
+				Hiro.sys.log('Succesfully consumed token ' + data.session.token + ' on session create.')	
+			}
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
 			Hiro.data.set('folio','',cf,'s');	
