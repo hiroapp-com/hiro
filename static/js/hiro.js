@@ -3505,8 +3505,7 @@ var Hiro = {
 					// Add timestamps if we already have a proper syncable peer object of ourselves
 					if (peer) {
 						delta.push({"op": "set-ts", "path": "peers/uid:" + peer.user.uid, "value": { 
-							"seen": peer.last_seen || Hiro.util.now(), 
-							"edit": peer.last_edit || Hiro.util.now() 
+							"seen": peer.last_seen || note._ownedit || Hiro.util.now()
 						}});	
 
 						// Add cursor op 

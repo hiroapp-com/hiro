@@ -21,7 +21,7 @@ else:
 
 # Lol
 if sys.platform.startswith('win'):
-    DB_PATH = 'C:\local\hync\hiro.db'
+    DB_PATH = 'C:\local\go\src\github.com\hiro\hync\hiro.db'
 else:
     DB_PATH = './hiro.db'
 
