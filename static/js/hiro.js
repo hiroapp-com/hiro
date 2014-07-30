@@ -2874,37 +2874,23 @@ var Hiro = {
 							break;
 						// Swap an existing peer for a new one or change it's role		
 						case 'note|swap-user':
-						case 'note|change-role':						
+						case 'note|change-role':	
+						case 'note|set-cursor':					
 							// Build peer object
 							obj = { user: {} };
 							obj.user[ops[j].path.split(':')[0].replace('peers/','')] = ops[j].path.split(':')[1];
-							// Reset values (hackich shortcut depending on ops name not changing)
-							Hiro.apps.sharing.getpeer(obj)[ops[j].op.split('-')[1]] = ops[j].value;	
+							// Set cursor
+							if (ops[j].op == 'set-cursor') {
+								// Set peer obj value
+								Hiro.apps.sharing.getpeer(obj).cursor_pos = ops[j].value;
+								// Also set shortcut value if it's us
+								if (ops[j].path.split(':')[1] == Hiro.data.get('profile','c.uid')) store._cursor = ops[j].value;
+							// Set other values (hackish shortcut depending on ops name not changing)
+							} else {
+								Hiro.apps.sharing.getpeer(obj)[ops[j].op.split('-')[1]] = ops[j].value;	
+							}
 							// Add new user
 							update = true;
-							break;																										
-						// Update title if it's a title update					
-						case 'note|set-title':
-							// Set values
-							store.s.title = store.c.title = ops[j].value;	
-							// Set internal values
-							if (store.id != Hiro.canvas.currentnote) store._unseen = true;								
-							// Add notification if we're not focused
-							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);
-							update = true;
-							break;
-						// Update text if it's a text update							
-						case 'note|delta-text':
-							if (!(regex.test(ops[j].value))) {
-								// Patch values
-								this.diff.patch(ops[j].value,data.res.id);
-								// Add notification if we're not focused
-								if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);								
-								// Continue if we had no error
-								update = true;	
-							} else {
-								Hiro.sys.error('Received unknown note delta op',ops[j])
-							}							
 							break;	
 						// Set timestamp							
 						case 'note|set-ts':
@@ -2940,7 +2926,30 @@ var Hiro = {
 
 							// Always iterate & save
 							update = true;														
-							break;							
+							break;																																							
+						// Update title if it's a title update					
+						case 'note|set-title':
+							// Set values
+							store.s.title = store.c.title = ops[j].value;	
+							// Set internal values
+							if (store.id != Hiro.canvas.currentnote) store._unseen = true;								
+							// Add notification if we're not focused
+							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);
+							update = true;
+							break;
+						// Update text if it's a text update							
+						case 'note|delta-text':
+							if (!(regex.test(ops[j].value))) {
+								// Patch values
+								this.diff.patch(ops[j].value,data.res.id);
+								// Add notification if we're not focused
+								if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);								
+								// Continue if we had no error
+								update = true;	
+							} else {
+								Hiro.sys.error('Received unknown note delta op',ops[j])
+							}							
+							break;	
 						// Set proper id of a new note					
 						case 'folio|set-nid':
 							// Rename existing store, this also takes care of the as of now missing folio shadow entry 
