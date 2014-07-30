@@ -2807,8 +2807,8 @@ var Hiro = {
 		// Process changes sent from server
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
-			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, 
-				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj;
+			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, ack = (this.tags.indexOf(data.tag) > -1),
+				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -2875,8 +2875,6 @@ var Hiro = {
 							if (!(regex.test(ops[j].value))) {
 								// Patch values
 								this.diff.patch(ops[j].value,data.res.id);
-								// Set internal values
-								if (store.id != Hiro.canvas.currentnote) store._unseen = true;
 								// Add notification if we're not focused
 								if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);								
 								// Continue if we had no error
@@ -2885,6 +2883,41 @@ var Hiro = {
 								Hiro.sys.error('Received unknown note delta op',ops[j])
 							}							
 							break;	
+						// Set timestamp							
+						case 'note|set-ts':
+							// Reference for our own user 
+							me = Hiro.data.get('profile','c');
+
+							// If it was an ack for our user, do nothing
+							if (!(ack && ops[j].path.split(':')[1] == me.uid)) {
+								// Assign obj to peer
+								obj = Hiro.apps.sharing.getpeer( { user: {uid: ops[j].path.split(':')[1] }} );
+
+								// Update edit values
+								if (ops[j].value.edit) {
+									// Always update peer object value
+									obj.last_edit = ops[j].value.edit;
+
+									// Compare & set _lastedit & editor
+									if (note._lastedit < ops[j].value.edit) {
+										// Set edit & editor
+										note._lastedit = ops[j].value.edit;
+										note._lasteditor = obj.user.uid;
+										// If it was someone else, also set _unseen
+										if (obj.user.uid != me.uid && store.id != Hiro.canvas.currentnote) store._unseen = true;										
+									}
+
+									// If the devil was us, also reset _ownedit	
+									if (obj.user.uid == me.uid) note._ownedit = ops[j].value.edit;
+								}
+								
+								// Update seen	
+								if (ops[j].value.seen) obj.last_seen = ops[j].value.seen;
+							}
+							
+							// Always iterate & save
+							update = true;														
+							break;							
 						// Set proper id of a new note					
 						case 'folio|set-nid':
 							// Rename existing store, this also takes care of the as of now missing folio shadow entry 
@@ -2945,7 +2978,7 @@ var Hiro = {
 			if (!store.edits || store.edits.length == 0) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);							
 
 			// Find out if it's a response or server initiated
-			if (this.tags.indexOf(data.tag) > -1) {
+			if (ack) {
 				// Remove tag from list if it's a reply
 				this.tags.splice(this.tags.indexOf(data.tag),1);
 
