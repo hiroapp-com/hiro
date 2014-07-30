@@ -2914,7 +2914,7 @@ var Hiro = {
 								// Update seen	
 								if (ops[j].value.seen) obj.last_seen = ops[j].value.seen;
 							}
-							
+
 							// Always iterate & save
 							update = true;														
 							break;							
@@ -2934,7 +2934,20 @@ var Hiro = {
 							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);							
 							// Add notification if we're not focused
 							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(ops[j].value.nid);							
-							break;	
+							break;
+						// Change a user property
+						case 'profile|set-name':
+						case 'profile|set-email':
+						case 'profile|set-phone':	
+						case 'profile|set-tier':																	
+							// Get profile object
+							me = Hiro.data.get('profile');
+
+							// Set values
+							me.c[ops[j].op.split('-')[1]] = me.s[ops[j].op.split('-')[1]] = ops[j].value;
+							
+							update = true;
+							break; 									
 						// Remove a user from the contact list
 						case 'profile|rem-user':
 							// Build quick object
