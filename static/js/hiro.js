@@ -2922,16 +2922,16 @@ var Hiro = {
 									obj.last_edit = ops[j].value.edit;
 
 									// Compare & set _lastedit & editor
-									if (note._lastedit < ops[j].value.edit) {
+									if (store._lastedit < ops[j].value.edit) {
 										// Set edit & editor
-										note._lastedit = ops[j].value.edit;
-										note._lasteditor = obj.user.uid;
+										store._lastedit = ops[j].value.edit;
+										store._lasteditor = obj.user.uid;
 										// If it was someone else, also set _unseen
 										if (obj.user.uid != me.uid && store.id != Hiro.canvas.currentnote) store._unseen = true;										
 									}
 
 									// If the devil was us, also reset _ownedit	
-									if (obj.user.uid == me.uid) note._ownedit = ops[j].value.edit;
+									if (obj.user.uid == me.uid) store._ownedit = ops[j].value.edit;
 								}
 								
 								// Update seen	
