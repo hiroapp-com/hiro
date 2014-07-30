@@ -531,6 +531,9 @@ var Hiro = {
 					me.cursor_pos = note._cursor;
 				}
 
+				// Update sharing dialog if it's open
+				if (note.c.peers.length > 0 && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
+
 				// Set text & title
 				if (that.cache.content != note.c.text) Hiro.data.set(id,'c.text', ( that.cache.content || '') );
 				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));			
@@ -1813,7 +1816,7 @@ var Hiro = {
 				}
 
 				// Add seen flag to classname
-				if (us || (peer.last_seen && peer.last_seen > Hiro.data.get('note_' + Hiro.canvas.currentnote)._lastedit)) {	
+				if (us || (peer.last_seen && peer.last_seen >= Hiro.data.get('note_' + Hiro.canvas.currentnote,'_lastedit'))) {	
 					// Pimp title
 					if (tt) tt += ': ';
 					tt += (us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen) + ' ago';
@@ -2921,7 +2924,13 @@ var Hiro = {
 								}
 								
 								// Update seen	
-								if (ops[j].value.seen) obj.last_seen = ops[j].value.seen;
+								if (ops[j].value.seen) {
+									// Set value
+									obj.last_seen = ops[j].value.seen;
+
+									// Update sharing dialog if it's open
+									if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
+								}	
 							}
 
 							// Always iterate & save
@@ -2930,9 +2939,7 @@ var Hiro = {
 						// Update title if it's a title update					
 						case 'note|set-title':
 							// Set values
-							store.s.title = store.c.title = ops[j].value;	
-							// Set internal values
-							if (store.id != Hiro.canvas.currentnote) store._unseen = true;								
+							store.s.title = store.c.title = ops[j].value;								
 							// Add notification if we're not focused
 							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);
 							update = true;
