@@ -98,10 +98,10 @@ class User(object):
         setter = []
         args = []
         for k, v in kwds.iteritems():
-            setter.append(u'%s = ?'.format(k))
+            setter.append(u' = '.join((k, '?')))
             args.append(v)
         args.append(self.uid)
-        conn.execute("UPDATE users SET %s WHERE uid = ?".format(u' '.join(setter)), tuple(args)).fetchone()
+        conn.execute("UPDATE users SET {} WHERE uid = ?".format(u', '.join(setter)), tuple(args)).fetchone()
         return True
 
 
@@ -133,6 +133,8 @@ class User(object):
         cur = get_db().cursor()
         passwd = pbkdf2_sha512.encrypt(pwd) if pwd is not None else None
         cur.execute("UPDATE users SET tier = 1, email = ?, email_status = 'unverified', phone = ?, phone_status = 'unverified', password = ?, signup_at = datetime('now') WHERE uid = ?", (email, phone, passwd, self.uid))
+        self.email = email
+        self.phone = phone
         return True
 
     @staticmethod
@@ -208,7 +210,7 @@ class User(object):
         conn = get_db()
         row = conn.execute("SELECT stripe_customer_id FROM users WHERE uid = ?", (self.uid,)).fetchone()
         if not row:
-            raise Exception("cannot fetch stripe customer, uid (%s) does not exist".format(self.uid))
+            raise Exception("cannot fetch stripe customer, uid ({}) does not exist".format(self.uid))
         cust_id = row[0]
         stripe.api_key = STRIPE_SECRET_KEY
         if not cust_id:
@@ -231,7 +233,7 @@ class User(object):
         conn = get_db()
         row = conn.execute("SELECT plan FROM users WHERE uid = ?", (self.uid,)).fetchone()
         if not row:
-            return "User with uid `%s` not found".format(self.uid)
+            return "User with uid `{}` not found".format(self.uid)
         current_plan = row[0]
         if current_plan == new_plan:
             # makes no sense, dude
