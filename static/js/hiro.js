@@ -1771,7 +1771,7 @@ var Hiro = {
 					text = ( (user) ? user.email || user.phone :  peer.user.email || peer.user.phone || peer.user.us ) || 'Anonymous';
 
 					// Wrap it nicely if we have a name
-					if (user && user.name) text = user.name + '(' + text + ')';
+					if (user && user.name) text = user.name + ' (' + text + ')';
 
 				// Ourselves	
 				} else {
@@ -2747,7 +2747,7 @@ var Hiro = {
 					peer = cn.c.peers[i];
 
 					// Set latest editor if we have none yet or overwrite if more recent
-					if (!cn._lasteditor || cn._lastedit < peer.last_edit) {
+					if (peer.last_edit && (!cn._lasteditor || cn._lastedit < peer.last_edit)) {
 						cn._lasteditor = peer.user.uid;
 						cn._lastedit = peer.last_edit;
 					}
@@ -4264,8 +4264,8 @@ var Hiro = {
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
 
-			// Close apps we they should be open on small devices
-			if (Hiro.apps.open.length > 0 && Hiro.ui.mini()) Hiro.apps.close();			
+			// Close apps if they should be open
+			if (Hiro.apps.open.length > 0) Hiro.apps.close();			
 
 			// Easing function (quad), see 
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
