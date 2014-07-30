@@ -2916,8 +2916,8 @@ var Hiro = {
 								// Assign obj to peer
 								obj = Hiro.apps.sharing.getpeer( { user: {uid: ops[j].path.split(':')[1] }} );
 
-								// Update edit values
-								if (ops[j].value.edit) {
+								// Update edit values if we a know a per by that ID
+								if (obj && ops[j].value.edit) {
 									// Always update peer object value
 									obj.last_edit = ops[j].value.edit;
 
@@ -3623,7 +3623,7 @@ var Hiro = {
 						}});	
 
 						// Add cursor op 
-						if (peer.cursor_pos) delta.push({"op": "set-cursor", "path": "peers/uid:" + peer.user.uid, "value": peer.cursor_pos })
+						delta.push({"op": "set-cursor", "path": "peers/uid:" + peer.user.uid, "value": peer.cursor_pos || note._cursor || 0 })
 
 					} 
 				}
