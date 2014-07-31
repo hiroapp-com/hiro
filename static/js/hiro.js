@@ -849,6 +849,9 @@ var Hiro = {
 		// Internals
 		authinprogress: false,	
 
+		// Temporary storage
+		firstname: undefined,
+
 		// Grab registration form data, submit via XHR and process success / error
 		// The Login and Register screens and flows are pretty much the same, 
 		// we only have to decide which DOM branch we use in the first line
@@ -999,10 +1002,17 @@ var Hiro = {
 				},
 				// If the TODO was successfully completed
 				success: function(data) {
-					// Forward to handler
-					Hiro.user.logiocomplete(data,login);
-					// Allow next try	
-					Hiro.user.authinprogress = false;						
+					// Fetch first name
+					FB.api('/me', function(response) {
+						// Temporary save, to be picked up by create session by logio below
+			            if (response.first_name) Hiro.user.firstname = response.first_name;
+
+						// Forward to handler
+						Hiro.user.logiocomplete(data,login);
+
+						// Allow next try	
+						Hiro.user.authinprogress = false;			            
+			        });						
 				},
 				// If something hapenned along the way
 				error: function(reason,data) {
@@ -2727,6 +2737,9 @@ var Hiro = {
 			// Add data to profile object
 			cp.c = JSON.parse(user); 
 			cp.s = JSON.parse(user);
+
+			// See if facebook or someone else left a name for us
+			if (!cp.c.name && Hiro.user.firstname) cp.c.name = Hiro.user.firstname;
 
 			// Add contacts & session
 			cp.c.contacts = (cp.c.contacts) ? cp.c.contacts.concat(JSON.parse(peers)) : JSON.parse(peers);			
