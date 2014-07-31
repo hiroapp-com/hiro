@@ -629,7 +629,11 @@ var Hiro = {
 
 			// Fetch peer, check for abort & change timestamp
 			peer = Hiro.apps.sharing.getpeer({ user: { uid: uid} },noteid);
-			if (!peer) return;
+
+			// If we have no peer or user already has a seen timestamp that's more recent than the last edit
+			if (!peer || Hiro.data.get('note_' + noteid,'_lastedit') < peer.last_seen) return;
+
+			// Set new value
 			peer.last_seen = Hiro.util.now();		
 
 			// Briefly block statsy
@@ -2061,9 +2065,9 @@ var Hiro = {
 				// Remove landing page
 				Hiro.ui.el_landingpage.style.display = 'none';
 
-				// Load internal values
+				// Load internal values, make sure if token doesn't get lost if hashhandler was faster
 				this.unsynced = this.local.fromdisk('unsynced');			
-				Hiro.sync.tokens = this.local.fromdisk('tokens');
+				Hiro.sync.tokens = Hiro.sync.tokens.concat(this.local.fromdisk('tokens'));
 
 				// Load stores into memory
 				this.set('profile','',p,'l');
@@ -2570,6 +2574,8 @@ var Hiro = {
 				// Send	a waiting commit or a client ack	
 				if (!this.commit()) this.ping();	
 
+				// See if we got any tokens to consume
+				if (this.tokens.length > 0) this.consumetoken();				
 			// We have no session! 	
 			} else {
 	        	// Logging
@@ -2801,6 +2807,9 @@ var Hiro = {
 
 				// Log
 				Hiro.sys.log('Succesfully consumed token ' + data.token + ' on session create.')	
+
+				// See if we got any more tokens to consume
+				if (this.tokens.length > 0) this.consumetoken();				
 			}
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
@@ -3126,7 +3135,10 @@ var Hiro = {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (this.commitinprogress || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;					
+			if (this.commitinprogress || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;	
+
+			// See if we got any tokens to consume
+			if (this.tokens.length > 0) this.consumetoken();							
 
 			// Set commit to true and start building it
 			this.commitinprogress = true;
