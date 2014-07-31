@@ -2292,6 +2292,10 @@ var Hiro = {
 					if (note.text || note.title || note.peers.length > 0) continue;
 				}	
 
+				// Update state arrays
+				if (this.unsaved.indexOf('note_' + f[i].nid) > -1) this.unsaved.splice(this.unsaved.indexOf('note_' + f[i].nid),1);			
+				if (this.unsynced.indexOf('note_' + f[i].nid) > -1) this.unsynced.splice(this.unsynced.indexOf('note_' + f[i].nid),1);				
+
 				// Delete synced notes
 				this.destroy('note_' + f[i].nid);
 
@@ -2302,7 +2306,7 @@ var Hiro = {
 			// Remove contacts
 			for (i = c.length - 1; i >= 0; i--) {
 				// Do not cleanup unsynced contacts
-				if (c[i].user.uid) continue;
+				if (!c[i].user.uid) continue;
 
 				// Remove this entry from contacts
 				c.splice(i,1);
@@ -2310,7 +2314,8 @@ var Hiro = {
 		},
 
 		// Remove Note from memory & localstorage
-		destroy: function(id) {
+		destroy: function(id) {		
+			// Delete all values	
 			this.stores[id] = null;
 			delete this.stores[id];
 			this.local.wipe(id);
@@ -3121,7 +3126,7 @@ var Hiro = {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (this.commitinprogress || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;			
+			if (this.commitinprogress || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;					
 
 			// Set commit to true and start building it
 			this.commitinprogress = true;
@@ -3152,6 +3157,9 @@ var Hiro = {
 			} else {
 				// Release lock as no new commits were found
 				this.commitinprogress = false;
+
+				// Commit again right away if new stores are unsynced
+				if (Hiro.data.unsynced.length > 0) this.commit();
 
 				// Nothing committed
 				return false;
@@ -3564,8 +3572,8 @@ var Hiro = {
 					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);	
 
 				// Remove store from unsynced already at this point (as opposed to res_sync ack/incoming) if we have nothing to sync						
-				} else if (!store.edits || store.edits.length == 0) {				
-					Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);					
+				} else if (!store.edits || store.edits.length == 0) {			
+					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);					
 				}
 
 				// Return changes						
@@ -3621,7 +3629,13 @@ var Hiro = {
 				var i, l, p, h, delta = [], op, peer, cursor, ad;
 
 				// Do not diff notes that have no server ID yet
-				if (note.id.length < 5) return false;	
+				if (note.id.length < 5) {
+					// Make sure the folio gets diffed again next time if the note has content
+					if ((note.c.text || note.c.title || note.c.peers.length > 0) && Hiro.data.unsynced.indexOf('folio') == -1) Hiro.data.unsynced.push('folio');			
+
+					// Abort
+					return false;	
+				}	
 
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
