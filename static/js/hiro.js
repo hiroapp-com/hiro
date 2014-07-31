@@ -2068,16 +2068,16 @@ var Hiro = {
 		// Set up datastore on pageload
 		init: function() {
 			// Lookup most common store and all notes
-			var p = this.local.fromdisk('profile'), n = this.local.fromdisk('_allnotes');
+			var p = this.local.fromdisk('profile'), n = this.local.fromdisk('_allnotes'), t = this.local.fromdisk('tokens');
 
 			// If we do have data stored locally
 			if (p && n) {	
 				// Remove landing page
 				Hiro.ui.el_landingpage.style.display = 'none';
 
-				// Load internal values, make sure if token doesn't get lost if hashhandler was faster
+				// Load internal values, add tokens if stored offline
 				this.unsynced = this.local.fromdisk('unsynced');			
-				Hiro.sync.tokens = Hiro.sync.tokens.concat(this.local.fromdisk('tokens'));
+				if (t && t.length > 0 && t[0]) Hiro.sync.tokens =  Hiro.sync.tokens.concat(t);
 
 				// Load stores into memory
 				this.set('profile','',p,'l');
@@ -3206,15 +3206,18 @@ var Hiro = {
 
 		// Consume a provided token
 		consumetoken: function(token) {
+			// Token fallback
+			token = token || this.tokens[0];
+
 			var sid = Hiro.data.get('profile','c.sid'),
 				msg = {
 					name: 'token-consume',
-					token: token || this.tokens[0],
+					token: token,
 					sid: sid					
 				};
 
 			// Abort if there's absolutely no token or session
-			if (!sid || (!token && (!this.tokens || this.tokens.length == 0 ))) return;
+			if (!sid || !token) return;
 
 			// Save provided token if not done so
 			if (this.tokens.indexOf(token) == -1) {
