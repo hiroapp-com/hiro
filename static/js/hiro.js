@@ -2037,6 +2037,8 @@ var Hiro = {
 								Hiro.folio.paint();
 								// Rerender peers widget if operation concerns current peer
 								if (noteid == Hiro.canvas.currentnote) this.update();
+								// Set internal peerchange flag
+								Hiro.data.get('note_' + noteid)._peerchange = true;
 								// Save changes
 								Hiro.data.set('note_' + noteid,'c.peers',peers,source);
 								// Ack deletion
@@ -3737,6 +3739,15 @@ var Hiro = {
 								ad.changed[i].shadow.last_seen = ad.changed[i].client.last_seen;
 							}						
 						}
+					}
+
+					// Process removed peers
+					if (ad && ad.removed) {
+						// Process changes
+						for ( i = 0, l = ad.removed.length; i < l; i++) {
+							// Add op
+							delta.push({ "op": "rem-peer", "path": "peers/uid:" + ad.removed[i] });
+						}						
 					}
 					
 					// Reset flag
