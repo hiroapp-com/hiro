@@ -2279,12 +2279,18 @@ var Hiro = {
 
 		// Remove all synced data, this happens if we get new session data
 		cleanup: function() {
-			var i, l, f = this.get('folio','c'), c = this.get('profile','c.contacts');
+			var i, l, f = this.get('folio','c'), c = this.get('profile','c.contacts'), note;
 
 			// Iterate through all folio docs
 			for (i = f.length - 1; i >= 0; i--) {
-				// Do not cleanup unsynced notes
-				if (f[i].nid.length == 4) continue;
+				// Handle unsynced notes
+				if (f[i].nid.length == 4) {
+					// Fetch note
+					note = this.get('note_' + f[i].nid,'c');
+
+					// Keep notes that have distinctive values
+					if (note.text || note.title || note.peers.length > 0) continue;
+				}	
 
 				// Delete synced notes
 				this.destroy('note_' + f[i].nid);
