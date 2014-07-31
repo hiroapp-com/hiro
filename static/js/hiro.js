@@ -3570,7 +3570,7 @@ var Hiro = {
 			// Specific folio diff, returns proper changes format
 			// NOTE: This does not support deleted notes yet, switch to associative array lookup if we should start supporting that
 			difffolio: function(store) {
-				var i, l, delta;
+				var i, l, delta, note;
 
 				// Iterate through shadow
 				// We also do this to avoid sending newly created notes, which do not have a proper ID
@@ -3591,6 +3591,12 @@ var Hiro = {
 				if ( store.s.length != store.c.length ) {
 					for ( i = 0, l = store.c.length; i < l; i++) {
 						if (store.c[i].nid.length < 5) {
+							// Fetch respective note
+							note = Hiro.data.get('note_' + store.c[i].nid,'c');
+
+							// Do not diff notes that don't have any content yet
+							if (!note.text && !note.title && note.peers.length == 0) continue;
+
 							// Create delta array if not done so yet
 							if (!delta) delta = [];	
 													
