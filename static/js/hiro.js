@@ -2542,10 +2542,9 @@ var Hiro = {
 
 		// Timing stuff
 		lastsend: 0,
+		lastsync: 0,
+		committimeout: undefined,
 		latency: 100,
-
-		// Save tags
-		tags: [],
 
 		// Lock thats released by appcache noupdate event
 		cachelock: true,
@@ -2687,12 +2686,10 @@ var Hiro = {
 				this.lastsend = Hiro.util.now();	
 
 				// Enrich data object with sid (if we have one) & tag
-				if (!data[i].sid && sid) data[i].sid = sid;				
-				if (!data[i].tag) {
-					// Create tag and add it for later lookup
-					data[i].tag = Math.random().toString(36).substring(2,8);	
-					this.tags.push(data[i].tag);
-				}	
+				if (!data[i].sid && sid) data[i].sid = sid;		
+
+				// Add tag fallback		
+				if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);	
 			}
 
 			// Send to respective protocol handlers
@@ -3084,9 +3081,10 @@ var Hiro = {
 					// Set flag to save data
 					dosave = true;
 				}						
-			}				
+			}	
 
-			console.log('reponse sez',ack,store,data);			
+			// Set last sync timestamp
+			this.lastsync = Hiro.util.now();						
 
 			// Find out if it's a response or server initiated
 			if (ack) {
@@ -3095,9 +3093,6 @@ var Hiro = {
 
 				// Showit
 				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');					
-
-				// Release lock preventing push of new commits
-				this.commitinprogress = false;	
 
 				// See if we piled up any changes in the meantime and commit right away
 				if (Hiro.data.unsynced.length > 0) Hiro.sync.commit();
@@ -3176,6 +3171,8 @@ var Hiro = {
 		commit: function() {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
+			console.log('wowza',this.committimeout);
+
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
 			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;	
 
@@ -3211,14 +3208,42 @@ var Hiro = {
 				// Send off
 				this.tx(newcommit);
 
+				// Make sure to recommit / clear lost commit locks in 30 secs, clearing old timeout first
+				if (this.committimeout) window.clearTimeout(this.committimeout);
+
+				// Set new timeout
+				this.committimeout = window.setTimeout(function(){
+					// Commit
+					Hiro.sync.commit();
+				},30000);
+
 				// We did commit something!
 				return true;
 
 			} else {
+				// Clear locks if we had some and sync for the first time or got no response within 30 secs
+				if (Hiro.data.unsynced.length > 0 && (!this.lastsync || Hiro.util.now() - this.lastsync > 30000)) this.releaselocks();
 
 				// Nothing committed
 				return false;
 			}	
+		},
+
+		// Clear all commit locks
+		releaselocks: function() {
+			var u = Hiro.data.unsynced, i, l;
+
+			// Go through unsynced ressources
+			for (i = 0, l = u.length; i < l; i++ ) {
+				// Log
+				Hiro.sys.log('Removing outdated tag lock ' + Hiro.data.stores[u[i]]._tag + ' for ressource',u[i])
+
+				// Use shortcuts as all setting will be done by commit anyway
+				Hiro.data.stores[u[i]]._tag = undefined;
+			}
+
+			// Commit again
+			this.commit();
 		},
 
 		// Build a complete res-sync message for given store
