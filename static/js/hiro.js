@@ -1166,7 +1166,7 @@ var Hiro = {
 			},
 
 			// Remove a user form the contacts list
-			remove: function(obj,source) {
+			remove: function(obj,clearshadow) {
 				var contacts = Hiro.data.get('profile','c.contacts'), shadow = Hiro.data.get('profile','s.contacts'),
 					i, l, prop, type;
 
@@ -1174,9 +1174,9 @@ var Hiro = {
 				if (!contacts) return;	
 
 				// Remove from shadow if user obj has a uid
-				if (obj.uid) {
+				if (obj.uid && clearshadow) {
 					for ( i = 0, l = shadow.length; i < l; i++ ) {
-						if (shadow[i].uid && shadow[i].uid == obj.uid) {
+						if (shadow[i].uid == obj.uid) {
 							// Remove from array, this means it has to be in contacts as well so we save below
 							shadow.splice(i,1);
 							break;
@@ -2008,8 +2008,8 @@ var Hiro = {
 			},
 
 			// Remove peer from peers
-			removepeer: function(peer, noteid,source) {
-				var peers, i, l, p;
+			removepeer: function(peer,noteid,clearshadow) {
+				var peers, shadow, i, l, p;
 
 				// Default to current note
 				noteid = noteid || Hiro.canvas.currentnote;
@@ -2019,6 +2019,22 @@ var Hiro = {
 
 				// Abort if there are no peers
 				if (!peers || peers.length == 0) return false;
+
+				// If the command came from the server we remove the shadow entry first
+				if (peer.user.uid && clearshadow) {
+					// Grab shadow peers
+					shadow = Hiro.data.get('note_' + noteid,'s.peers');
+
+					// Iterate through shadow
+					for (i = 0, l = shadow.length; i < l; i++) {
+						// If we found it
+						if (shadow[i].user.uid == peer.user.uid) {
+							// Remove & end loop
+							shadow.splice(i,1);
+							break;
+						}
+					}
+				}				
 
 				// Iterate through peers
 				for (i = 0, l = peers.length; i < l; i++ ) {
@@ -2899,13 +2915,13 @@ var Hiro = {
 							Hiro.apps.sharing.addpeer(ops[j].value,store.id,'s');	
 							update = true;
 							break;	
-						// Add a peer to a note			
+						// Remove a peer from a note			
 						case 'note|rem-peer':
 							// Build peer object
 							obj = { user: {} };
 							obj.user[ops[j].path.split(':')[0].replace('peers/','')] = ops[j].path.split(':')[1];
 							// Send off for removal
-							Hiro.apps.sharing.removepeer(obj,store.id,'s');	
+							Hiro.apps.sharing.removepeer(obj,store.id,true);	
 							update = true;
 							break;
 						// Swap an existing peer for a new one or change it's role		
@@ -3026,7 +3042,7 @@ var Hiro = {
 							obj = {};
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Remove
-							Hiro.user.contacts.remove(obj,'s');
+							Hiro.user.contacts.remove(obj,true);
 							update = true;
 							break; 	
 						// Add a user to the contact list
@@ -3745,6 +3761,8 @@ var Hiro = {
 						for ( i = 0, l = ad.removed.length; i < l; i++) {
 							// Add op
 							delta.push({ "op": "rem-peer", "path": "peers/uid:" + ad.removed[i] });
+							// Remove peer from shadow
+							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, true);							
 						}						
 					}
 					
