@@ -2873,14 +2873,22 @@ var Hiro = {
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
 			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, 
-				store = Hiro.data.get(id), ack = (store._tag === data.tag),
-				dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;
+				store = Hiro.data.get(id), ack,
+				dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;	
 
-			// See if we have a proper response we're waiting for or abort otherwise
-			if (store._tag && !ack) {
+			// Set ack
+			if (store) ack = (data.tag == store._tag);
+
+			// Log edge cases
+ 			if (!store) {
+				// Couldn't get local data
+				Hiro.sys.log("Server sent a res-sync for a resource we don't know",data);
+				return;				
+			} else if (store._tag && !ack) {
+				// See if we have a proper response we're waiting for or abort otherwise
 				Hiro.sys.log('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data);
 				return;
-			}
+			} else		
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -3170,8 +3178,6 @@ var Hiro = {
 		// Create messages representing all changes between local model and shadow
 		commit: function() {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
-
-			console.log('wowza',this.committimeout);
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
 			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;	
@@ -3630,8 +3636,6 @@ var Hiro = {
 				// Define vars
 				var d, changes, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
 
-				console.log('Makin diff',store,store.kind);
-
 				// Get delta from respective diffing function (functions also set shadows to current versions)
 				switch (store.kind) {
 					case 'note':
@@ -3834,8 +3838,6 @@ var Hiro = {
 					// Copy value
 					store.s.name = store.c.name;			
 				}
-
-				console.log('hashing...',h,store._contacthash);
 
 				// Check if contacts hash changed
 				if (h != store._contacthash) {
