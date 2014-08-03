@@ -1158,15 +1158,12 @@ var Hiro = {
 				// Add copy to shadow if server created it
 				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
 
-				// Update lookup
-				this.update();
-
 				// Save data
 				Hiro.data.set('profile','c.contacts',contacts,source);
 			},
 
 			// Remove a user form the contacts list
-			remove: function(obj,clearshadow) {
+			remove: function(obj,source,clearshadow) {
 				var contacts = Hiro.data.get('profile','c.contacts'), shadow = Hiro.data.get('profile','s.contacts'),
 					i, l, prop, type;
 
@@ -2189,7 +2186,7 @@ var Hiro = {
 			// Call respective post set handler
 			if (store.substring(0,5) == 'note_' || this.onlinestores.indexOf(store) > -1) {
 				// Mark store for syncing if the changes came from the client
-				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);								
+				if (source == 'c' && this.unsynced.indexOf(store) < 0) this.unsynced.push(store);
 
 				// Call handler, if available
 				if (this.stores[store] && this.post[this.stores[store].kind]) this.post[this.stores[store].kind](store,key,value,source,paint);
@@ -3042,7 +3039,7 @@ var Hiro = {
 							obj = {};
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Remove
-							Hiro.user.contacts.remove(obj,true);
+							Hiro.user.contacts.remove(obj,'s',true);
 							update = true;
 							break; 	
 						// Add a user to the contact list
@@ -3073,10 +3070,7 @@ var Hiro = {
 					// Set flag to save data
 					dosave = true;
 				}						
-			}
-
-			// Remove store from unsynced list if we have no more edits
-			if (!store.edits || store.edits.length == 0) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(store),1);							
+			}							
 
 			// Find out if it's a response or server initiated
 			if (ack) {
@@ -3088,6 +3082,9 @@ var Hiro = {
 
 				// Release lock preventing push of new commits
 				this.commitinprogress = false;	
+
+				// See if we piled up any changes in the meantime and commit right away
+				if (Hiro.data.unsynced.length > 0) Hiro.sync.commit();
 			// Respond if it was server initiated
 			} else {
 				// Send any edits as response if there are any waitingwaitingwaiting
@@ -3173,10 +3170,14 @@ var Hiro = {
 			this.commitinprogress = true;
 			newcommit = [];
 
+			console.log('Have to diff',JSON.stringify(u));
+
 			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
 			for (i = u.length - 1; i > -1; i--) {
 				var s = Hiro.data.get(u[i]),
 					d = this.diff.makediff(s);	
+
+				console.log('Cycling',JSON.stringify(d),i);					
 
 				// If diff told us that there are old or new edits					
 				if (d) newcommit.push(this.wrapmsg(s));
@@ -3583,10 +3584,12 @@ var Hiro = {
 			makediff: function(store) {
 				// Don't run if we already have edits for this store
 				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
-				if (store.edits && store.edits.length > 1) return true;			
+				if (store.edits && store.edits.length > 1) return true;		
 
 				// Define vars
 				var d, changes, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
+
+				console.log('Makin diff',store,store.kind);
 
 				// Get delta from respective diffing function (functions also set shadows to current versions)
 				switch (store.kind) {
@@ -3790,6 +3793,8 @@ var Hiro = {
 					// Copy value
 					store.s.name = store.c.name;			
 				}
+
+				console.log('hashing...',h,store._contacthash);
 
 				// Check if contacts hash changed
 				if (h != store._contacthash) {
