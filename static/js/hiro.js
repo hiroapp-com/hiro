@@ -2031,8 +2031,6 @@ var Hiro = {
 							if (peer.user[p] == peers[i].user[p]) {
 								// Splice peer from array
 								peers.splice(i,1);
-								// Save peers
-								Hiro.data.set('note_' + noteid,'c.peers',peers);
 								// Paint folio to update counters
 								Hiro.folio.paint();
 								// Rerender peers widget if operation concerns current peer
@@ -2920,12 +2918,12 @@ var Hiro = {
 							// Set cursor
 							if (ops[j].op == 'set-cursor') {
 								// Set peer obj value
-								Hiro.apps.sharing.getpeer(obj).cursor_pos = ops[j].value;
+								Hiro.apps.sharing.getpeer(obj,store.id).cursor_pos = ops[j].value;
 								// Also set shortcut value if it's us
 								if (ops[j].path.split(':')[1] == Hiro.data.get('profile','c.uid')) store._cursor = ops[j].value;
 							// Set other values (hackish shortcut depending on ops name not changing)
 							} else {
-								Hiro.apps.sharing.getpeer(obj)[ops[j].op.split('-')[1]] = ops[j].value;	
+								Hiro.apps.sharing.getpeer(obj,store.id)[ops[j].op.split('-')[1]] = ops[j].value;	
 							}
 							// Add new user
 							update = true;
@@ -2938,7 +2936,7 @@ var Hiro = {
 							// If it was an ack for our user, do nothing
 							if (!(ack && ops[j].path.split(':')[1] == me.uid)) {
 								// Assign obj to peer
-								obj = Hiro.apps.sharing.getpeer( { user: {uid: ops[j].path.split(':')[1] }} );
+								obj = Hiro.apps.sharing.getpeer( { user: {uid: ops[j].path.split(':')[1] }}, store.id );
 
 								// Update edit values if we a know a per by that ID
 								if (obj && ops[j].value.edit) {
@@ -2951,7 +2949,11 @@ var Hiro = {
 										store._lastedit = ops[j].value.edit;
 										store._lasteditor = obj.user.uid;
 										// If it was someone else, also set _unseen
-										if (obj.user.uid != me.uid && store.id != Hiro.canvas.currentnote) store._unseen = true;										
+										if (obj.user.uid != me.uid && store.id != Hiro.canvas.currentnote) {
+											store._unseen = true;	
+											// Add notification if we're not focused
+											if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store.id);	
+										}																				
 									}
 
 									// If the devil was us, also reset _ownedit	
@@ -2975,17 +2977,13 @@ var Hiro = {
 						case 'note|set-title':
 							// Set values
 							store.s.title = store.c.title = ops[j].value;								
-							// Add notification if we're not focused
-							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);
 							update = true;
 							break;
 						// Update text if it's a text update							
 						case 'note|delta-text':
 							if (!(regex.test(ops[j].value))) {
 								// Patch values
-								this.diff.patch(ops[j].value,data.res.id);
-								// Add notification if we're not focused
-								if (!Hiro.ui.focus) Hiro.ui.tabby.notify(data.res.id);								
+								this.diff.patch(ops[j].value,data.res.id);							
 								// Continue if we had no error
 								update = true;	
 							} else {
