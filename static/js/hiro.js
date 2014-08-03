@@ -2273,7 +2273,15 @@ var Hiro = {
 			// In case of being a note, we also reset the folio and currentnote pointers to it
 			if (oldid.substring(0,5) == 'note_') {
 				// Update the client side of things
-				if (Hiro.folio.lookup[oldid.substring(5)]) Hiro.folio.lookup[oldid.substring(5)].nid = newid.substring(5);	
+				if (Hiro.folio.lookup[oldid.substring(5)]) {
+					// Nid in lookup object
+					Hiro.folio.lookup[oldid.substring(5)].nid = newid.substring(5);	
+
+					// Lookup object itself
+					Hiro.folio.lookup[oldid.substring(5)] = Hiro.folio.lookup[newid.substring(5)];
+					delete Hiro.folio.lookup[oldid.substring(5)];
+				}	
+
 				// Update the server side of things, removal first (we do splice and seperate push because the entry might not exist yet)
 				fs = this.get('folio','s');
 				for ( i = 0, l = fs.length; i < l ; i++ ) {
@@ -2536,8 +2544,7 @@ var Hiro = {
 		lastsend: 0,
 		latency: 100,
 
-		// Prevent two commits being in progress
-		commitinprogress: false,
+		// Save tags
 		tags: [],
 
 		// Lock thats released by appcache noupdate event
@@ -2868,8 +2875,15 @@ var Hiro = {
 		// Process changes sent from server
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
-			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, ack = (this.tags.indexOf(data.tag) > -1),
-				store = Hiro.data.get(id), dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;
+			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, 
+				store = Hiro.data.get(id), ack = (store._tag === data.tag),
+				dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;
+
+			// See if we have a proper response we're waiting for or abort otherwise
+			if (store._tag && !ack) {
+				Hiro.sys.log('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data);
+				return;
+			}
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -3070,12 +3084,14 @@ var Hiro = {
 					// Set flag to save data
 					dosave = true;
 				}						
-			}							
+			}				
+
+			console.log('reponse sez',ack,store,data);			
 
 			// Find out if it's a response or server initiated
 			if (ack) {
-				// Remove tag from list if it's a reply
-				this.tags.splice(this.tags.indexOf(data.tag),1);
+				// Remove tag
+				store._tag = undefined;
 
 				// Showit
 				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');					
@@ -3161,30 +3177,31 @@ var Hiro = {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (this.commitinprogress || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;	
+			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;	
 
 			// See if we got any tokens to consume
 			if (this.tokens.length > 0) this.consumetoken();							
 
-			// Set commit to true and start building it
-			this.commitinprogress = true;
+			// Start building commit
 			newcommit = [];
-
-			console.log('Have to diff',JSON.stringify(u));
 
 			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
 			for (i = u.length - 1; i > -1; i--) {
-				var s = Hiro.data.get(u[i]),
-					d = this.diff.makediff(s);	
+				// Get store
+				s = Hiro.data.get(u[i]);			
 
-				console.log('Cycling',JSON.stringify(d),i);					
+				// If the store is waiting for a server tag ack, stop here
+				if (s._tag) continue; 
 
-				// If diff told us that there are old or new edits					
+				// Make the diff
+				d = this.diff.makediff(s);					
+
+				// If we have a diff, add it to the note				
 				if (d) newcommit.push(this.wrapmsg(s));
 			}
 
 			// If we have any data in this commit, send it to the server now
-			if (newcommit && newcommit.length > 0) {
+			if (newcommit.length > 0) {
 				// Showit
 				if (Hiro.data.get('profile','c.tier')) Hiro.ui.statsy.add('sns',0,'Syncing...');
 
@@ -3196,12 +3213,8 @@ var Hiro = {
 
 				// We did commit something!
 				return true;
-			} else {
-				// Release lock as no new commits were found
-				this.commitinprogress = false;
 
-				// Commit again right away if new stores are unsynced
-				if (Hiro.data.unsynced.length > 0) this.commit();
+			} else {
 
 				// Nothing committed
 				return false;
@@ -3215,7 +3228,10 @@ var Hiro = {
 			r.name = 'res-sync';
 			r.res = { kind : store.kind , id : store.id };
 			r.changes = store.edits || [{ clock: { cv: store.cv, sv: store.sv }, delta: []}];
-			r.sid = Hiro.data.get('profile','c.sid');	
+			r.sid = Hiro.data.get('profile','c.sid');
+
+			// Attach a tag to msg and store
+			store._tag = r.tag = Math.random().toString(36).substring(2,8);	
 
 			// Return r
 			return r;	
@@ -3584,7 +3600,7 @@ var Hiro = {
 			makediff: function(store) {
 				// Don't run if we already have edits for this store
 				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
-				if (store.edits && store.edits.length > 1) return true;		
+				if (store.edits && store.edits.length > 0) return true;		
 
 				// Define vars
 				var d, changes, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
