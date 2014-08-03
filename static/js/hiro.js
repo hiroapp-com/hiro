@@ -2005,7 +2005,7 @@ var Hiro = {
 			},
 
 			// Remove peer from peers
-			removepeer: function(peer,noteid,clearshadow) {
+			removepeer: function(peer,noteid,source,clearshadow) {
 				var peers, shadow, i, l, p;
 
 				// Default to current note
@@ -2888,7 +2888,7 @@ var Hiro = {
 				// See if we have a proper response we're waiting for or abort otherwise
 				Hiro.sys.log('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data);
 				return;
-			} else		
+			}		
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
@@ -2937,7 +2937,7 @@ var Hiro = {
 							obj = { user: {} };
 							obj.user[ops[j].path.split(':')[0].replace('peers/','')] = ops[j].path.split(':')[1];
 							// Send off for removal
-							Hiro.apps.sharing.removepeer(obj,store.id,true);	
+							Hiro.apps.sharing.removepeer(obj,store.id,'s',true);	
 							update = true;
 							break;
 						// Swap an existing peer for a new one or change it's role		
@@ -3193,8 +3193,8 @@ var Hiro = {
 				// Get store
 				s = Hiro.data.get(u[i]);			
 
-				// If the store is waiting for a server tag ack, stop here
-				if (s._tag) continue; 
+				// If we got no store or the store is waiting for a server tag ack, stop here
+				if (!s || s._tag) continue; 
 
 				// Make the diff
 				d = this.diff.makediff(s);					
@@ -3810,7 +3810,7 @@ var Hiro = {
 							// Add op
 							delta.push({ "op": "rem-peer", "path": "peers/uid:" + ad.removed[i] });
 							// Remove peer from shadow
-							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, true);							
+							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, 'c', true);							
 						}						
 					}
 					
