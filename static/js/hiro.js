@@ -1223,9 +1223,16 @@ var Hiro = {
 					for (p in contacts[i]) {
 						if (contacts[i].hasOwnProperty(p)) {
 							// Ignore all properties except those
-							if (p != 'uid' && p != 'email' && p != 'phone') continue;							
+							if (p != 'uid' && p != 'email' && p != 'phone') continue;		
+
 							// Compare the unique contacts[i] properties with the one of our provided user and reset values
 							if (contact[p] == contacts[i][p]) contacts[i] = newvalue;
+
+							// Update lookup
+							this.update();
+
+							// Skip rest of loop
+							return true;
 						}
 					}
 				}
@@ -3098,7 +3105,8 @@ var Hiro = {
 							obj = {};
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Set new value
-							Hiro.user.contacts.swap(obj,ops[j].value)														
+							Hiro.user.contacts.swap(obj,ops[j].value);
+							update = true;														
 							break;	
 						// Add a user to the contact list
 						case 'profile|add-user':
