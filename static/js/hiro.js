@@ -1155,6 +1155,9 @@ var Hiro = {
 				// Add contact to array
 				contacts.push(obj);
 
+				// Update lookup
+				this.update();
+
 				// Add copy to shadow if server created it
 				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
 
@@ -1202,6 +1205,33 @@ var Hiro = {
 						}
 					}
 				}											
+			},
+
+			// Retrieve a specific contact, expects { property: value } format, and sets it'S contents to new value
+			swap: function(contact,newvalue) {
+				var contacts, i, l, p;
+
+				// Get peers array
+				contacts = Hiro.data.get('profile','c.contacts');
+
+				// Abort if there are no contacts
+				if (!contacts) return false;
+
+				// Iterate through contacts
+				for (i = 0, l = contacts.length; i < l; i++ ) {
+					// Go through all properties of the user object
+					for (p in contacts[i]) {
+						if (contacts[i].hasOwnProperty(p)) {
+							// Ignore all properties except those
+							if (p != 'uid' && p != 'email' && p != 'phone') continue;							
+							// Compare the unique contacts[i] properties with the one of our provided user and reset values
+							if (contact[p] == contacts[i][p]) contacts[i] = newvalue;
+						}
+					}
+				}
+
+				// No peers found & changed above
+				return false;
 			}
 		},
 
@@ -3062,6 +3092,14 @@ var Hiro = {
 							Hiro.user.contacts.remove(obj,'s',true);
 							update = true;
 							break; 	
+						// Grab user and give it new properties
+						case 'profile|swap-user':
+							// Build object
+							obj = {};
+							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
+							// Set new value
+							Hiro.user.contacts.swap(obj,ops[j].value)														
+							break;	
 						// Add a user to the contact list
 						case 'profile|add-user':
 							// Add straight to contacts
