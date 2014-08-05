@@ -2882,7 +2882,7 @@ var Hiro = {
 			// Log edge cases
  			if (!store) {
 				// Couldn't get local data
-				Hiro.sys.log("Server sent a res-sync for a resource we don't know",data);
+				Hiro.sys.log("Server sent a res-sync for a resource (" + id + ") we don't know",data);
 				return;				
 			} else if (store._tag && !ack) {
 				// See if we have a proper response we're waiting for or abort otherwise
@@ -3025,7 +3025,8 @@ var Hiro = {
 						// Set proper id of a new note					
 						case 'folio|set-nid':
 							// Rename existing store, this also takes care of the as of now missing folio shadow entry 
-							Hiro.data.rename('note_' + ops[j].path.split(':')[1],'note_' + ops[j].value);												
+							Hiro.data.rename('note_' + ops[j].path.split(':')[1],'note_' + ops[j].value);	
+							update = true;																			
 							break;
 						// Set changed folio status							
 						case 'folio|set-status':
