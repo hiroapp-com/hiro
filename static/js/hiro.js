@@ -3793,12 +3793,8 @@ var Hiro = {
 					// Retrieve peer
 					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
 
-					// Add timestamps if we already have a proper syncable peer object of ourselves
+					// Add cursor if we already have a proper syncable peer object of ourselves
 					if (peer) {
-						delta.push({op: "set-ts", path: "peers/uid:" + peer.user.uid, value: { 
-							seen: peer.last_seen || note._ownedit || Hiro.util.now()
-						}});	
-
 						// Add cursor op 
 						delta.push({op: "set-cursor", path: "peers/uid:" + peer.user.uid, value: peer.cursor_pos || note._cursor || 0 })
 
