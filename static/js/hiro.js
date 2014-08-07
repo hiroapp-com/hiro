@@ -2826,8 +2826,6 @@ var Hiro = {
 
 				// Set custom internal values
 				cn._token = sn.val.sharing_token;	
-				cn._owner = sn.val.created_by.uid;
-				cn._created = sn.val.created_at;
 
 				// Loop through peers	
 				// NOTE: We can't work with simple references and keep all data in the respective peer elements
