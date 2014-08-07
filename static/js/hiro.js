@@ -2955,8 +2955,7 @@ var Hiro = {
 				for (j = 0, jl = ops.length; j < jl; j++) {
 					// Process ops according to ressource kind and op
 					switch (data.res.kind  + '|' + ops[j].op) {	
-						// Store token with the document
-						// TODO Bruno: Find out what's that used for exactly					
+						// Store token with the document				
 						case 'note|set-token':
 							// Set values
 							store._token = ops[j].value;		
@@ -2994,6 +2993,8 @@ var Hiro = {
 							} else {
 								Hiro.apps.sharing.getpeer(obj,store.id)[ops[j].op.split('-')[1]] = ops[j].value;	
 							}
+							// Update sharing dialog if it's open
+							if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
 							// Add new user
 							update = true;
 							break;	
@@ -3074,8 +3075,7 @@ var Hiro = {
 						case 'folio|add-noteref':
 							// Trigger newnote with know parameters
 							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);							
-							// Add notification if we're not focused
-							if (!Hiro.ui.focus) Hiro.ui.tabby.notify(ops[j].value.nid);							
+							update = true;							
 							break;
 						// Change a user property
 						case 'profile|set-name':
@@ -3084,10 +3084,8 @@ var Hiro = {
 						case 'profile|set-tier':																	
 							// Get profile object
 							me = Hiro.data.get('profile');
-
 							// Set values
-							me.c[ops[j].op.split('-')[1]] = me.s[ops[j].op.split('-')[1]] = ops[j].value;
-							
+							me.c[ops[j].op.split('-')[1]] = me.s[ops[j].op.split('-')[1]] = ops[j].value;						
 							update = true;
 							break; 									
 						// Remove a user from the contact list
@@ -3734,7 +3732,7 @@ var Hiro = {
 						// Create delta array if not done so yet
 						if (!delta) delta = [];
 						// Add change to delta array
-						delta.push({ "op": "set-status", "path": "nid:" + store.s[i].nid, "value": Hiro.folio.lookup[store.s[i].nid].status });
+						delta.push({ op: "set-status", path: "nid:" + store.s[i].nid, value: Hiro.folio.lookup[store.s[i].nid].status });
 						// Set shadow to client version
 						store.s[i].status = Hiro.folio.lookup[store.s[i].nid].status;
 					}					
@@ -3754,7 +3752,7 @@ var Hiro = {
 							if (!delta) delta = [];	
 													
 							// Add appropriate op msg
-							delta.push({"op":"add-noteref", "path": "", "value": {"nid": store.c[i].nid, "status": store.c[i].status}})
+							delta.push({ op: "add-noteref", path: "", value: {nid: store.c[i].nid, status: store.c[i].status}})
 						}
 					}
 				}
@@ -3779,7 +3777,7 @@ var Hiro = {
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
 					// Fill with dmp delta
-					delta.push({"op": "delta-text", "path": "", "value": this.delta(note.s.text,note.c.text)});
+					delta.push({op: "delta-text", path: "", value: this.delta(note.s.text,note.c.text)});
 					// Synchronize c/s text
 					note.s.text = note.c.text;
 				}
@@ -3787,7 +3785,7 @@ var Hiro = {
 				// Check title	
 				if (note.c.title != note.s.title) {
 					// Add title op
-					delta.push({"op": "set-title", "path": "", "value": note.c.title });
+					delta.push({op: "set-title", path: "", value: note.c.title });
 					// Copy c to s					
 					note.s.title = note.c.title;
 				}	
@@ -3799,12 +3797,12 @@ var Hiro = {
 
 					// Add timestamps if we already have a proper syncable peer object of ourselves
 					if (peer) {
-						delta.push({"op": "set-ts", "path": "peers/uid:" + peer.user.uid, "value": { 
-							"seen": peer.last_seen || note._ownedit || Hiro.util.now()
+						delta.push({op: "set-ts", path: "peers/uid:" + peer.user.uid, value: { 
+							seen: peer.last_seen || note._ownedit || Hiro.util.now()
 						}});	
 
 						// Add cursor op 
-						delta.push({"op": "set-cursor", "path": "peers/uid:" + peer.user.uid, "value": peer.cursor_pos || note._cursor || 0 })
+						delta.push({op: "set-cursor", path: "peers/uid:" + peer.user.uid, value: peer.cursor_pos || note._cursor || 0 })
 
 					} 
 				}
@@ -3820,7 +3818,7 @@ var Hiro = {
 							// Grab the first prop
 							if (note.c.peers[i].user.hasOwnProperty(p)) {
 								// Prepare op object
-								op = {"op": "invite", "path": "peers/", "value": {}};
+								op = {op: "invite", path: "peers/", value: {}};
 								// Add property / value
 								op.value[p] = note.c.peers[i].user[p];
 								// Add to changes
@@ -3841,8 +3839,8 @@ var Hiro = {
 							// Compare seen timestamps
 							if (ad.changed[i].client.last_seen != ad.changed[i].shadow.last_seen) {
 								// Add op
-								delta.push({"op": "set-ts", "path": "peers/uid:" + ad.changed[i].client.user.uid, "value": { 
-									"seen": ad.changed[i].client.last_seen 
+								delta.push({op: "set-ts", path: "peers/uid:" + ad.changed[i].client.user.uid, value: { 
+									seen: ad.changed[i].client.last_seen 
 								}});
 								// Equalize value
 								ad.changed[i].shadow.last_seen = ad.changed[i].client.last_seen;
@@ -3855,7 +3853,7 @@ var Hiro = {
 						// Process changes
 						for ( i = 0, l = ad.removed.length; i < l; i++) {
 							// Add op
-							delta.push({ "op": "rem-peer", "path": "peers/uid:" + ad.removed[i] });
+							delta.push({ op: "rem-peer", path: "peers/uid:" + ad.removed[i] });
 							// Remove peer from shadow
 							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, 'c', true);							
 						}						
@@ -3881,7 +3879,7 @@ var Hiro = {
 					// First if, create delta 
 					delta = [];
 					// Add op
-					delta.push({ "op": "set-name", "path": "user/uid:" + store.c.uid, "value": store.c.name });
+					delta.push({ op: "set-name", path: "user/uid:" + store.c.uid, value: store.c.name });
 					// Copy value
 					store.s.name = store.c.name;			
 				}
