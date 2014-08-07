@@ -2798,7 +2798,7 @@ var Hiro = {
 			// Add contacts & session
 			cp.c.contacts = (cp.c.contacts) ? cp.c.contacts.concat(JSON.parse(peers)) : JSON.parse(peers);			
 			cp.s.contacts = JSON.parse(peers);
-			cp.c.sid = cp.s.sid = data.sid;	
+			cp.c.sid = cp.s.sid = data.session.sid;	
 
 			// Save profile, overwriting existing data
 			Hiro.data.set('profile','',cp,'s');			
