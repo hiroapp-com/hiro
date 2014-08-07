@@ -10,8 +10,23 @@ import stripe
 from settings import STRIPE_SECRET_KEY
 from hiro import get_db
 from passlib.hash import pbkdf2_sha512
+from jsonclient import JSONClient
 
+
+COMM_ADDR = ("127.0.0.1", "7777")
+
+comm_client = JSONClient(COMM_ADDR)
 gen_uid = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 8))
+
+def send_email(kind, to_name, to_email, data):
+    print "sending email", kind, to_name, to_email, data
+    comm_client.call("WrapRPC.Send", 2, {"kind": kind,
+                                         "rcpt": {"name": to_name,
+                                             "addr": to_email,
+                                             "kind": "email"
+                                             },
+                                         "data": data
+                                         })
 
 def gen_token():
     token = uuid.uuid4().hex
@@ -25,28 +40,34 @@ class User(object):
              }
     PAID_PLANS = ('starter', 'pro')
 
-    def __init__(self, uid=None, name='', tier=None, email='', phone='', fb_uid=''):
+    def __init__(self, uid=None, name='', tier=None, email='', phone='', fb_uid='', pwd=''):
         self.uid = uid
         self.tier = tier
         self.email = email
         self.phone = phone
+        self.email_status = ''
+        self.phone_status = ''
         self.fb_uid = fb_uid
+        self.pwd = pwd
 
     @classmethod
     def create(cls, name='', email='', phone='', fb_uid='', pwd=None):
         conn = get_db()
         uid = gen_uid()
         passwd = pbkdf2_sha512.encrypt(pwd) if pwd is not None else None
+        user = None
         with conn:
-            row = conn.execute("""SELECT 1, uid 
+            row = conn.execute("""SELECT uid, name, email, phone, fb_uid
                                 FROM users 
                                 WHERE (email = ? AND email <> '' AND email_status IN ('unverified', 'verified'))
                                     OR (phone = ? AND phone <> '' AND phone_status IN ('unverified', 'verified'))
                                     OR (fb_uid <> '' AND fb_uid = ?)
                                """, (email, phone, fb_uid)).fetchone()
-            print "ROW", row, email, phone, fb_uid
             if row:
                 return None
+            user = User(uid=uid, name=name, email=email, phone=phone, fb_uid=fb_uid, pwd=pwd)
+            user.email_status = 'unverified' if email else ''
+            user.phone_status = 'unverified' if phone else ''
             conn.execute("""INSERT INTO users 
                             (uid
                             , name
@@ -65,31 +86,37 @@ class User(object):
                                   , ?
                                   , ?
                                   , 1
-                                  , 'unverified'
-                                  , 'unverified'
+                                  , ?
+                                  , ?
                                   , ?
                                   , datetime('now')
                                   , datetime('now')
                                   , ?
-                                  )""", (uid, name, email, phone, fb_uid, passwd))
+                                  )""", (uid, name, email, phone, user.email_status, user.phone_status, fb_uid,  passwd))
         conn.commit()
-        return User(uid=uid, name=name, email=email, phone=phone, fb_uid=fb_uid)
+        return user
 
     @classmethod
-    def find_by_fb(cls, fb_uid):
+    def find_by(cls, email="", phone="", fb_uid="", verified_only=False):
         conn = get_db()
-        row = conn.execute("SELECT uid FROM users WHERE fb_uid = ?", (fb_uid,)).fetchone()
-        if not row:
-            return None
-        return User(uid=row[0])
-
-    @classmethod
-    def find_by_email(cls, email):
-        conn = get_db()
-        row = conn.execute("SELECT uid FROM users WHERE email = ? AND email_status = 'verified'", (email,)).fetchone()
-        if not row:
-            return None
-        return User(uid=row[0])
+        rows = conn.execute("""SELECT uid
+                                    , email
+                                    , email_status
+                                    , phone
+                                    , phone_status
+                                    , fb_uid
+                                    , password 
+                                FROM users 
+                                WHERE (email = ? and email_status IN ('verified', 'unverified')) 
+                                   OR (phone = ? and phone_status IN ('verified', 'unverified')) 
+                                   OR (fb_uid = ? AND fb_uid <> '')""", (email, phone, fb_uid))
+        result = list()
+        for row in rows.fetchall():
+            u = User(uid=row[0], email=row[1], phone=row[3], fb_uid=row[5], pwd=row[6])
+            u.email_status = row[2]
+            u.phone_status = row[4]
+            result.append(u)
+        return result
 
     def update(self, **kwds):
         if not kwds:
@@ -112,30 +139,41 @@ class User(object):
         # TODO make sure this behaves nicely
         return bool(conn.execute("DELETE FROM users WHERE uid = ? AND tier < 0", (self.uid, )).rowcount)
 
-    def pwlogin(self, pwd):
-        conn = get_db()
-        rows = []
-        if self.email:
-            rows = conn.execute("SELECT uid, password FROM users WHERE email = ?", (self.email, ))
-        elif self.phone:
-            rows = conn.execute("SELECT uid, password FROM users WHERE phone = ?", (self.phone, ))
-        for row in rows.fetchall():
-            if not row[0] or not row[1]:
-                continue
-            if pbkdf2_sha512.verify(pwd, row[1]):
-                self.uid = row[0]
-                return True
-        return False
+    def check_pwd(self, pwd):
+        if not self.pwd:
+            return False
+        return pbkdf2_sha512.verify(pwd, self.pwd)
 
     def signup(self, email, phone, pwd):
         if not self.uid:
             return False
         cur = get_db().cursor()
         passwd = pbkdf2_sha512.encrypt(pwd) if pwd is not None else None
-        cur.execute("UPDATE users SET tier = 1, email = ?, email_status = 'unverified', phone = ?, phone_status = 'unverified', password = ?, signup_at = datetime('now') WHERE uid = ?", (email, phone, passwd, self.uid))
-        self.email = email
-        self.phone = phone
-        return True
+        self.pwd = passwd
+        if email:
+            ok = bool(cur.execute("UPDATE users SET tier = 1, email = ?, email_status = 'unverified', password = ?, signup_at = datetime('now') WHERE uid = ? AND (SELECT count(uid) FROM users WHERE email = ? AND email_status <> 'invited') = 0", (email, passwd, self.uid, email)).rowcount)
+            if ok:
+                self.email = email
+                self.email_status = 'unverified'
+        elif phone:
+            ok = bool(cur.execute("UPDATE users SET tier = 1, phone = ?, phone_status = 'unverified', password = ?, signup_at = datetime('now') WHERE uid = ? AND (SELECT count(uid) FROM users WHERE phone = ? AND phone_status <> 'invited') = 0", (phone, passwd, self.uid, phone)).rowcount)
+            if ok:
+                self.phone = phone
+                self.phone_status = 'unverified'
+        return ok
+
+    def send_signup_token(self):
+        if self.email and self.email_status == 'unverified':
+            token = self.token('verify-email')
+            print "generated verify-email token: ", token
+            if not self.pwd:
+                # send email with "set your pwd" copy
+                send_email("signup-sinpass", "", self.email, dict(token=token))
+            else:
+                # send email with "verify your email" copy
+                send_email("signup", "", self.email, dict(token=token))
+        if self.phone and self.phone_status == 'unverified':
+            pass
 
     @staticmethod
     def anon_token():
@@ -161,37 +199,26 @@ class User(object):
         conn.commit()
         return token
 
-    def set_phomail(self, email=None, phone=None):
-        if not self.uid:
-            return
-        conn = get_db()
-        if email:
-            conn.execute("""UPDATE users SET email = ?, email_status = 'unverified' 
-                                              WHERE uid = ? 
-                                           """, (email, self.uid))
-        if phone:
-            conn.execute("""UPDATE users SET phone = ?, phone_status = 'unverified' 
-                                              WHERE uid = ? 
-                                           """, (phone, self.uid))
-
     def set_verified(self, email=None, phone=None):
         if not self.uid:
             return False
         conn = get_db()
-        verified = False
+        email_verif = phone_verif = False
         if email:
-            verified |= bool(conn.execute("""UPDATE users SET email_status = 'verified' 
+            email_verif = bool(conn.execute("""UPDATE users SET email_status = 'verified' 
                                               WHERE uid = ? 
                                                 AND email = ? 
                                                 AND (select count(uid) from users where email = ? and email_status = 'verified') = 0
                                            """, (self.uid, email, email)).rowcount)
         if phone:
-            verified |= bool(conn.execute("""UPDATE users SET phone_status = 'verified' 
+            phone_verif = bool(conn.execute("""UPDATE users SET phone_status = 'verified' 
                                                WHERE uid = ? 
                                                  AND phone = ? 
                                                  AND (select count(uid) from users where phone = ? and phone_status = 'verified') = 0
                                             """, (self.uid, phone, phone)).rowcount)
-        return verified
+        self.email_status = 'verified' if email_verif else self.email_status
+        self.phone_status = 'verified' if phone_verif else self.phone_status
+        return email_verif or phone_verif
 
     def copy_noterefs_from(self, user):
         if not self.uid or not user.uid:
@@ -205,6 +232,14 @@ class User(object):
                                            VALUES (?, ?, 'active', 'active')
                                 """, (self.uid, row[0])).rowcount
         return cnt
+
+    def steal_ownerships_from(self, user):
+        if not self.uid or not user.uid:
+            return None
+        conn = get_db()
+        cur = conn.cursor()
+        ok = bool(cur.execute("UPDATE notes SET created_by = ? WHERE created_by = ?", (self.uid, user.uid)).rowcount)
+        return ok
 
     def get_stripe_customer(self, token=None):
         conn = get_db()
@@ -299,7 +334,7 @@ class Session(object):
         sharee_uid, sharee_email, sharee_phone = row[2], row[3], row[4]
         sess.user = User(uid, tier)
         if sharee_uid:
-            sess.token_user = User(sharee_uid, sharee_email, sharee_phone)
+            sess.token_user = User(uid=sharee_uid, email=sharee_email, phone=sharee_phone)
         return sess
 
 def tokenhistory_add(token, uid):
