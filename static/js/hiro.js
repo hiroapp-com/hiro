@@ -700,7 +700,7 @@ var Hiro = {
 			if (!preventhistory) Hiro.ui.history.add(id);			
 
 			// Log
-			Hiro.sys.log('Loaded note onto canvas:',note);
+			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);
 		},
 
 		// Paint canvas
@@ -1475,7 +1475,13 @@ var Hiro = {
 
 			// Update & display app			
 			Hiro.ui.render(function(){
+				// Preload facebook
+				if (!window.FB) Hiro.lib.facebook.load();				
+
+				// Update contents before opening
 				Hiro.apps.sharing.update();
+
+				// Show widget
 				el_app.getElementsByClassName('widget')[0].style.display = 'block';
 				el_app.getElementsByTagName('input')[0].focus();
 			});
@@ -1764,10 +1770,7 @@ var Hiro = {
 					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus,
-					el_url = this.el_root.getElementsByTagName('input');	
-
-				// Preload facebook
-				if (!window.FB) Hiro.lib.facebook.load();	
+					el_url = this.el_root.getElementsByTagName('input');		
 
 				// Populate!
 				Hiro.ui.render(function(){
@@ -2120,7 +2123,10 @@ var Hiro = {
 		// Set up datastore on pageload
 		init: function() {
 			// Lookup most common store and all notes
-			var p = this.local.fromdisk('profile'), n = this.local.fromdisk('_allnotes'), t = this.local.fromdisk('tokens');
+			var p = this.local.fromdisk('profile'), 
+				n = this.local.fromdisk('_allnotes'), 
+				t = this.local.fromdisk('tokens'),
+				urlid;
 
 			// If we do have data stored locally
 			if (p && n) {	
@@ -2129,7 +2135,7 @@ var Hiro = {
 
 				// Load internal values, add tokens if stored offline
 				this.unsynced = this.local.fromdisk('unsynced');			
-				if (t && t.length > 0 && t[0]) Hiro.sync.tokens =  Hiro.sync.tokens.concat(t);
+				if (t[0]) Hiro.sync.tokens =  Hiro.sync.tokens.concat(t);
 
 				// Load stores into memory
 				this.set('profile','',p,'l');
@@ -2139,13 +2145,21 @@ var Hiro = {
 				this.set('folio','',this.local.fromdisk('folio'),'l');
 
 				// Log 
-				Hiro.sys.log('Found existing data in localstorage',localStorage);			
+				Hiro.sys.log('Found existing data in localstorage',localStorage);
+
+				// Check if we have a non root url
+				urlid = window.location.pathname.split('/')[2];
+
+				// If we have a note id in the url, load this one
+				if (urlid && urlid.length == 10) {
+					Hiro.canvas.load(urlid, false);	
+				// Otherwise load latest note										
+				} else {
+					Hiro.canvas.load();	
+				}					
 
 				// Commit any unsynced data to server
-				Hiro.sync.commit();
-
-				// Load doc onto canvas
-				Hiro.canvas.load();
+				Hiro.sync.commit();				
 			} else {
 				// Show landing page contents
 				Hiro.ui.showlanding();
@@ -5663,17 +5677,13 @@ var Hiro = {
 
 	// External js library handling (Facebook, Analytics, DMP etc)
 	lib: {
-
-		// Save keys by library name
-		keys: {},
-
 		// Load libraries
 		init: function() {
 	
 		},
 
 		// Generic script loader
-		loadscript: function(obj) {
+		loadscript: function(obj) {		
 			var head = document.getElementsByTagName("head")[0] || document.documentElement,
 				s = document.createElement('script'), done;
 
