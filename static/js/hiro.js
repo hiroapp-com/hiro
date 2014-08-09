@@ -5638,10 +5638,7 @@ var Hiro = {
 			// Add a new history state
 			add: function(id) {
 				// Build URL
-				var url = '/note/' + id;
-
-				// Only do this on production systems as long as the new version is only available at /shiny/
-				if (!Hiro.sys.production) return;		
+				var url = '/note/' + id;		
 
 				// On the first call we only change the state insteading of adding a new one
 				if (this.first && history && 'replaceState' in history) {
