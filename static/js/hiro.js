@@ -666,7 +666,7 @@ var Hiro = {
 			// Check if cache of previous note was saved
 			if (this.cache._changed) this.save();			
 
-			// Start hprogress bar, desktop only as mobiles are too slow
+			// Start hprogress bar
 			Hiro.ui.hprogress.begin();	
 
 			// Set internal values
@@ -900,6 +900,9 @@ var Hiro = {
 			this.authinprogress = true;				
 			b.innerText = (login) ? 'Logging in...' : 'Signing Up...';
 
+			// Begin loading bar
+			Hiro.ui.hprogress.begin();	
+
 			// Remove focus on mobiles
 			if (Hiro.ui.touch && document.activeElement) document.activeElement.blur();				
 
@@ -923,6 +926,9 @@ var Hiro = {
 					// Reset DOM & flag	
 	                b.innerText = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;
+
+					// End loading bar in error
+					Hiro.ui.hprogress.done(true)		                
 
 	                // Show error						
 					if (req.status==500) {
@@ -951,7 +957,11 @@ var Hiro = {
 				e = branch.getElementsByClassName('mainerror')[0], fbtokens, reason;
 
 			// Only do one at a time
+			if (this.authinprogress) return;
 			this.authinprogress = true;
+
+			// Begin loading bar
+			Hiro.ui.hprogress.begin();				
 
 			// Set UI
 			button.innerText = 'Connecting...';
@@ -1031,8 +1041,12 @@ var Hiro = {
 					} else {
 						button.innerHTML = ((login) ? 'Log-In' : 'Sign-Up') + ' with <b>Facebook</b>';	
 					}
+
+					// End loading bar in error
+					Hiro.ui.hprogress.done(true)
+
 					// Allow next try	
-					Hiro.user.authinprogress = false;					
+					Hiro.user.authinprogress = false;										
 				}
 			});
 		},
@@ -1040,10 +1054,7 @@ var Hiro = {
 		// Post successfull auth stuff
 		logiocomplete: function(data,login) {	
 			// Close dialog
-			Hiro.ui.dialog.hide();
-
-			// Begin loading bar
-			Hiro.ui.hprogress.begin();			
+			Hiro.ui.dialog.hide();		
 
 			// USe token to request new session
 			Hiro.sync.createsession(data.token);	
@@ -2187,9 +2198,6 @@ var Hiro = {
 			// Create new Note
 			Hiro.folio.newnote();			
 
-			// End loading bar
-			Hiro.ui.hprogress.done();
-
 			// Log
 			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
 			Hiro.sys.log('',null,'groupEnd');				
@@ -2915,9 +2923,6 @@ var Hiro = {
 
 			// Reset UI
 			Hiro.ui.setstage();				
-
-			// Complete hprogress
-			Hiro.ui.hprogress.done();
 
 			// Log
 			Hiro.sys.log('New session created',data);
@@ -5652,7 +5657,10 @@ var Hiro = {
 			// Add a new history state
 			add: function(id) {
 				// Build URL
-				var url = '/note/' + id;		
+				var url = '/note/' + id;	
+
+				// Don't do it as long as we're not in production
+				if (!Hiro.sys.production) return;	
 
 				// On the first call we only change the state insteading of adding a new one
 				if (this.first && history && 'replaceState' in history) {
