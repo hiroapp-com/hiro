@@ -2634,9 +2634,10 @@ var Hiro = {
 
 		// Establish connection with server 
 		connect: function() {
-			if (this.protocol == 'ws') {
-				this.ws.connect();
-			}
+			// Connect through proper protocol
+			if (this.protocol) this[this.protocol].connect();
+
+			console.log('dafuq',this.protocol);
 
 			// Increment hprogress
 			Hiro.ui.hprogress.inc(0.2)
@@ -4065,12 +4066,12 @@ var Hiro = {
 			// Check for hashes
 			if (window.location.hash) this.hashhandler();
 
-			// Setup other app parts
+			// Setup other app parts (NOTE: ORder is rather critical, only mess if you're sure about it)
 			Hiro.folio.init();
 			Hiro.canvas.init();
 			Hiro.ui.init();	
-			Hiro.data.init();			
-			Hiro.sync.init(vars.ws);	
+			Hiro.sync.init(vars.ws);			
+			Hiro.data.init();				
 			Hiro.lib.init();		
 			Hiro.apps.init();	
 
