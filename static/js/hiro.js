@@ -2426,14 +2426,23 @@ var Hiro = {
 					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// If the whole thing or client title changed, repaint the folio
-				if ( key == 'c.title' || key == 'c.text' && !n.c.title) Hiro.folio.paint();
-				else if (!key || key == 'c' || key == '_unseen') Hiro.folio.paint(true);	
+				if (key == 'c.title' || key == 'c.text' && !n.c.title) Hiro.folio.paint();	
 
-				// If the update wasn't by client and concerns the current note
-				if (source != 'c' && current) Hiro.canvas.paint();	
-
-				// Abort here if the update came from localStorage to avoid infinite save loops
-				if (source == 'l')  return;
+				// Localstorage changed
+				if (source == 'l') {
+					console.log('local!');
+					// If it'S the current doc
+					if (current) {
+						// Paint the canvas
+						Hiro.canvas.paint();
+						// And reset the sharing dialog
+						Hiro.apps.sharing.update();
+					}	
+					// Always repaint folio
+					Hiro.folio.paint();
+					// Never re-save
+					return;
+				}	
 
 				// Save
  				Hiro.data.local.quicksave(store);							
