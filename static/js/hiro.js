@@ -2167,16 +2167,16 @@ var Hiro = {
 				// Otherwise load latest note										
 				} else {
 					Hiro.canvas.load();	
-				}					
+				}	
 
-				// Commit any unsynced data to server
-				Hiro.sync.commit();				
+				// Connect to server
+				Hiro.sync.connect();											
 			} else {
 				// Show landing page contents
 				Hiro.ui.showlanding();
 
-				// Bootstrap local only workspace
-				Hiro.data.bootstrap();
+				// End progress
+				Hiro.ui.hprogress.done();					
 			}
 
 			// Attach localstore change listener
@@ -2193,10 +2193,10 @@ var Hiro = {
 
 			// Create minimal folio
 			folio = { c: [], s: [], sv: 0, cv: 0, kind: 'folio' };
-			Hiro.data.set('folio','',folio);		
+			Hiro.data.set('folio','',folio);
 
-			// Create new Note
-			Hiro.folio.newnote();			
+			// Create & load first note
+			Hiro.folio.newnote();					
 
 			// Log
 			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
@@ -2630,9 +2630,6 @@ var Hiro = {
 			} else {
 				Hiro.sys.error('Oh noes, no transport protocol available',navigator);					
 			}	
-
-			// Connect to server
-			this.connect();
 		},
 
 		// Establish connection with server 
@@ -3375,7 +3372,7 @@ var Hiro = {
 					if (!this.synconline) return;
 
 					// Set online/offline flag
-					this.synconline = false;									
+					this.synconline = false;								
 
 					break;
 				case 'web':
@@ -3490,7 +3487,7 @@ var Hiro = {
 			// Attempt a reconnect
 			reconnect: function() {
 				// Double delay
-				this.rcd = (this.rcd > 10000) ? 20000 : this.rcd * 2; 
+				this.rcd = (this.rcd > 10000) ? 20000 : this.rcd * 2; 			
 
 				// Log
 				Hiro.sys.log('Trying to reconnect to sync server via websockets in ' + ( this.rcd / 1000) + ' second(s)...');	
@@ -4453,11 +4450,20 @@ var Hiro = {
 		// Handle clicks on landingpage
 		landingclick: function(action,type) {
 			// Woop, we inited started fiddling with something relevant
-			if (type == 'full') {						
+			if (type == 'full') {	
+				// Bootstrap local only workspace
+				Hiro.data.bootstrap();
+
+				// Connect to server
+				Hiro.sync.connect();				
+
+				// Remove overlay & prepare					
 				switch (action) {
 					case 'screenshot':
 					case 'cto':	
-						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);										
+						// Remove landing page
+						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);	
+						// Focus textarea									
 						Hiro.canvas.el_text.focus(); 					
 						//window.parent.analytics.track('Started Interacting');					
 						break;		
