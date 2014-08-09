@@ -181,6 +181,9 @@ var Hiro = {
 			// Reset archivecount
 			that.archivecount = that.unseencount = that.owncount = 0;
 
+			// Empty lookup
+			that.lookup = {};
+
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
 				// Attach note entries to fragments
@@ -331,7 +334,6 @@ var Hiro = {
 		},
 
 		// Move folio entry to top and resort rest of folio for both, local client and server versions
-		// TODO Bruno: Add sort by last own edit when we have it
 		sort: function(totop) {
 			var fc = Hiro.data.get('folio','c'), i, l, as, bs;
 
@@ -2770,7 +2772,7 @@ var Hiro = {
 
 		// Overwrite local state with servers on login, session create or fatal errors
 		rx_session_create_handler: function(data) {
-			var n, note, sf, cf, fv, peers, req, sp, cp, peer, user, i, l;
+			var n, note, sf, cf, fv, peers, req, sp, cp, peer, user, i, l, keeper;
 
 			// Remove all synced data
 			Hiro.data.cleanup();
@@ -2882,6 +2884,10 @@ var Hiro = {
 
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
+				// Check if the old note is still around
+				if (Hiro.folio.lookup[Hiro.canvas.currentnote]) keeper = Hiro.canvas.currentnote;
+				// Properly sort notes first
+				Hiro.folio.sort(keeper);				
 				// Load doc onto canvas
 				Hiro.canvas.load();	
 			// If the folio is still empty, we create a new note				
