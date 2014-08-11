@@ -1134,10 +1134,10 @@ var Hiro = {
 					results.push(c);
 
 					// Stop after n results
-					if (results.length == max) return;
+					if (results.length == max) return results;
 
 					// Don't let large phonebooks hold us down
-					if (i == this.maxsearchlength) return;
+					if (i == this.maxsearchlength) return results;
 				}
 
 				// Return list of result references
@@ -1650,7 +1650,7 @@ var Hiro = {
 				var type, error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0], 
 					el_input = el.getElementsByTagName('input')[0], el_error = el.getElementsByClassName('error')[0],
 					string = string || el_input.value, parse = Hiro.util.mailorphone(string),
-					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), newpeer, contact, i, l,
+					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), newpeer, search, contact, i, l,
 					ta, el_ta = el.getElementsByClassName('peers')[0], 
 					el_sel = el.getElementsByClassName('selected')[0], oldsel, newsel;
 
@@ -1692,15 +1692,22 @@ var Hiro = {
 						// Set peerchange flag, shortcut (will be saved below)
 						Hiro.data.get('note_' + Hiro.canvas.currentnote)._peerchange = true;
 
-						// Create and add peer object to folio
+						// Switch type if we have a contact with uid & that contact detail
+						search = Hiro.user.contacts.search(string,1);
+						if (search && search[0] && search[0].uid) {
+							type = 'uid';
+							string = search[0].uid;
+						// Add copy of new peer to contacts as well							
+						} else {
+							contact = {};
+							contact[type] = string;
+							Hiro.user.contacts.add(contact);
+						}
+
+						// Create and add peer object to note
 						newpeer = { role: 'invited', user: {}};
 						newpeer.user[type] = string;
 						this.addpeer(newpeer);
-
-						// Add copy of new peer to contacts as well
-						contact = {};
-						contact[type] = string;
-						Hiro.user.contacts.add(contact);
 
 						// Show quick inviting
 						Hiro.ui.statsy.add('invite',0,'Inviting...','info',300);				
@@ -3948,6 +3955,17 @@ var Hiro = {
 							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, 'c', true);							
 						}						
 					}
+
+					// Process added peers
+					if (ad && ad.added) {
+						// Process changes
+						for ( i = 0, l = ad.added.length; i < l; i++) {
+							// Add op
+							delta.push({ op: "invite", path: "peers/", value: { uid: ad.added[i] }});
+							// Copy peer to shadow
+							note.s.peers.push(JSON.parse(JSON.stringify(Hiro.apps.sharing.getpeer({user: { uid: ad.added[i] }}))))							
+						}						
+					}					
 					
 					// Reset flag
 					note._peerchange = false;
