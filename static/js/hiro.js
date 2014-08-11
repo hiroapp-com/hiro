@@ -412,6 +412,40 @@ var Hiro = {
 			return id;
 		},
 
+		// Remove a nid from the folio
+		remove: function(id,shadowsync) {
+			var i, l, f = Hiro.data.get('folio');
+
+			// Go through master notes
+			for (i = 0, l = f.c.length; i < l; i++ ) {
+				// Ignore unrelated
+				if (f.c[i].nid != id) continue;
+				// Remove if found
+				f.c.splice(i,1);
+				// stop loop
+				break;
+			}
+
+			// Do the same for the shadow if requested
+			if (shadowsync) {
+				for (i = 0, l = f.s.length; i < l; i++ ) {
+					if (f.s[i].nid != id) continue;
+					f.s.splice(i,1);
+					break;
+				}
+			}			
+
+			// If there are still notes left
+			if (f.c.length > 0) {
+				// Load the next in line
+				Hiro.canvas.load();
+			// If we removed the only note	
+			} else {
+				// Create & load a new note
+				Hiro.folio.newnote();
+			}
+		},
+
 		// Switch documentlist between active / archived 
 		archiveswitch: function() {
 			var c = (this.archivecount > 0) ? '(' + this.archivecount.toString() + ')' : '';				
@@ -676,6 +710,9 @@ var Hiro = {
 
 			// Visual update
 			this.paint(true);
+
+			// Close apps if they should be open
+			if (Hiro.apps.open.length > 0) Hiro.apps.close();						
 
 			// Update sharing stuff
 			Hiro.apps.sharing.update();		
@@ -3974,7 +4011,13 @@ var Hiro = {
 							// Add op
 							delta.push({ op: "rem-peer", path: "peers/uid:" + ad.removed[i] });
 							// Remove peer from shadow
-							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, 'c', true);							
+							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, 'c', true);	
+							// If we removed ourselves
+							if (ad.removed[i] == Hiro.data.get('profile','c.uid')) {
+								// We delete the note from the folio immediately, but wait for the server ack to delete note 
+								// (in case we were offline we need to process it'S edit stack first)
+								Hiro.folio.remove(note.id,true);
+							}						
 						}						
 					}
 
@@ -4650,9 +4693,6 @@ var Hiro = {
 
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
-
-			// Close apps if they should be open
-			if (Hiro.apps.open.length > 0) Hiro.apps.close();			
 
 			// Easing function (quad), see 
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
