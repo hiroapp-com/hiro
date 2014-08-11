@@ -2237,7 +2237,15 @@ var Hiro = {
 				}	
 
 				// Connect to server
-				Hiro.sync.connect();											
+				Hiro.sync.connect();	
+			// If we started with a token											
+			} else if (Hiro.sync.tokens[0]) {
+				// Remove landing page
+				Hiro.ui.el_landingpage.style.display = 'none';
+
+				// Connect to server
+				Hiro.sync.connect();
+			// Start without session & landing page
 			} else {
 				// Show landing page contents
 				Hiro.ui.showlanding();
@@ -2360,7 +2368,7 @@ var Hiro = {
 			} else if (!key && this.stores[store]) {
 				return this.stores[store];
 			} else {
-				return undefined;
+				return this.local.fromdisk(store,key);
 			}
 		},
 
@@ -2444,6 +2452,9 @@ var Hiro = {
 		cleanup: function() {
 			var i, l, f = this.get('folio','c'), c = this.get('profile','c.contacts'), note;
 
+			// Only cleanup if we got something to cleanup
+			if (!f) return;
+
 			// Iterate through all folio docs
 			for (i = f.length - 1; i >= 0; i--) {
 				// Handle unsynced notes
@@ -2487,17 +2498,15 @@ var Hiro = {
 		// Various handlers executed after stores values are set, bit of poor mans react
 		post: {
 			// After a note store was set
-			// TODO Bruno: Clean thi sup once most conditions are known
 			note: function(store,key,value,source,paint) {
 				var n = Hiro.data.stores[store], t, p, i, l,
 					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// If the whole thing or client title changed, repaint the folio
-				if (key == 'c.title' || key == 'c.text' && !n.c.title) Hiro.folio.paint();	
+				if (key == 'c.title' || (key == 'c.text' && !n.c.title)) Hiro.folio.paint();	
 
-				// Update sharing dialog if it's open
-				if (current && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
-
+				// Update sharing dialog if it's open and it's no client update
+				if (source != 'c' && current && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
 
 				// Localstorage changed
 				if (source == 'l') {
@@ -2639,10 +2648,12 @@ var Hiro = {
 				}
 
 				// Fetch key or return complete object
-				if (key && data[key]) {
+				if (data && key && data[key]) {
 					return data[key];
-				} else {
+				} else if (data) {
 					return data;
+				} else {
+					return undefined;
 				}			
 			},
 
@@ -3447,6 +3458,15 @@ var Hiro = {
 					// Start trying to reconnect
 					this[this.protocol].reconnect();	
 
+					// Edge case: If we have a eg hashbang token the client tries to fetch a new session immediately
+					// but if it's offline the user sits in front of an empty workspace, so we should bootstrap one now
+					if (!Hiro.data.get('profile')) {
+						// End hprogress with an error
+						Hiro.ui.hprogress.done(true);
+						// Bootstrap
+						Hiro.data.bootstrap();
+					}
+
 					// If we already where offline abort here 
 					if (!this.synconline) return;
 
@@ -3573,7 +3593,7 @@ var Hiro = {
 				// Log
 				Hiro.sys.log('Trying to reconnect to sync server via websockets in ' + ( this.rcd / 1000) + ' second(s)...');	
 
-				// 
+				// Set timeout
 				window.setTimeout(function(){
 					// Abort if for some reason sync is already back online
 					if (Hiro.sync.synconline) return;
@@ -4195,11 +4215,12 @@ var Hiro = {
 		// Called if we have a hash on init
 		// Hash format is #baaceed1406d406e80b65e7053ab51fa:reset, where strings shorter than 20 chars are actions while longer are tokens
 		hashhandler: function() {
-			var h = window.location.hash.substring(1).split(':'), i, l;
+			var h = window.location.hash.substring(1).split(':'), t = Hiro.data.get('tokens'), i, l;
 
 			// Iterate through hash components
 			for (i = 0, l = h.length; i < l; i++) {
-				if (h[i].length == 32) Hiro.sync.tokens.push(h[i]);
+				// If we have 32 chars long token we don't know yet
+				if (h[i].length == 32 && (!t || t.indexOf(h[i]) == -1)) Hiro.sync.tokens.push(h[i]);
 			}
 		},
 
