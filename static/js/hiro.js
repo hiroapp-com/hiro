@@ -626,7 +626,7 @@ var Hiro = {
 			peer = Hiro.apps.sharing.getpeer({ user: { uid: uid} },noteid);
 
 			// If we have no peer or user already has a seen timestamp that's more recent than the last edit
-			if (!peer || Hiro.data.get('note_' + noteid,'_lastedit') < peer.last_seen) return;
+			if (!peer || Hiro.data.get('note_' + noteid,'_lastedit') <= peer.last_seen) return;
 
 			// Set new value
 			peer.last_seen = Hiro.util.now();		
@@ -3891,7 +3891,7 @@ var Hiro = {
 					note.s.title = note.c.title;
 				}	
 
-				// If we have any updates until here, we also update our own timestamps & cursor position
+				// If we have any updates until here, we also update our cursor position
 				if (delta.length > 0) {
 					// Retrieve peer
 					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
@@ -3905,7 +3905,7 @@ var Hiro = {
 				}
 
 				// Peers changed
-				if (note._peerchange) {		
+				if (note._peerchange) {	
 					// Find the peers with no uid yet
 					for (i = 0, l = note.c.peers.length; i < l; i++ ) {
 						// Ignore those
@@ -3933,8 +3933,10 @@ var Hiro = {
 					if (ad && ad.changed) {
 						// Process changes
 						for ( i = 0, l = ad.changed.length; i < l; i++) {
-							// Compare seen timestamps
+							// Compare seen timestamp
 							if (ad.changed[i].client.last_seen != ad.changed[i].shadow.last_seen) {
+								// Don't do this for other users
+								if (ad.changed[i].client.user.uid != Hiro.data.get('profile','c.uid')) continue;
 								// Add op
 								delta.push({op: "set-ts", path: "peers/uid:" + ad.changed[i].client.user.uid, value: { 
 									seen: ad.changed[i].client.last_seen 
