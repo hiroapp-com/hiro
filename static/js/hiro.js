@@ -436,7 +436,6 @@ var Hiro = {
 		// Internal values
 		currentnote: undefined,
 		quoteshown: false,
-		textheight: 0,
 
 		// DOM IDs
 		el_root: document.getElementById('canvas'),
@@ -464,10 +463,7 @@ var Hiro = {
 			Hiro.util.registerEvent(this.el_title,'focus',Hiro.canvas.titlefocus);			
 
 			// When a user touches the white canvas area
-			Hiro.ui.touchy.attach(this.el_root,Hiro.canvas.canvastouch,55);	
-
-			// Do a first resize to set property
-			this.resize();		
+			Hiro.ui.touchy.attach(this.el_root,Hiro.canvas.canvastouch,55);		
 		},
 
 		// Poor man FRP stream
@@ -491,10 +487,7 @@ var Hiro = {
 				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );
 
 				// Reset overlay if it's a text update
-				if (id == 'content') Hiro.canvas.overlay.paint(t.value);
-
-				// Resize canvas if we changed
-				if (Hiro.canvas.overlay.el_root.scrollHeight != Hiro.canvas.cache._height) Hiro.canvas.resize();									
+				if (id == 'content') Hiro.canvas.overlay.paint(t.value);									
 
 				// Kick off write if it't isn't locked
 				if (!lock) {
@@ -711,9 +704,6 @@ var Hiro = {
 			var n = Hiro.data.get('note_' + this.currentnote), text = n.c.text, title = n.c.title, 
 				pos = (this.cache._me) ? this.cache._me.cursor : n._cursor || 0;					
 
-			// Render overlay
-			this.overlay.paint(text);
-
 			Hiro.ui.render(function(){
 				// Set title & text
 				if (!title || Hiro.canvas.el_title.value != n.c.title) {
@@ -724,12 +714,12 @@ var Hiro = {
 				// Set text		
 				if (Hiro.canvas.el_text.value != text) Hiro.canvas.el_text.value = text;	
 
-				// Set cursor (this should not fire as it's called from a new requestanimationframe stack)
-				if (setcursor) Hiro.canvas.setcursor();										
-			});	
+				// Render overlay
+				Hiro.canvas.overlay.paint(text);
 
-			// Resize textarea
-			Hiro.canvas.resize();				
+				// Set cursor (this should not fire as it's called from a new requestanimationframe stack)
+				if (setcursor) Hiro.canvas.setcursor();														
+			});					
 
 			// 	Switch quote on or off for programmatic text changes
 			if ((text.length > 0 && this.quoteshown) || (text.length == 0 && !this.quoteshown)) {
@@ -741,15 +731,22 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
-			var h;
+			var oh, th;
 
 			// Do not resize on mobile devices
 			if (Hiro.ui.mini()) return;
 
 			// With the next available frame
 			Hiro.ui.render(function(){
-				// Set values
-				Hiro.canvas.cache._height = Hiro.canvas.overlay.el_root.scrollHeight;
+				// Get values
+				oh = Hiro.canvas.overlay.el_root.offsetHeight;
+				th = Hiro.canvas.el_text.scrollHeight;
+
+				console.log('resizin',oh,th,'chars:',Hiro.canvas.cache.content.length);
+				// Set bigger value
+				Hiro.canvas.cache._height = oh;
+
+				// Resize textarea to value
 				Hiro.canvas.el_text.style.height = (Hiro.canvas.cache._height + 50).toString() + 'px';
 			})
 		},
@@ -823,8 +820,14 @@ var Hiro = {
 			// Geerate new overlay
 			paint: function(string) {
 				var el = this.el_root;
+
+				// Paint overlay
 				Hiro.ui.render(function(){
+					// Set text contents
 					el.innerText = string + ' ';
+
+					// Resize
+					Hiro.canvas.resize();
 				});
 			},
 
@@ -1220,9 +1223,9 @@ var Hiro = {
 				}											
 			},
 
-			// Retrieve a specific contact, expects { property: value } format, and sets it'S contents to new value
-			swap: function(contact,newvalue) {
-				var contacts, i, l, p;
+			// Retrieve a specific contact, expects { property: value } format, and sets it's contents to new value
+			swap: function(contact,newvalue,syncshadow) {
+				var contacts, shadow, i, l, p, c;
 
 				// Get peers array
 				contacts = Hiro.data.get('profile','c.contacts');
@@ -1230,24 +1233,68 @@ var Hiro = {
 				// Abort if there are no contacts
 				if (!contacts) return false;
 
-				// Iterate through contacts
-				for (i = 0, l = contacts.length; i < l; i++ ) {
-					// Go through all properties of the user object
-					for (p in contacts[i]) {
-						if (contacts[i].hasOwnProperty(p)) {
-							// Ignore all properties except those
-							if (p != 'uid' && p != 'email' && p != 'phone') continue;		
-
-							// Compare the unique contacts[i] properties with the one of our provided user and reset values
-							if (contact[p] == contacts[i][p]) contacts[i] = newvalue;
-
-							// Update lookup
-							this.update();
-
-							// Skip rest of loop
-							return true;
+				// Try to get contact from lookup
+				if (contact.uid && this.lookup[contact.uid]) {
+					// Set reference
+					c = this.lookup[contact.uid];
+				// Iterate & find
+				} else {
+					// Grab properties (lookup objects normally only have one, so this should be efficient)
+					for (p in contact) {
+						// Make sure it's a property we care about
+						if (contact.hasOwnProperty(p) && (p == 'uid' || p == 'email' || p == 'phone')) {
+							// Cycle through contacts
+							for (i =0, l = contacts.length; i < l; i++) {
+								if (contact[p] == contacts[i][p]) {
+									// Set reference									
+									c = contacts[i];
+									// Abport loop
+									break;
+								}	
+							}
 						}
 					}
+				}
+
+				// If we found the user
+				if (c) {
+					// Set new value
+					c = newvalue;
+
+					// Update users
+					this.update();	
+
+					// If a shadow sync is requested
+					if (syncshadow) {
+						// Set reference
+						shadow = Hiro.data.get('profile','s.contacts');		
+										
+						// Just add it if it got no uid
+						if (!contact.uid) { shadow.push(JSON.parse(JSON.stringify(newvalue))) }
+
+						// Iterate through shadow otherwise
+						else {
+							// Iterate by uid
+							for (i = 0, l = shadow.length; i < l; i++ ) {
+								// Keep searchin
+								if (shadow[i].uid != contact.uid) continue;
+								// Got it, swap
+								shadow[i] = JSON.parse(JSON.stringify(newvalue));
+								// Break loop
+								break;
+							}
+						}
+					}
+
+					// Save
+					Hiro.data.set('profile','c.contacts',contacts);
+
+					// Return
+					return true;
+				// Nothing found				
+				} else {
+					// Log
+					Hiro.sys.error("Server asked us to swap contact details of a contact we don't know",contact);
 				}
 
 				// No peers found & changed above
@@ -2646,8 +2693,6 @@ var Hiro = {
 			// Connect through proper protocol
 			if (this.protocol) this[this.protocol].connect();
 
-			console.log('dafuq',this.protocol);
-
 			// Increment hprogress
 			Hiro.ui.hprogress.inc(0.2)
 		},
@@ -3133,7 +3178,7 @@ var Hiro = {
 							obj = {};
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Set new value
-							Hiro.user.contacts.swap(obj,ops[j].value);
+							Hiro.user.contacts.swap(obj,ops[j].value,true);
 							update = true;														
 							break;	
 						// Add a user to the contact list
@@ -3488,9 +3533,11 @@ var Hiro = {
 
 				// Close handler
 				this.socket.onclose = function(e) {
-					// Switch to offline
-					Hiro.sync.goneoffline('sync');					
+					// Log				
 					Hiro.sys.log('WebSocket closed with code ' + e.code + ' and ' + (e.reason || 'no reason given.'),[e,this.socket]);	
+
+					// Switch to offline
+					Hiro.sync.goneoffline('sync');	
 				}				
 			},
 
