@@ -1100,7 +1100,7 @@ var Hiro = {
 
 				// Build lookup object
 				for (i = 0, l = c.length; i < l; i++) {
-					this.lookup[c[i].uid] = c[i];
+					if (c[i].uid) this.lookup[c[i].uid] = c[i];
 				}
 			},
 
@@ -1225,7 +1225,7 @@ var Hiro = {
 
 			// Retrieve a specific contact, expects { property: value } format, and sets it's contents to new value
 			swap: function(contact,newvalue,syncshadow) {
-				var contacts, shadow, i, l, p, c;
+				var contacts, shadow, i, l, p, found;
 
 				// Get peers array
 				contacts = Hiro.data.get('profile','c.contacts');
@@ -1233,37 +1233,26 @@ var Hiro = {
 				// Abort if there are no contacts
 				if (!contacts) return false;
 
-				// Try to get contact from lookup
-				if (contact.uid && this.lookup[contact.uid]) {
-					// Set reference
-					c = this.lookup[contact.uid];
-				// Iterate & find
-				} else {
-					// Grab properties (lookup objects normally only have one, so this should be efficient)
-					for (p in contact) {
-						// Make sure it's a property we care about
-						if (contact.hasOwnProperty(p) && (p == 'uid' || p == 'email' || p == 'phone')) {
-							// Cycle through contacts
-							for (i =0, l = contacts.length; i < l; i++) {
-								if (contact[p] == contacts[i][p]) {
-									// Set reference									
-									c = contacts[i];
-									// Abport loop
-									break;
-								}	
-							}
+				// Grab properties (lookup objects normally only have one, so this should be efficient)
+				for (p in contact) {
+					// Make sure it's a property we care about
+					if (contact.hasOwnProperty(p) && (p == 'uid' || p == 'email' || p == 'phone')) {
+						// Cycle through contacts
+						for (i =0, l = contacts.length; i < l; i++) {
+							if (contact[p] == contacts[i][p]) {
+								// Set reference									
+								contacts[i] = newvalue;	
+								// Set success flag
+								found = true;							
+								// Abort loop
+								break;
+							}	
 						}
 					}
 				}
 
 				// If we found the user
-				if (c) {
-					// Set new value
-					c = newvalue;
-
-					// Update users
-					this.update();	
-
+				if (found) {
 					// If a shadow sync is requested
 					if (syncshadow) {
 						// Set reference
@@ -1285,9 +1274,6 @@ var Hiro = {
 							}
 						}
 					}
-
-					// Save
-					Hiro.data.set('profile','c.contacts',contacts);
 
 					// Return
 					return true;
@@ -2104,6 +2090,33 @@ var Hiro = {
 				return false;
 			},
 
+			// Swap peer data
+			swappeer: function(peer,noteid,newvalue,syncshadow) {
+				var p = this.getpeer(peer,noteid), shadow = Hiro.data.get('note_' + noteid,'s.peers'), i, l;
+
+				// Abort if we got no peer
+				if (!p) return;
+
+				// Set new value
+				p.user = newvalue;
+
+				// If we want a synced shadow
+				if (syncshadow) {
+					// If we swap a non-uid peer we can just add it
+					if (!peer.user.uid) { shadow.push(JSON.parse(JSON.stringify({ user: newvalue }))); }
+
+					// Otherwise find & swap the shadow peer
+					for (i = 0, l = shadow.length; i < l; i++ ) {
+						// Continue
+						if (shadow[i].user.uid != peer.user.uid) continue;
+						// Change data
+						shadow[i].user = newvalue;
+						// End loop
+						break;
+					}
+				}
+			},
+
 			// Remove peer from peers
 			removepeer: function(peer,noteid,source,clearshadow) {
 				var peers, shadow, i, l, p;
@@ -2475,15 +2488,16 @@ var Hiro = {
 				// If the whole thing or client title changed, repaint the folio
 				if (key == 'c.title' || key == 'c.text' && !n.c.title) Hiro.folio.paint();	
 
+				// Update sharing dialog if it's open
+				if (current && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
+
+
 				// Localstorage changed
 				if (source == 'l') {
-					console.log('local!');
 					// If it'S the current doc
 					if (current) {
 						// Paint the canvas
 						Hiro.canvas.paint();
-						// And reset the sharing dialog
-						Hiro.apps.sharing.update();
 					}	
 					// Always repaint folio
 					Hiro.folio.paint();
@@ -2511,6 +2525,9 @@ var Hiro = {
 			profile: function(store,key,value,source,paint) {
 				// Update contact lookup
 				Hiro.user.contacts.update();	
+
+				// Update sharing dialog if it's open
+				if (Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();				
 
 				// Abort if source is localStorage
 				if (source == 'l') return;				
@@ -3064,13 +3081,13 @@ var Hiro = {
 								Hiro.apps.sharing.getpeer(obj,store.id).cursor_pos = ops[j].value;
 								// Also set shortcut value if it's us
 								if (ops[j].path.split(':')[1] == Hiro.data.get('profile','c.uid')) store._cursor = ops[j].value;
+							// Call sap user
+							} else if (ops[j].op == 'swap-user') {
+								Hiro.apps.sharing.swappeer(obj,store.id,ops[j].value,true);	
 							// Set other values (hackish shortcut depending on ops name not changing)
 							} else {
 								Hiro.apps.sharing.getpeer(obj,store.id)[ops[j].op.split('-')[1]] = ops[j].value;	
 							}
-							// Update sharing dialog if it's open
-							if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
-							// Add new user
 							update = true;
 							break;	
 						// Set timestamp							
@@ -3178,7 +3195,7 @@ var Hiro = {
 							obj = {};
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Set new value
-							Hiro.user.contacts.swap(obj,ops[j].value,true);
+							Hiro.user.contacts.swap(obj,ops[j].value,true);							
 							update = true;														
 							break;	
 						// Add a user to the contact list
