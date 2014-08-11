@@ -422,6 +422,15 @@ var Hiro = {
 				if (f.c[i].nid != id) continue;
 				// Remove if found
 				f.c.splice(i,1);
+				// If there are still notes left
+				if (f.c.length > 0) {
+					// Load the next in line
+					Hiro.canvas.load();
+				// If we removed the only note	
+				} else {
+					// Create & load a new note
+					Hiro.folio.newnote();
+				}				
 				// stop loop
 				break;
 			}
@@ -434,16 +443,6 @@ var Hiro = {
 					break;
 				}
 			}			
-
-			// If there are still notes left
-			if (f.c.length > 0) {
-				// Load the next in line
-				Hiro.canvas.load();
-			// If we removed the only note	
-			} else {
-				// Create & load a new note
-				Hiro.folio.newnote();
-			}
 		},
 
 		// Switch documentlist between active / archived 
@@ -2530,6 +2529,10 @@ var Hiro = {
 			this.stores[id] = null;
 			delete this.stores[id];
 			this.local.wipe(id);
+			// And any entries in unsynced/unsaved
+			if (this.unsaved.indexOf(id) > -1) this.unsaved.splice(this.unsaved.indexOf(id),1);			
+			if (this.unsynced.indexOf(id) > -1) this.unsynced.splice(this.unsynced.indexOf(id),1);				
+
 		},
 
 		// Various handlers executed after stores values are set, bit of poor mans react
@@ -3224,6 +3227,14 @@ var Hiro = {
 							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);							
 							update = true;							
 							break;
+						// Remove a note from the folio
+						case 'folio|rem-noteref':
+							// Make sure it's not part of the folio anymore
+							Hiro.folio.remove(ops[j].path.split(':')[1],true);	
+							// Also delete the store
+							Hiro.data.destroy('note_' + ops[j].path.split(':')[1]);						
+							update = true;							
+							break;							
 						// Change a user property
 						case 'profile|set-name':
 						case 'profile|set-email':
