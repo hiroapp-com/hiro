@@ -294,20 +294,7 @@ var Hiro = {
 				link.appendChild(s);		
 				
 				// Change classname
-				d.className = 'note shared';					
-
-				// Add bubble if changes weren't seen yet
-				if (note._unseen && id != Hiro.canvas.currentnote) {
-					// Show that document has unseen updates
-					sn = document.createElement('div');
-					sn.className = "bubble red";
-					sn.innerText = '*';
-					link.appendChild(sn);
-					tooltip = tooltip + ', just updated';		
-
-					// Iterate counter for our bubble
-					if (folioentry.status == 'active') this.unseencount++;								
-				}	
+				d.className = 'note shared';	
 
 				// Append time indicator if someone else did the last update
 				if (note._lasteditor && note._lasteditor != Hiro.data.get('profile','c.uid')) {
@@ -317,11 +304,24 @@ var Hiro = {
 
 					// Complete string
 					time = time + ' by ' + ((user) ? user.name || user.email || user.phone || 'Anonymous' : 'Anonymous');	
-				}					
+				}
+
 			} else {
 				// Iterate owncounter
 				this.owncount++;
 			}
+
+			// Add bubble if changes weren't seen yet
+			if (note._unseen && id != Hiro.canvas.currentnote) {
+				// Show that document has unseen updates
+				sn = document.createElement('div');
+				sn.className = "bubble red";
+				sn.innerText = '*';
+				link.appendChild(sn);		
+
+				// Iterate counter for our bubble
+				if (folioentry.status == 'active') this.unseencount++;								
+			}									
 
 			// Append stats with time indicator
 			stats.appendChild(document.createTextNode(time));
@@ -364,7 +364,7 @@ var Hiro = {
 		// Add a new note to folio and notes array, then open it 
 		// Note: Passing id/note as parameters means newnote was triggered by the server
 		newnote: function(id,status) {
-			var f = Hiro.data.get('folio') || {},
+			var f = Hiro.data.get('folio') || {}, source,
 				id = id || Math.random().toString(36).substring(2,6),
 				i, l, folioc = { nid: id, status: status || 'active' }, folios, load,
 				user = Hiro.data.get('profile'),
@@ -374,9 +374,8 @@ var Hiro = {
 					id: id,						
 					sv: 0, cv: 0,
 					kind: 'note',
-					_lasteditor: user.c.uid,
-					_lastedit: Hiro.util.now(),
-					_ownedit: Hiro.util.now()				
+					_cursor: 0,
+					_ownedit: Hiro.util.now()			
 				};	
 
 			// If the user itself created the note but doesn't have the necessary tier yet
@@ -399,11 +398,18 @@ var Hiro = {
 
 				// set to unseen
 				note._unseen = true;
-			}			
+
+				// Set source
+				source = 's';
+			// Set default values for user inited stuff	
+			} else {
+				note._lasteditor = user.c.uid;
+				note._lastedit = Hiro.util.now();
+			}		
 
 			// Save kick off setter flows						
-			Hiro.data.set('note_' + id,'',note);
-			Hiro.data.set('folio','',f);
+			Hiro.data.set('note_' + id,'',note,source);
+			Hiro.data.set('folio','',f,source);		
 
 			// Showit!
 			if (id.length == 4) Hiro.canvas.load(id);
@@ -415,6 +421,15 @@ var Hiro = {
 		// Remove a nid from the folio
 		remove: function(id,shadowsync) {
 			var i, l, f = Hiro.data.get('folio');
+
+			// Remove shadow entry if requested
+			if (shadowsync) {
+				for (i = 0, l = f.s.length; i < l; i++ ) {
+					if (f.s[i].nid != id) continue;
+					f.s.splice(i,1);
+					break;
+				}
+			}			
 
 			// Go through master notes
 			for (i = 0, l = f.c.length; i < l; i++ ) {
@@ -430,18 +445,11 @@ var Hiro = {
 				} else {
 					// Create & load a new note
 					Hiro.folio.newnote();
-				}				
-				// stop loop
-				break;
-			}
-
-			// Do the same for the shadow if requested
-			if (shadowsync) {
-				for (i = 0, l = f.s.length; i < l; i++ ) {
-					if (f.s[i].nid != id) continue;
-					f.s.splice(i,1);
-					break;
-				}
+				}	
+				// Save & sync
+				Hiro.data.set('folio','',f);			
+				// Stop
+				return;
 			}			
 		},
 
@@ -708,7 +716,7 @@ var Hiro = {
 			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
 			// Visual update
-			this.paint(true);
+			this.paint(true);		
 
 			// Close apps if they should be open
 			if (Hiro.apps.open.length > 0) Hiro.apps.close();						
@@ -726,7 +734,7 @@ var Hiro = {
 			Hiro.ui.hprogress.done();
 
 			// Add note to history API (change browser URL etc)
-			if (!preventhistory) Hiro.ui.history.add(id);			
+			if (!preventhistory) Hiro.ui.history.add(id);							
 
 			// Log
 			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);
@@ -2081,7 +2089,7 @@ var Hiro = {
 					note = Hiro.data.get('note_' + noteid);
 
 					// See if we have a new edit timestamp thats more recent
-					if (peer.last_edit && peer.last_edit > note._lastedit) {
+					if (peer.last_edit && (!note._lastedit || peer.last_edit > note._lastedit)) {
 						// Update values (will be saved by set below)
 						note._lastedit = peer.last_edit;
 						note._lasteditor = peer.user.uid;
@@ -4679,6 +4687,9 @@ var Hiro = {
 
 			// Allow simple call without direction		
 			if (!direction) direction = (this.slidedirection == 1 || Hiro.folio.open) ? -1 : 1;	
+
+			// Make room on mobiles
+			if (direction == 1 && Hiro.ui.mini() && Hiro.apps.open.length > 0) Hiro.apps.close();
 
 			// Repaint folio
 			if (direction == 1) Hiro.folio.paint(true);		
