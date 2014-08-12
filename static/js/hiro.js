@@ -715,7 +715,7 @@ var Hiro = {
 			// Mount me reference
 			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
-			// Visual update
+			// Repaint canvas
 			this.paint(true);		
 
 			// Close apps if they should be open
@@ -747,7 +747,7 @@ var Hiro = {
 
 			Hiro.ui.render(function(){
 				// Set title & text
-				document.title = c.title || c.content.substring(0,30) || 'New Note';
+				if (!Hiro.ui.tabby.active) document.title = c.title || c.content.substring(0,30) || 'New Note';
 				Hiro.canvas.el_title.value = c.title || c.content.substring(0,30) || 'Title';
 						
 				// Set text		
@@ -2539,7 +2539,7 @@ var Hiro = {
 					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// If the whole thing or client title changed, repaint the folio
-				if (key == 'c.title' || (key == 'c.text' && !n.c.title)) Hiro.folio.paint();	
+				if (key == 'c.title' || (key == 'c.text' && !n.c.title) || source == 's' || key == '_unseen') Hiro.folio.paint();	
 
 				// Update sharing dialog if it's open and it's no client update
 				if (source != 'c' && current && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
@@ -3165,8 +3165,9 @@ var Hiro = {
 										store._lastedit = ops[j].value.edit;
 										store._lasteditor = obj.user.uid;
 										// If it was someone else, also set _unseen
-										if (obj.user.uid != me.uid && store.id != Hiro.canvas.currentnote) {
-											store._unseen = true;	
+										if (obj.user.uid != me.uid) {
+											// Set flag
+											if (store.id != Hiro.canvas.currentnote) store._unseen = true;	
 											// Add notification if we're not focused
 											if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store.id);	
 										}																				
@@ -3192,7 +3193,9 @@ var Hiro = {
 						// Update title if it's a title update					
 						case 'note|set-title':
 							// Set values
-							store.s.title = store.c.title = ops[j].value;								
+							store.s.title = store.c.title = Hiro.canvas.cache.title = ops[j].value;
+							// Repaint note if it's the current
+							if (store.id == Hiro.canvas.currentnote) Hiro.canvas.paint();							
 							update = true;
 							break;
 						// Update text if it's a text update							
@@ -4194,7 +4197,15 @@ var Hiro = {
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
             		// Apply the patch
                     n.s.text = this.dmp.patch_apply(patch, n.s.text)[0]; 
-                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];                                                         
+                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];  
+                    // Also render changes if it's the current doc
+                    if (id == Hiro.canvas.currentnote) {
+                    	// Apply patch
+                    	Hiro.canvas.cache.content = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
+                    	// Paint it
+                    	Hiro.canvas.paint();
+                    }  
+                    // Log                                      
 	                Hiro.sys.log("Patches successfully applied");
                 }             	
 			},	
@@ -5169,7 +5180,7 @@ var Hiro = {
 				pos = that.pool.indexOf(id);
 				nextpos = (pos + 1 == that.pool.length) ? 0 : ++pos;
 				next = that.pool[nextpos];
-				nexttitle = Hiro.data.get('note_' + next,'c.title') || 'New Note';
+				nexttitle = Hiro.data.get('note_' + next,'c.title') || Hiro.data.get('note_' + next,'c.text').substring(0,30) || 'New Note';
 
 				// Switch between simple update flash and numbered notifications
 				if (that.pool.length == 1 && Hiro.canvas.currentnote == next) {
@@ -5177,7 +5188,7 @@ var Hiro = {
 					document.title = (document.title == 'Updated!') ? nexttitle : 'Updated!';
 				} else if (that.pool.length == 1) {
 					// If we have multiple we cycle between them
-					document.title = (document.title == ( Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title') || 'New Note') ) ? '(' + that.pool.length + ') ' + nexttitle + ' updated!' : (Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title') || 'New Note');				
+					document.title = (document.title == ( Hiro.canvas.cache.title || Hiro.canvas.cache.content.substring(0,30) || 'New Note') ) ? '(' + that.pool.length + ') ' + nexttitle + ' updated!' : ( Hiro.canvas.cache.title || Hiro.canvas.cache.content.substring(0,30) || 'New Note');				
 				} else {
 					// If we have multiple we cycle between them
 					document.title ='(' + that.pool.length + ') ' + nexttitle + ' updated!';				
