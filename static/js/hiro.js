@@ -740,37 +740,25 @@ var Hiro = {
 			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);
 		},
 
-		// Paint canvas
+		// Paint canvas from cache
 		paint: function(setcursor) {
 			// Make sure we have a current note
-			this.currentnote = this.currentnote || Hiro.data.get('folio').c[0].nid;
-
-			var n = Hiro.data.get('note_' + this.currentnote), text = n.c.text, title = n.c.title, 
-				pos = (this.cache._me) ? this.cache._me.cursor : n._cursor || 0;					
+			var c = this.cache;					
 
 			Hiro.ui.render(function(){
 				// Set title & text
-				if (!title || Hiro.canvas.el_title.value != n.c.title) {
-					document.title = title || text.substring(0,30) || 'New Note';
-					Hiro.canvas.el_title.value = title || 'Title';
-				}
+				document.title = c.title || c.content.substring(0,30) || 'New Note';
+				Hiro.canvas.el_title.value = c.title || c.content.substring(0,30) || 'Title';
 						
 				// Set text		
-				if (Hiro.canvas.el_text.value != text) Hiro.canvas.el_text.value = text;	
+				if (Hiro.canvas.el_text.value != c.content) Hiro.canvas.el_text.value = c.content;	
 
 				// Render overlay
-				Hiro.canvas.overlay.paint(text);
+				Hiro.canvas.overlay.paint(c.content);
 
 				// Set cursor (this should not fire as it's called from a new requestanimationframe stack)
 				if (setcursor) Hiro.canvas.setcursor();														
-			});					
-
-			// 	Switch quote on or off for programmatic text changes
-			if ((text.length > 0 && this.quoteshown) || (text.length == 0 && !this.quoteshown)) {
-				var d = (this.quoteshown) ? -1 : 1;
-				Hiro.ui.fade(this.el_quote,d,150);
-				this.quoteshown = !this.quoteshown;				
-			} 			
+			});								
 		},
 
 		// Resize textarea to proper height
