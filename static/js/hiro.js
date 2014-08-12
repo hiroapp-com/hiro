@@ -748,7 +748,7 @@ var Hiro = {
 			Hiro.ui.render(function(){
 				// Set title & text
 				if (!Hiro.ui.tabby.active) document.title = c.title || c.content.substring(0,30) || 'New Note';
-				Hiro.canvas.el_title.value = c.title || c.content.substring(0,30) || 'Title';
+				Hiro.canvas.el_title.value = c.title || 'Title';
 						
 				// Set text		
 				if (Hiro.canvas.el_text.value != c.content) Hiro.canvas.el_text.value = c.content;	
@@ -2235,6 +2235,7 @@ var Hiro = {
 			// Lookup most common store and all notes
 			var p = this.local.fromdisk('profile'), 
 				n = this.local.fromdisk('_allnotes'), 
+				f = this.local.fromdisk('folio'),
 				t = this.local.fromdisk('tokens'),
 				urlid;
 
@@ -2247,12 +2248,18 @@ var Hiro = {
 				this.unsynced = this.local.fromdisk('unsynced');			
 				if (t[0]) Hiro.sync.tokens =  Hiro.sync.tokens.concat(t);
 
+				// Remove first locks
+				p._tag = f._tag = undefined;
+
 				// Load stores into memory
 				this.set('profile','',p,'l');
 				for (var i = 0, l = n.length; i < l ; i++) {
+					// Remove note locks
+					n[i]._tag = undefined;
+					// Save notes
 					this.set('note_' + n[i].id,'',n[i],'l');
 				}							
-				this.set('folio','',this.local.fromdisk('folio'),'l');
+				this.set('folio','',f,'l');
 
 				// Log 
 				Hiro.sys.log('Found existing data in localstorage',localStorage);
@@ -2548,6 +2555,9 @@ var Hiro = {
 				if (source == 'l') {
 					// If it'S the current doc
 					if (current) {
+						// Update cache
+						Hiro.canvas.cache.title = n.c.title;
+						Hiro.canvas.cache.content = n.c.text;
 						// Paint the canvas
 						Hiro.canvas.paint();
 					}	
