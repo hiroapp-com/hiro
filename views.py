@@ -9,7 +9,7 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
   must be passed *username* as the argument.
 
 """
-from flask import request, session, render_template, jsonify, Response, redirect, url_for
+from flask import current_app, request, session, render_template, jsonify, Response, redirect, url_for
 from flask.ext.oauth import OAuth
 
 from secret_keys import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
@@ -29,8 +29,7 @@ facebook = oauth.remote_app('facebook',
 facebook.tokengetter(lambda: session.get('oauth_token'))
 
 def home():
-    # TODO(flo) inject that no manifest is loaded if we're in the dev environment    
-    return render_template('hync_home.html')  
+    return render_template('hync_home.html', want_manifest=(not current_app.config['DEBUG']))  
 
 def anon():
     return jsonify(token=User.anon_token())
@@ -128,9 +127,9 @@ def landing():
 def settings():
     return render_template('hync_settings.html')       
 
-def note():
-    # TODO(flo) never include manifest in template requested via /note/<id> 
+def note(note_id):
     return render_template('hync_home.html') 
+
 def offline():
     return render_template('hync_home.html')       
 
