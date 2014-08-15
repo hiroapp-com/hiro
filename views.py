@@ -12,7 +12,7 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
 from flask import request, session, render_template, jsonify, Response, redirect, url_for
 from flask.ext.oauth import OAuth
 
-from settings import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
+from secret_keys import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
 
 from models import User, Session
 

@@ -7,7 +7,7 @@ from hashlib import sha512
 
 import stripe
 
-from settings import STRIPE_SECRET_KEY
+from secret_keys import STRIPE_SECRET_KEY
 from hiro import get_db
 from passlib.hash import pbkdf2_sha512
 from jsonclient import JSONClient
