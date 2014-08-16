@@ -3162,7 +3162,7 @@ var Hiro = {
 					// Aka "The Lost Return" scenario (Lost outbound is not handled here as it needs no handling)
 					} else if (scv != store.cv) {	
 						// Log
-						Hiro.sys.log('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover. We need backup!',data.changes[i].delta);
+						Hiro.sys.error('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover. We need backup!',data.changes[i].delta);
 						// Reset cv by number of pending local edits
 						store.cv = store.cv - store.edits.length;
 						// Empty edit stack to avoid infinite loops
@@ -3508,8 +3508,14 @@ var Hiro = {
 				return true;
 
 			} else {
-				// Clear locks if we had some and sync for the first time or got no response within 30 secs
-				if (Hiro.data.unsynced.length > 0 && (!this.lastsync || Hiro.util.now() - this.lastsync > 30000)) this.releaselocks();
+				// If we had no last sync at all, set it to now
+				if (!this.lastsync) {
+					// Set it for the first time
+					this.lastsync = Hiro.util.now();
+					// Release locks
+					this.releaselocks();
+				// Clear locks if we had some and got no response within 30 secs
+				} else if (Hiro.data.unsynced.length > 0 && (Hiro.util.now() - this.lastsync > 30000)) this.releaselocks();
 
 				// Nothing committed
 				return false;
@@ -3522,6 +3528,9 @@ var Hiro = {
 
 			// Go through unsynced ressources
 			for (i = 0, l = u.length; i < l; i++ ) {
+				// Do nothing if no tag attached
+				if (!Hiro.data.stores[u[i]]._tag) continue;
+
 				// Log
 				Hiro.sys.log('Removing outdated tag lock ' + Hiro.data.stores[u[i]]._tag + ' for ressource',u[i])
 
