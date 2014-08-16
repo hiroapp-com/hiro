@@ -2340,6 +2340,27 @@ var Hiro = {
 			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l',true);	
 		},
 
+		// Handle appcache progress events
+		cachehandler: function(event) {
+			// Switch 
+			switch (event.type) {
+				case 'updateready':
+					// Swap cache for next load
+					window.applicationCache.swapCache();	
+					// Release lock	
+					Hiro.sync.cachelock = false;								
+					break;				
+				case 'error':
+					Hiro.sys.error('Appcache error occured',event);
+					break;
+				case 'cached':
+				case 'noupdate':
+					// Release cachelock
+					Hiro.sync.cachelock = false;
+					break;
+			}			
+		},
+
 		// Set local data
 		set: function(store,key,value,source,paint) {
 			source = source || 'c';
@@ -4230,6 +4251,8 @@ var Hiro = {
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
 		init: function(vars) {
+			var el;
+
 			// Begin startup logging
 			Hiro.sys.log('Hiro startup sequence','','group');		
 
@@ -4264,18 +4287,13 @@ var Hiro = {
 
 			// Attach application cache update events
 			if (window.applicationCache) {
-				var ac=window.applicationCache;
-				ac.addEventListener('updateready', function() { 
-					window.applicationCache.swapCache();
-					// Hiro.sys.versioncheck('{{ config.HIRO_VERSION }}'); 
-					document.location.reload(true); 
-				}, false);
-				ac.addEventListener('noupdate', function() {
-					Hiro.sync.cachelock = false;
-				}, false);
-				ac.addEventListener('cached', function() {
-					Hiro.sync.cachelock = false;
-				}, false);
+				// Attach it either to main window or landing page
+				el = (Hiro.sys.production) ? window.applicationCache : window.frames[0].window.applicationCache;
+				// Attaché!
+				Hiro.util.registerEvent(el,'updateready',Hiro.data.cachehandler);
+				Hiro.util.registerEvent(el,'noupdate',Hiro.data.cachehandler);	
+				Hiro.util.registerEvent(el,'cached',Hiro.data.cachehandler);
+				Hiro.util.registerEvent(el,'error',Hiro.data.cachehandler);											
 			// Release the cachelock	
 			} else {
 				Hiro.sync.cachelock = false;
@@ -4301,11 +4319,6 @@ var Hiro = {
 				// If we have 32 chars long token we don't know yet
 				if (h[i].length == 32 && (!t || t.indexOf(h[i]) == -1)) Hiro.sync.tokens.push(h[i]);
 			}
-		},
-
-		// Called if a relevant cache event is fired
-		cachehandler: function(event) {
-			console.log(event);
 		},
 
 		// Takes a version nr and compares it to what we have. 
