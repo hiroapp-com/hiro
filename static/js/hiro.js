@@ -607,19 +607,7 @@ var Hiro = {
 					if (Hiro.canvas.el_text.scrollTop != 0) Hiro.canvas.el_text.scrollTop = 0;
 				}	
 			} 						
-		},		
-
-		// When a user releases a key, this includes actions like delete or ctrl+v etc
-		contentkeyup: function(event,el) {
-			var d; 
-
-			// Switch quote on/off based on user actions
-			if ((el.value.length > 0 && Hiro.canvas.quoteshown) || (el.value.length == 0 && !Hiro.canvas.quoteshown)) {
-				d = (Hiro.canvas.quoteshown) ? -1 : 1;
-				Hiro.ui.fade(Hiro.canvas.el_quote,d,450);
-				Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
-			} 								
-		},		
+		},			
 
 		// When a key is released in the title field
 		titlekeyup: function(event,el) {
@@ -743,7 +731,7 @@ var Hiro = {
 		// Paint canvas from cache
 		paint: function(setcursor) {
 			// Make sure we have a current note
-			var c = this.cache;					
+			var c = this.cache, d;					
 
 			Hiro.ui.render(function(){
 				// Set title & text
@@ -757,7 +745,7 @@ var Hiro = {
 				Hiro.canvas.overlay.paint(c.content);
 
 				// Set cursor (this should not fire on mobiles as it's called from a new requestanimationframe stack)
-				if (setcursor) Hiro.canvas.setcursor();														
+				if (setcursor) Hiro.canvas.setcursor();																		
 			});								
 		},
 
@@ -865,7 +853,7 @@ var Hiro = {
 
 			// Geerate new overlay
 			paint: function(string) {
-				var el = this.el_root;
+				var el = this.el_root, d;
 
 				// Paint overlay
 				Hiro.ui.render(function(){
@@ -874,6 +862,13 @@ var Hiro = {
 
 					// Resize
 					Hiro.canvas.resize();
+
+					// Switch quote on/off based on user actions
+					if ((string.length > 0 && Hiro.canvas.quoteshown) || (string.length == 0 && !Hiro.canvas.quoteshown)) {
+						d = (Hiro.canvas.quoteshown) ? -1 : 1;
+						Hiro.ui.fade(Hiro.canvas.el_quote,d,450);
+						Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
+					} 						
 				});
 			},
 
