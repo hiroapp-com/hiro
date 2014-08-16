@@ -3911,10 +3911,6 @@ var Hiro = {
 
 			// Run diff over a specified store, create and add edits to edits array, mark store as unsaved
 			makediff: function(store) {
-				// Don't run if we already have edits for this store
-				// TODO Bruno: Allow multiple edits if sending times out despite being offline (once we're rock solid)
-				if (store.edits && store.edits.length > 0) return true;		
-
 				// Define vars
 				var d, changes, id = (store.kind == 'note') ? 'note_' + store.id : store.kind;
 
@@ -3945,14 +3941,15 @@ var Hiro = {
 					// Mark store as tainted but do not persist yet for performance reasons
 					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);	
 
+					// Signal pending changes
+					return true;
 				// Remove store from unsynced already at this point (as opposed to res_sync ack/incoming) if we have nothing to sync						
 				} else if (!store.edits || store.edits.length == 0) {			
-					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);					
+					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);	
+
+					// Return false to signal "no changes"
+					return false;			
 				}
-
-				// Return changes						
-				return changes || false;
-
 			},
 
 			// Specific folio diff, returns proper changes format
