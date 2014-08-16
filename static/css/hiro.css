@@ -508,18 +508,22 @@ input.error:focus {
 #canvas textarea {
   position: relative;  
   color: rgba(0,0,0,0.5); 
-  padding: 127px 395px 0 96px;   
+  padding: 127px 395px 30px 96px;   
   background-color: transparent; 
   overflow-y: auto;
   resize: none; 
   z-index: 2010;     
 }
 
+#canvas textarea::-webkit-scrollbar {
+    width: 0;
+}
+
 #canvas pre { 
   top: 0;
   position: absolute;
   background-color: #fff;
-  padding: 127px 395px 50px 96px;   
+  padding: 127px 395px 80px 96px;   
   color: red;
   z-index: 2009;
   white-space: pre-wrap;
@@ -577,6 +581,10 @@ input.error:focus {
     -webkit-overflow-scrolling: touch; 
   }
 
+  #canvas textarea::-webkit-scrollbar {
+      width: 5px;
+  }  
+
   #canvas pre { 
     display: none;
   }  
@@ -600,10 +608,15 @@ input.error:focus {
     border: 0;
   }  
 
-  #canvas textarea,  #canvas pre {
-    padding: 98px 70px 10px 70px;
+  #canvas pre {
+    padding: 98px 70px 80px 70px;
     line-height: 30px;
-  }    
+  }  
+
+  #canvas textarea {
+    padding: 98px 70px 30px 70px;
+    line-height: 30px;
+  }     
 
   #nicequote {
     left: 70px;

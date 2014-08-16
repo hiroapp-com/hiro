@@ -763,23 +763,29 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
-			var o, t, h;
+			var o, t, h, bars;
 
 			// Do not resize on mobile devices
 			if (Hiro.ui.mini()) return;
 
-			// Get current overlay height and pcik right value
-			o = Hiro.canvas.overlay.el_root.offsetHeight;
-			t = Hiro.canvas.el_text.scrollHeight;
-			h = (t - o <= 200) ? t : o;
-
-			console.log('Testing resize: Textarea ' + t + ', Overlay ' + o + ', chose ' + h + ' while cache knows ' + Hiro.canvas.cache._height)
-
-			// Spare us the paint if nothing changed
-			if (h == Hiro.canvas.cache._height) return;
-
 			// With the next available frame
 			Hiro.ui.render(function(){
+				// Get basic values
+				o = h = Hiro.canvas.overlay.el_root.offsetHeight;
+				t = Hiro.canvas.el_text.scrollHeight;
+
+				// See if the textarea is larger (= we grew)
+				if (t > o) {
+					// See if we have scrollbars
+					bars = (Hiro.canvas.el_text.clientWidth != Hiro.canvas.el_text.offsetWidth);
+
+					// Pick new target height based on textareas scrollheight plus CSS padding bottom difference
+					if (bars) h = t + 50;
+				}
+
+				// Spare us the paint if nothing changed
+				if (h == Hiro.canvas.cache._height) return;
+				
 				// Fire another initial resize for strange webkit get/paint cycle
 				if (!Hiro.canvas.cache._height) setTimeout(Hiro.canvas.resize,200);
 
@@ -788,8 +794,6 @@ var Hiro = {
 
 				// Resize textarea to value
 				Hiro.canvas.el_text.style.height = Hiro.canvas.cache._height.toString() + 'px';
-
-				console.log('Resized: Overlay ' + h + '/' + Hiro.canvas.overlay.el_root.offsetHeight + ', textarea at ' + t + '/' + Hiro.canvas.el_text.scrollHeight + ' - ' + Hiro.canvas.el_text.value.length + ' Difference of ' + (t-h));			
 			})
 		},
 
