@@ -206,8 +206,8 @@ def valid_email(email):
 def passwd_valid(pwd):
     if pwd is None:
         return None
-    if len(pwd) < 6:
-        return "Too short (6 or more)"
+    if len(pwd) < 4:
+        return "Too short (at least 4)"
     return None
 
 def jsonify_err(status, **kwargs):

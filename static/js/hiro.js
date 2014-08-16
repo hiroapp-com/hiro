@@ -785,7 +785,7 @@ var Hiro = {
 
 				// Spare us the paint if nothing changed
 				if (h == Hiro.canvas.cache._height) return;
-				
+
 				// Fire another initial resize for strange webkit get/paint cycle
 				if (!Hiro.canvas.cache._height) setTimeout(Hiro.canvas.resize,200);
 
@@ -1102,10 +1102,17 @@ var Hiro = {
 
 		// Post successfull auth stuff
 		logiocomplete: function(data,login) {	
+			// Check if user did this while on landing page
+			if (Hiro.ui.landingvisible) {
+				// Remove landing page
+				Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);	
+				// Set the flag
+				Hiro.ui.landingvisible = false;			
+			}
 			// Close dialog
 			Hiro.ui.dialog.hide();		
 
-			// USe token to request new session
+			// Use token to request new session
 			Hiro.sync.createsession(data.token);	
 		},
 
@@ -2848,11 +2855,23 @@ var Hiro = {
 		createsession: function(token) {
 			var r = { "name": "session-create" }, sid = Hiro.data.get('profile','c.sid');
 
-			// Look into tokenbag as fallback (most likely by URL hash at this point)
-			if (!token && this.tokens.length > 0) token = this.tokens[0];	
+			// If login etc gave us an unknown token
+			if (token && this.tokens.indexOf(token) == -1) {
+				// Add it to the bag
+				this.tokens.push(token);
+				// Save just in case the sync server shoud be offline or connection dies right now
+				Hiro.data.local.todisk('tokens',Hiro.sync.tokens)		
+			// Try to fallback on stored tokens				
+			} else if (!token) {
+				token = this.tokens[0];
+			}
 
+			// If we are offline, try connecting first
+			if (!this.synconline) {
+				// Prepare connection
+				Hiro.sync.connect();
 			// See if a token was provided
-			if (token) {
+			} else if (token) {
 				// Add token and optional session data to request
 				r.token = token;
 
@@ -3037,6 +3056,9 @@ var Hiro = {
 						cn._ownedit = peer.last_edit;
 						cn._cursor = peer.cursor_pos;
 					}
+
+					// Set owner
+					if (peer.role == 'owner') cn._owner = peer.user.uid;
 				}			
 
 				// Set text & title
@@ -3076,10 +3098,15 @@ var Hiro = {
 			if (cf.c && cf.c.length > 0) {
 				// Check if the old note is still around
 				if (Hiro.folio.lookup[Hiro.canvas.currentnote]) keeper = Hiro.canvas.currentnote;
+
 				// Properly sort notes first
-				Hiro.folio.sort(keeper);				
+				Hiro.folio.sort(keeper);
+
 				// Load doc onto canvas
 				Hiro.canvas.load();	
+
+				// End hrpogress if we kept note (otherwise the load above aborted before that)
+				if (keeper) Hiro.ui.hprogress.done();				
 			// If the folio is still empty, we create a new note				
 			} else {
 				// Log
@@ -3641,6 +3668,7 @@ var Hiro = {
 
 			// Generic config			
 			url: undefined,
+
 			// Reconnectdelay
 			rcd: 1000,
 
@@ -4426,6 +4454,7 @@ var Hiro = {
 		// Internals
 		focus: false,
 		resizing: false,
+		landingvisible: false,
 
 		// Setup and browser capability testing
 		init: function() {
@@ -4623,8 +4652,8 @@ var Hiro = {
 	        var map = {focus: true, focusin: true, pageshow: true, blur: false, focusout: false, pagehide: false},
 	        	focus = Hiro.ui.focus = (event.type in map) ? map[event.type] : !Hiro.ui.focus; 
 
-	        // If the window gets focused
-	        if (focus) {
+	        // If the window gets focused & we already see a workspace
+	        if (focus && !Hiro.ui.landingvisible) {
 	        	// Reset tab notifier
 	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.cleanup();
 
@@ -4685,6 +4714,9 @@ var Hiro = {
 			// Abort if there is no content yet or we already hid the landing page iframe
 			if (!b || Hiro.ui.el_landingpage.style.display == 'none') return;
 
+			// Set flag
+			Hiro.ui.landingvisible = true;
+
 			// Fade in contents
 			Hiro.ui.fade(b,1)
 
@@ -4695,25 +4727,26 @@ var Hiro = {
 		// Handle clicks on landingpage
 		landingclick: function(action,type) {
 			// Woop, we inited started fiddling with something relevant
-			if (type == 'full') {	
-				// Bootstrap local only workspace
-				Hiro.data.bootstrap();
-
-				// Connect to server
-				Hiro.sync.connect();				
-
+			if (type == 'full') {				
 				// Remove overlay & prepare					
 				switch (action) {
 					case 'screenshot':
 					case 'cto':	
+						// Bootstrap local only workspace
+						Hiro.data.bootstrap();
+
+						// Connect to server
+						Hiro.sync.connect();
+
 						// Remove landing page
-						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);	
-						// Focus textarea									
-						Hiro.canvas.el_text.focus(); 					
+						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);
+
+						// Set flag
+						Hiro.ui.landingvisible = false;					
 						//window.parent.analytics.track('Started Interacting');					
 						break;		
-					case 'signin':	
-						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);					
+					case 'signin':		
+						// Show dialog			
 						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
 						break;									
 				}

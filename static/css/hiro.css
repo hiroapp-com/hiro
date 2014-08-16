@@ -361,7 +361,7 @@ input.error:focus {
   padding-right: 33px;
 }
 
-#folio .notes .note.shared a .bubble {
+#folio .notes .note a .bubble {
   top: 1px;
   right: 6px;
   line-height: 6px;
@@ -515,10 +515,6 @@ input.error:focus {
   z-index: 2010;     
 }
 
-#canvas textarea::-webkit-scrollbar {
-    width: 0;
-}
-
 #canvas pre { 
   top: 0;
   position: absolute;
@@ -556,6 +552,11 @@ input.error:focus {
   }  
 }
 
+@media (min-width: 481px) {
+  #canvas textarea::-webkit-scrollbar {
+      width: 0;
+  }
+}
 
 @media (max-width: 480px) {
   #canvas {
@@ -579,11 +580,7 @@ input.error:focus {
     height: 100% !important;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch; 
-  }
-
-  #canvas textarea::-webkit-scrollbar {
-      width: 5px;
-  }  
+  } 
 
   #canvas pre { 
     display: none;
