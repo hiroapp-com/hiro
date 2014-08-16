@@ -4262,12 +4262,20 @@ var Hiro = {
 			// Set up UI according to user level
 			Hiro.ui.setstage();			
 
-			// Load application cache
+			// Attach application cache update events
 			if (window.applicationCache) {
-				var frame = document.createElement('iframe');
-				frame.style.display = 'none';
-				frame.src = '/offline/manifestwrapper/';
-				document.body.appendChild(frame);
+				var ac=window.applicationCache;
+				ac.addEventListener('updateready', function() { 
+					window.applicationCache.swapCache();
+					// Hiro.sys.versioncheck('{{ config.HIRO_VERSION }}'); 
+					document.location.reload(true); 
+				}, false);
+				ac.addEventListener('noupdate', function() {
+					Hiro.sync.cachelock = false;
+				}, false);
+				ac.addEventListener('cached', function() {
+					Hiro.sync.cachelock = false;
+				}, false);
 			// Release the cachelock	
 			} else {
 				Hiro.sync.cachelock = false;
