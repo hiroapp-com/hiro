@@ -753,11 +753,11 @@ var Hiro = {
 		resize: function() {
 			var o, t, h, bars;
 
-			// Do not resize on mobile devices
-			if (Hiro.ui.mini()) return;
-
 			// With the next available frame
 			Hiro.ui.render(function(){
+				// Do not resize on mobile devices
+				if (Hiro.ui.mini()) return;	
+							
 				// Get basic values
 				o = h = Hiro.canvas.overlay.el_root.offsetHeight;
 				t = Hiro.canvas.el_text.scrollHeight;
@@ -4251,7 +4251,10 @@ var Hiro = {
 
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
-				var n = Hiro.data.get('note_' + id), diffs, patch;
+				var n = Hiro.data.get('note_' + id), diffs, patch, start;
+
+				// Time start
+				start = Hiro.util.now();
 
             	// Build diffs from the server delta
             	try { 
@@ -4275,7 +4278,7 @@ var Hiro = {
                     	Hiro.canvas.paint();
                     }  
                     // Log                                      
-	                Hiro.sys.log("Patches successfully applied");
+	                Hiro.sys.log('Patches successfully applied in ' + (Hiro.util.now() - start) + 'msecs');
                 }             	
 			},	
 		}
