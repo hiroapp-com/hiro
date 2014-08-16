@@ -3948,7 +3948,11 @@ var Hiro = {
 					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);	
 
 					// Return false to signal "no changes"
-					return false;			
+					return false;	
+				// Remaining scenario: No neww edits, but old pending edits found			
+				} else {
+					// Signal old pending changes
+					return true;
 				}
 			},
 
