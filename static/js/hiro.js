@@ -763,23 +763,25 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
-			var oh, th;
+			var h;
 
 			// Do not resize on mobile devices
 			if (Hiro.ui.mini()) return;
 
+			// Get current overlay height
+			h = Hiro.canvas.overlay.el_root.offsetHeight;
+
+			// Spare us the paint if nothing changed
+			if (h == Hiro.canvas.cache._height) return;
+
 			// With the next available frame
 			Hiro.ui.render(function(){
-				// Get values
-				oh = Hiro.canvas.overlay.el_root.offsetHeight;
-				th = Hiro.canvas.el_text.scrollHeight;
-
-				console.log('resizin',oh,th,'chars:',Hiro.canvas.cache.content.length);
-				// Set bigger value
-				Hiro.canvas.cache._height = oh;
+				console.log(Hiro.canvas.cache._height)
+				// Set height to overlay window
+				Hiro.canvas.cache._height = Hiro.canvas.overlay.el_root.offsetHeight;
 
 				// Resize textarea to value
-				Hiro.canvas.el_text.style.height = (Hiro.canvas.cache._height + 50).toString() + 'px';
+				Hiro.canvas.el_text.style.height = Hiro.canvas.cache._height.toString() + 'px';
 			})
 		},
 
@@ -3283,6 +3285,7 @@ var Hiro = {
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Remove
 							Hiro.user.contacts.remove(obj,'s',true);
+							console.log('remooooooooooooooooovin',ops[j]);
 							update = true;
 							break; 	
 						// Grab user and give it new properties
@@ -4288,7 +4291,7 @@ var Hiro = {
 			// Attach application cache update events
 			if (window.applicationCache) {
 				// Attach it either to main window or landing page
-				el = (Hiro.sys.production) ? window.applicationCache : window.frames[0].window.applicationCache;
+				el = (document.documentElement.getAttribute('manifest')) ? window.applicationCache : window.frames[0].window.applicationCache;
 				// Attaché!
 				Hiro.util.registerEvent(el,'updateready',Hiro.data.cachehandler);
 				Hiro.util.registerEvent(el,'noupdate',Hiro.data.cachehandler);	

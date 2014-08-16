@@ -496,7 +496,6 @@ input.error:focus {
 
 #canvas textarea, #canvas pre {   
   margin: 0;
-  padding: 127px 395px 100px 96px;
   font-family: "ff-meta-serif-web-pro",serif;
   font-weight: 500;
   font-size: 17px;
@@ -508,7 +507,8 @@ input.error:focus {
 
 #canvas textarea {
   position: relative;  
-  color: rgba(0,0,0,0.5);  
+  color: rgba(0,0,0,0.5); 
+  padding: 127px 395px 0 96px;   
   background-color: transparent; 
   overflow-y: auto;
   resize: none; 
@@ -519,6 +519,7 @@ input.error:focus {
   top: 0;
   position: absolute;
   background-color: #fff;
+  padding: 127px 395px 50px 96px;   
   color: red;
   z-index: 2009;
   white-space: pre-wrap;
