@@ -734,10 +734,10 @@ var Hiro = {
 			Hiro.ui.hprogress.done();
 
 			// Add note to history API (change browser URL etc)
-			if (!preventhistory) Hiro.ui.history.add(id);							
+			if (!preventhistory) Hiro.ui.history.add(id);						
 
 			// Log
-			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);
+			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);	
 		},
 
 		// Paint canvas from cache
@@ -756,32 +756,40 @@ var Hiro = {
 				// Render overlay
 				Hiro.canvas.overlay.paint(c.content);
 
-				// Set cursor (this should not fire as it's called from a new requestanimationframe stack)
+				// Set cursor (this should not fire on mobiles as it's called from a new requestanimationframe stack)
 				if (setcursor) Hiro.canvas.setcursor();														
 			});								
 		},
 
 		// Resize textarea to proper height
 		resize: function() {
-			var h;
+			var o, t, h;
 
 			// Do not resize on mobile devices
 			if (Hiro.ui.mini()) return;
 
-			// Get current overlay height
-			h = Hiro.canvas.overlay.el_root.offsetHeight;
+			// Get current overlay height and pcik right value
+			o = Hiro.canvas.overlay.el_root.offsetHeight;
+			t = Hiro.canvas.el_text.scrollHeight;
+			h = (t - o <= 200) ? t : o;
+
+			console.log('Testing resize: Textarea ' + t + ', Overlay ' + o + ', chose ' + h + ' while cache knows ' + Hiro.canvas.cache._height)
 
 			// Spare us the paint if nothing changed
 			if (h == Hiro.canvas.cache._height) return;
 
 			// With the next available frame
 			Hiro.ui.render(function(){
-				console.log(Hiro.canvas.cache._height)
+				// Fire another initial resize for strange webkit get/paint cycle
+				if (!Hiro.canvas.cache._height) setTimeout(Hiro.canvas.resize,200);
+
 				// Set height to overlay window
-				Hiro.canvas.cache._height = Hiro.canvas.overlay.el_root.offsetHeight;
+				Hiro.canvas.cache._height = h;
 
 				// Resize textarea to value
 				Hiro.canvas.el_text.style.height = Hiro.canvas.cache._height.toString() + 'px';
+
+				console.log('Resized: Overlay ' + h + '/' + Hiro.canvas.overlay.el_root.offsetHeight + ', textarea at ' + t + '/' + Hiro.canvas.el_text.scrollHeight + ' - ' + Hiro.canvas.el_text.value.length + ' Difference of ' + (t-h));			
 			})
 		},
 
@@ -4413,6 +4421,7 @@ var Hiro = {
 
 		// Internals
 		focus: false,
+		resizing: false,
 
 		// Setup and browser capability testing
 		init: function() {
@@ -4481,8 +4490,9 @@ var Hiro = {
 			// Start hprogress on init
 			this.hprogress.init();	
 
-			// Attach keyboard shortcut listener
+			// Attach keyboard shortcut listener & resize cleaner
 			Hiro.util.registerEvent(window,'keydown',Hiro.ui.keyhandler);
+			Hiro.util.registerEvent(window,'resize',Hiro.ui.resizehandler);			
 
 			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up in the settings area
 			this.fastbutton.attach(this.dialog.el_root,Hiro.ui.dialog.clickhandler)
@@ -4551,6 +4561,27 @@ var Hiro = {
 						break;
 				}
 			}
+		},
+
+		// Whenever the window size is changed
+		resizehandler: function(event) {
+			// Ignore if we wait for paint
+			if (Hiro.ui.resizing) return;
+
+			// Set falg to true
+			Hiro.ui.resizing = true;
+
+			// Wrap in rendering
+			Hiro.ui.render(function(){				
+				// Reset canvas
+				Hiro.canvas.resize();
+
+				// Reset dialog position
+				if (Hiro.ui.dialog.open) Hiro.ui.dialog.center();
+
+				// Reset flag
+				Hiro.ui.resizing = false;				
+			})
 		},
 
 		// Attach focuschange properly
@@ -5360,9 +5391,8 @@ var Hiro = {
 
 				// Hide folio
 				if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
-							
-				// Attach event and set internal value
-				Hiro.util.registerEvent(window,'resize',Hiro.ui.dialog.center);
+
+				// Set flag
 				this.open = true;
 			},
 
@@ -5415,8 +5445,7 @@ var Hiro = {
 					});						
 				},150);										
 
-				// Detach event and set internal value				
-				Hiro.util.releaseEvent(window,'resize',Hiro.ui.dialog.center);
+				// Reset internal value			
 				this.open = false;				
 			},		
 
