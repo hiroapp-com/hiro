@@ -3154,13 +3154,24 @@ var Hiro = {
 					scv = data.changes[i].clock.cv
 
 					// Server sends an edit twice, so we just ignore it
+					// The "Duplicate Paket" scenario
 					if (ssv < store.sv) {
 						Hiro.sys.log('Server sent sv' + ssv + ' twice, local sv' + store.sv + ', ignoring changes:',data.changes[i].delta);
+						continue;
+					// Server resends an already processed change because it doesn't know we already got it 
+					// Aka "The Lost Return" scenario (Lost outbound is not handled here as it needs no handling)
+					} else if (scv != store.cv) {	
+						// Log
+						Hiro.sys.log('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover. We need backup!',data.changes[i].delta);
+						// Reset cv by number of pending local edits
+						store.cv = store.cv - store.edits.length;
+						// Empty edit stack to avoid infinite loops
+						store.edits = [];			
 					// Log all other cases we don't handle / know how to handle yet	
 					} else {
 						Hiro.sys.error('Unknown sync case with Server cv' + scv + ' sv' + ssv	+ ' and Client cv' + store.cv + ' sv' +  store.sv,JSON.parse(JSON.stringify([data,store])));
+						continue;					
 					}
-					continue;
 				}	
 
 				// Iterate through delta msg's
