@@ -2519,7 +2519,7 @@ var Hiro = {
 			// Remove contacts
 			for (i = c.length - 1; i >= 0; i--) {
 				// Do not cleanup unsynced contacts
-				if (!c[i].user.uid) continue;
+				if (!c[i].uid) continue;
 
 				// Remove this entry from contacts
 				c.splice(i,1);
