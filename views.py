@@ -111,10 +111,12 @@ def register():
 
 def change_plan():
     data = request.json or {}
-    sid, plan, token = data.get('sid'), data.get('plan'), data.get('stripeToken')
-    if not all(sid, plan, token):
-        return jsonify_err(400, error='sid, plan and stripe-token required')
+    sid, plan, token = data.get('sid'), data.get('plan'), data.get('stripetoken')
+    if not all([sid, plan, token]):
+        return jsonify_err(400, error='Something went wrong on our side, please try again later.')
     sess = Session.load(sid)
+    if not sess:
+        return jsonify_err(403, error=sid)    
     err = sess.user.change_plan(plan,token)
     if err:
         return jsonify_err(400, error=err)

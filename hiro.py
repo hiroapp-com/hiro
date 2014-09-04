@@ -90,7 +90,7 @@ def run_server(addr, port):
     # facebook & stipe callbacks
     app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect)
     app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, methods=['GET','POST'])
-    app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan)
+    app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan, methods=['POST'])
     # root-based static files
     app.add_url_rule('/favicon.ico', 'favicon', view_func=root_static)
     app.add_url_rule('/apple-touch-icon-precomposed.png', 'icon', view_func=root_static)   

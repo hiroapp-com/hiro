@@ -1395,7 +1395,7 @@ var Hiro = {
 			// Validate form and send to stripe if ok
 			validate: function() {
 				var root = document.getElementById('s_checkout'),
-					form, fields, ccfields, el, me, button, subscription, plans = [0,1,'Advanced','Pro'];
+					form, fields, ccfields, el, me, button, subscription, plans = [0,1,'starter','pro'];
 
 				// Fatal!
 				if (!window.Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
@@ -1417,9 +1417,8 @@ var Hiro = {
 
 				// Build subscription object
 				subscription = {};
-				subscription.plan = plans[this.targettier];
-
-				console.log('checkpouts!',subscription,button);				
+				subscription.plan = plans[this.targettier];		
+				subscription.sid = Hiro.data.get('profile','c.sid');
 
 				// Ping Stripe for token
 				Stripe.createToken(form, function(status,response) {					
@@ -1453,7 +1452,7 @@ var Hiro = {
 
 					} else {
 						// add new stripe data to subscription object
-						subscription.token = response.id;	
+						subscription.stripetoken = response.id;	
 
 						// Send token to backend
 						Hiro.sync.ajax.send({
@@ -1473,7 +1472,7 @@ var Hiro = {
 			                	Hiro.sys.error('Checkout went wrong on our side: ', data);		
 			                	// Reset and show
 			                    Hiro.user.checkout.active = false;
-			                    me.innerText = "Hiro wasn't available, please try again a little bit later";
+			                    me.innerText = data.error || "Hiro wasn't available, please try again a little bit later";
 								button.innerText = "Try again";			                    				                	                	
 			                }					
 						});														
@@ -4365,7 +4364,7 @@ var Hiro = {
 			this.inited = true;		
 
 			// Yay, nothing went fatally wrong (This has a very long time so "Ready/Offline" doesn't get overwritten by the initial save)
-			Hiro.ui.statsy.add('startup',0,((!Hiro.sync.synconline || Hiro.data.get('profile','c.tier') == 0) && 'Ready.' || 'Offline.'),'info',1000);				
+			Hiro.ui.statsy.add('startup',0,((!Hiro.sync.synconline || Hiro.data.get('profile','c.tier') === 0) && 'Ready.' || 'Offline.'),'info',1000);				
 
 			// Log completion
 			Hiro.sys.log('Hiro.js fully inited');
