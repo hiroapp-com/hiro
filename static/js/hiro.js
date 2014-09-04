@@ -1341,6 +1341,7 @@ var Hiro = {
 			// Internals
 			targettier: 0,
 			active: false,
+			plans: [0,'free','starter','pro'],
 
 			// Prepare checkout form
 			show: function(tt) {
@@ -1395,7 +1396,7 @@ var Hiro = {
 			// Validate form and send to stripe if ok
 			validate: function() {
 				var root = document.getElementById('s_checkout'),
-					form, fields, ccfields, el, me, button, subscription, plans = [0,1,'starter','pro'];
+					form, fields, ccfields, el, me, button, subscription;
 
 				// Fatal!
 				if (!window.Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
@@ -1417,7 +1418,7 @@ var Hiro = {
 
 				// Build subscription object
 				subscription = {};
-				subscription.plan = plans[this.targettier];		
+				subscription.plan = this.plans[this.targettier];		
 				subscription.sid = Hiro.data.get('profile','c.sid');
 
 				// Ping Stripe for token
@@ -1482,7 +1483,7 @@ var Hiro = {
 
 			// Sniiieff, so loooneeesssoooommmmeee tonight
 			downgrade: function(tier) {
-				var root = document.getElementById('s_plan'), button;
+				var root = document.getElementById('s_plan'), button, subscription = {};
 
 				// check & set flag
 				if (this.active || !root) return;
@@ -1492,11 +1493,15 @@ var Hiro = {
 				button = root.getElementsByClassName(tier)[0].getElementsByClassName('light')[0];
 				button.innerText = 'Downgrading...';
 
+				// Build subscription object
+				subscription.plan = this.plans[tier];		
+				subscription.sid = Hiro.data.get('profile','c.sid');				
+
 				// Post to server, bitterly
 				Hiro.sync.ajax.send({
 					url: "/settings/plan",
 	                type: "POST",
-	                payload: JSON.stringify({plan:tier}),
+	                payload: JSON.stringify(subscription),
 					success: function(req,data) {
 	                    Hiro.ui.setstage(data.tier);	
 	                    Hiro.user.checkout.active = false;	
