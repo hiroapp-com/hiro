@@ -1128,7 +1128,39 @@ var Hiro = {
 
 		// Request password reset
 		requestpwdreset: function() {
+			var el = Hiro.user.el_login,
+				input = el.getElementsByTagName('input')[0],
+				parse = Hiro.util.mailorphone(input.value),
+				e = el.getElementsByClassName('mainerror')[0],
+				payload = {}, sid = Hiro.data.get('profile','c.sid');
 
+			// If we have no input value
+			if (!parse) {
+				// Show error & refocus
+				input.className += ' error';
+				input.focus();
+				e.innerText = "Please enter your mail or phone and click 'Reset password' again";
+				return;
+			}	
+
+			// Build proper object
+			payload[parse[0]] = parse[1];
+			if (sid) payload.sid = sid;
+
+			// Send request to backend
+			Hiro.sync.ajax.send({
+				url: '/tokens/signup ',
+	            type: "POST",
+	            payload: JSON.stringify(payload),
+				success: function(req,data) {
+					// Show message
+	                e.innerText = "Success, check your " + parse[0] + " for the reset link.";										                    
+				},
+				error: function(req,data) {		
+					// Reset DOM & flag	
+	               	e.innerText = "Please try again.";	                 		                    						                    
+				}
+			});	
 		},	
 
 		// Hello. Is it them you're looking for?
@@ -5571,6 +5603,9 @@ var Hiro = {
 						case 'switch_s_signin':						
 							Hiro.ui.switchview(document.getElementById('s_signin'));
 							Hiro.user.el_login.getElementsByTagName('input')[0].focus();					
+							break;	
+						case 'requestpwdreset':
+							Hiro.user.requestpwdreset();
 							break;							
 						case 'register':
 						case 'login':
