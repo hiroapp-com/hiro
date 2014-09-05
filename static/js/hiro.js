@@ -3657,6 +3657,9 @@ var Hiro = {
 					// Switch dialog content if it's open
 					if (Hiro.ui.dialog.open) {
 						if (Hiro.data.get('profile','c.tier') > 0) {
+							// Populate contents with contents
+							Hiro.ui.dialog.update();							
+							// Display elements
 							Hiro.ui.switchview('d_settings');
 							Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' }) 							
 						} else {
