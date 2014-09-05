@@ -3052,13 +3052,17 @@ var Hiro = {
 
 					// Set our own data
 					if (peer.user.uid == cp.c.uid) {
-						cn._ownedit = peer.last_edit || Hiro.util.now();
-						cn._cursor = peer.cursor_pos || 0;
+						cn._ownedit = peer.last_edit;
+						cn._cursor = peer.cursor_pos;
 					}
 
 					// Set owner
 					if (peer.role == 'owner') cn._owner = peer.user.uid;
-				}			
+				}	
+
+				// Set fallback values
+				// Used for sorting, if we never touched the note we sort it by lastedit or (superedgy) default to now
+				if (!cn._ownedit) cn._ownedit = cn._lastedit || Hiro.util.now();
 
 				// Set text & title
 				cn.c.text = cn.s.text = sn.val.text;
