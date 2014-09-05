@@ -3052,8 +3052,8 @@ var Hiro = {
 
 					// Set our own data
 					if (peer.user.uid == cp.c.uid) {
-						cn._ownedit = peer.last_edit;
-						cn._cursor = peer.cursor_pos;
+						cn._ownedit = peer.last_edit || Hiro.util.now();
+						cn._cursor = peer.cursor_pos || 0;
 					}
 
 					// Set owner
@@ -4006,6 +4006,7 @@ var Hiro = {
 				}
 
 				// Lookup new notes that aren't synced yet
+				// TODO Bruno: This can happen multiple times if previous add-noteref times out and diff runs again. What shall we do?
 				if ( store.s.length != store.c.length ) {
 					for ( i = 0, l = store.c.length; i < l; i++) {
 						if (store.c[i].nid.length < 5) {
