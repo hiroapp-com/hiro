@@ -2985,7 +2985,7 @@ var Hiro = {
 			// Remove all synced data
 			Hiro.data.cleanup();
 
-			// CReate new blank profile object
+			// Create new blank profile object
 			sp = data.session.profile; 
 			cp = {};
 
@@ -3473,6 +3473,14 @@ var Hiro = {
 			// Start building commit
 			newcommit = [];
 
+			// If we had no last sync at all, set it to now
+			if (!this.lastsync) {
+				// Set it for the first time
+				this.lastsync = Hiro.util.now();
+				// Release locks
+				this.releaselocks();
+			}				
+
 			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
 			for (i = u.length - 1; i > -1; i--) {
 				// Get store
@@ -3512,14 +3520,8 @@ var Hiro = {
 				return true;
 
 			} else {
-				// If we had no last sync at all, set it to now
-				if (!this.lastsync) {
-					// Set it for the first time
-					this.lastsync = Hiro.util.now();
-					// Release locks
-					this.releaselocks();
 				// Clear locks if we had some and got no response within 30 secs
-				} else if (Hiro.data.unsynced.length > 0 && (Hiro.util.now() - this.lastsync > 30000)) this.releaselocks();
+				if (Hiro.data.unsynced.length > 0 && (Hiro.util.now() - this.lastsync > 30000)) this.releaselocks(true);
 
 				// Nothing committed
 				return false;
@@ -3527,7 +3529,7 @@ var Hiro = {
 		},
 
 		// Clear all commit locks
-		releaselocks: function() {
+		releaselocks: function(recommit) {
 			var u = Hiro.data.unsynced, i, l;
 
 			// Go through unsynced ressources
@@ -3543,7 +3545,7 @@ var Hiro = {
 			}
 
 			// Commit again
-			this.commit();
+			if (recommit) this.commit();
 		},
 
 		// Build a complete res-sync message for given store
