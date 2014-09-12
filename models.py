@@ -1,22 +1,34 @@
+import sys
 import uuid
 import random
 import string
 import datetime
 import calendar
+import sqlite3
 from hashlib import sha512
 
 import stripe
 
+from flask import g
 from secret_keys import STRIPE_SECRET_KEY
-from hiro import get_db
 from passlib.hash import pbkdf2_sha512
 from jsonclient import JSONClient
 
+# Lol
+if sys.platform.startswith('win'):
+    DB_PATH = 'C:\local\go\src\github.com\hiro\hync\hiro.db'
+else:
+    DB_PATH = './hiro.db'
 
 COMM_ADDR = ("127.0.0.1", "7777")
 
 comm_client = JSONClient(COMM_ADDR)
 gen_uid = lambda: ''.join(random.sample(string.lowercase*3+string.digits*3, 8))
+
+def get_db():
+    if not hasattr(g, 'db'):
+        g.db = sqlite3.connect(DB_PATH)
+    return g.db
 
 def send_email(kind, to_name, to_email, data):
     print "sending email", kind, to_name, to_email, data
