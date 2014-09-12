@@ -129,6 +129,7 @@ class User(object):
             args.append(v)
         args.append(self.uid)
         conn.execute("UPDATE users SET {} WHERE uid = ?".format(u', '.join(setter)), tuple(args)).fetchone()
+        conn.commit()
         return True
 
 
@@ -218,6 +219,7 @@ class User(object):
                                             """, (self.uid, phone, phone)).rowcount)
         self.email_status = 'verified' if email_verif else self.email_status
         self.phone_status = 'verified' if phone_verif else self.phone_status
+        conn.commit()
         return email_verif or phone_verif
 
     def copy_noterefs_from(self, user):
@@ -231,6 +233,7 @@ class User(object):
             cnt += conn.execute("""INSERT INTO noterefs (nid, uid, status, role) 
                                            VALUES (?, ?, 'active', 'active')
                                 """, (self.uid, row[0])).rowcount
+        conn.commit()
         return cnt
 
     def steal_ownerships_from(self, user):
@@ -239,6 +242,7 @@ class User(object):
         conn = get_db()
         cur = conn.cursor()
         ok = bool(cur.execute("UPDATE notes SET created_by = ? WHERE created_by = ?", (self.uid, user.uid)).rowcount)
+        conn.commit()
         return ok
 
     def get_stripe_customer(self, token=None):
@@ -256,6 +260,7 @@ class User(object):
                     email=self.email
                     )
             conn.execute("UPDATE users SET  stripe_customer_id = ? WHERE uid = ?", (customer.id, self.uid,))
+            conn.commit()
             return customer
         else:
             return stripe.Customer.retrieve(cust_id)
@@ -287,6 +292,7 @@ class User(object):
                 last_day = calendar.monthrange(now.year, now.month)[1]
                 expiry = now.replace(day=last_day, hour=23, minute=59)
                 conn.execute("UPDATE users SET plan = ?, plan_expires_at = ? WHERE uid = ?", (new_plan, expiry, self.uid,))
+                conn.commit()
         else:
             # handles up-/downgrades between paid plans and paid_upgade from free
             if stripe_customer:
@@ -298,6 +304,7 @@ class User(object):
                 return "Trying non-forced upgrade to paid plan without valid stripeToken"
             # make sure, previous plan-expirations are unset after upgrade
             conn.execute("UPDATE users SET plan = ?, plan_expires_at = '' WHERE uid = ?", (new_plan, self.uid))
+            conn.commit()
         return None
 
 
@@ -340,6 +347,7 @@ class Session(object):
 def tokenhistory_add(token, uid):
     conn = get_db()
     conn.execute("INSERT INTO stripe_tokens (token, uid, seen_at) VALUES (?, ?, datetime('now'))", (token, uid))
+    conn.commit()
 
 def tokenhistory_seen(token):
     conn = get_db()
