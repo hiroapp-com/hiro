@@ -1149,7 +1149,7 @@ var Hiro = {
 
 			// Send request to backend
 			Hiro.sync.ajax.send({
-				url: '/tokens/signup ',
+				url: '/tokens/signup',
 	            type: "POST",
 	            payload: JSON.stringify(payload),
 				success: function(req,data) {
@@ -5742,11 +5742,10 @@ var Hiro = {
 				var that = Hiro.ui.dialog,
 					el_plans = document.getElementById('s_plan'),
 					el_checkout = document.getElementById('s_checkout'),
-					els_header = that.el_root.getElementsByClassName('tease'),
-					uid = Hiro.data.get('profile','c.uid');
+					els_header = that.el_root.getElementsByClassName('tease');
 
 				// For anon user simply show login
-				if (!uid || uid == 0) {
+				if (!Hiro.data.get('profile','c.uid') || Hiro.data.get('profile','c.tier') < 1) {
 					this.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
 					return;
 				}	
