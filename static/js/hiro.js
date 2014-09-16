@@ -2557,7 +2557,7 @@ var Hiro = {
 
 			// Save changes
 			this.local.quicksave(newid);
-			this.local.quicksave('folio');			
+			this.local.quicksave('folio');						
 		},
 
 		// Remove all synced data, this happens if we get new session data
@@ -2808,12 +2808,13 @@ var Hiro = {
 			// Quickcopy a certain store
 			// TODO Bruno: Compare performance/storage tradeoffs between this and de-/serializing and only storing shadow & version numbers
 			stash: function(store) {
-				var s = localStorage.getItem('Hiro.' + store);
+				var s = localStorage.getItem('Hiro.' + store) || JSON.stringify(Hiro.data.stores[store]);
 
 				// Check for contents
 				if (!s) {
 					// Log
-					Hiro.sys.error('Unable to stash store',[store,s]);
+					Hiro.sys.log('Unable to stash store',[store,s],'warn');
+
 					// Abort
 					return false;
 				}
@@ -3197,7 +3198,7 @@ var Hiro = {
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
 			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, 
-				store = Hiro.data.get(id), ack,
+				store = Hiro.data.get(id), ack, backup,
 				dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;	
 
 			// Set ack
@@ -3235,12 +3236,28 @@ var Hiro = {
 						Hiro.sys.log('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover from backup',data.changes[i].delta);
 						
 						// Retrieve backup
+						backup = Hiro.data.local.fromdisk(id + '.backup');
 
 						// Verify backup
+						if (backup && backup.sv == ssv && backup.cv == scv) {
+							// Log
+							Hiro.sys.log('Backup found & verified, both sv ' + ssv + ' and cv ' + scv + ' remotely and locally.')
+						// Abort restore
+						} else {
+							// Log
+							if (backup) Hiro.sys.error('Corrupted backup with cv/sv ' + backup.cv + '/' + backup.sv + ' instead of ' + scv + '/' + ssv + ', aborting.',[backup,data]);
+							else Hiro.sys.error('No backup found, aborting.',data);
+							Hiro.sys.log('',null,'groupEnd');	
+							// Go to next change
+							continue;
+						}
 
 						// Set shadow to backup
+						store.s = JSON.parse(JSON.stringify(backup.s));
 
 						// Set version numbers to backup
+						store.cv = backup.cv;
+						store.sv = backup.sv;						
 
 						// Delete stack
 						store.edits = [];
@@ -3471,9 +3488,9 @@ var Hiro = {
 				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');														
 
 				// See if we piled up any other changes in the meantime
-				if ((store.edits && store.edits.length) || this.diff.makediff(data.res.id)) {
+				if ((store.edits && store.edits.length) || this.diff.makediff(store)) {
 					// Commit them right away
-					Hiro.sync.commit(true);
+					Hiro.sync.commit();
 				// If all is set & done	
 				} else {
 					// Remove the backup
@@ -3487,7 +3504,7 @@ var Hiro = {
 				if (store.edits && store.edits.length) {
 					data.changes = store.edits;
 				// Make a quick diff to see if anything changed 
-				} else if (this.diff.makediff(data.res.id)) {
+				} else if (this.diff.makediff(store)) {
 					// Add edits to changes object
 					data.changes = store.edits;					
 				// If there are no changes at all, send a blank ack
@@ -3554,11 +3571,11 @@ var Hiro = {
 		},		
 
 		// Create messages representing all changes between local model and shadow
-		commit: function(norediff) {
+		commit: function() {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock) return;	
+			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;	
 
 			// See if we got any tokens to consume
 			if (this.tokens.length > 0) this.consumetoken();							
@@ -3575,7 +3592,7 @@ var Hiro = {
 				if (!s || s._tag) continue; 
 
 				// Grab existing diff or make a new one
-				d = (norediff && s.edits && s.edits.length) || this.diff.makediff(s);					
+				d = this.diff.makediff(s);					
 
 				// If we have a diff, add it to the note				
 				if (d) newcommit.push(this.wrapmsg(s));
@@ -4135,6 +4152,10 @@ var Hiro = {
 					delta.push({op: "delta-text", path: "", value: this.delta(note.s.text,note.c.text)});
 					// Synchronize c/s text
 					note.s.text = note.c.text;
+					// Retrieve peer
+					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
+					// Add cursor if we already have a proper syncable peer object of ourselves
+					if (peer) delta.push({op: "set-cursor", path: "peers/uid:" + peer.user.uid, value: peer.cursor_pos || note._cursor || 0 }) 					
 				}
 
 				// Check title	
@@ -4144,19 +4165,6 @@ var Hiro = {
 					// Copy c to s					
 					note.s.title = note.c.title;
 				}	
-
-				// If we have any updates until here, we also update our cursor position
-				if (delta.length > 0) {
-					// Retrieve peer
-					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
-
-					// Add cursor if we already have a proper syncable peer object of ourselves
-					if (peer) {
-						// Add cursor op 
-						delta.push({op: "set-cursor", path: "peers/uid:" + peer.user.uid, value: peer.cursor_pos || note._cursor || 0 })
-
-					} 
-				}
 
 				// Peers changed
 				if (note._peerchange) {	
