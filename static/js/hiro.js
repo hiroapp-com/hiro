@@ -1150,7 +1150,7 @@ var Hiro = {
 			// Send request to backend
 			Hiro.sync.ajax.send({
 				url: '/tokens/signup',
-	            type: "POST",
+				type: "POST",
 	            payload: JSON.stringify(payload),
 				success: function(req,data) {
 					// Show message
@@ -2829,6 +2829,9 @@ var Hiro = {
 
 		// Init sync
 		init: function(ws_url) {
+			// Remove locks
+			this.releaselocks();
+
 			// Check if we got Websocket support, might need refinement
 			if (window.WebSocket && window.WebSocket.prototype.send) {
 				// Connect via websockets
@@ -3410,10 +3413,7 @@ var Hiro = {
 					// Set flag to save data
 					dosave = true;
 				}						
-			}	
-
-			// Set last sync timestamp
-			this.lastsync = Hiro.util.now();						
+			}							
 
 			// Find out if it's a response or server initiated
 			if (ack) {
@@ -3423,8 +3423,15 @@ var Hiro = {
 				// Showit
 				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');					
 
-				// See if we piled up any changes in the meantime and commit right away
-				if (Hiro.data.unsynced.length > 0) Hiro.sync.commit();
+				// See if we piled up any changes in the meantime
+				if (Hiro.data.unsynced.length > 0) {
+					// Commit them right away
+					Hiro.sync.commit();
+				// If all is set & done	
+				} else if (this.committimeout) {
+					// Remove retry timeout
+					window.clearTimeout(this.committimeout);					
+				}	
 			// Respond if it was server initiated
 			} else {
 				// Send any edits as response if there are any waitingwaitingwaiting
@@ -3507,15 +3514,7 @@ var Hiro = {
 			if (this.tokens.length > 0) this.consumetoken();							
 
 			// Start building commit
-			newcommit = [];
-
-			// If we had no last sync at all, set it to now
-			if (!this.lastsync) {
-				// Set it for the first time
-				this.lastsync = Hiro.util.now();
-				// Release locks
-				this.releaselocks();
-			}				
+			newcommit = [];				
 
 			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
 			for (i = u.length - 1; i > -1; i--) {
@@ -3539,6 +3538,9 @@ var Hiro = {
 
 				// Save all changes locally: At this point we persist changes to the stores made by deepdiff etc
 				Hiro.data.local.persist();
+
+				// Set timestamp of commit (attempt)
+				this.lastsync = Hiro.util.now();
 
 				// Send off
 				this.tx(newcommit);
