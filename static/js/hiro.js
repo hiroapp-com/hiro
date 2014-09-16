@@ -3242,6 +3242,21 @@ var Hiro = {
 						if (backup && backup.sv == ssv && backup.cv == scv) {
 							// Log
 							Hiro.sys.log('Backup found & verified, both sv ' + ssv + ' and cv ' + scv + ' remotely and locally.')
+							
+							// Set shadow to backup
+							store.s = JSON.parse(JSON.stringify(backup.s));
+
+							// Set version numbers to backup
+							store.cv = backup.cv;
+							store.sv = backup.sv;						
+
+							// Delete stack
+							store.edits = [];
+
+							// Close logging						
+							Hiro.sys.log('Sucessfully recovered, continuing');
+							Hiro.sys.log('',null,'groupEnd');						
+
 						// Abort restore
 						} else {
 							// Log
@@ -3250,21 +3265,7 @@ var Hiro = {
 							Hiro.sys.log('',null,'groupEnd');	
 							// Go to next change
 							continue;
-						}
-
-						// Set shadow to backup
-						store.s = JSON.parse(JSON.stringify(backup.s));
-
-						// Set version numbers to backup
-						store.cv = backup.cv;
-						store.sv = backup.sv;						
-
-						// Delete stack
-						store.edits = [];
-
-						// Close logging						
-						Hiro.sys.log('Sucessfully recovered, continuing');
-						Hiro.sys.log('',null,'groupEnd');																
+						}																
 					} 					
 
 					// Server sends an edit twice, so we just ignore it
