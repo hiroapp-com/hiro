@@ -2756,7 +2756,7 @@ var Hiro = {
 				}
 
 				// Standard cases
-				store = 'Hiro.' + store
+				store = 'Hiro.' + store;
 
 				// Get data
 				try {
@@ -2803,6 +2803,26 @@ var Hiro = {
 				} else {
 					if (localStorage['Hiro.' + store]) localStorage.removeItem('Hiro.' + store); 
 				}	
+			},
+
+			// Quickcopy a certain store
+			// TODO Bruno: Compare performance/storage tradeoffs between this and de-/serializing and only storing shadow & version numbers
+			stash: function(store) {
+				var s = localStorage.getItem('Hiro.' + store);
+
+				// Check for contents
+				if (!s) {
+					// Log
+					Hiro.sys.error('Unable to stash store',[store,s]);
+					// Abort
+					return false;
+				}
+
+				// Save backup
+				localStorage.setItem('Hiro.' + store + '.backup',s);
+
+				// Report success
+				return true;
 			}
 		}
 	},
@@ -3387,7 +3407,6 @@ var Hiro = {
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Remove
 							Hiro.user.contacts.remove(obj,'s',true);
-							console.log('remooooooooooooooooovin',ops[j]);
 							update = true;
 							break; 	
 						// Grab user and give it new properties
@@ -3422,6 +3441,9 @@ var Hiro = {
 				if (update) {
 					// Iterate server version
 					store.sv++;
+					// Stash backup
+					// TODO Bruno: In case of dmp patches sandwiich this between shadow and master text updates
+					Hiro.data.local.stash(id);
 					// Reset update flag for next run (if changes contains more than 1 change)
 					update = false;
 					// Set flag to save data
