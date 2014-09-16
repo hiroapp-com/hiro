@@ -3370,8 +3370,8 @@ var Hiro = {
 								// Update sharing dialog if it's open
 								if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
 							
-								// Remove unsee flag if present & update came from one of our other sessions
-								if (obj.user.uid == me.uid && store._unseen) store.unseen = false;
+								// Remove unseen flag if present & update came from one of our other sessions
+								if (obj.user.uid == me.uid && store._unseen) store._unseen = false;
 							}	
 
 							// Always iterate & save
@@ -3732,16 +3732,16 @@ var Hiro = {
 					if (!this.webonline) return;
 
 					// Set online/offline flag
-					this.webonline = false;	
-
-					// Switch dialog content if it's open
-					if (Hiro.ui.dialog.open) {
-						Hiro.ui.switchview('d_msg');
-						Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' });
-					}					
+					this.webonline = false;						
 
 					break;					
 			}
+
+			// Switch dialog content if it's open
+			if (Hiro.ui.dialog.open) {
+				Hiro.ui.switchview('d_msg');
+				Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' });
+			}			
 
 			// Log
 			Hiro.sys.log('Connection to ' + server + '-server lost','','warn');
@@ -3763,23 +3763,23 @@ var Hiro = {
 				case 'web':
 					// Set online/offline flag
 					this.webonline = true;
-					this.ajax.rcd = 1000;
-
-					// Switch dialog content if it's open
-					if (Hiro.ui.dialog.open) {
-						if (Hiro.data.get('profile','c.tier') > 0) {
-							// Populate contents with contents
-							Hiro.ui.dialog.update();							
-							// Display elements
-							Hiro.ui.switchview('d_settings');
-							Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' }) 							
-						} else {
-							Hiro.ui.switchview('d_logio')
-						}	
-					}					
+					this.ajax.rcd = 1000;					
 
 					break;					
 			}
+
+			// Switch dialog content if it's open
+			if (Hiro.ui.dialog.open) {
+				if (Hiro.data.get('profile','c.tier') > 0) {
+					// Populate contents with contents
+					Hiro.ui.dialog.update();							
+					// Display elements
+					Hiro.ui.switchview('d_settings');
+					Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' }) 							
+				} else {
+					Hiro.ui.switchview('d_logio')
+				}	
+			}			
 		},
 
 		// Sends a message to other tabs via localstorage (this triggers the Hiro.data.localchange event in all other tabs)
@@ -5511,7 +5511,7 @@ var Hiro = {
 			// Open dialog
 			show: function(container, section, focus, close) {
 				// If we're offline, show a default message
-				if (!Hiro.sync.webonline) {
+				if (!Hiro.sync.webonline || !Hiro.sync.synconline) {
 					container = 'd_msg';
 					section = focus = undefined;
 					close = true;
