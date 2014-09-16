@@ -2823,7 +2823,21 @@ var Hiro = {
 
 				// Report success
 				return true;
-			}
+			},
+
+			// Drop a backup for a specific store
+			dropstash: function(store) {
+				var s = localStorage.getItem('Hiro.' + store + '.backup');
+
+				// Check for contents
+				if (!s) return false;
+
+				// Delete backup
+				localStorage.removeItem('Hiro.' + store + '.backup')
+
+				// Report success
+				return true;
+			}		
 		}
 	},
 
@@ -2849,9 +2863,6 @@ var Hiro = {
 
 		// Init sync
 		init: function(ws_url) {
-			// Remove locks
-			this.releaselocks();
-
 			// Check if we got Websocket support, might need refinement
 			if (window.WebSocket && window.WebSocket.prototype.send) {
 				// Connect via websockets
@@ -3442,13 +3453,13 @@ var Hiro = {
 					// Iterate server version
 					store.sv++;
 					// Stash backup
-					// TODO Bruno: In case of dmp patches sandwiich this between shadow and master text updates
+					// TODO Bruno: In case of dmp patches sandwich this between shadow and master text updates
 					Hiro.data.local.stash(id);
 					// Reset update flag for next run (if changes contains more than 1 change)
 					update = false;
 					// Set flag to save data
 					dosave = true;
-				}						
+				} 				
 			}							
 
 			// Find out if it's a response or server initiated
@@ -3457,25 +3468,28 @@ var Hiro = {
 				store._tag = undefined;
 
 				// Showit
-				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');					
+				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');														
 
-				// See if we piled up any changes in the meantime
-				if (Hiro.data.unsynced.length > 0) {
+				// See if we piled up any other changes in the meantime
+				if ((store.edits && store.edits.length) || this.diff.makediff(data.res.id)) {
 					// Commit them right away
-					Hiro.sync.commit();
+					Hiro.sync.commit(true);
 				// If all is set & done	
-				} else if (this.committimeout) {
+				} else {
+					// Remove the backup
+					if (!dosave) Hiro.data.local.dropstash(id);
 					// Remove retry timeout
-					window.clearTimeout(this.committimeout);					
-				}	
+					if (this.committimeout) window.clearTimeout(this.committimeout);					
+				}					
 			// Respond if it was server initiated
 			} else {
 				// Send any edits as response if there are any waitingwaitingwaiting
-				if (store.edits && store.edits.length > 0) {
+				if (store.edits && store.edits.length) {
 					data.changes = store.edits;
 				// Make a quick diff to see if anything changed 
-				// The single = is interntional, as it sets the value of data.changes an evaluates the if in one go (i assume...)	
-				} else if (data.changes = this.diff.makediff(data.res.id)) {
+				} else if (this.diff.makediff(data.res.id)) {
+					// Add edits to changes object
+					data.changes = store.edits;					
 				// If there are no changes at all, send a blank ack
 				} else {
 					data.changes = [{ clock: { cv: store.cv, sv: store.sv }, delta: []}];
@@ -3540,7 +3554,7 @@ var Hiro = {
 		},		
 
 		// Create messages representing all changes between local model and shadow
-		commit: function() {
+		commit: function(norediff) {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
@@ -3560,8 +3574,8 @@ var Hiro = {
 				// If we got no store or the store is waiting for a server tag ack, stop here
 				if (!s || s._tag) continue; 
 
-				// Make the diff
-				d = this.diff.makediff(s);					
+				// Grab existing diff or make a new one
+				d = (norediff && s.edits && s.edits.length) || this.diff.makediff(s);					
 
 				// If we have a diff, add it to the note				
 				if (d) newcommit.push(this.wrapmsg(s));
@@ -4046,16 +4060,15 @@ var Hiro = {
 
 					// Signal pending changes
 					return true;
-				// Remove store from unsynced already at this point (as opposed to res_sync ack/incoming) if we have nothing to sync						
-				} else if (!store.edits || store.edits.length == 0) {			
-					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);	
-
-					// Return false to signal "no changes"
-					return false;	
-				// Remaining scenario: No neww edits, but old pending edits found			
+				// No new edits, but old pending edits found					
+				} else if (store.edits && store.edits.length) {			
+					// Signal old pending changes					
+					return true;	
+				// Remove store from unsynced already at this point (as opposed to res_sync ack/incoming) if we have nothing to sync													
 				} else {
-					// Signal old pending changes
-					return true;
+					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);						
+					// Return false to signal "no changes"
+					return false;
 				}
 			},
 
