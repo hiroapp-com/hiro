@@ -3175,11 +3175,11 @@ var Hiro = {
 			// Log edge cases
  			if (!store) {
 				// Couldn't get local data
-				Hiro.sys.log("Server sent a res-sync for a resource (" + id + ") we don't know",data);
+				Hiro.sys.error("Server sent a res-sync for a resource (" + id + ") we don't know",data);
 				return;				
 			} else if (store._tag && !ack) {
 				// See if we have a proper response we're waiting for or abort otherwise
-				Hiro.sys.log('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data);
+				Hiro.sys.error('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data);
 				return;
 			}		
 
@@ -3196,20 +3196,34 @@ var Hiro = {
 					ssv = data.changes[i].clock.sv;
 					scv = data.changes[i].clock.cv
 
+					// Server resends an already processed change because it doesn't know we already got it 
+					// Aka "The Lost Return" scenario (Lost outbound is not handled here as it needs no handling)
+					if (scv != store.cv) {	
+						// Log
+						Hiro.sys.log('Back recovery','','group');						
+						Hiro.sys.log('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover from backup',data.changes[i].delta);
+						
+						// Retrieve backup
+
+						// Verify backup
+
+						// Set shadow to backup
+
+						// Set version numbers to backup
+
+						// Delete stack
+						store.edits = [];
+
+						// Close logging						
+						Hiro.sys.log('Sucessfully recovered, continuing');
+						Hiro.sys.log('',null,'groupEnd');																
+					} 					
+
 					// Server sends an edit twice, so we just ignore it
 					// The "Duplicate Paket" scenario
 					if (ssv < store.sv) {
 						Hiro.sys.log('Server sent sv' + ssv + ' twice, local sv' + store.sv + ', ignoring changes:',data.changes[i].delta);
 						continue;
-					// Server resends an already processed change because it doesn't know we already got it 
-					// Aka "The Lost Return" scenario (Lost outbound is not handled here as it needs no handling)
-					} else if (scv != store.cv) {	
-						// Log
-						Hiro.sys.error('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover. We need backup!',data.changes[i].delta);
-						// Reset cv by number of pending local edits
-						store.cv = store.cv - store.edits.length;
-						// Empty edit stack to avoid infinite loops
-						store.edits = [];			
 					// Log all other cases we don't handle / know how to handle yet	
 					} else {
 						Hiro.sys.error('Unknown sync case with Server cv' + scv + ' sv' + ssv	+ ' and Client cv' + store.cv + ' sv' +  store.sv,JSON.parse(JSON.stringify([data,store])));
