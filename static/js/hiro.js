@@ -3333,43 +3333,46 @@ var Hiro = {
 							// Reference for our own user 
 							me = Hiro.data.get('profile','c');
 
-							// If it was an ack for our user, do nothing
-							if (!(ack && ops[j].path.split(':')[1] == me.uid)) {
-								// Assign obj to peer
-								obj = Hiro.apps.sharing.getpeer( { user: {uid: ops[j].path.split(':')[1] }}, store.id );
+							// Assign obj to peer
+							obj = Hiro.apps.sharing.getpeer( { user: {uid: ops[j].path.split(':')[1] }}, store.id );
 
-								// Update edit values if we a know a per by that ID
-								if (obj && ops[j].value.edit) {
-									// Always update peer object value
-									obj.last_edit = ops[j].value.edit;
+							// If we don't know the peer abort here
+							if (!obj) break;
 
-									// Compare & set _lastedit & editor
-									if (store._lastedit < ops[j].value.edit) {
-										// Set edit & editor
-										store._lastedit = ops[j].value.edit;
-										store._lasteditor = obj.user.uid;
-										// If it was someone else, also set _unseen
-										if (obj.user.uid != me.uid) {
-											// Set flag
-											if (store.id != Hiro.canvas.currentnote) store._unseen = true;	
-											// Add notification if we're not focused
-											if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store.id);	
-										}																				
-									}
+							// Update edit values if we a know a peer by that ID
+							if (ops[j].value.edit) {
+								// Always update peer object value
+								obj.last_edit = ops[j].value.edit;
 
-									// If the devil was us, also reset _ownedit	
-									if (obj.user.uid == me.uid) store._ownedit = ops[j].value.edit;
+								// Compare & set _lastedit & editor
+								if (store._lastedit < ops[j].value.edit) {
+									// Set edit & editor
+									store._lastedit = ops[j].value.edit;
+									store._lasteditor = obj.user.uid;
+									// If it was someone else, also set _unseen
+									if (obj.user.uid != me.uid) {
+										// Set flag
+										if (store.id != Hiro.canvas.currentnote) store._unseen = true;	
+										// Add notification if we're not focused
+										if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store.id);	
+									}																				
 								}
-								
-								// Update seen	
-								if (ops[j].value.seen) {
-									// Set value
-									obj.last_seen = ops[j].value.seen;
 
-									// Update sharing dialog if it's open
-									if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
-								}	
+								// If the devil was us, also reset _ownedit	
+								if (obj.user.uid == me.uid) store._ownedit = ops[j].value.edit;
 							}
+							
+							// Update seen	
+							if (ops[j].value.seen) {
+								// Set value
+								obj.last_seen = ops[j].value.seen;
+
+								// Update sharing dialog if it's open
+								if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
+							
+								// Remove unsee flag if present & update came from one of our other sessions
+								if (obj.user.uid == me.uid && store._unseen) store.unseen = false;
+							}	
 
 							// Always iterate & save
 							update = true;														
