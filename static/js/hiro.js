@@ -5511,7 +5511,7 @@ var Hiro = {
 			// Open dialog
 			show: function(container, section, focus, close) {
 				// If we're offline, show a default message
-				if (!Hiro.sync.webonline || !Hiro.sync.synconline) {
+				if (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landingvisible)) {
 					container = 'd_msg';
 					section = focus = undefined;
 					close = true;
