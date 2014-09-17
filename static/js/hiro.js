@@ -1120,7 +1120,7 @@ var Hiro = {
 			Hiro.sys.log('Local data wiped, reloading page');
 
 			// Make sure other tabs refresh as well
-			Hiro.sync.tabtx('window.location.href = "/"');						                    		
+			Hiro.data.local.tabtx('window.location.href = "/"');						                    		
 
 			// Start fading out body, reload our own window after that
 			Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/" });			
@@ -2362,7 +2362,10 @@ var Hiro = {
 			Hiro.data.set('folio','',folio);
 
 			// Create & load first note
-			Hiro.folio.newnote();					
+			Hiro.folio.newnote();			
+
+			// Make sure we send another setstage to other tabs
+			Hiro.ui.setstage();		
 
 			// Log
 			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
@@ -2372,6 +2375,8 @@ var Hiro = {
 		// Detect changes to localstorage for all connected tabs
 		// All browser should fire this event if a different window/tab writes changes
 		localchange: function(event) {
+			var sid;
+
 			// IE maps the event to window
 			event = event || window.event;
 
@@ -2383,8 +2388,10 @@ var Hiro = {
 
 			// Receive a message and execute it
 			if (k == 'notify') {
-				// Verify that it's the same session
-				if (event.key.split('.')[2] == Hiro.data.get('profile','c.sid')) eval(event.newValue);
+				// Grab sessions
+				sid = Hiro.data.get('profile','c.sid');		
+				// Verify that it's the same session, if we already have one and one is provided
+				if (!sid || !event.key.split('.')[2] || event.key.split('.')[2] == sid) eval(event.newValue);
 				return;
 			}
 
@@ -2555,6 +2562,9 @@ var Hiro = {
 			if (this.unsaved.indexOf(oldid) > -1) this.unsaved[this.unsaved.indexOf(oldid)] = newid;			
 			if (this.unsynced.indexOf(oldid) > -1) this.unsynced[this.unsynced.indexOf(oldid)] = newid;
 
+			// Make sure Hiro.canvas.currentnote gets updated in other tabs
+			Hiro.data.local.tabtx('if(Hiro.canvas.currentnote=="' + oldid.substring(5) + '") Hiro.canvas.currentnote = "' + newid.substring(5) + '";');
+
 			// Save changes
 			this.local.quicksave(newid);
 			this.local.quicksave('folio');						
@@ -2675,11 +2685,51 @@ var Hiro = {
 
 		// All localstorage related functions
 		local: {
+			// Msges sent to other tabs via tabtx
+			msgqueue: [],
 			// Internals
 			saving: false,
 			timeout: null,
 			maxinterval: 3000,
 			dynamicinterval: 100,			
+
+			// Sends a message to other tabs via localstorage (this triggers the Hiro.data.localchange event in all other tabs)
+			tabtx: function(cmd,send) {
+				var i;
+
+				// Check for localStorage
+				if (!localStorage) return;
+
+				// Add command to queue
+				if (cmd) {
+					// make sure we store properly
+					if (typeof cmd != 'string') cmd = JSON.stringify(cmd);			
+
+					// Add msg to queue
+					this.msgqueue.push(cmd);
+
+					// Kick off sending
+					this.persist();
+				}
+
+				// If we got a send signal
+				if (send) {
+					// Clean up any old notifications before
+					for (i = localStorage.length - 1;i > -1; i--) {
+						// Remove old notification
+						if (localStorage.key(i) && localStorage.key(i).substring(0, 12) == 'Hiro.notify.') localStorage.removeItem(localStorage.key(i));
+					}
+
+					// Iterate through queue	
+					for (i = 0, l = this.msgqueue.length; i < l; i++) {
+						// Save & trigger localstorage change event in other tabs
+						localStorage.setItem('Hiro.notify.' + ( Hiro.data.get('profile','c.sid') || 0 ) ,this.msgqueue[i]);						
+					}
+
+					// Empty queue
+					this.msgqueue = [];			
+				}				
+			},
 
 			// Mark a store for local persistence and kick it off 
 			quicksave: function(store) {
@@ -2717,6 +2767,9 @@ var Hiro = {
 
 				// Empty array
 				Hiro.data.unsaved = [];
+
+				// Send msg queue to other tabs
+				if (this.msgqueue.length) this.tabtx(undefined,true);
 
 				// Measure duration
 				end = Date.now(); 
@@ -3273,6 +3326,9 @@ var Hiro = {
 					if (ssv < store.sv) {
 						Hiro.sys.log('Server sent sv' + ssv + ' twice, local sv' + store.sv + ', ignoring changes:',data.changes[i].delta);
 						continue;
+					// If the restored backup solved all problems	
+					} else if (store.sv == ssv && store.cv == scv) {	
+						Hiro.sys.log('No more conflicts after backup was restored, processing changes normally.',data.changes[i].delta);
 					// Log all other cases we don't handle / know how to handle yet	
 					} else {
 						Hiro.sys.error('Unknown sync case with Server cv' + scv + ' sv' + ssv	+ ' and Client cv' + store.cv + ' sv' +  store.sv,JSON.parse(JSON.stringify([data,store])));
@@ -3780,18 +3836,6 @@ var Hiro = {
 					Hiro.ui.switchview('d_logio')
 				}	
 			}			
-		},
-
-		// Sends a message to other tabs via localstorage (this triggers the Hiro.data.localchange event in all other tabs)
-		tabtx: function(cmd) {
-			// Abort if we have no data
-			if (!cmd) return;
-
-			// make sure we store properly
-			if (typeof cmd != 'string') cmd = JSON.stringify(cmd);
-
-			// Save & trigger localstorage change event in other tabs
-			if (localStorage) localStorage.setItem('Hiro.notify.' + Hiro.data.get('profile','c.sid'),cmd);
 		},
 
 		// WebSocket settings and functions
@@ -4799,20 +4843,29 @@ var Hiro = {
 		},		
 
 		// Setup UI according to account level where 0 = anon
-		setstage: function(tier) {
+		setstage: function(tier,tabtriggered) {
 			var t = Hiro.data.get('profile','c.tier');
 
-			// If we want to set it to the current level
-			if (tier && tier == t) return;
+			// If the stage setting was triggered by another tab sharing localstorage and we already have a folio
+			if (tabtriggered && Hiro.ui.landingvisible && Hiro.data.get('folio')) {
+				// Remove the landing page
+				Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);
+				// Load first note without adding history object
+				Hiro.canvas.load(undefined,true);
+			// Not triggered by tab
+			} else {
+				// if we want to set it to existing tier, abort
+				if (tier && tier == t) return;
+			}
 
 			// Set tier if none is provided 
-			tier = tier || Hiro.data.get('profile','c.tier') || 0; 
+			tier = tier || t || 0; 
 
 			// Always load settings from server to determine contents and webserver availability
 			this.dialog.load();				
 
 			// Send tier setting to other tabs
-			Hiro.sync.tabtx('Hiro.ui.setstage(' + tier + ');');
+			if (!tabtriggered) Hiro.data.local.tabtx('Hiro.ui.setstage(' + tier + ',true);');
 
 			// Switch designs
 			switch (tier) {
@@ -5386,7 +5439,7 @@ var Hiro = {
 					pos, nextpos, next, nexttitle;	
 
 				// Forward message to other tabs
-				Hiro.sync.tabtx('Hiro.ui.tabby.notify("' + id + '",true);');
+				Hiro.data.local.tabtx('Hiro.ui.tabby.notify("' + id + '",true);');
 
 				// Cancel all actions and reset state
 				if (Hiro.ui.focus) {
@@ -5447,7 +5500,7 @@ var Hiro = {
 				var that = Hiro.ui.tabby;
 
 				// Clear other tabs as well
-				Hiro.sync.tabtx('Hiro.ui.tabby.cleanup()');				
+				Hiro.data.local.tabtx('Hiro.ui.tabby.cleanup()');				
 
 				// Clear timeout							
 				window.clearTimeout(that.timeout);
