@@ -5563,8 +5563,8 @@ var Hiro = {
 
 			// Open dialog
 			show: function(container, section, focus, close) {
-				// If we're offline, show a default message
-				if (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landingvisible)) {
+				// If we're offline, show a default message, in case hync is offline do not show login
+				if (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landingvisible && !Hiro.data.get('profile','c.tier'))) {
 					container = 'd_msg';
 					section = focus = undefined;
 					close = true;
