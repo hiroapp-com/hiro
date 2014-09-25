@@ -2385,11 +2385,12 @@ var Hiro = {
 			var k = event.key.split('.')[1];
 
 			// Receive a message and execute it
-			if (k == 'notify') {
-				// Grab sessions
-				sid = Hiro.data.get('profile','c.sid');		
-				// Verify that it's the same session, if we already have one and one is provided
-				if (!sid || !event.key.split('.')[2] || event.key.split('.')[2] == sid) eval(event.newValue);
+			if (k == 'notify' && event.newValue) {
+				// Eval
+				eval(event.newValue);
+				// Delete message right away
+				Hiro.data.local.wipe(event.key.substring(5));
+				// Aborting to prevent erroneous write
 				return;
 			}
 
@@ -2576,7 +2577,7 @@ var Hiro = {
 					// Fetch note
 					note = this.get('note_' + f[i].nid,'c');
 
-					// Keep notes that have distinctive values
+					// Keep unsynced notes that have distinctive values
 					if (note.text || note.title || note.peers.length > 0) continue;
 				}	
 
@@ -2590,6 +2591,9 @@ var Hiro = {
 				// Remove this entry from folio
 				f.splice(i,1);
 			}
+
+			// Delete any local backup
+			this.local.wipe('folio.backup');			
 
 			// Remove contacts
 			for (i = c.length - 1; i >= 0; i--) {
@@ -2606,7 +2610,7 @@ var Hiro = {
 			// Delete all values	
 			this.stores[id] = null;
 			delete this.stores[id];
-			this.local.wipe(id);
+			this.local.wipe(id);			
 			// And any entries in unsynced/unsaved
 			if (this.unsaved.indexOf(id) > -1) this.unsaved.splice(this.unsaved.indexOf(id),1);			
 			if (this.unsynced.indexOf(id) > -1) this.unsynced.splice(this.unsynced.indexOf(id),1);				
@@ -2687,7 +2691,7 @@ var Hiro = {
 
 			// Sends a message to other tabs via localstorage (this triggers the Hiro.data.localchange event in all other tabs)
 			tabtx: function(cmd,send) {
-				var i;
+				var i, l;
 
 				// Check for localStorage
 				if (!localStorage) return;
@@ -2706,18 +2710,11 @@ var Hiro = {
 
 				// If we got a send signal
 				if (send) {
-					// Clean up any old notifications before
-					for (i = localStorage.length - 1;i > -1; i--) {
-						// Remove old notification
-						if (localStorage.key(i) && localStorage.key(i).substring(0, 12) == 'Hiro.notify.') localStorage.removeItem(localStorage.key(i));
-					}
-
 					// Iterate through queue	
 					for (i = 0, l = this.msgqueue.length; i < l; i++) {
 						// Save & trigger localstorage change event in other tabs
-						localStorage.setItem('Hiro.notify.' + ( Hiro.data.get('profile','c.sid') || 0 ) ,this.msgqueue[i]);						
+						localStorage.setItem('Hiro.notify',this.msgqueue[i]);						
 					}
-
 					// Empty queue
 					this.msgqueue = [];			
 				}				
@@ -2844,9 +2841,14 @@ var Hiro = {
 						// Verify that we only delete Hiro data and no third party stuff
 						if (localStorage.key(i) && localStorage.key(i).substring(0, 5) == 'Hiro.') localStorage.removeItem(localStorage.key(i));
 					}
-				// store var provided, remove specific store	
+				// Store var provided, remove specific store	
 				} else {
+					// Remove data itself
 					if (localStorage['Hiro.' + store]) localStorage.removeItem('Hiro.' + store); 
+
+					// Also remove any backups
+					if (localStorage['Hiro.' + store + '.backup']) localStorage.removeItem('Hiro.' + store + '.backup'); 
+
 				}	
 			},
 
@@ -3277,7 +3279,7 @@ var Hiro = {
 					// Aka "The Lost Return" scenario (Lost outbound is not handled here as it needs no handling)
 					if (scv != store.cv) {	
 						// Log
-						Hiro.sys.log('Back recovery','','group');						
+						Hiro.sys.log('Backup recovery','','group');						
 						Hiro.sys.log('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover from backup',data.changes[i].delta);
 						
 						// Retrieve backup
