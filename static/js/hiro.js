@@ -4140,14 +4140,14 @@ var Hiro = {
 			// Specific folio diff, returns proper changes format
 			// NOTE: This does not support deleted notes yet, switch to associative array lookup if we should start supporting that
 			difffolio: function(store) {
-				var i, l, delta, note;
+				var i, l, delta, note, folioentry;
 
 				// Iterate through shadow
 				// We also do this to avoid sending newly created notes, which do not have a proper ID
 				// and are not synced yet
 				for ( i = 0, l = store.s.length; i < l ; i++ ) {
-					// If we have a different status
-					if (Hiro.folio.lookup[store.s[i].nid].status != store.s[i].status) {
+					// If we have a different status and the note was already synced
+					if (store.s[i].nid.length > 4 && Hiro.folio.lookup[store.s[i].nid].status != store.s[i].status) {
 						// Create delta array if not done so yet
 						if (!delta) delta = [];
 						// Add change to delta array
@@ -4158,21 +4158,37 @@ var Hiro = {
 				}
 
 				// Lookup new notes that aren't synced yet
-				// TODO Bruno: This can happen multiple times if previous add-noteref times out and diff runs again. What shall we do?
-				if ( store.s.length != store.c.length ) {
-					for ( i = 0, l = store.c.length; i < l; i++) {
-						if (store.c[i].nid.length < 5) {
+				if (store.s.length != store.c.length) {
+
+					// Diff array
+					ad = this.arraydiff(store.c,store.s,'nid');
+
+					// We found some added notes
+					if (ad && ad.added) {
+						// Iterate
+						for (i = 0, l = ad.added.length; i < l; i++) {
+							// Only consider notes that don't have a server id yet
+							if (ad.added[i].length > 4) return;	
+													
 							// Fetch respective note
-							note = Hiro.data.get('note_' + store.c[i].nid,'c');
+							note = Hiro.data.get('note_' + ad.added[i],'c');
 
 							// Do not diff notes that don't have any content yet
 							if (!note.text && !note.title && note.peers.length == 0) continue;
 
 							// Create delta array if not done so yet
 							if (!delta) delta = [];	
+
+							// Create folio entry object
+							folioentry = {}
+							folioentry.nid = ad.added[i];
+							folioentry.status = (Hiro.folio.lookup[ad.added[i]]) ? Hiro.folio.lookup[ad.added[i]].status : 'active';
 													
 							// Add appropriate op msg
-							delta.push({ op: "add-noteref", path: "", value: {nid: store.c[i].nid, status: store.c[i].status}})
+							delta.push({ op: "add-noteref", path: "", value: folioentry })
+
+							// Add deepcopy to shadow
+							store.s.push(JSON.parse(JSON.stringify(folioentry)))
 						}
 					}
 				}
@@ -4348,6 +4364,7 @@ var Hiro = {
 			// Generic function that takes two arrays and returns a list of items that where 
 			// Added to current and/or removed from shadow
 			// This works independent of order but needs a unique ID property of the objects
+			// NOTE: For performance reasons this only returns the value(s) of the properties given by ID
 			arraydiff: function(current,shadow,id) {								
 				var delta = {}, removed = [], added = [], changed = [], lookup = {}, i, l, v, p, ch;
 
@@ -4356,11 +4373,16 @@ var Hiro = {
 
 				// Helper that converts id
 				function gn(obj,prop) {
-					if (prop.indexOf('.') == -1) return obj;
+					// If the ID has no dot notation, return just this prop
+					if (prop.indexOf('.') == -1) return obj[prop];
+
+					// Otherwise traverse object structure
 					p = prop.split('.')
 					for (var i = 0; i < p.length; i++) {
 						if (typeof obj != "undefined") obj = obj[p[i]]; 
 					}
+
+					// Return object
 					return obj;
 				}
 
@@ -4373,7 +4395,7 @@ var Hiro = {
 					// 	Build associative array and add to removed
 					lookup[v] = shadow[i];
 					removed.push(v);
-				}
+				}		
 
 				// Cycle through current version
 				// TODO Bruno: See how indexOf works and if it screws our complexity
