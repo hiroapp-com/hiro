@@ -419,16 +419,14 @@ var Hiro = {
 		},
 
 		// Remove a nid from the folio
-		remove: function(id,shadowsync) {
+		remove: function(id) {
 			var i, l, f = Hiro.data.get('folio');
 
-			// Remove shadow entry if requested
-			if (shadowsync) {
-				for (i = 0, l = f.s.length; i < l; i++ ) {
-					if (f.s[i].nid != id) continue;
-					f.s.splice(i,1);
-					break;
-				}
+			// Remove shadow entry
+			for (i = 0, l = f.s.length; i < l; i++ ) {
+				if (f.s[i].nid != id) continue;
+				f.s.splice(i,1);
+				break;
 			}			
 
 			// Go through master notes
@@ -2528,25 +2526,19 @@ var Hiro = {
 			// In case of being a note, we also reset the folio and currentnote pointers to it
 			if (oldid.substring(0,5) == 'note_') {
 				// Update the client side of things
-				if (Hiro.folio.lookup[oldid.substring(5)]) {
-					// Nid in lookup object
-					Hiro.folio.lookup[oldid.substring(5)].nid = newid.substring(5);	
+				Hiro.folio.lookup[oldid.substring(5)].nid = newid.substring(5);		
 
-					// Lookup object itself
-					Hiro.folio.lookup[oldid.substring(5)] = Hiro.folio.lookup[newid.substring(5)];
-					delete Hiro.folio.lookup[oldid.substring(5)];
-				}	
-
-				// Update the server side of things, removal first (we do splice and seperate push because the entry might not exist yet)
+				// Update the shadow 
 				fs = this.get('folio','s');
 				for ( i = 0, l = fs.length; i < l ; i++ ) {
-					if (fs[i].id == oldid.substring(5)) {
-						fs.splice(i,1);
+					// Yay, we found it
+					if (fs[i].nid == oldid.substring(5)) {
+						// Rename it
+						fs[i].nid = newid.substring(5);
+						// End here
 						break;
 					}	
 				}
-				// Copy new one frome client to shadow (the lookup object isn't updated yet, so the key is still the old)
-				if (Hiro.folio.lookup[oldid.substring(5)]) fs.push(JSON.parse(JSON.stringify(Hiro.folio.lookup[oldid.substring(5)])));
 
 				// Set new currentnote id
 				if (Hiro.canvas.currentnote = oldid.substring(5)) Hiro.canvas.currentnote = newid.substring(5);
@@ -2567,7 +2559,7 @@ var Hiro = {
 
 			// Save changes
 			this.local.quicksave(newid);
-			this.local.quicksave('folio');						
+			this.set('folio','s',fs);						
 		},
 
 		// Remove all synced data, this happens if we get new session data
@@ -3472,7 +3464,7 @@ var Hiro = {
 						// Remove a note from the folio
 						case 'folio|rem-noteref':
 							// Make sure it's not part of the folio anymore
-							Hiro.folio.remove(ops[j].path.split(':')[1],true);	
+							Hiro.folio.remove(ops[j].path.split(':')[1]);	
 							// Also delete the store
 							Hiro.data.destroy('note_' + ops[j].path.split(':')[1]);						
 							update = true;							
@@ -4285,7 +4277,7 @@ var Hiro = {
 							if (ad.removed[i] == Hiro.data.get('profile','c.uid')) {
 								// We delete the note from the folio immediately, but wait for the server ack to delete note 
 								// (in case we were offline we need to process it'S edit stack first)
-								Hiro.folio.remove(note.id,true);
+								Hiro.folio.remove(note.id);
 							}						
 						}						
 					}
