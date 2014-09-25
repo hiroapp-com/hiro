@@ -2373,29 +2373,25 @@ var Hiro = {
 		// Detect changes to localstorage for all connected tabs
 		// All browser should fire this event if a different window/tab writes changes
 		localchange: function(event) {
-			var sid;
-
 			// IE maps the event to window
 			event = event || window.event;
 
 			// Some browser fire the event in their own window (that wrote to localstorage), we prevent this here
 			if (Hiro.ui.focus) return;
 
-			// Extract proper key
-			var k = event.key.split('.')[1];
-
 			// Receive a message and execute it
-			if (k == 'notify' && event.newValue) {
+			if (event.key == 'Hiro.notify') {			
 				// Eval
-				eval(event.newValue);
-				// Delete message right away
-				Hiro.data.local.wipe(event.key.substring(5));
+				if (event.newValue) eval(event.newValue);
+				// Delete message right away but in seperate stack. 
+				// This is pretty bugg yon multiple browser, leave it out for now. Kerckhoffs ftw!
+				// Hiro.data.local.wipe('notify');
 				// Aborting to prevent erroneous write
 				return;
 			}
 
 			// Write changes
-			if (event.newValue) Hiro.data.set(k,'',JSON.parse(event.newValue),'l',true);	
+			if (event.newValue) Hiro.data.set(event.key.split('.')[1],'',JSON.parse(event.newValue),'l',true);	
 		},
 
 		// Handle appcache progress events
@@ -2713,7 +2709,7 @@ var Hiro = {
 					// Iterate through queue	
 					for (i = 0, l = this.msgqueue.length; i < l; i++) {
 						// Save & trigger localstorage change event in other tabs
-						localStorage.setItem('Hiro.notify',this.msgqueue[i]);						
+						localStorage.setItem('Hiro.notify',this.msgqueue[i]);											
 					}
 					// Empty queue
 					this.msgqueue = [];			
