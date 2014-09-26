@@ -3256,6 +3256,10 @@ var Hiro = {
 				// See if we have a proper response we're waiting for or abort otherwise
 				Hiro.sys.error('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data);
 				return;
+			} else if (Hiro.data.get('profile','c.sid') != data.sid) {
+				// See if we have a proper response we're waiting for or abort otherwise
+				Hiro.sys.error('Server sent res-sync for unknown sid ' + data.sid + ', current sid is ' + Hiro.data.get('profile','c.sid') + ', ignoring res-sync',data);
+				return;				
 			}		
 
 			// Process change stack
