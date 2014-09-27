@@ -4508,7 +4508,7 @@ var Hiro = {
 
 			// Store keys
 			if (vars.fb) Hiro.lib.facebook.key = vars.fb;
-			if (vars.stripe) Hiro.lib.stripe.key = vars.stripe;
+			if (vars.st) Hiro.lib.stripe.key = vars.st;
 			if (vars.rb) Hiro.lib.rollbar.key = vars.rb;
 			if (vars.ic) Hiro.lib.intercom.key = vars.ic;			
 
@@ -6247,11 +6247,18 @@ var Hiro = {
 			url: 'https://js.stripe.com/v2/',
 			key: undefined,
 			loaded: false,
+			loading: false,
 			inited: false,
 
 			// If user selects plan to upgrade to, init right away
 			load: function() {
 				var that = this;
+
+				// Do not load twice
+				if (this.loaded || this.loading) return;
+
+				// Set flag
+				this.loading = true;
 
 				// Call loadscript & init right away
 				Hiro.lib.loadscript({
@@ -6260,7 +6267,14 @@ var Hiro = {
 					success: function() {
 						// Set flag & init
 						that.loaded = true;
+						that.loading = false;
 						that.init();
+					},
+					error: function(req,data) {
+						// Log
+						Hiro.sys.error ('Unable to load Stripe',req);
+						// Reset flag
+						that.loading = false;
 					}
 				});			
 			},
@@ -6287,12 +6301,17 @@ var Hiro = {
 			js: 'https://connect.facebook.net/en_US/all.js',
 			key: undefined,
 			inited: false,
+			initing: false,
 			loaded: false,
+			loading: false,
 
 			// Load script, we do this when the user opens the dialog
 			load: function(success,error) {
 				// If it'S already loaded
-				if (this.loaded) return;
+				if (this.loaded || this.loading) return;
+
+				// Set flag
+				this.loading = true;
 
 				// Do it!
 				Hiro.lib.loadscript({
@@ -6301,12 +6320,18 @@ var Hiro = {
 					success: function() {
 						// Set flag
 						Hiro.lib.facebook.loaded = true;
+						Hiro.lib.facebook.loading = false;
 						// Fire callback if we have one
 						if (success) success();
 						// Init right away on non-touch devices to avoid popup blockers (init below creates new stack)
 						else if (!Hiro.ui.touch) Hiro.lib.facebook.init();
 					},
-					error: error				
+					error: function() {
+						// Set flag
+						Hiro.lib.facebook.loading = false;
+						// Fire callback if we have one
+						if (error) error();						
+					}			
 				});				
 			},
 
@@ -6315,7 +6340,10 @@ var Hiro = {
 				var that = this;
 
 				// If we wrongly called it twice abort
-				if (this.inited) return;
+				if (this.inited || this.initing) return;
+
+				// Set flag
+				this.initing = true;
 
 				// Init, which unfortunately offers no callback (anymore)
 			    FB.init({ appId : that.key, version: 'v2.0', status : false, xfbml : false });
@@ -6323,6 +6351,7 @@ var Hiro = {
 			    // Call 
 			    FB.getLoginStatus(function(response){
 			    	that.inited = true;
+			    	that.initing = false;
 			    	if (success) success();
 			    });				
 			},
@@ -6560,7 +6589,6 @@ var Hiro = {
 				// Call loadscript & init right away
 				Hiro.lib.loadscript({
 					url: Hiro.lib.rollbar.url,
-					delay: 0,
 					success: function() {
 						// Set flag
 						Hiro.lib.rollbar.loaded = true;
@@ -6569,7 +6597,17 @@ var Hiro = {
 						Hiro.lib.rollbar.processbacklog();
 
 						// Log
-						Hiro.sys.log('Rollbar loaded');						
+						Hiro.sys.log('Rollbar loaded');		
+
+						// Release flag
+						Hiro.lib.rollbar.initing = false;			
+					},
+					error: function() {
+						// Log
+						Hiro.sys.error('Unable to load rollbar');		
+
+						// Release flag
+						Hiro.lib.rollbar.initing = false;						
 					}
 				});			
 
@@ -6626,12 +6664,15 @@ var Hiro = {
 			js: 'https://widget.intercom.io/widget/' + this.key,
 			key: undefined,
 			loaded: false,
-			inited: false,	
+			loading: false,	
 
 			// Load script, we do this when we can identify a user
-			load: function(success,error) {
+			load: function(success) {
 				// If it'S already loaded
-				if (this.loaded) return;
+				if (this.loaded || this.loading) return;
+
+				// Set flag
+				this.loading = true;
 
 				// Do it!
 				Hiro.lib.loadscript({
@@ -6641,29 +6682,20 @@ var Hiro = {
 					success: function() {
 						// Init as soon as loaded, as per http://docs.intercom.io/installing-Intercom/intercom-javascript-api
 						Intercom('boot', Hiro.lib.intercom.getsettings());
+						// Log
+						Hiro.sys.log('Intercom sucessfully loaded');
 						// Fire callback if we have one
 						if (success) success();
+						// Reset loading
+						this.loading = false;
 					},
-					error: error				
+					error: function() {
+						// Fire callback if we have one
+						if (error) error();
+						// Reset loading
+						this.loading = false;						
+					}				
 				});				
-			},
-
-			// Abstract connectivity & lib specific foo
-			pipe: function(obj) {
-				var that = this;
-
-				// If script wasn't loaded yet
-				if (!this.loaded) {
-					that.load(function() { that.pipe(obj) },obj.error);
-					return;
-				// Or not inited	
-				} else if (!this.inited) {
-					that.init(function() { that.pipe(obj) },obj.error);
-					return;
-				}	
-
-				// Execute our command
-				if (obj && obj.todo) obj.todo(obj);			
 			},
 
 			// Put together an intercomsettings object
