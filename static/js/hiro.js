@@ -4495,7 +4495,7 @@ var Hiro = {
 					line: line,
 					col: col,
 					error: error
-				} });
+				}});
 				// Load rollbar
 				Hiro.lib.rollbar.init();
 			}
@@ -4613,7 +4613,7 @@ var Hiro = {
 			// Load & init error logger	
 			} else {
 				// Cache error in the meantime
-				Hiro.lib.rollbar.backlog.push({ description: description, data: data, stack: stacktrace });
+				Hiro.lib.rollbar.backlog.push({ description: description, data: data || {}, stack: stacktrace });
 				// Do this
 				Hiro.lib.rollbar.init();
 			}		
@@ -6348,12 +6348,14 @@ var Hiro = {
 		rollbar: {
 			initing: false,
 			backlog: [],
+			loaded: false,
+			url: "//d37gvrvc0wt4s1.cloudfront.net/js/v1.1/rollbar.min.js",			
 
 			// For rollbar we currently use their really far reaching shim
 			// TODO Bruno: Have a detailled look at how it works and simplify that shit
 			init: function() {
 				// Abort if it's already present
-				if (this.initing || window.Rollbar || !Hiro.sys.production) return;
+				if (this.initing || window.Rollbar) return;
 
 				// Set flag
 				this.initing = true;
@@ -6365,9 +6367,7 @@ var Hiro = {
 				var _rollbarConfig = {
     				accessToken: "fd7259dab62347ad9767f06b2ebf00b4",
     				captureUncaught: true,
-    				payload: this.getpayload(),
-					rollbarJsUrl: "//d37gvrvc0wt4s1.cloudfront.net/js/v1.1/rollbar.min.js",
-					itemsPerMinute: 5				
+    				payload: this.getpayload()			
     			}	
 
     			// https://github.com/rollbar/rollbar.js/blob/9b13c193eb6994e4143d0a13a4f3aae7db073a2d/src/shim.js
@@ -6447,66 +6447,6 @@ var Hiro = {
 				    window[alias] = client;
 				    return client;
 				  }, client.logger))();
-				};
-
-				Rollbar.prototype.loadFull = function(window, document, immediate, config, callback) {
-				  var self = this;
-				  // Create the main rollbar script loader
-				  var loader = _wrapInternalErr(function() {
-				    var s = document.createElement("script");
-				    var f = document.getElementsByTagName("script")[0];
-				    s.src = config.rollbarJsUrl;
-				    s.async = !immediate;
-
-				    // NOTE(cory): this may not work for some versions of IE
-				    s.onload = handleLoadErr;
-
-				    f.parentNode.insertBefore(s, f);
-				  }, this.logger);
-
-				  var handleLoadErr = _wrapInternalErr(function() {
-				    var err;
-				    if (window._rollbarPayloadQueue === undefined) {
-				      // rollbar.js did not load correctly, call any queued callbacks
-				      // with an error.
-				      var obj;
-				      var cb;
-				      var args;
-				      var i;
-
-				      err = new Error('rollbar.js did not load');
-
-				      // Go through each of the shim objects. If one of their args
-				      // was a function, treat it as the callback and call it with
-				      // err as the first arg.
-				      while ((obj = window._rollbarShimQueue.shift())) {
-				        args = obj.args;
-				        for (i = 0; i < args.length; ++i) {
-				          cb = args[i];
-				          if (typeof cb === 'function') {
-				            cb(err);
-				            break;
-				          }
-				        }
-				      }
-				    }
-				    if (typeof callback === 'function') {
-				      callback(err);
-				    }
-				  }, this.logger);
-
-				  (_wrapInternalErr(function() {
-				    if (immediate) {
-				      loader();
-				    } else {
-				      // Have the window load up the script ASAP
-				      if (window.addEventListener) {
-				        window.addEventListener("load", loader, false);
-				      } else { 
-				        window.attachEvent("onload", loader);
-				      }
-				    }
-				  }, this.logger))();
 				};
 
 				Rollbar.prototype.wrap = function(f, context) {
@@ -6611,24 +6551,44 @@ var Hiro = {
 				}    			
 
 				// Init 
-				var rbiniter = Rollbar.init(window, _rollbarConfig);
-				rbiniter.loadFull(window, document, false, _rollbarConfig, function() {
-					var that = Hiro.lib.rollbar.backlog;
-					// Process any backlog
-					if (that.length) {
-						// Iterate
-						for (var i = 0, l = that.length; i < l; i++ ) {
-							// Log to rollbar
-							Rollbar.error(that[i].description,that[i].data,that[i].data.error);
-						}
+				Rollbar.init(window, _rollbarConfig);
 
-						// Empty backlog
-						that.length = 0;
+				// Call loadscript & init right away
+				Hiro.lib.loadscript({
+					url: Hiro.lib.rollbar.url,
+					delay: 0,
+					success: function() {
+						// Set flag
+						Hiro.lib.rollbar.loaded = true;
+
+						// Process any backlog
+						Hiro.lib.rollbar.processbacklog();
+
+						// Log
+						Hiro.sys.log('Rollbar loaded');						
 					}
-				});		
+				});			
 
 				// Log
 				Hiro.sys.log('Loading & initing Rollbar....')	
+			},
+
+			// Get backlog queue and process any errors
+			processbacklog: function() {
+				// End here if we have no backlog or Rollbar
+				if (!this.backlog.length || !Rollbar) return; 
+
+				// Iterate
+				for (var i = 0, l = this.backlog.length; i < l; i++ ) {
+					// Log to rollbar
+					Rollbar.log(this.backlog[i].description,this.backlog[i].data,this.backlog[i].data.error);
+				}
+
+				// Log
+				Hiro.sys.log(this.backlog.length + ' errors from backlog sent to Rollbar, emptying queue');
+
+				// Empty backlog
+				this.backlog.length = 0;
 			},
 
 			// Gather all necessary payload data
