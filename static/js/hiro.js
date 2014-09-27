@@ -6355,7 +6355,7 @@ var Hiro = {
 			// TODO Bruno: Have a detailled look at how it works and simplify that shit
 			init: function() {
 				// Abort if it's already present
-				if (this.initing || window.Rollbar) return;
+				if (this.initing || (window.Rollbar && this.loaded)) return;
 
 				// Set flag
 				this.initing = true;
@@ -6367,7 +6367,8 @@ var Hiro = {
 				var _rollbarConfig = {
     				accessToken: "fd7259dab62347ad9767f06b2ebf00b4",
     				captureUncaught: true,
-    				payload: this.getpayload()			
+    				payload: this.getpayload(),
+    				enabled: Hiro.sys.production
     			}	
 
     			// https://github.com/rollbar/rollbar.js/blob/9b13c193eb6994e4143d0a13a4f3aae7db073a2d/src/shim.js
@@ -6581,7 +6582,7 @@ var Hiro = {
 				// Iterate
 				for (var i = 0, l = this.backlog.length; i < l; i++ ) {
 					// Log to rollbar
-					Rollbar.log(this.backlog[i].description,this.backlog[i].data,this.backlog[i].data.error);
+					Rollbar.error(this.backlog[i].description,this.backlog[i].data,this.backlog[i].data.error);
 				}
 
 				// Log
@@ -6600,7 +6601,7 @@ var Hiro = {
 					payload.person = {};
 					payload.person.id = user.uid;
 					if (user.email) payload.person.email = user.email;
-					if (user.name) payload.person.name = user.name;
+					if (user.name) payload.person.username = user.name;
 				}
 
 				// Add server settings
@@ -6609,7 +6610,8 @@ var Hiro = {
 
 				// Log page id instead of context
 				// TODO Bruno: Think of a way to be more descriptive with state, if we need this (eg error ocurred when settings were open)
-				payload.context = location.pathname;	
+				payload.context = location.pathname;
+				payload.environment = (Hiro.sys.production) ? 'Production' : 'Development';
 
 				// Return object
 				return payload;			
