@@ -4487,6 +4487,19 @@ var Hiro = {
 		init: function(vars) {
 			var el;
 
+			// Cache errors for later
+			window.onerror = function (message, file, line, col, error) {
+				// Cache error in the meantime
+				Hiro.lib.rollbar.backlog.push({ description: message, data: {
+					file: file,
+					line: line,
+					col: col,
+					error: error
+				} });
+				// Load rollbar
+				Hiro.lib.rollbar.init();
+			}
+
 			// Begin startup logging
 			Hiro.sys.log('Hiro startup sequence','','group');		
 
@@ -6334,7 +6347,8 @@ var Hiro = {
 		// Rollbar error logger, dashboard at https://rollbar.com/HiroInc/Beta/
 		rollbar: {
 			initing: false,
-			configured: false,
+			backlog: [],
+
 			// For rollbar we currently use their really far reaching shim
 			// TODO Bruno: Have a detailled look at how it works and simplify that shit
 			init: function() {
@@ -6343,6 +6357,9 @@ var Hiro = {
 
 				// Set flag
 				this.initing = true;
+
+				// Wipe our Hiro.init() logger to make sure Rollbar doesn't extend it
+				if ('onerror' in window) window.onerror = null;
 
 				// Basic config
 				var _rollbarConfig = {
