@@ -4509,6 +4509,8 @@ var Hiro = {
 			// Store keys
 			if (vars.fb) Hiro.lib.facebook.key = vars.fb;
 			if (vars.stripe) Hiro.lib.stripe.key = vars.stripe;
+			if (vars.rb) Hiro.lib.rollbar.key = vars.rb;
+			if (vars.ic) Hiro.lib.intercom.key = vars.ic;			
 
 			// Create DMP socket
 			Hiro.sync.diff.dmp = new diff_match_patch();	
@@ -6349,7 +6351,8 @@ var Hiro = {
 			initing: false,
 			backlog: [],
 			loaded: false,
-			url: "//d37gvrvc0wt4s1.cloudfront.net/js/v1.1/rollbar.min.js",			
+			url: "//d37gvrvc0wt4s1.cloudfront.net/js/v1.1/rollbar.min.js",
+			key: undefined,			
 
 			// For rollbar we currently use their really far reaching shim
 			// TODO Bruno: Have a detailled look at how it works and simplify that shit
@@ -6365,7 +6368,7 @@ var Hiro = {
 
 				// Basic config
 				var _rollbarConfig = {
-    				accessToken: "fd7259dab62347ad9767f06b2ebf00b4",
+    				accessToken: this.key,
     				captureUncaught: true,
     				payload: this.getpayload(),
     				enabled: Hiro.sys.production
