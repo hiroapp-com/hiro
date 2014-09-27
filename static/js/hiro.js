@@ -3230,7 +3230,10 @@ var Hiro = {
 			}				
 
 			// Reset UI
-			Hiro.ui.setstage();				
+			Hiro.ui.setstage();		
+
+			// Update Rollbar
+			if (window.Rollbar) Rollbar.configure({payload: Hiro.lib.rollbar.getpayload()});		
 
 			// Log
 			Hiro.sys.log('New session created',data);
@@ -4592,7 +4595,15 @@ var Hiro = {
 				description = description || 'General error';
 
 			// Send to logging service
-			if (window.Rollbar) Raven.captureMessage(description + ', version ' + Hiro.sys.version + ': ' + JSON.stringify(data) + ', ' + stacktrace);			
+			if (window.Rollbar) {
+				Rollbar.error(description, { data: data, stack: stacktrace });	
+			// Load & init error logger	
+			} else {
+				// Cache error in the meantime
+				Hiro.lib.rollbar.backlog.push({ description: description, data: data, stack: stacktrace });
+				// Do this
+				Hiro.lib.rollbar.init();
+			}		
 
 			// Log in console
 			this.log(description,data,'error');
