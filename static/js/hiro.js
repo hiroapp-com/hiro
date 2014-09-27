@@ -4488,7 +4488,7 @@ var Hiro = {
 			var el;
 
 			// Cache errors for later
-			window.onerror = function (message, file, line, col, error) {
+			window.onerror = function(message, file, line, col, error) {
 				// Cache error in the meantime
 				Hiro.lib.rollbar.backlog.push({ description: message, data: {
 					file: file,
@@ -6353,7 +6353,7 @@ var Hiro = {
 			// TODO Bruno: Have a detailled look at how it works and simplify that shit
 			init: function() {
 				// Abort if it's already present
-				if (this.initing || window.Rollbar) return;
+				if (this.initing || window.Rollbar || !Hiro.sys.production) return;
 
 				// Set flag
 				this.initing = true;
@@ -6612,7 +6612,20 @@ var Hiro = {
 
 				// Init 
 				var rbiniter = Rollbar.init(window, _rollbarConfig);
-				rbiniter.loadFull(window, document, false, _rollbarConfig);		
+				rbiniter.loadFull(window, document, false, _rollbarConfig, function() {
+					var that = Hiro.lib.rollbar.backlog;
+					// Process any backlog
+					if (that.length) {
+						// Iterate
+						for (var i = 0, l = that.length; i < l; i++ ) {
+							// Log to rollbar
+							Rollbar.error(that[i].description,that[i].data,that[i].data.error);
+						}
+
+						// Empty backlog
+						that.length = 0;
+					}
+				});		
 
 				// Log
 				Hiro.sys.log('Loading & initing Rollbar....')	
