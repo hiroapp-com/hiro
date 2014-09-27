@@ -4592,7 +4592,7 @@ var Hiro = {
 				description = description || 'General error';
 
 			// Send to logging service
-			if ('Raven' in window) Raven.captureMessage(description + ', version ' + Hiro.sys.version + ': ' + JSON.stringify(data) + ', ' + stacktrace);			
+			if (window.Rollbar) Raven.captureMessage(description + ', version ' + Hiro.sys.version + ': ' + JSON.stringify(data) + ', ' + stacktrace);			
 
 			// Log in console
 			this.log(description,data,'error');
@@ -6322,17 +6322,24 @@ var Hiro = {
 
 		// Rollbar error logger, dashboard at https://rollbar.com/HiroInc/Beta/
 		rollbar: {
+			initing: false,
+			configured: false,
 			// For rollbar we currently use their really far reaching shim
 			// TODO Bruno: Have a detailled look at how it works and simplify that shit
 			init: function() {
 				// Abort if it's already present
-				if (window.Rollbar) return;
+				if (this.initing || window.Rollbar) return;
+
+				// Set flag
+				this.initing = true;
+
 				// Basic config
 				var _rollbarConfig = {
     				accessToken: "fd7259dab62347ad9767f06b2ebf00b4",
     				captureUncaught: true,
-    				payload: { environment: "production" },
-					rollbarJsUrl: "//d37gvrvc0wt4s1.cloudfront.net/js/v1.1/rollbar.min.js"   				
+    				payload: this.getpayload(),
+					rollbarJsUrl: "//d37gvrvc0wt4s1.cloudfront.net/js/v1.1/rollbar.min.js",
+					itemsPerMinute: 5				
     			}	
 
     			// https://github.com/rollbar/rollbar.js/blob/9b13c193eb6994e4143d0a13a4f3aae7db073a2d/src/shim.js
@@ -6581,6 +6588,30 @@ var Hiro = {
 
 				// Log
 				Hiro.sys.log('Loading & initing Rollbar....')	
+			},
+
+			// Gather all necessary payload data
+			getpayload: function() {
+				var payload = {}, user = Hiro.data.get('profile','c');
+
+				// Add user/client settings
+				if (user.uid) {
+					payload.person = {};
+					payload.person.id = user.uid;
+					if (user.email) payload.person.email = user.email;
+					if (user.name) payload.person.name = user.name;
+				}
+
+				// Add server settings
+				payload.server = {};
+				payload.server.host = location.host;
+
+				// Log page id instead of context
+				// TODO Bruno: Think of a way to be more descriptive with state, if we need this (eg error ocurred when settings were open)
+				payload.context = location.pathname;	
+
+				// Return object
+				return payload;			
 			}	
 		}	
 	},
