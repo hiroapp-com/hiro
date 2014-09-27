@@ -6616,6 +6616,79 @@ var Hiro = {
 				// Return object
 				return payload;			
 			}	
+		},
+
+		// intercom.io analytics & user communication
+		intercom: {
+			js: 'https://widget.intercom.io/widget/' + this.key,
+			key: undefined,
+			loaded: false,
+			inited: false,	
+
+			// Load script, we do this when we can identify a user
+			load: function(success,error) {
+				// If it'S already loaded
+				if (this.loaded) return;
+
+				// Do it!
+				Hiro.lib.loadscript({
+					url: this.js,					
+					id: 'intercom',	
+					delay: 1000,
+					success: function() {
+						// Init as soon as loaded, as per http://docs.intercom.io/installing-Intercom/intercom-javascript-api
+						Intercom('boot', Hiro.lib.intercom.getsettings());
+						// Fire callback if we have one
+						if (success) success();
+					},
+					error: error				
+				});				
+			},
+
+			// Abstract connectivity & lib specific foo
+			pipe: function(obj) {
+				var that = this;
+
+				// If script wasn't loaded yet
+				if (!this.loaded) {
+					that.load(function() { that.pipe(obj) },obj.error);
+					return;
+				// Or not inited	
+				} else if (!this.inited) {
+					that.init(function() { that.pipe(obj) },obj.error);
+					return;
+				}	
+
+				// Execute our command
+				if (obj && obj.todo) obj.todo(obj);			
+			},
+
+			// Put together an intercomsettings object
+			getsettings: function() {
+				var settings = {}, user = Hiro.data.get('profile','c');
+
+				// Basics
+				settings.app_id = this.key;
+				settings.user_id = user.uid;
+
+				// Extended user properties
+				if (user.name) settings.name = user.name;
+				if (user.email) settings.email = user.email;
+				if (user.tier) {
+					settings.tier = user.tier;
+					settings.created_at = new Date(user.signup_at).getTime();
+				}	
+
+				// Other properties we track
+				settings.notes = Hiro.folio.owncount;
+				settings.contacts = user.contacts.length;
+
+				// Update the window object
+				window.intercomSettings = settings;
+
+				// Return object
+				return settings;
+			}					
 		}	
 	},
 
