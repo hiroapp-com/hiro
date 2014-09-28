@@ -303,7 +303,7 @@ var Hiro = {
 					user = Hiro.user.contacts.lookup[note._lasteditor];
 
 					// Complete string
-					time = time + ' by ' + ((user) ? user.name || user.email || user.phone || 'Anonymous' : 'Anonymous');	
+					time = time + ' by ' + user.name || user.email || user.phone || 'Anonymous';	
 				}
 
 			} else {
