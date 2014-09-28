@@ -407,7 +407,7 @@ var Hiro = {
 				note._lastedit = Hiro.util.now();
 
 				// Log respective event
-				Hiro.user.track.logevent('Created new note',null,'notes',1)				
+				Hiro.user.track.logevent('Created new note',{ 'Number of Notes': Hiro.folio.owncount + 1 },'notes',1)				
 			}		
 
 			// Save kick off setter flows						
@@ -1228,7 +1228,7 @@ var Hiro = {
 			// Add a user to our contacts list
 			add: function(obj,source) {
 				var contacts = Hiro.data.get('profile','c.contacts') || [], shadow = Hiro.data.get('profile','s.contacts') || [],
-					prop, i, l;
+					prop, i, l, meta;
 
 				// Check for duplicates, uid should never be used for adding contacts in the client
 				for (prop in obj) {
@@ -1245,7 +1245,11 @@ var Hiro = {
 								// End here
 								return;
 							}
-						}					
+						}
+
+						// Add property to metaobject
+						meta = {};
+						meta[prop] = obj[prop];					
 					}
 				}
 
@@ -1259,7 +1263,7 @@ var Hiro = {
 				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
 
 				// Log event
-				Hiro.user.track.logevent('New contact added',null,'contacts',1)					
+				Hiro.user.track.logevent('New contact added',meta,'contacts',1)					
 
 				// Save data
 				Hiro.data.set('profile','c.contacts',contacts,source);
@@ -1558,7 +1562,16 @@ var Hiro = {
 			// Notify the various libs that a users basic data has changed
 			// We just resend everything as this would get to detailed otherwise
 			update: function() {
-				if (window.Intercom) Intercom('update', Hiro.lib.intercom.getsettings() );
+				// User communication
+				if (window.Intercom) {
+					// Update existing settings
+					Intercom('update', Hiro.lib.intercom.getsettings() );
+				// Load intercom if not yet happened (eg initial signin)					
+				} else if (Hiro.sys.production) {
+					Hiro.lib.intercom.load();
+				}	
+
+				// Error logger
 				if (window.Rollbar) Rollbar.configure({ payload: Hiro.lib.rollbar.getpayload() })
 			},
 
@@ -1567,7 +1580,7 @@ var Hiro = {
 			// Property, string: If theres a property affected (eg number of notes, contacts etc)
 			// Change, int: Increment the property up or down
 			// Meta, object: Any additional metadata
-			logevent: function(msg,property,change,meta) {
+			logevent: function(msg,meta,property,change) {
 				var ev = {}, inc;
 
 				// All things intercom
@@ -1581,6 +1594,9 @@ var Hiro = {
 						// Send event to intercom
 						Intercom('update',{"increments": inc });
 					}
+
+					// Send to intercom
+					Intercom('trackEvent',msg,meta);
 				}
 			}
 		}
