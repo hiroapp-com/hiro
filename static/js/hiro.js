@@ -404,10 +404,7 @@ var Hiro = {
 			// Set default values for user inited stuff	
 			} else {
 				note._lasteditor = user.c.uid;
-				note._lastedit = Hiro.util.now();
-
-				// Log respective event
-				Hiro.user.track.logevent('Created new note',{ 'Number of Notes': Hiro.folio.owncount + 1 },'notes',1);				
+				note._lastedit = Hiro.util.now();			
 			}		
 
 			// Save kick off setter flows						
@@ -1599,7 +1596,7 @@ var Hiro = {
 				}	
 
 				// GA
-				if (ga) ga('set', '&uid', Hiro.data.get('profile','c.uid'));
+				if (window.ga) ga('set', '&uid', Hiro.data.get('profile','c.uid'));
 
 				// Error logger
 				if (window.Rollbar) Rollbar.configure({ payload: Hiro.lib.rollbar.getpayload() })
@@ -1611,7 +1608,7 @@ var Hiro = {
 			// Change, int: Increment the property up or down
 			// Meta, object: Any additional metadata
 			logevent: function(msg,meta,property,change) {
-				var ev = {}, inc;
+				var inc, context;
 
 				// All things intercom
 				if (window.Intercom) {
@@ -1627,6 +1624,23 @@ var Hiro = {
 
 					// Send to intercom
 					Intercom('trackEvent',msg,meta);
+				}
+
+				// GA https://developers.google.com/analytics/devguides/collection/analyticsjs/events
+				if (window.ga) {
+					// Find out, roughly, in which context the user interacts atm
+					if (Hiro.ui.landingvisible) {
+						context = 'Landingpage';
+					} else if (Hiro.ui.dialog.open) {
+						context = 'Settings';
+					} else if (Hiro.apps.open.indexOf('sharing') > -1) {
+						context = 'Sharing';
+					} else {
+						context = 'Note';
+					}
+
+					// Send the basic event 
+					ga('send', 'event', context, msg);
 				}
 			}
 		}
@@ -4296,6 +4310,9 @@ var Hiro = {
 							// Add appropriate op msg
 							delta.push({ op: "add-noteref", path: "", value: folioentry })
 
+							// Log respective event
+							Hiro.user.track.logevent('Created new note',{ 'Number of Notes': Hiro.folio.owncount + 1 },'notes',1);								
+
 							// Add deepcopy to shadow
 							store.s.push(JSON.parse(JSON.stringify(folioentry)))
 						}
@@ -5062,7 +5079,10 @@ var Hiro = {
 		// Handle clicks on landingpage
 		landingclick: function(action,type) {
 			// Woop, we inited started fiddling with something relevant
-			if (type == 'full') {				
+			if (type == 'full') {			
+				// Log respective event
+				Hiro.user.track.logevent('Started Interacting',{ Clicked_On: action });	
+
 				// Remove overlay & prepare					
 				switch (action) {
 					case 'screenshot':
@@ -5084,10 +5104,7 @@ var Hiro = {
 						// Show dialog			
 						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
 						break;									
-				}
-
-				// Log respective event
-				Hiro.user.track.logevent('Started Interacting',{ Clicked_On: action });					
+				}				
 			}
 		},			
 
@@ -6803,7 +6820,7 @@ var Hiro = {
 
 		// intercom.io analytics & user communication
 		intercom: {
-			js: 'https://widget.intercom.io/widget/' + this.key,
+			js: 'https://widget.intercom.io/widget/',
 			key: undefined,
 			loaded: false,
 			loading: false,	
@@ -6818,7 +6835,7 @@ var Hiro = {
 
 				// Do it!
 				Hiro.lib.loadscript({
-					url: this.js,					
+					url: this.js + this.key,					
 					id: 'intercom-jssdk',	
 					success: function() {
 						// Init as soon as loaded, as per http://docs.intercom.io/installing-Intercom/intercom-javascript-api
