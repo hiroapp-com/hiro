@@ -407,7 +407,7 @@ var Hiro = {
 				note._lastedit = Hiro.util.now();
 
 				// Log respective event
-				Hiro.user.track.logevent('Created new note',{ 'Number of Notes': Hiro.folio.owncount + 1 },'notes',1)				
+				Hiro.user.track.logevent('Created new note',{ 'Number of Notes': Hiro.folio.owncount + 1 },'notes',1);				
 			}		
 
 			// Save kick off setter flows						
@@ -965,7 +965,10 @@ var Hiro = {
 	                Hiro.user.authinprogress = false;
 
 	                // Process login					
-					Hiro.user.logiocomplete(data,login);										                    
+					Hiro.user.logiocomplete(data,login);	
+
+					// Logging
+					Hiro.user.track.logevent('Logs in',{ Signup: (!login), Type: parse[0], ID: parse[1] });																			                    
 				},
 				error: function(req,data) {		
 					// Reset DOM & flag	
@@ -1068,7 +1071,10 @@ var Hiro = {
 						Hiro.user.logiocomplete(data,login);
 
 						// Allow next try	
-						Hiro.user.authinprogress = false;			            
+						Hiro.user.authinprogress = false;	
+
+						// Logging
+						Hiro.user.track.logevent('Logs in',{ Signup: (!login), Type: 'Facebook', Profile: { url: response.link, value: response.name } });								            
 			        });						
 				},
 				// If something hapenned along the way
@@ -1114,6 +1120,9 @@ var Hiro = {
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
 		logout: function() {
+			// Log respective event
+			Hiro.user.track.logevent('Logs out');	
+
 			// Wipe local data immediately 
 			Hiro.data.local.wipe();
 
@@ -1245,11 +1254,7 @@ var Hiro = {
 								// End here
 								return;
 							}
-						}
-
-						// Add property to metaobject
-						meta = {};
-						meta[prop] = obj[prop];					
+						}			
 					}
 				}
 
@@ -1260,10 +1265,7 @@ var Hiro = {
 				this.update();
 
 				// Add copy to shadow if server created it
-				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
-
-				// Log event
-				Hiro.user.track.logevent('New contact added',meta,'contacts',1)					
+				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));				
 
 				// Save data
 				Hiro.data.set('profile','c.contacts',contacts,source);
@@ -1430,6 +1432,9 @@ var Hiro = {
 
 					// Focus CC
 					fields[1].focus();
+
+					// Log respective event
+					Hiro.user.track.logevent('Chooses Plan',{ Old: ct, New: tt });						
 				// User wants to downgrade	
 				} else if (tt < ct) {
 					this.downgrade(tt);
@@ -1457,12 +1462,15 @@ var Hiro = {
 				me = form.getElementsByClassName('mainerror')[0];
 
 				// Show user whats going on
-				button.innerText = 'Validating...';
+				button.innerText = 'Validating...';					
 
 				// Build subscription object
 				subscription = {};
 				subscription.plan = this.plans[this.targettier];		
 				subscription.sid = Hiro.data.get('profile','c.sid');
+
+				// Log respective event
+				Hiro.user.track.logevent('Submits payment form');				
 
 				// Ping Stripe for token
 				Stripe.createToken(form, function(status,response) {					
@@ -1496,7 +1504,7 @@ var Hiro = {
 
 					} else {
 						// add new stripe data to subscription object
-						subscription.stripetoken = response.id;	
+						subscription.stripetoken = response.id;						
 
 						// Send token to backend
 						Hiro.sync.ajax.send({
@@ -1504,12 +1512,23 @@ var Hiro = {
 			                type: "POST",
 			                payload: JSON.stringify(subscription),
 							success: function(req,data) {
+								// TODO Bruno: Make this experience waaaaaaaayyy funkier
 								// w00p w00p, set stage and everything
 			                    Hiro.ui.setstage(data.tier);	
 			                    Hiro.user.checkout.active = false;	
 			                    Hiro.ui.dialog.hide();	
 								// Clean up form 
-								button.innerText = 'Upgrade';			                    		                    						                    
+								button.innerText = 'Upgrade';	
+								// Log respective event
+								Hiro.user.track.logevent('Upgraded!',{
+									upgrade_date: Math.round(new Date() / 1000),
+									plan: subscription.plan,
+									stripe_token: subscription.stripetoken,
+									price: {
+										currency: 'USD',
+										amount: 9.00
+									}
+								});											                    		                    						                    
 							},
 			                error: function(req,data) {
 			                	// Log
@@ -1526,7 +1545,8 @@ var Hiro = {
 
 			// Sniiieff, so loooneeesssoooommmmeee tonight
 			downgrade: function(tier) {
-				var root = document.getElementById('s_plan'), button, subscription = {};
+				var root = document.getElementById('s_plan'), button, subscription = {}, user = Hiro.data.get('profile','c'),
+					old = user.tier;
 
 				// check & set flag
 				if (this.active || !root) return;
@@ -1538,7 +1558,7 @@ var Hiro = {
 
 				// Build subscription object
 				subscription.plan = this.plans[tier];		
-				subscription.sid = Hiro.data.get('profile','c.sid');				
+				subscription.sid = user.sid;				
 
 				// Post to server, bitterly
 				Hiro.sync.ajax.send({
@@ -1549,7 +1569,14 @@ var Hiro = {
 	                    Hiro.ui.setstage(data.tier);	
 	                    Hiro.user.checkout.active = false;	
 		                Hiro.ui.dialog.hide();	                    
-	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);					                    
+	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);		
+
+						// Log respective event
+						Hiro.user.track.logevent('Downgraded',{
+							downgrade_date: Math.round(new Date() / 1000),
+							Old: old,
+							New: tier
+						});	                    			                    
 					}
 				});					
 			}
@@ -1657,6 +1684,9 @@ var Hiro = {
 		show: function(el_app) {
 			// Add ID to open list
 			this.open.push(el_app.id.substring(4));
+
+			// Log respective event
+			Hiro.user.track.logevent('Opened ' + el_app.id.substring(4) + ' widget');				
 
 			// Update & display app			
 			Hiro.ui.render(function(){
@@ -1779,6 +1809,11 @@ var Hiro = {
 							} else if (id[1] == 'mail') {
 								Hiro.ui.mail(title, url + ' ' + text);
 							}
+							// Log respective event
+							Hiro.user.track.logevent('Started sharing a note',{
+								Channel: id[1],
+								Note: Hiro.data.currentnote
+							});							
 					}
 				}				
 			},			
@@ -1793,7 +1828,7 @@ var Hiro = {
 					string = string || el_input.value, parse = Hiro.util.mailorphone(string),
 					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), newpeer, search, contact, i, l,
 					ta, el_ta = el.getElementsByClassName('peers')[0], 
-					el_sel = el.getElementsByClassName('selected')[0], oldsel, newsel;
+					el_sel = el.getElementsByClassName('selected')[0], oldsel, newsel,meta;
 
 				// See if we have an email
 				if (parse) {
@@ -1851,7 +1886,14 @@ var Hiro = {
 						this.addpeer(newpeer);
 
 						// Show quick inviting
-						Hiro.ui.statsy.add('invite',0,'Inviting...','info',300);				
+						Hiro.ui.statsy.add('invite',0,'Inviting...','info',300);	
+
+						// Log respective event
+						meta = {};
+						meta[type] = string;
+						meta.note = Hiro.canvas.currentnote;
+						meta.peers = peers.length;
+						Hiro.user.track.logevent('Invited user',meta);									
 
 						// Set inviting so render below can work properly
 						this.inviting = true;
@@ -5032,6 +5074,9 @@ var Hiro = {
 						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
 						break;									
 				}
+
+				// Log respective event
+				Hiro.user.track.logevent('Started Interacting',{ Clicked_On: action });					
 			}
 		},			
 
@@ -5705,7 +5750,10 @@ var Hiro = {
 					Hiro.ui.dialog.center();	
 
 					// Set top margin for upward movement
-					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;														
+					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;	
+
+					// Log respective event
+					Hiro.user.track.logevent('Opened ' + container.substring(2) + ' dialog');																		
 				})	
 
 				// Hide folio
@@ -5794,6 +5842,10 @@ var Hiro = {
 					// List of actions to be switch
 					switch (action) {
 						case 'switch_s_plan':
+							// Log respective event
+							Hiro.user.track.logevent('Looks at plans');
+							Hiro.ui.switchview(document.getElementById(action.substring(7)));
+							break;														
 						case 'switch_s_about':						
 						case 'switch_s_account':
 							Hiro.ui.switchview(document.getElementById(action.substring(7)));
@@ -5835,12 +5887,17 @@ var Hiro = {
 						case 'logout':
 							Hiro.user.logout();
 							break;
-						case 'changeplan':							
+						case 'changeplan':	
+							// Switch
+							Hiro.ui.switchview(document.getElementById('s_plan'));
+							break;												
 						case 'upgrade':
+							// Log respective event
+							Hiro.user.track.logevent('Looks at plans');
+							// Switch
 							Hiro.ui.switchview(document.getElementById('s_plan'));
 							break;	
 						case 'selectplan':
-							// 
 							Hiro.user.checkout.show(param,target);
 							break;	
 						case 'savename':
@@ -5848,6 +5905,8 @@ var Hiro = {
 							el = Hiro.ui.dialog.el_settings.getElementsByTagName('input')[0];
 							// Save name & update link text
 							Hiro.data.set('profile','c.name',el.value);
+							// Log respective event
+							Hiro.user.track.logevent('Changes name',{ Newname: el.value });							
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
 							target.innerText = 'Saved!';
@@ -5979,7 +6038,9 @@ var Hiro = {
 					// Set CSS class
 					el_plans.className = el_checkout.className = 'teaser';	
 					// Open dialog		
-					that.show('d_settings','s_plan',undefined,true);		
+					that.show('d_settings','s_plan',undefined,true);	
+					// Log respective event
+					Hiro.user.track.logevent('Hit paywall',{ Reason: reason });						
 				});
 			}			
 		},
@@ -6767,6 +6828,9 @@ var Hiro = {
 			// Put together an intercomsettings object
 			getsettings: function() {
 				var settings = {}, user = Hiro.data.get('profile','c');
+
+				// Abort if we have no user yet, create session will update this as soon as we get new data
+				if (!user) return;
 
 				// Basics
 				settings.app_id = this.key;
