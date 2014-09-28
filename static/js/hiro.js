@@ -1598,6 +1598,9 @@ var Hiro = {
 					Hiro.lib.intercom.load();
 				}	
 
+				// GA
+				if (ga) ga('set', '&uid', Hiro.data.get('profile','c.uid'));
+
 				// Error logger
 				if (window.Rollbar) Rollbar.configure({ payload: Hiro.lib.rollbar.getpayload() })
 			},
@@ -2064,9 +2067,9 @@ var Hiro = {
 				// Other peers
 				if (!us) {
 					// Try to retrieve user details from contacts
-					if (peer.user.uid) {
-						// Fetch it
-						user = Hiro.user.contacts.lookup[peer.user.uid]		
+					if (peer.user.uid) user = Hiro.user.contacts.lookup[peer.user.uid]	
+
+					if (user) {						
 						// Build text string
 						text = ( ((user.name) && user.name || '') + ( ( (user.name && (user.email || user.phone)) && ' (' + ( user.email || user.phone ) + ')' ) || (user.email || user.phone) || ''));
 					} else {
@@ -6330,7 +6333,10 @@ var Hiro = {
 			if (!Hiro.sys.production) return;
 
 			// If we have an existing user on a production system, load intercom right away
-			if (user.uid) Hiro.lib.intercom.load();
+			if (user.uid) this.intercom.load();
+
+			// Load gs slightly delayed in seperate Stack
+			setTimeout(function(){Hiro.lib.ga.load()},10);
 		},
 
 		// Generic script loader
@@ -6862,7 +6868,49 @@ var Hiro = {
 				// Return object
 				return settings;
 			}					
-		}	
+		},
+
+		// Google Analytics
+		ga: {
+			js: '//www.google-analytics.com/analytics.js',
+			key: 'UA-41408220-2',
+			loaded: false,
+			loading: false,			
+
+			// We user Googles default snippet & execute it froma different stack right on init
+			load: function() {
+				// If it'S already loaded
+				if (this.loaded || this.loading) return;
+
+				// Set flag
+				this.loading = true;
+
+				// Default anon function, slightly adapted because we might not have a scriupt loaded in the head yet
+				(function(i,s,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+				(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();
+				})(window,document,'ga');
+
+				// Init & send first pageview
+				ga('create', this.key, 'auto');
+				ga('send', 'pageview');
+
+				// Do it!
+				Hiro.lib.loadscript({
+					url: this.js,					
+					id: 'google-jssdk',	
+					success: function() {
+						// Log
+						Hiro.sys.log('Google Analytics sucessfully loaded');
+						// Reset loading
+						this.loading = false;
+					},
+					error: function() {
+						// Reset loading
+						this.loading = false;						
+					}				
+				});					
+			}
+		}
 	},
 
 	// Generic utilities like event attachment etc
