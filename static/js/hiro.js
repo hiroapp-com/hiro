@@ -405,6 +405,9 @@ var Hiro = {
 			} else {
 				note._lasteditor = user.c.uid;
 				note._lastedit = Hiro.util.now();
+
+				// Log respective event
+				Hiro.user.track.logevent('Created new note',null,'notes',1)				
 			}		
 
 			// Save kick off setter flows						
@@ -1255,6 +1258,9 @@ var Hiro = {
 				// Add copy to shadow if server created it
 				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
 
+				// Log event
+				Hiro.user.track.logevent('New contact added',null,'contacts',1)					
+
 				// Save data
 				Hiro.data.set('profile','c.contacts',contacts,source);
 			},
@@ -1291,7 +1297,10 @@ var Hiro = {
 								Hiro.data.set('profile','c.contacts',contacts,source);
 
 								// Update lookup
-								this.update();									
+								this.update();	
+
+								// Log event
+								Hiro.user.track.logevent('Deleted a contact',null,'contacts',-1)																	
 
 								// End here
 								return;
@@ -1551,6 +1560,28 @@ var Hiro = {
 			update: function() {
 				if (window.Intercom) Intercom('update', Hiro.lib.intercom.getsettings() );
 				if (window.Rollbar) Rollbar.configure({ payload: Hiro.lib.rollbar.getpayload() })
+			},
+
+			// Log a specific event
+			// Msg, string: Simple string describing the event
+			// Property, string: If theres a property affected (eg number of notes, contacts etc)
+			// Change, int: Increment the property up or down
+			// Meta, object: Any additional metadata
+			logevent: function(msg,property,change,meta) {
+				var ev = {}, inc;
+
+				// All things intercom
+				if (window.Intercom) {
+					// When we also want to change a property
+					if (property) {
+						// Build increment object
+						inc = {};
+						// Assign key & count
+						inc[property] = change;
+						// Send event to intercom
+						Intercom('update',{"increments": inc });
+					}
+				}
 			}
 		}
 	},
