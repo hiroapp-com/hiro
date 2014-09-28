@@ -6350,7 +6350,7 @@ var Hiro = {
 			if (!Hiro.sys.production) return;
 
 			// If we have an existing user on a production system, load intercom right away
-			if (user.uid) this.intercom.load();
+			if (user && user.uid) this.intercom.load();
 
 			// Load gs slightly delayed in seperate Stack
 			setTimeout(function(){Hiro.lib.ga.load()},10);
@@ -6872,7 +6872,7 @@ var Hiro = {
 				if (user.email) settings.email = user.email;
 				if (user.tier) {
 					settings.tier = user.tier;
-					settings.created_at = new Date(user.signup_at).getTime();
+					settings.created_at = Math.round(new Date(user.signup_at).getTime() / 1000);
 				}	
 
 				// Other properties we track
