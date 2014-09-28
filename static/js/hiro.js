@@ -4622,9 +4622,8 @@ var Hiro = {
 				Hiro.lib.rollbar.backlog.push({ description: message, data: {
 					file: file,
 					line: line,
-					col: col,
-					error: error
-				}});
+					col: col
+				}, error: error });
 				// Load rollbar
 				Hiro.lib.rollbar.init();
 			}
@@ -4744,7 +4743,7 @@ var Hiro = {
 			// Load & init error logger	
 			} else {
 				// Cache error in the meantime
-				Hiro.lib.rollbar.backlog.push({ description: description, data: data || {}, stack: stacktrace });
+				Hiro.lib.rollbar.backlog.push({ description: description, data: data || {}, error: err });
 				// Do this
 				Hiro.lib.rollbar.init();
 			}		
@@ -6782,7 +6781,7 @@ var Hiro = {
 				// Iterate
 				for (var i = 0, l = this.backlog.length; i < l; i++ ) {
 					// Log to rollbar
-					Rollbar.error(this.backlog[i].description,this.backlog[i].data,this.backlog[i].data.error);
+					Rollbar.error(this.backlog[i].description,this.backlog[i].data,this.backlog[i].error);
 				}
 
 				// Log
