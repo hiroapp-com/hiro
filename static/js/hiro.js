@@ -2531,7 +2531,7 @@ var Hiro = {
 					Hiro.sync.cachelock = false;								
 					break;				
 				case 'error':
-					Hiro.sys.error('Appcache error occured',event);
+					Hiro.sys.error('Appcache error: ' + event.message,event);
 					break;
 				case 'cached':
 				case 'noupdate':
