@@ -2668,6 +2668,12 @@ var Hiro = {
 
 				// Reset note id in store object
 				this.stores[newid].id = newid.substring(5);
+
+				// Make sure Hiro.canvas.currentnote gets updated in other tabs
+				Hiro.data.local.tabtx('if(Hiro.canvas.currentnote=="' + oldid.substring(5) + '") Hiro.canvas.currentnote = "' + newid.substring(5) + '";Hiro.ui.history.add(newid.substring(5),true);');
+
+				// Change shown URL
+				Hiro.ui.history.add(newid.substring(5),true);
 			}
 
 			// Delete old object and localstorage object
@@ -2676,9 +2682,6 @@ var Hiro = {
 			// Update our state arrays
 			if (this.unsaved.indexOf(oldid) > -1) this.unsaved[this.unsaved.indexOf(oldid)] = newid;			
 			if (this.unsynced.indexOf(oldid) > -1) this.unsynced[this.unsynced.indexOf(oldid)] = newid;
-
-			// Make sure Hiro.canvas.currentnote gets updated in other tabs
-			Hiro.data.local.tabtx('if(Hiro.canvas.currentnote=="' + oldid.substring(5) + '") Hiro.canvas.currentnote = "' + newid.substring(5) + '";');
 
 			// Save changes
 			this.local.quicksave(newid);
@@ -6311,7 +6314,7 @@ var Hiro = {
 			first: true,
 
 			// Add a new history state
-			add: function(id) {
+			add: function(id,replaceonly) {
 				// Build URL
 				var url = '/note/' + id;	
 
@@ -6319,7 +6322,8 @@ var Hiro = {
 				if (!Hiro.sys.production) return;	
 
 				// On the first call we only change the state insteading of adding a new one
-				if (this.first && history && 'replaceState' in history) {
+				if ((this.first || replaceonly) && history && 'replaceState' in history) {
+					console.log('replaccccccccccccccin')
 					// Change state
 					history.replaceState(id, null, url);
 
