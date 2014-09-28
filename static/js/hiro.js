@@ -1239,9 +1239,9 @@ var Hiro = {
 				var contacts = Hiro.data.get('profile','c.contacts') || [], shadow = Hiro.data.get('profile','s.contacts') || [],
 					prop, i, l, meta;
 
-				// Check for duplicates, uid should never be used for adding contacts in the client
+				// Check for duplicates
 				for (prop in obj) {
-					if (obj.hasOwnProperty(prop) && prop != 'uid') {
+					if (obj.hasOwnProperty(prop)) {
 						// See if we already have a user with that property
 						for ( i = 0, l = contacts.length; i < l; i++ ) {
 							// Ignore irrelevant properties
@@ -1749,7 +1749,7 @@ var Hiro = {
 							break;
 						// Tap on typeahead link
 						case 'ta':
-							this.validate(event,true,id[1]);
+							this.validate(event,true,id[2],id[1]);
 							break;						
 						// Exisitng peer list click/tap	
 						case 'peer':
@@ -1819,19 +1819,19 @@ var Hiro = {
 			},			
 
 			// Validate the current form, this is either triggered by keyup event handler or click on invite 
-			validate: function(event,submit,string) {
+			validate: function(event,submit,string,type) {
 				// Only one invite at a time
 				if (this.inviting) return;
 
-				var type, error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0], 
+				var error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0], 
 					el_input = el.getElementsByTagName('input')[0], el_error = el.getElementsByClassName('error')[0],
 					string = string || el_input.value, parse = Hiro.util.mailorphone(string),
 					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), newpeer, search, contact, i, l,
 					ta, el_ta = el.getElementsByClassName('peers')[0], 
 					el_sel = el.getElementsByClassName('selected')[0], oldsel, newsel,meta;
 
-				// See if we have an email
-				if (parse) {
+				// See if we can interpret what we got
+				if (!type && parse) {
 					type = parse[0];
 					string = parse[1];
 				}
@@ -1855,7 +1855,7 @@ var Hiro = {
 					// If user presses enter while a typeahead suggestion is loaded, avoid sending it back for validation with enter key
 					if (event.keyCode == 13 && el_sel && !submit) {
 						// Get data attribute
-						this.validate(event,true,el_sel.getAttribute('data-hiro-action').split(':')[1]);
+						this.validate(event,true,el_sel.getAttribute('data-hiro-action').split(':')[2],el_sel.getAttribute('data-hiro-action').split(':')[1]);
 
 						// Stop here
 						return;
@@ -1870,7 +1870,7 @@ var Hiro = {
 
 						// Switch type if we have a contact with uid & that contact detail
 						search = Hiro.user.contacts.search(string,1);
-						if (search && search[0] && search[0].uid) {
+						if (type != 'uid' && search && search[0] && search[0].uid) {
 							type = 'uid';
 							string = search[0].uid;
 						// Add copy of new peer to contacts as well							
@@ -1996,6 +1996,12 @@ var Hiro = {
 						el_button.innerHTML = 'Invite <b>' + string + '</b>';						
 					}	
 				});				
+			},
+
+
+			// Invite a certain type (phone, mail etc) by id
+			invite: function(type,id) {
+
 			},
 
 			// Populate header and widget with data from currentnote, triggerd by show and peer changes from server
@@ -2127,23 +2133,22 @@ var Hiro = {
 
 			// Creates a DOM element for typeahead
 			rendersuggestion: function(peer,s) {		
-				var d, n, start, prop, hit, defaultchannel;
+				var d, n, start, prop, 
+					type, types = ['phone','mail'],
+					channel;
 
 				// Find out which string matched
 				for (prop in peer) {
-					if (peer.hasOwnProperty(prop)) hit = prop;
+					if (peer.hasOwnProperty(prop) && types.indexOf(prop) > -1) type = prop;
 				}
 
-				// Find the default way to invite
-				defaultchannel = (hit == 'email' || hit == 'phone') ? peer[hit] : peer.email || peer.phone;
-
-				// Create containing div
+				// Create containing div wif flos awesome shorthand
 				d = document.createElement('div');
 				d.className = 'peer';
-				d.setAttribute('data-hiro-action','ta:' + defaultchannel);
+				d.setAttribute('data-hiro-action','ta:' + ((peer.uid) && 'uid' || type) + ':' + (peer.uid || peer[type]));
 
-				// Define namestring
-				ns = (peer.name) ? peer.name + '(' + defaultchannel + ')' : defaultchannel;
+				// Define namestring 
+				ns = (peer.name || '') + ((peer.name && peer[type]) && ' (' + peer[type] + ')' || peer[type] || '');
 
 				// Insert <em>s around found string				
 				start = ns.toLowerCase().indexOf(s.toLowerCase());
