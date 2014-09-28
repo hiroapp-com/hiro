@@ -1203,8 +1203,8 @@ var Hiro = {
 				if (!string) return;
 
 				// Make sure we have the right string	
-				if (typeof string == "string") string.toLowerCase();
-				else if (typeof string == "number") string.toString();	
+				if (typeof string == "string") string = string.toLowerCase();
+				else if (typeof string == "number") string = string.toString();	
 				else return;
 
 				// Impose length limits
@@ -2064,14 +2064,15 @@ var Hiro = {
 				// Other peers
 				if (!us) {
 					// Try to retrieve user details from contacts
-					if (peer.user.uid) user = Hiro.user.contacts.lookup[peer.user.uid]				
-
-					// Build namestring, contact first
-					text = ( (user) ? user.email || user.phone :  peer.user.email || peer.user.phone || peer.user.us ) || 'Anonymous';
-
-					// Wrap it nicely if we have a name
-					if (user && user.name) text = user.name + ' (' + text + ')';
-
+					if (peer.user.uid) {
+						// Fetch it
+						user = Hiro.user.contacts.lookup[peer.user.uid]		
+						// Build text string
+						text = ( ((user.name) && user.name || '') + ( ( (user.name && (user.email || user.phone)) && ' (' + ( user.email || user.phone ) + ')' ) || (user.email || user.phone) || ''));
+					} else {
+						// Build string from local object
+						text = peer.user.email || peer.user.phone;
+					}
 				// Ourselves	
 				} else {
 					text = (onlyus) ? 'Only you' : 'You';
@@ -2124,7 +2125,7 @@ var Hiro = {
 				// Add user name span
 				n = document.createElement('span');
 				n.className = (peer.role == 'invited') ? 'name invited' : 'name';
-				n.innerText = text;
+				n.innerText = text || 'Anonymous';
 				d.appendChild(n)
 
 				// Return object
@@ -2134,7 +2135,7 @@ var Hiro = {
 			// Creates a DOM element for typeahead
 			rendersuggestion: function(peer,s) {		
 				var d, n, start, prop, 
-					type, types = ['phone','mail'],
+					type, types = ['phone','email'],
 					channel;
 
 				// Find out which string matched
@@ -2147,12 +2148,14 @@ var Hiro = {
 				d.className = 'peer';
 				d.setAttribute('data-hiro-action','ta:' + ((peer.uid) && 'uid' || type) + ':' + (peer.uid || peer[type]));
 
+				console.log('sugeeeeeeeeeeeeest',peer,type);
+
 				// Define namestring 
 				ns = (peer.name || '') + ((peer.name && peer[type]) && ' (' + peer[type] + ')' || peer[type] || '');
 
 				// Insert <em>s around found string				
 				start = ns.toLowerCase().indexOf(s.toLowerCase());
-				ns = 'Add ' + ns.substring(0,start) + '<em>' + ns.substr(start,s.length) + '</em>' + ns.substring(start + s.length);
+				ns = 'Invite ' + ns.substring(0,start) + '<em>' + ns.substr(start,s.length) + '</em>' + ns.substring(start + s.length);
 
 				// Add user name span
 				n = document.createElement('span');
