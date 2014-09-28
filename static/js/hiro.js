@@ -1540,6 +1540,18 @@ var Hiro = {
 					}
 				});					
 			}
+		},
+
+		// Log a certain user action as event
+		track: {
+			eventqueue: [],
+
+			// Notify the various libs that a users basic data has changed
+			// We just resend everything as this would get to detailed otherwise
+			update: function() {
+				if (window.Intercom) Intercom('update', Hiro.lib.intercom.getsettings() );
+				if (window.Rollbar) Rollbar.configure({ payload: Hiro.lib.rollbar.getpayload() })
+			}
 		}
 	},
 
@@ -3232,8 +3244,8 @@ var Hiro = {
 			// Reset UI
 			Hiro.ui.setstage();		
 
-			// Update Rollbar
-			if (window.Rollbar) Rollbar.configure({payload: Hiro.lib.rollbar.getpayload()});		
+			// Update trackers
+			Hiro.user.track.update();		
 
 			// Log
 			Hiro.sys.log('New session created',data);
@@ -5792,6 +5804,8 @@ var Hiro = {
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
 							target.innerText = 'Saved!';
+							// Update trackers
+							Hiro.user.track.update();
 							break;	
 						case 'checkout':
 							// Calls teh checkout
@@ -6194,7 +6208,13 @@ var Hiro = {
 	lib: {
 		// Load libraries
 		init: function() {
-	
+			var user = Hiro.data.get('profile','c')
+
+			// Only load following libs on production system
+			if (!Hiro.sys.production) return;
+
+			// If we have an existing user on a production system, load intercom right away
+			if (user.uid) Hiro.lib.intercom.load();
 		},
 
 		// Generic script loader
@@ -6677,8 +6697,7 @@ var Hiro = {
 				// Do it!
 				Hiro.lib.loadscript({
 					url: this.js,					
-					id: 'intercom',	
-					delay: 1000,
+					id: 'intercom-jssdk',	
 					success: function() {
 						// Init as soon as loaded, as per http://docs.intercom.io/installing-Intercom/intercom-javascript-api
 						Intercom('boot', Hiro.lib.intercom.getsettings());
