@@ -5903,10 +5903,10 @@ var Hiro = {
 						case 'savename':
 							// Get name field
 							el = Hiro.ui.dialog.el_settings.getElementsByTagName('input')[0];
-							// Save name & update link text
-							Hiro.data.set('profile','c.name',el.value);
 							// Log respective event
-							Hiro.user.track.logevent('Changes name',{ Newname: el.value });							
+							Hiro.user.track.logevent('Changes name',{ Oldname: Hiro.data.get('profile','c.name'), Newname: el.value });								
+							// Save name & update link text
+							Hiro.data.set('profile','c.name',el.value);						
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
 							target.innerText = 'Saved!';
@@ -6766,7 +6766,7 @@ var Hiro = {
 				var payload = {}, user = Hiro.data.get('profile','c');
 
 				// Add user/client settings
-				if (user.uid) {
+				if (user && user.uid) {
 					payload.person = {};
 					payload.person.id = user.uid;
 					if (user.email) payload.person.email = user.email;
