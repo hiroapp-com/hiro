@@ -4733,13 +4733,13 @@ var Hiro = {
 		// Send error to logging provider and forward to console logging
 		error: function(description,data) {
 			// Throw error to generate stacktrace etc
-			var err = new Error();
+			var err = new Error(description);
 			var stacktrace = err.stack || arguments.callee.caller.toString(),
 				description = description || 'General error';
 
 			// Send to logging service
 			if (window.Rollbar) {
-				Rollbar.error(description, { data: data, stack: stacktrace });	
+				Rollbar.error(description, { data: data, stack: stacktrace }, err);	
 			// Load & init error logger	
 			} else {
 				// Cache error in the meantime
