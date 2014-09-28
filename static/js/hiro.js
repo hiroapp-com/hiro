@@ -5861,7 +5861,7 @@ var Hiro = {
 			},
 
 			// If the user clicks somewhere in the dialog 
-			clickhandler: function(action,type,target) {
+			clickhandler: function(action,type,target,branch,event) {
 				var param = action.split(':')[1], el;
 
 				// Split actions into array

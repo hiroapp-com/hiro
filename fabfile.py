@@ -7,6 +7,11 @@ from fabric.utils import abort
 from fabric.colors import green
 from fabric.api import run, cd, env, task, roles, local
 
+
+env.user = 'hiro'
+
+env.key_filename = 'C:\Users\\bruno.haid\.ssh\hirobeta_rsa'
+
 env.use_ssh_config = True
 env.roledefs = {
         'frontend': ['beta.hiroapp.com', ],
