@@ -2526,7 +2526,7 @@ var Hiro = {
 			switch (event.type) {
 				case 'updateready':
 					// Swap cache for next load
-					window.applicationCache.swapCache();	
+					// window.applicationCache.swapCache();	
 					// Release lock	
 					Hiro.sync.cachelock = false;								
 					break;				
