@@ -1791,7 +1791,16 @@ var Hiro = {
 							// Switch to desired part
 							Hiro.ui.switchview('widget:' + id[1]);
 							// Select input field contents
-							if (id[1] == 'share') document.getElementById('widget:share').getElementsByTagName('input')[0].select();
+							el = document.getElementById('widget:' + id[1]).getElementsByTagName('input')[0];
+							// Focus & select the sharing URL
+							if (id[1] == 'share') {
+								if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
+								else el.select();
+							// Only focus the others		
+							} else {								
+								el.focus();							
+							}	
+							// All set	
 							break;
 						// Teh shares! Teh shares!
 						case 'share':
@@ -2015,19 +2024,16 @@ var Hiro = {
 				});				
 			},
 
-
-			// Invite a certain type (phone, mail etc) by id
-			invite: function(type,id) {
-
-			},
-
 			// Populate header and widget with data from currentnote, triggerd by show and peer changes from server
 			update: function() {
 				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers'),
 					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus,
-					el_url = this.el_root.getElementsByTagName('input');		
+					el_url = this.el_root.getElementsByTagName('input');
+
+				// Abort if we have no peers (yet) 	
+				if (typeof peers == 'undefined') return;		
 
 				// Populate!
 				Hiro.ui.render(function(){
