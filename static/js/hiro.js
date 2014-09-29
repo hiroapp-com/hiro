@@ -1792,8 +1792,10 @@ var Hiro = {
 							Hiro.ui.switchview('widget:' + id[1]);
 							// Select input field contents
 							el = document.getElementById('widget:' + id[1]).getElementsByTagName('input')[0];
-							// Focus & select the sharing URL
+							// Focus & select the sharing URL							
 							if (id[1] == 'share') {
+								// Mobiles mostly prevent select(), using two steps
+								// https://developer.mozilla.org/en-US/docs/Web/API/Input.select
 								if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
 								else el.select();
 							// Only focus the others		
@@ -3165,7 +3167,9 @@ var Hiro = {
 		// Send message to server
 		tx: function(data) {
 			var sid = Hiro.data.get('profile','c.sid');
-			if (!data) return;				
+
+			// If function was called erroneously 
+			if (!data) return;			
 
 			// Make sure we always send an array
 			if (!(data instanceof Array)) data = [ data ];			
@@ -3186,6 +3190,14 @@ var Hiro = {
 
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
+				// Check socket integrity
+				if (this.ws.socket.readyState != 1) {
+					// Log 
+					Hiro.sys.error('Tried to send data over WebSocket while readyState was ' + this.ws.socket.readyState + 'aborting send',this.ws.socket)
+					// TODO Bruno: Check if this is a more common issue and if yes treat it better than lost packet
+					return;
+				}
+				// Send off
 				this.ws.socket.send(JSON.stringify(data));
 			} else if (this.protocol == 'lp') {
 				this.lp.send(JSON.stringify(data));				
@@ -3977,6 +3989,7 @@ var Hiro = {
 
 			// Generic config			
 			url: undefined,
+			protocol: 'hync',
 
 			// Reconnectdelay
 			rcd: 1000,
@@ -3987,11 +4000,11 @@ var Hiro = {
 				Hiro.sys.log('Connecting to WebSocket server at',this.url);
 
 				// Spawn new socket
-				this.socket = new WebSocket(this.url);
+				this.socket = new WebSocket(this.url,this.protocol);
 
 				// Attach onopen event handlers
 				this.socket.onopen = function(e) {
-					Hiro.sys.log('WebSocket opened',this.socket);	
+					Hiro.sys.log('WebSocket opened',this.socket);
 
 					// Switch to online
 					Hiro.sync.cameonline('sync');		
