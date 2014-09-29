@@ -13,4 +13,4 @@ passlib==1.6.2
 requests==2.3.0
 stripe==1.18.0
 wsgiref==0.1.2
-yuicompressor=2.4.8
+yuicompressor==2.4.8
