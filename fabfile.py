@@ -1,5 +1,5 @@
+import os
 import tempfile
-import os.path
 
 import requests
 from fabric.tasks import execute
@@ -8,9 +8,10 @@ from fabric.colors import green
 from fabric.api import run, cd, env, task, roles, local
 
 
-env.user = 'hiro'
-env.key_filename = 'C:\Users\\bruno.haid\.ssh\hirobeta_rsa'
+if os.name == 'nt':
+    env.key_filename = 'C:\Users\\bruno.haid\.ssh\hirobeta_rsa'
 
+env.user = 'hiro'
 env.use_ssh_config = True
 env.roledefs = {
         'frontend': ['beta.hiroapp.com', ],
@@ -39,10 +40,10 @@ DB_PATH      = '/home/hiro/db/hiro.db'
 @task
 @roles('frontend')
 def checkout(branch='master'):
-    with cd(os.path.join(ROOT, 'refs')):
+    with cd(ROOT + '/refs'):
         tmpdir = tempfile.mkdtemp(prefix='.clone-', dir='.')
         run('git clone --depth 1 --branch {0} {1} {2}'.format(branch, REPO_URL, tmpdir))
-        ref = run('git --git-dir={0} describe --always --long'.format(os.path.join(tmpdir, '.git')))
+        ref = run('git --git-dir={0} describe --always --long'.format(tmpdir + '/.git'))
         if 'path_exists' == run('[ -d {0} ] && echo "path_exists" || echo "Path clear"'.format(ref)):
             abort("Curent revision is already checked out. Aborting")
         run('mv {0} {1}'.format(tmpdir, ref))
@@ -55,11 +56,11 @@ def checkout(branch='master'):
 def prepare(ref):
     # make sure venv is up to date
     with cd(ROOT):
-        run('source venv/bin/activate && pip install --upgrade --requirement={0}'.format(os.path.join(ROOT, 'refs', ref, 'requirements.txt')))
+        run('source venv/bin/activate && pip install --upgrade --requirement={0}'.format(ROOT + '/refs/' + ref + '/requirements.txt'))
         print(green('{0}: venv uptodate'.format(ref)))
     # symlink config files and db into place
-    with cd(os.path.join(ROOT, 'refs', ref)):
-        run('ln -snf {0} .'.format(os.path.join(ROOT, 'etc', 'secret_keys.py')))
+    with cd(ROOT + '/refs/' + ref):
+        run('ln -snf {0} .'.format(ROOT + '/etc' + '/secret_keys.py'))
         # TODO: remove next line after switch to pgsql
         run('ln -snf {0} .'.format(DB_PATH))
         print(green('{0}: installed db and config files'.format(ref)))
@@ -68,8 +69,8 @@ def prepare(ref):
 @task
 @roles('frontend')
 def rebuild_assets(ref):
-    with cd(os.path.join(ROOT, 'refs', ref)):
-        run('source {0} && ./assets.py'.format(os.path.join(ROOT, 'venv', 'bin', 'activate')))
+    with cd(ROOT + '/refs/' + ref):
+        run('source {0} && ./assets.py'.format(ROOT + '/venv/bin/activate'))
         print(green('{0}: assets rebuilt'.format(ref)))
 
 
@@ -77,7 +78,7 @@ def rebuild_assets(ref):
 @roles('frontend')
 def activate(ref):
     with cd(ROOT):
-        run('ln -snf {0} current'.format(os.path.join('refs', ref)))
+        run('ln -snf {0} current'.format('refs/' + ref))
         execute(reload_uwsgi)
         print(green('{0}: activated, now serving this version'.format(ref)))
 
@@ -116,6 +117,5 @@ def deploy():
     execute(prepare, ref)
     execute(rebuild_assets, ref)
     execute(activate, ref)
-    execute(reload_uwsgi)
     execute(rollbar_record_deploy, ref)
     print(green('deploymet of HEAD finished'))
