@@ -31,6 +31,10 @@ facebook.tokengetter(lambda: session.get('oauth_token'))
 def home():
     return render_template('hync_home.html', want_manifest=(not current_app.config['DEBUG']))  
 
+def crash():
+    raise Exception("intended crash")
+    return ''
+
 def anon():
     return jsonify(token=User.anon_token())
 

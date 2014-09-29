@@ -2,8 +2,10 @@ import os
 import views
 
 import click
+import rollbar
+import rollbar.contrib.flask
 
-from flask import g, request, Flask, Markup, render_template, send_from_directory
+from flask import g, request, Flask, Markup, render_template, send_from_directory, got_request_exception
 from assets import assets_env, get_html_output
 
 app = Flask('application')
@@ -17,6 +19,22 @@ app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 
 # Remove whitespaces from output HTML
 app.jinja_env.add_extension('jinja2htmlcompress.HTMLCompress')
+
+
+if not app.config['DEBUG']:
+    print "initializing rollbar"
+    from secret_keys import ROLLBAR_SERVER_TOKEN
+    # setup rollbar exception handling
+    rollbar.init(
+            ROLLBAR_SERVER_TOKEN,
+            # environment name
+            'beta',  
+            # server root directory, makes tracebacks prettier
+            root=os.path.dirname(os.path.realpath(__file__)),  
+            allow_logging_basic_config=True)
+
+    # send exceptions from `app` to rollbar, using flask's signal system.
+    got_request_exception.connect(rollbar.contrib.flask.report_exception, app)
 
 assets = assets_env(app)
 @app.context_processor
@@ -46,6 +64,7 @@ def root_static():
 ## App Routes
 # main handlers
 app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'])
+app.add_url_rule('/crash', 'crash', view_func=views.crash, methods=['GET'])
 app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
 # token handlers
 app.add_url_rule('/tokens/anon', 'anontoken', view_func=views.anon, methods=['GET'])
