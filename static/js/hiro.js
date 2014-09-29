@@ -2507,7 +2507,7 @@ var Hiro = {
 		// Detect changes to localstorage for all connected tabs
 		// All browser should fire this event if a different window/tab writes changes
 		localchange: function(event) {
-			fn;
+			var fn;
 			// IE maps the event to window
 			event = event || window.event;
 
@@ -2519,9 +2519,10 @@ var Hiro = {
 				// Eval
 				if (event.newValue) {
 					// Create anon function from string
-					var fn = new Function(event.newValue);
+					fn = new Function(event.newValue);
 					// Execute
 					fn();
+				}	
 				// Delete message right away but in seperate stack. 
 				// This is pretty bugg yon multiple browser, leave it out for now. Kerckhoffs ftw!
 				// Hiro.data.local.wipe('notify');
@@ -2819,8 +2820,6 @@ var Hiro = {
 
 		// All localstorage related functions
 		local: {
-			// Msges sent to other tabs via tabtx
-			msgqueue: [],
 			// Internals
 			saving: false,
 			timeout: null,
@@ -2828,34 +2827,9 @@ var Hiro = {
 			dynamicinterval: 100,			
 
 			// Sends a message to other tabs via localstorage (this triggers the Hiro.data.localchange event in all other tabs)
-			tabtx: function(cmd,send) {
-				var i, l;
-
+			tabtx: function(cmd) {
 				// Check for localStorage
-				if (!localStorage) return;
-
-				// Add command to queue
-				if (cmd) {
-					// make sure we store properly
-					if (typeof cmd != 'string') cmd = JSON.stringify(cmd);			
-
-					// Add msg to queue
-					this.msgqueue.push(cmd);
-
-					// Kick off sending
-					this.persist();
-				}
-
-				// If we got a send signal
-				if (send) {
-					// Iterate through queue	
-					for (i = 0, l = this.msgqueue.length; i < l; i++) {
-						// Save & trigger localstorage change event in other tabs
-						localStorage.setItem('Hiro.notify',this.msgqueue[i]);											
-					}
-					// Empty queue
-					this.msgqueue = [];			
-				}				
+				if (localStorage) localStorage.setItem('Hiro.notify', JSON.stringify(cmd));								
 			},
 
 			// Mark a store for local persistence and kick it off 
@@ -2894,9 +2868,6 @@ var Hiro = {
 
 				// Empty array
 				Hiro.data.unsaved = [];
-
-				// Send msg queue to other tabs
-				if (this.msgqueue.length) this.tabtx(undefined,true);
 
 				// Measure duration
 				end = Date.now(); 
