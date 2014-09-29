@@ -2507,6 +2507,7 @@ var Hiro = {
 		// Detect changes to localstorage for all connected tabs
 		// All browser should fire this event if a different window/tab writes changes
 		localchange: function(event) {
+			fn;
 			// IE maps the event to window
 			event = event || window.event;
 
@@ -2516,7 +2517,11 @@ var Hiro = {
 			// Receive a message and execute it
 			if (event.key == 'Hiro.notify') {			
 				// Eval
-				if (event.newValue) eval(event.newValue);
+				if (event.newValue) {
+					// Create anon function from string
+					var fn = new Function(event.newValue);
+					// Execute
+					fn();
 				// Delete message right away but in seperate stack. 
 				// This is pretty bugg yon multiple browser, leave it out for now. Kerckhoffs ftw!
 				// Hiro.data.local.wipe('notify');
@@ -4914,7 +4919,7 @@ var Hiro = {
 		// for some secs or good
 		render: function(fn) {
 			// Check if a function is passed, try eval otherwise
-			if (typeof fn != 'function') fn = eval(fn);
+			if (typeof fn != 'function') fn = fn();
 
 			// If window has focus
 			if (this.focus) {
