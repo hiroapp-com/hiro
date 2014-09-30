@@ -1795,6 +1795,26 @@ var Hiro = {
 							this.focus(id[1]);
 							// All set	
 							break;
+						// Clicked on sharing URL input field
+						case 'generate':
+							note = Hiro.data.get('note_' + Hiro.canvas.currentnote);
+							el = document.getElementById('widget:share').getElementsByTagName('input')[0];
+							// If we already have a token
+							if (note._token) {
+								// Only update
+								this.update();
+							// Fetch a fresh token if we're only and have a note
+							} else if (note) {
+								// Notify users 
+								el.value = (Hiro.sync.synconline) ? 'Requesting fresh link from server...' : 'Offline, waiting for connection.';
+								// Set _token to 0 so foliodiff typeof returns number while false otherwise
+								Hiro.data.set('note_' + note.id,'_token',0);									
+								// Set folio to itself to trigger folio diff
+								Hiro.data.set('folio','',Hiro.data.get('folio'));								
+							} else {
+
+							}
+							break;
 						// Teh shares! Teh shares!
 						case 'share':
 							// Get URL & current note with details
@@ -1858,11 +1878,12 @@ var Hiro = {
 				// Focus & select the sharing URL							
 				if (section == 'share') {	
 					// Do not select if no token present
-					if (this.notoken) 
+					if (this.notoken) {
 						// Remove keyboard on mobile devices in underlaying textarea
 						if (Hiro.ui.touch && Hiro.ui.mini() && document.activeElement && document.activeElement.id == 'content') document.activeElement.blur();
 						// Abort
-						return;				
+						return;	
+					}				
 					// Mobiles mostly prevent select(), using two steps
 					// https://developer.mozilla.org/en-US/docs/Web/API/Input.select
 					if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
@@ -2059,19 +2080,23 @@ var Hiro = {
 					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus,
-					el_url = this.el_root.getElementsByTagName('input'), that = this;
+					el_url = this.el_root.getElementsByTagName('input'), focus, that = this;
 
 				// Abort if we have no peers array (yet) 	
 				if (typeof peers == 'undefined') return;		
 
 				// Populate!
 				Hiro.ui.render(function(){
-					console.log(token);
 					// Insert URL into sharing part
 					if (token) {
+						// Set new value
 						el_url[el_url.length - 1].value = 'https://' + location.host + '/#' + token;
-						// Render active	
+						// Remember if token was missing
+						focus = that.notoken;
+						// Render active & reset flag
 						el_url[el_url.length - 1].disabled = that.notoken = false;							
+						// If update was called while widget is open & vnotoken value is still true, focus on input
+						if (focus && that.section == 'share' && Hiro.apps.open.indexOf('sharing') > -1) that.focus();						
 					// Otherwise render placeholder	
 					} else {
 						// Insert Text
@@ -2210,8 +2235,6 @@ var Hiro = {
 				d = document.createElement('div');
 				d.className = 'peer';
 				d.setAttribute('data-hiro-action','ta:' + ((peer.uid) && 'uid' || type) + ':' + (peer.uid || peer[type]));
-
-				console.log('sugeeeeeeeeeeeeest',peer,type);
 
 				// Define namestring 
 				ns = (peer.name || '') + ((peer.name && peer[type]) && ' (' + peer[type] + ')' || peer[type] || '');
@@ -4358,10 +4381,11 @@ var Hiro = {
 							if (ad.added[i].length > 4) return;	
 													
 							// Fetch respective note
-							note = Hiro.data.get('note_' + ad.added[i],'c');
+							note = Hiro.data.get('note_' + ad.added[i]);				
 
 							// Do not diff notes that don't have any content yet
-							if (!note.text && !note.title && note.peers.length == 0) continue;
+							// and where we don't have a token requested yet
+							if (!note.c.text && !note.c.title && note.c.peers.length == 0 && typeof note._token == 'undefined') continue;
 
 							// Create delta array if not done so yet
 							if (!delta) delta = [];	
@@ -4393,7 +4417,7 @@ var Hiro = {
 
 				// Do not diff notes that have no server ID yet
 				if (note.id.length < 5) {
-					// Make sure the folio gets diffed again next time if the note has content
+					// Make sure the folio gets diffed again next time if the note has content or token requested
 					if ((note.c.text || note.c.title || note.c.peers.length > 0) && Hiro.data.unsynced.indexOf('folio') == -1) Hiro.data.unsynced.push('folio');			
 
 					// Abort
@@ -6381,7 +6405,6 @@ var Hiro = {
 
 				// On the first call we only change the state insteading of adding a new one
 				if ((this.first || replaceonly) && history && 'replaceState' in history) {
-					console.log('replaccccccccccccccin')
 					// Change state
 					history.replaceState(id, null, url);
 
