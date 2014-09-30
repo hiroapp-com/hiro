@@ -2460,7 +2460,10 @@ var Hiro = {
 				}	
 
 				// Connect to server
-				Hiro.sync.connect();	
+				Hiro.sync.connect();
+
+				// Set stage
+				Hiro.ui.setstage();							
 			// If we started with a token											
 			} else if (Hiro.sync.tokens[0]) {
 				// Remove landing page
@@ -2497,7 +2500,7 @@ var Hiro = {
 			Hiro.folio.newnote();			
 
 			// Make sure we send another setstage to other tabs
-			Hiro.ui.setstage();		
+			Hiro.ui.render(function(){Hiro.ui.setstage();}); 
 
 			// Log
 			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
@@ -2517,10 +2520,10 @@ var Hiro = {
 			// Receive a message and execute it
 			if (event.key == 'Hiro.notify') {			
 				// Eval
-				if (event.newValue) {
+				if (event.newValue) {				
 					// Create anon function from string
 					fn = new Function(event.newValue);
-					// Execute
+					// Execute						
 					fn();
 				}	
 				// Delete message right away but in seperate stack. 
@@ -2684,7 +2687,7 @@ var Hiro = {
 				this.stores[newid].id = newid.substring(5);
 
 				// Make sure Hiro.canvas.currentnote gets updated in other tabs
-				Hiro.data.local.tabtx('if(Hiro.canvas.currentnote=="' + oldid.substring(5) + '") Hiro.canvas.currentnote = "' + newid.substring(5) + '";Hiro.ui.history.add(newid.substring(5),true);');
+				Hiro.data.local.tabtx('if(Hiro.canvas.currentnote=="' + oldid.substring(5) + '") Hiro.canvas.currentnote = "' + newid.substring(5) + '";Hiro.ui.history.add("' + newid.substring(5) + '",true);');
 
 				// Change shown URL
 				Hiro.ui.history.add(newid.substring(5),true);
@@ -2820,16 +2823,31 @@ var Hiro = {
 
 		// All localstorage related functions
 		local: {
+			// Localstorage best messaging to other tabs, we want to make sure this only gets send 
+			// after the respective store changes, which might be delayed by the writer timeout
+			msgqueue: [],
 			// Internals
 			saving: false,
 			timeout: null,
 			maxinterval: 3000,
 			dynamicinterval: 100,			
 
-			// Sends a message to other tabs via localstorage (this triggers the Hiro.data.localchange event in all other tabs)
-			tabtx: function(cmd) {
-				// Check for localStorage
-				if (localStorage) localStorage.setItem('Hiro.notify', JSON.stringify(cmd));								
+			// Add messages to queue
+			tabtx: function(cmd, flush) {
+				var i, l;
+				// Add to queue
+				this.msgqueue.push(cmd);
+
+				// persist sent flush command, all other ressources synced
+				if (flush && window.localStorage) {
+					// Loop through message
+					while (this.msgqueue.length) {
+						// Send
+						localStorage.setItem('Hiro.notify', this.msgqueue[0]);
+						// Remove element;
+						this.msgqueue.shift();
+					}	
+				}							
 			},
 
 			// Mark a store for local persistence and kick it off 
@@ -2868,6 +2886,9 @@ var Hiro = {
 
 				// Empty array
 				Hiro.data.unsaved = [];
+
+				// Send messages
+				if (this.msgqueue.length) this.tabtx(null,true);
 
 				// Measure duration
 				end = Date.now(); 
@@ -4655,10 +4676,7 @@ var Hiro = {
 			Hiro.sync.init(vars.ws);			
 			Hiro.data.init();				
 			Hiro.lib.init();		
-			Hiro.apps.init();	
-
-			// Set up UI according to user level
-			Hiro.ui.setstage();			
+			Hiro.apps.init();			
 
 			// Attach application cache update events
 			if (window.applicationCache) {
@@ -5011,11 +5029,11 @@ var Hiro = {
 		},		
 
 		// Setup UI according to account level where 0 = anon
-		setstage: function(tier,tabtriggered) {
+		setstage: function(tier) {
 			var t = Hiro.data.get('profile','c.tier');
 
-			// If the stage setting was triggered by another tab sharing localstorage and we already have a folio
-			if (tabtriggered && Hiro.ui.landingvisible && Hiro.data.get('folio')) {
+			// If the stage setting was triggered by another tab
+			if (Hiro.ui.landingvisible) {
 				// Remove the landing page
 				Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);
 				// Load first note without adding history object
@@ -5033,7 +5051,7 @@ var Hiro = {
 			this.dialog.load();				
 
 			// Send tier setting to other tabs
-			if (!tabtriggered) Hiro.data.local.tabtx('Hiro.ui.setstage(' + tier + ',true);');
+			Hiro.data.local.tabtx('Hiro.ui.setstage(' + tier + ',true);');
 
 			// Switch designs
 			switch (tier) {
