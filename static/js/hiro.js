@@ -1087,7 +1087,7 @@ var Hiro = {
 				success: function(data) {
 					// Fetch first name
 					FB.api('/me', function(response) {
-						// Temporary save, to be picked up by create session by logio below
+						// Save name
 			            if (response.first_name) Hiro.user.setname(response.first_name);
 
 						// Forward to handler
@@ -1199,9 +1199,12 @@ var Hiro = {
 		},	
 
 		// Change name to new value
-		setname: function(newname,fetchsuggestion) {
+		setname: function(newname,fetchsuggestion,force) {
+			var oldname = Hiro.data.get('profile','c.name');
+			// Abort if it isn't forced & we already have an oldname
+			if (oldname && !force) return;
 			// Use getname helper to extract name from mail or phone, only if we don't have one yet
-			if (fetchsuggestion && !Hiro.data.get('profile','c.name')) newname = Hiro.util.getname(newname)[1];
+			if (fetchsuggestion) newname = Hiro.util.getname(newname)[1];
 			// Log respective event
 			Hiro.user.track.logevent('Changes name',{ Oldname: Hiro.data.get('profile','c.name'), Newname: newname });								
 			// Save name & update link text
@@ -3360,8 +3363,8 @@ var Hiro = {
 			cp.c = JSON.parse(user); 
 			cp.s = JSON.parse(user);
 
-			// See if facebook or someone else left a name for us
-			if (!cp.c.name && Hiro.user.firstname) cp.c.name = Hiro.user.firstname;
+			// Fall back to present name if none know by server
+			cp.c.name = sp.val.user.name || Hiro.data.get('profile','c.name');
 
 			// Add contacts & session
 			cp.c.contacts = (cp.c.contacts) ? cp.c.contacts.concat(JSON.parse(peers)) : JSON.parse(peers);			
@@ -5004,7 +5007,10 @@ var Hiro = {
 				window.onpopstate = function(e) { Hiro.ui.history.goback(e) };			
 			} else {
 				Hiro.util.registerEvent(window,'popstate', function(e) { Hiro.ui.history.goback(e) });			
-			}						
+			}
+
+			// Always load settings from server to determine contents and webserver availability
+			this.dialog.load();									
 		},
 
 		// Render changes via rAF or, if window is not focused, right away
@@ -5150,10 +5156,7 @@ var Hiro = {
 			}
 
 			// Set tier if none is provided 
-			tier = tier || t || 0; 
-
-			// Always load settings from server to determine contents and webserver availability
-			this.dialog.load();				
+			tier = tier || t || 0; 			
 
 			// Send tier setting to other tabs
 			Hiro.data.local.tabtx('Hiro.ui.setstage(' + tier + ',true);');
@@ -6052,7 +6055,7 @@ var Hiro = {
 							// Get name field
 							el = Hiro.ui.dialog.el_settings.getElementsByTagName('input')[0];
 							// Set name
-							Hiro.user.setname(el.value);												
+							Hiro.user.setname(el.value,false,true);												
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
 							target.innerText = 'Saved!';
