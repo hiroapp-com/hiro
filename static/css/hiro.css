@@ -768,7 +768,7 @@ input.error:focus {
 }
 
 #apps .app .widget a.hirobutton.fb  {
-  margin-top: 4px;
+  margin-top: 7px;
 }
 
 #apps .app.app_sharing .icon .symbol {
@@ -780,7 +780,7 @@ input.error:focus {
 }
 
 #apps .app.app_sharing .widget form .peers {
-  margin: 5px 0;
+  margin: 7px 0;
 }
 
 #apps .app.app_sharing .widget form .peers .peer {
@@ -818,6 +818,11 @@ input.error:focus {
 
 #apps .app.app_sharing .widget .peers .peer .name.invited {
   color: #999;
+}
+
+#apps .app.app_sharing .widget .hidden small {
+  padding: 0;
+  margin: 12px 0 -5px 0;
 }
 
 @media (min-width: 481px) {

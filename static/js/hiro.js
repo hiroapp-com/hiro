@@ -1825,8 +1825,8 @@ var Hiro = {
 									todo: function(obj) {
 										// Open share dialog
 										FB.ui({							
-											method: 'share',
-											href: url,
+											method: 'feed',
+											link: url,
 	           								name: title,
 	            							description: text,	           								
 	            							caption: 'https://' + location.host,
