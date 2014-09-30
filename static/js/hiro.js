@@ -1699,24 +1699,25 @@ var Hiro = {
 
 		// Open app widget
 		show: function(el_app) {
+			var app = el_app.id.substring(4), el = el_app.getElementsByClassName('widget')[0];
+
 			// Add ID to open list
-			this.open.push(el_app.id.substring(4));
+			this.open.push(app);
 
 			// Log respective event
-			Hiro.user.track.logevent('Opened ' + el_app.id.substring(4) + ' widget');				
+			Hiro.user.track.logevent('Opened ' + app + ' widget');				
 
 			// Update & display app			
-			Hiro.ui.render(function(){
-				// Preload facebook
-				if (!window.FB) Hiro.lib.facebook.load();				
-
+			Hiro.ui.render(function(){		
 				// Update contents before opening
-				Hiro.apps.sharing.update();
+				Hiro.apps[app].update();
 
 				// Show widget
-				el_app.getElementsByClassName('widget')[0].style.display = 'block';
-				el_app.getElementsByTagName('input')[0].focus();
+				if (!el.style.display || el.style.display == 'none') el.style.display = 'block';
 			});
+
+			// Make sure proper elements are focussed etc
+			Hiro.apps[app].focus();			
 		},
 
 		close: function(app) {
@@ -1740,6 +1741,7 @@ var Hiro = {
 
 			// Internals
 			inviting: false,
+			section: 'invite',
 
 			// Default keyhandler
 			keyhandler: function(event) {
@@ -1788,20 +1790,8 @@ var Hiro = {
 							break;
 						// Switch between modes
 						case 'switch':
-							// Switch to desired part
-							Hiro.ui.switchview('widget:' + id[1]);
-							// Select input field contents
-							el = document.getElementById('widget:' + id[1]).getElementsByTagName('input')[0];
-							// Focus & select the sharing URL							
-							if (id[1] == 'share') {
-								// Mobiles mostly prevent select(), using two steps
-								// https://developer.mozilla.org/en-US/docs/Web/API/Input.select
-								if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
-								else el.select();
-							// Only focus the others		
-							} else {								
-								el.focus();							
-							}	
+							// Switch to respective subsection & select input field contents
+							this.focus(id[1]);
 							// All set	
 							break;
 						// Teh shares! Teh shares!
@@ -1844,7 +1834,37 @@ var Hiro = {
 							});							
 					}
 				}				
-			},			
+			},	
+
+			// Prepare the respective area
+			focus: function(section) {
+				var el;
+				// Preload facebook if not yet done so
+				if (!window.FB) Hiro.lib.facebook.load();
+
+				// Fallback on default section if none set yet
+				section = section || this.section;
+
+				// Grab input field
+				el = document.getElementById('widget:' + section).getElementsByTagName('input')[0];		
+
+				// Switch to desired part
+				Hiro.ui.switchview('widget:' + section);						
+
+				// Focus & select the sharing URL							
+				if (section == 'share') {					
+					// Mobiles mostly prevent select(), using two steps
+					// https://developer.mozilla.org/en-US/docs/Web/API/Input.select
+					if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
+					else el.select();
+				// Only focus the others		
+				} else {								
+					el.focus();							
+				}	
+
+				// Save section internally
+				this.section = section;
+			},	
 
 			// Validate the current form, this is either triggered by keyup event handler or click on invite 
 			validate: function(event,submit,string,type) {
@@ -2034,7 +2054,7 @@ var Hiro = {
 					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus,
 					el_url = this.el_root.getElementsByTagName('input');
 
-				// Abort if we have no peers (yet) 	
+				// Abort if we have no peers array (yet) 	
 				if (typeof peers == 'undefined') return;		
 
 				// Populate!
