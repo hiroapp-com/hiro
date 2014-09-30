@@ -668,8 +668,34 @@ var Hiro = {
 		// Load a note onto the canvas
 		load: function(id,preventhistory) {		
 			// If we call load without id we just pick the doc on top of the folio
-			var	id = id || Hiro.data.get('folio').c[0].nid,
-				note = Hiro.data.get('note_' + id);	
+			var folio = Hiro.data.get('folio','c'), note; 
+
+			// Abort if we have no folio
+			if (!folio || !folio.length) {
+				// Log
+				Hiro.sys.error('Tried to load a note while having no folio, aborting.')
+				// Abort
+				return;
+			}
+			
+			// Set id, use first folio entry if none provided
+			id = id || folio[0].nid;
+
+			// Set note
+			note = Hiro.data.get('note_' + id);	
+
+			// Fallback on first folio note if none found
+			// This should nearly always only happen if user uses malformed / forbidden url
+			if (!note) {
+				// Log
+				Hiro.sys.warn('Tried to load an unknown note, loading first note in folio.',[id,folio]);
+				// Fall back on first note 
+				id = folio[0].nid;
+				// Reset note
+				note = Hiro.data.get('note_' + id);
+				// Log if we still fucked up
+				if (!note) Hiro.sys.error('FATAL: Could not load any note.',[id,folio]);				
+			}
 
 			// Sort	folio
 			Hiro.folio.sort(id);			
@@ -1829,7 +1855,7 @@ var Hiro = {
 											link: url,
 	           								name: title,
 	            							description: text,	           								
-	            							caption: 'https://' + location.host,
+	            							caption: 'A Note on ' + location.host,
 								            actions: {
 								                name: 'Start Your Own',
 								                link: 'https://www.hiroapp.com/connect/facebook',
@@ -6394,7 +6420,10 @@ var Hiro = {
 			// Add a new history state
 			add: function(id,replaceonly) {
 				// Build URL
-				var url = '/note/' + id;	
+				var token = Hiro.data.get('note_' + id,'_token'), url = '/note/' + id;	
+
+				// Extend URL with token if we have one
+				if (token) url = url + '#' + token;
 
 				// Don't do it as long as we're not in production
 				if (!Hiro.sys.production) return;	
