@@ -919,9 +919,6 @@ var Hiro = {
 		// Internals
 		authinprogress: false,	
 
-		// Temporary storage
-		firstname: undefined,
-
 		// Grab registration form data, submit via XHR and process success / error
 		// The Login and Register screens and flows are pretty much the same, 
 		// we only have to decide which DOM branch we use in the first line
@@ -986,6 +983,9 @@ var Hiro = {
 					// Reset DOM & flag	
 	                b.innerText = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;
+
+					// Try fetching a name if registration form was used
+					Hiro.user.setname(parse[1],true); 	                
 
 	                // Process login					
 					Hiro.user.logiocomplete(data,login);	
@@ -1088,7 +1088,7 @@ var Hiro = {
 					// Fetch first name
 					FB.api('/me', function(response) {
 						// Temporary save, to be picked up by create session by logio below
-			            if (response.first_name) Hiro.user.firstname = response.first_name;
+			            if (response.first_name) Hiro.user.setname(response.first_name);
 
 						// Forward to handler
 						Hiro.user.logiocomplete(data,login);
@@ -1126,6 +1126,7 @@ var Hiro = {
 		},
 
 		// Post successfull auth stuff
+		// See createsession handler to see if and when we overwrite this on login
 		logiocomplete: function(data,login) {	
 			// Check if user did this while on landing page
 			if (Hiro.ui.landingvisible) {
@@ -1134,6 +1135,7 @@ var Hiro = {
 				// Set the flag
 				Hiro.ui.landingvisible = false;			
 			}
+
 			// Close dialog
 			Hiro.ui.dialog.hide();		
 
@@ -1195,6 +1197,18 @@ var Hiro = {
 				}
 			});	
 		},	
+
+		// Change name to new value
+		setname: function(newname,fetchsuggestion) {
+			// Use getname helper to extract name from mail or phone, only if we don't have one yet
+			if (fetchsuggestion && !Hiro.data.get('profile','c.name')) newname = Hiro.util.getname(newname)[1];
+			// Log respective event
+			Hiro.user.track.logevent('Changes name',{ Oldname: Hiro.data.get('profile','c.name'), Newname: newname });								
+			// Save name & update link text
+			Hiro.data.set('profile','c.name',newname);	
+			// Update trackers
+			Hiro.user.track.update();
+		},
 
 		// Hello. Is it them you're looking for?
 		contacts: {
@@ -6037,15 +6051,11 @@ var Hiro = {
 						case 'savename':
 							// Get name field
 							el = Hiro.ui.dialog.el_settings.getElementsByTagName('input')[0];
-							// Log respective event
-							Hiro.user.track.logevent('Changes name',{ Oldname: Hiro.data.get('profile','c.name'), Newname: el.value });								
-							// Save name & update link text
-							Hiro.data.set('profile','c.name',el.value);						
+							// Set name
+							Hiro.user.setname(el.value);												
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
 							target.innerText = 'Saved!';
-							// Update trackers
-							Hiro.user.track.update();
 							break;	
 						case 'checkout':
 							// Calls teh checkout
@@ -7114,6 +7124,41 @@ var Hiro = {
 			}
 
 			return [type,string];
+		},
+
+		// Takes a mail or phone number and tries to get pretty non-leaking names out of it
+		// As always we use supersafe ECMA 1
+		getname: function(string) {
+			var details, ending;
+			// First get type 
+			details = this.mailorphone(string);
+
+			// If no string was provided
+			if (!string) {
+				return false;
+			// If we couldn't find the type
+			} else if (!details) {
+				ending = string.substring(string.length - 3,string.length);
+				// Hard to anonymize, use full
+				if (string.length < 7) return [undefined,'...' + ending];
+				// Otherwise return half assed dotted string
+				return [undefined,string.substring(0,3) + '...' + ending]
+			// If it's a mail
+			} else if (details[0] == 'email') {
+				// Get pre @
+				string = string.split('@')[0];
+				// Replace all non alphameric chars with space
+				string = string.replace(/[^0-9a-zA-Z]/g,' ');
+				// Uppercase all leading boundary chars
+				string = string.replace(/\b(\S)/g, function(match) { return match.toUpperCase() });
+			// If it's a phone #
+			} else if (details[0] == 'phone') {
+				// Just use the last 4 chars as string
+				string = 'Phone: ...' + string.substring(string.length - 4,string.length);
+			}
+
+			// Return mail or phone
+			return [details[0],string]
 		},
 
 		// Returns a hash for simple or complex object provided
