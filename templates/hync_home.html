@@ -15,14 +15,14 @@
 		<meta name="viewport" id="viewport" content="height=device-height,width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no"/>
 		<meta property="og:site_name" content="Hiro" />
         <meta property="og:title" content="Hiro" />
-        <meta property="og:url" content="https://www.hiroapp.com" />
+        <meta property="og:url" content="{{ request.url }}" />
         <meta property="og:image" content="https://www.hiroapp.com/og.png" />
         <meta property="og:type" content="website" />
         <meta property="og:description" content="Notes with friends." />
         {{ get_asset('new_css') }}
 		<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png"/>	
 		<meta name="apple-mobile-web-app-status-bar-style" content="black">		
-		<link rel="canonical" href="https://www.hiroapp.com"/>	
+		<link rel="canonical" href="{{ request.url }}"/>	
 	</head>
 	<body>
 		<div id="fb-root"></div>		
