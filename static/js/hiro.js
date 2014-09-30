@@ -1742,6 +1742,7 @@ var Hiro = {
 			// Internals
 			inviting: false,
 			section: 'invite',
+			notoken: false,
 
 			// Default keyhandler
 			keyhandler: function(event) {
@@ -1849,10 +1850,19 @@ var Hiro = {
 				el = document.getElementById('widget:' + section).getElementsByTagName('input')[0];		
 
 				// Switch to desired part
-				Hiro.ui.switchview('widget:' + section);						
+				Hiro.ui.switchview('widget:' + section);	
+
+				// Save section internally
+				this.section = section;									
 
 				// Focus & select the sharing URL							
-				if (section == 'share') {					
+				if (section == 'share') {	
+					// Do not select if no token present
+					if (this.notoken) 
+						// Remove keyboard on mobile devices in underlaying textarea
+						if (Hiro.ui.touch && Hiro.ui.mini() && document.activeElement && document.activeElement.id == 'content') document.activeElement.blur();
+						// Abort
+						return;				
 					// Mobiles mostly prevent select(), using two steps
 					// https://developer.mozilla.org/en-US/docs/Web/API/Input.select
 					if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
@@ -1861,9 +1871,6 @@ var Hiro = {
 				} else {								
 					el.focus();							
 				}	
-
-				// Save section internally
-				this.section = section;
 			},	
 
 			// Validate the current form, this is either triggered by keyup event handler or click on invite 
@@ -2052,7 +2059,7 @@ var Hiro = {
 					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus,
-					el_url = this.el_root.getElementsByTagName('input');
+					el_url = this.el_root.getElementsByTagName('input'), that = this;
 
 				// Abort if we have no peers array (yet) 	
 				if (typeof peers == 'undefined') return;		
@@ -2061,7 +2068,17 @@ var Hiro = {
 				Hiro.ui.render(function(){
 					console.log(token);
 					// Insert URL into sharing part
-					if (token) el_url[el_url.length - 1].value = 'https://' + location.host + '/#' + token;
+					if (token) {
+						el_url[el_url.length - 1].value = 'https://' + location.host + '/#' + token;
+						// Render active	
+						el_url[el_url.length - 1].disabled = that.notoken = false;							
+					// Otherwise render placeholder	
+					} else {
+						// Insert Text
+						el_url[el_url.length - 1].value = (Hiro.sync.synconline) ? 'Generate Link' : 'Offline, no fresh link available.';	
+						// Render inactive	
+						el_url[el_url.length - 1].disabled = that.notoken = true;										
+					}	
 
 					// Placeholder fragments
 					f = document.createDocumentFragment();

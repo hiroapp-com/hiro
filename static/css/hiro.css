@@ -754,6 +754,11 @@ input.error:focus {
   border: 1px solid #bbb;
 }
 
+#apps .app .widget input:disabled {
+  cursor: pointer;
+  color: #333;
+}
+
 #apps .app .widget a.hirobutton  {
   padding: 9px 10px 8px 10px;  
   white-space: nowrap;
