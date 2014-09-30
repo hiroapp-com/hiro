@@ -2059,6 +2059,7 @@ var Hiro = {
 
 				// Populate!
 				Hiro.ui.render(function(){
+					console.log(token);
 					// Insert URL into sharing part
 					if (token) el_url[el_url.length - 1].value = 'https://' + location.host + '/#' + token;
 
@@ -2638,13 +2639,16 @@ var Hiro = {
 			if (key && key.indexOf('.') >= 0 && this.stores[store]) {
 				return this.deepget(this.stores[store],key);
 			}
-
 			// Simple lookups
-			else if (key && this.stores[store] && this.stores[store][key]) {
+			else if (key && this.stores[store] && this.stores[store][key]) {		
+				// Store & key value found		
 				return this.stores[store][key];
-			} else if (!key && this.stores[store]) {
+			} 
+			// Return full store if no key provided			
+			else if (!key && this.stores[store]) {				
 				return this.stores[store];
-			} else {
+			// Try to see if there's something on disk				
+			} else {				
 				return this.local.fromdisk(store,key);
 			}
 		},
@@ -2958,14 +2962,18 @@ var Hiro = {
 					Hiro.sys.error('Error retrieving data from localstore',e);		
 				}
 
+				// Abort if no data was returned at all;
+				if (!data) return undefined;
+
+
 				// Fetch key or return complete object
-				if (data && key && data[key]) {
+				if (key && key.split('.').length > 0) { 
+					return Hiro.data.deepget(data,key);
+				} else if (key && data[key]) {
 					return data[key];
-				} else if (data) {
-					return data;
 				} else {
-					return undefined;
-				}			
+					return data;
+				}				
 			},
 
 			// Generic localstore writer, room for browser quirks
