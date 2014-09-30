@@ -1799,29 +1799,25 @@ var Hiro = {
 						case 'generate':
 							note = Hiro.data.get('note_' + Hiro.canvas.currentnote);
 							el = document.getElementById('widget:share').getElementsByTagName('input')[0];
-							// If we already have a token
-							if (note._token) {
-								// Only update
-								this.update();
-							// Fetch a fresh token if we're only and have a note
-							} else if (note) {
+							// Fetch a fresh token if we're online and have a note
+							if (note && !note._token) {
 								// Notify users 
 								el.value = (Hiro.sync.synconline) ? 'Requesting fresh link from server...' : 'Offline, waiting for connection.';
 								// Set _token to 0 so foliodiff typeof returns number while false otherwise
 								Hiro.data.set('note_' + note.id,'_token',0);									
 								// Set folio to itself to trigger folio diff
 								Hiro.data.set('folio','',Hiro.data.get('folio'));								
-							} else {
-
 							}
 							break;
 						// Teh shares! Teh shares!
 						case 'share':
 							// Get URL & current note with details
 							url = document.getElementById('widget:share').getElementsByTagName('input')[0].value;
-							note = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c');
-							text = note.text.substring(0,500) || 'Hiro is the easiest way to share notes with friends.';
-							title = note.title.substring(0,50) || 'Hiro.';
+							note = Hiro.data.get('note_' + Hiro.canvas.currentnote);
+							text = note.c.text.substring(0,500) || 'Hiro is the easiest way to share notes with friends.';
+							title = note.c.title.substring(0,50) || 'Hiro.';
+							// Do not submit sharing if we have no token yet
+							if (!note._token) return;
 							// On Fatzelboeks
 							if (id[1] == 'fb') {
 								// Send package to facebook
@@ -1843,7 +1839,7 @@ var Hiro = {
 								});
 							// Tweet (Love to 'Ooops, oh my' song by her)
 							} else if (id[1] == 'tw') {
-								Hiro.ui.tweet(url + ' ' + (note.text.substring(0,200) || title));
+								Hiro.ui.tweet(url + ' ' + (note.c.text.substring(0,200) || title));
 							// Send mail	
 							} else if (id[1] == 'mail') {
 								Hiro.ui.mail(title, url + ' ' + text);
