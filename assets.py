@@ -29,7 +29,7 @@ def assets_env(app):
     env.manifest = ('file:' + os.path.join(root_dir,'webassets.manifest'))
     env.versions = 'hash:32'
     # create static bundles
-    env.register('new_js', 'js/hiro.js', filters='closure_js', output="javascript/hiro.%(version)s.js")      
+    env.register('new_js', 'js/hiro.js', filters='yui_js', output="javascript/hiro.%(version)s.js")      
     env.register('new_css', 'css/hiro.css', filters='cssmin', output="stylesheets/hiro.%(version)s.css")       
     env.debug = app.config['DEBUG']
     return env
