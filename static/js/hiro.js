@@ -4799,7 +4799,8 @@ var Hiro = {
 			if (vars.fb) Hiro.lib.facebook.key = vars.fb;
 			if (vars.st) Hiro.lib.stripe.key = vars.st;
 			if (vars.rb) Hiro.lib.rollbar.key = vars.rb;
-			if (vars.ic) Hiro.lib.intercom.key = vars.ic;			
+			if (vars.ic) Hiro.lib.intercom.key = vars.ic;	
+			if (vars.v) this.versioncheck(vars.v,vars.vn);		
 
 			// Create DMP socket
 			Hiro.sync.diff.dmp = new diff_match_patch();	
@@ -4857,35 +4858,33 @@ var Hiro = {
 		},
 
 		// Takes a version nr and compares it to what we have. 
-		// If we had a version number and first two two levels (11.2.333) changed we ask the user to reload
-		versioncheck: function(ver) {
-			var p = Hiro.data.get('profile'),
-				v = this.version || p._hiroversion, ov, nv;
-
-			// Log
-			Hiro.sys.log('Checking version ' + ver + ' against latest known version ' + v);	
-
-			// Compare versions, if we already have a local one
-			if (v && ver != v) {
-				// Split and remove minor versions (appengine internal and our smaller ones)
-				ov = v.split('-');
-				nv = ver.split('-');
-				ov.pop(); nv.pop();
-
-				// Check if remaining major version (x-xx) changed
-				if (ov.toString() != nv.toString()) {
-					// TODO Bruno: Show dialog
-
-					// Log to check how often this is used
-					Hiro.sys.error('Forced upgrade from ' + ov.toString() + ' to '+ nv.toString());						
-				}
+		// If we have a new git tag, indicated by a change in the version string before first '-'
+		versioncheck: function(version,name) {
+			var currentversion = Hiro.version.split('-')[0];
+			// If we didn't have a version at all yet
+			if (!currentversion) {
+				// Set
+				Hiro.version = version;
+				// Log
+				Hiro.sys.log('Version is ' + version + ' (' + name + ')');
+			// If a version was provided	
+			} else if (version) {
+				// Compare & show modal
+				if (version.split('-')[0] != currentversion) console.log('fooo');
+			// Fetch a new one from server		
+			} else {
+				// Get current version
+				Hiro.sync.ajax.send({
+					url: '/version',
+					success: function(req,data) {
+						// Compare & see if theres something to do
+						if (data.version.split('-') == currentversion) return;
+						// Log
+						Hiro.sys.log('Update to ' + version + ' (' + name + ')' + ' available.')
+						console.log(data);
+					}
+				});
 			}
-
-			// Save local var
-			this.version = ver;
-
-			// Save latest version in profile object if we have one
-			if (p) Hiro.data.set('profile','_hiroversion',ver);
 		},
 
 		// Send error to logging provider and forward to console logging
