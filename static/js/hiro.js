@@ -1134,10 +1134,7 @@ var Hiro = {
 				Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);	
 				// Set the flag
 				Hiro.ui.landingvisible = false;			
-			}
-
-			// Close dialog
-			Hiro.ui.dialog.hide();		
+			}		
 
 			// Use token to request new session
 			Hiro.sync.createsession(data.token);	
@@ -3454,6 +3451,9 @@ var Hiro = {
 				// See if we got any more tokens to consume
 				if (this.tokens.length > 0) this.consumetoken();				
 			}
+
+			// Close dialog
+			if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();			
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
 			Hiro.data.set('folio','',cf,'s');	
