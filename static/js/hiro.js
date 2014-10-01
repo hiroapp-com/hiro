@@ -2785,10 +2785,7 @@ var Hiro = {
 				this.stores[newid].id = newid.substring(5);
 
 				// Make sure Hiro.canvas.currentnote gets updated in other tabs
-				Hiro.data.local.tabtx('if(Hiro.canvas.currentnote=="' + oldid.substring(5) + '") Hiro.canvas.currentnote = "' + newid.substring(5) + '";Hiro.ui.history.add("' + newid.substring(5) + '",true);');
-
-				// Change shown URL
-				Hiro.ui.history.add(newid.substring(5),true);
+				Hiro.data.local.tabtx('if(Hiro.canvas.currentnote=="' + oldid.substring(5) + '") Hiro.canvas.currentnote = "' + newid.substring(5) + '";');
 			}
 
 			// Delete old object and localstorage object
@@ -3592,8 +3589,10 @@ var Hiro = {
 					switch (data.res.kind  + '|' + ops[j].op) {	
 						// Store token with the document				
 						case 'note|set-token':
-							// Set values
-							store._token = ops[j].value;		
+							// Set value
+							store._token = ops[j].value;	
+							// Change shown URL
+							if (store.id == Hiro.canvas.currentnote) Hiro.ui.history.add(store.id,true);								
 							update = true;
 							break;						
 						// Add a peer to a note			
@@ -6484,13 +6483,13 @@ var Hiro = {
 			// Add a new history state
 			add: function(id,replaceonly) {
 				// Build URL
-				var token = Hiro.data.get('note_' + id,'_token'), url = '/note/' + id;	
+				var token = Hiro.data.get('note_' + id,'_token'), url = '/note/' + id, type;	
 
 				// Extend URL with token if we have one
 				if (token) url = url + '#' + token;
 
 				// Don't do it as long as we're not in production
-				if (!Hiro.sys.production) return;	
+				//if (!Hiro.sys.production) return;	
 
 				// On the first call we only change the state insteading of adding a new one
 				if ((this.first || replaceonly) && history && 'replaceState' in history) {
@@ -6501,8 +6500,13 @@ var Hiro = {
 					this.first = false;
 
 				// Add to browser stack	
-				} else if (history && 'pushState' in history) history.pushState(id, null, url);
+				} else if (history && 'pushState' in history) {
+					// Add new item
+					history.pushState(id, null, url);
+				}	
 
+				// Send to other tabs
+				Hiro.data.local.tabtx('Hiro.ui.history.add("' + id + '",' + replaceonly + ');');				
 			},
 
 			// Triggered if user presses back button (popstate event)
