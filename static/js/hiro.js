@@ -305,7 +305,7 @@ var Hiro = {
 					user = Hiro.user.contacts.lookup[note._lasteditor];
 
 					// Complete string
-					time = time + ' by ' + user.name || user.email || user.phone || 'Anonymous';	
+					time = time + ' by ' + (user.name || user.email || user.phone || 'an anonymous user');	
 				}
 
 			} else {
@@ -693,7 +693,7 @@ var Hiro = {
 			// This should nearly always only happen if user uses malformed / forbidden url
 			if (!note) {
 				// Log
-				Hiro.sys.warn('Tried to load an unknown note, loading first note in folio.',[id,folio]);
+				Hiro.sys.log('Tried to load an unknown note, loading first note in folio.',[id,folio],warn);
 				// Fall back on first note 
 				id = folio[0].nid;
 				// Reset note
@@ -3509,7 +3509,7 @@ var Hiro = {
 				return;				
 			} else if (store._tag && !ack) {
 				// See if we have a proper response we're waiting for or abort otherwise
-				Hiro.sys.warn('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data);
+				Hiro.sys.log('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data,'warn');
 				return;
 			} else if (Hiro.data.get('profile','c.sid') != data.sid) {
 				// See if we have a proper response we're waiting for or abort otherwise
