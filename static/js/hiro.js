@@ -4718,20 +4718,48 @@ var Hiro = {
 
             	// Apply
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
-            		// Apply the patch
+            		// Apply the patch, shadow first
                     n.s.text = this.dmp.patch_apply(patch, n.s.text)[0]; 
-                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];  
-                    // Also render changes if it's the current doc
+
+                    // TODO Bruno: Insert logic here if the following patches fail
+	                Hiro.sys.log('Shadow updated');       
+
+                    // Apply the changes to the cache if it's the current document
                     if (id == Hiro.canvas.currentnote) {
-                    	// Apply patch
-                    	Hiro.canvas.cache.content = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
+                    	// Apply patch to cache and set current version to cache
+                    	Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
                     	// Paint it
                     	Hiro.canvas.paint();
-                    }  
+                    	// Recalculate cursor
+                    	this.computecursor(diffs);
+                    // Apply the changes to the current version	
+                    } else {
+		                // Apply to 
+	                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];                    	
+                    }
+
                     // Log                                      
 	                Hiro.sys.log('Patches successfully applied in ' + (Hiro.util.now() - start) + 'msecs');
                 }             	
-			},	
+			},
+
+			// Calculate new cursor position
+			computecursor: function(diffs) {
+				var oldcursor = Hiro.canvas.getcursor(), newcursor = this.dmp.diff_xIndex(diffs,oldcursor[0]), range;
+
+            	// We had a single cursor
+            	if (oldcursor[0] == oldcursor[1]) {
+            		range = [newcursor,newcursor];
+            	// We had a selection, preserving it            		
+            	} else {
+            		range = [newcursor,this.dmp.diff_xIndex(diffs,oldcursor[1])];
+            	}   
+
+            	console.log('moving cursor',oldcursor,[oldcursor[0],newcursor])      	
+
+            	// Force-set new position, this also fires resize
+            	Hiro.canvas.setcursor(range);				
+			}
 		}
 	},
 
