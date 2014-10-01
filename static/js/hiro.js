@@ -6556,19 +6556,25 @@ var Hiro = {
 			},
 
 			// Post to facebook,
-			fb: function(obj) {
+			fb: function(item) {
+				var payload = {};
+				
+				// Make sure we don't have improper focus on touch devices
+				if (Hiro.ui.touch && document.activeElement) document.activeElement.blur();
+
+				// Build payloaad
+				payload.method = 'feed';
+				payload.link = item.url || location.href;
+				payload.name = item.title || 'Hiro.';
+				payload.description = item.text || 'Notes with Friends.';
+				payload.caption = item.caption || location.host;
+				if (item.actions) payload.actions = item.actions;
+
 				// Send package to facebook
 				Hiro.lib.facebook.pipe({
 					todo: function(obj) {
 						// Open share dialog
-						FB.ui({							
-							method: 'feed',
-							link: obj.url,
-							name: obj.title,
-							description: obj.text,	           								
-							caption: obj.caption,
-				            actions: obj.actions									
-						});
+						FB.ui(payload);
 					}
 				});
 			},
