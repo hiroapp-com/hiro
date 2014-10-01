@@ -12,6 +12,7 @@
 	Hiro.user: User management incl login logout etc
 	Hiro.user.contacts: Contacts including lookup object etc
 	Hiro.user.checkout: Stripe & Flask related checkout stuff
+	Hiro.user.track: Internal analytics & event tracking
 
 	Hiro.apps: Generic plugin setup 
 	Hiro.apps.sharing: Sharing plugin
@@ -23,6 +24,7 @@
 		key: supports direct access to all object levels, eg foo.bar.baz
 		value: arbitrary js objects
 		source: Where the update is coming from (client/server)
+	Hiro.data.local: Localstorage abstraction	
 
 	Hiro.sync: Data synchronization with local and remote APIs
 	Hiro.sync.ws: Websocket client
@@ -1857,35 +1859,29 @@ var Hiro = {
 							// Get URL & current note with details
 							url = document.getElementById('widget:share').getElementsByTagName('input')[0].value;
 							note = Hiro.data.get('note_' + Hiro.canvas.currentnote);
-							text = note.c.text.substring(0,500) || 'Hiro is the easiest way to share notes with friends.';
-							title = note.c.title.substring(0,50) || 'Hiro.';
+							text = note.c.text.substring(0,500);
+							title = note.c.title.substring(0,50) || 'Untitled Note';
 							// Do not submit sharing if we have no token yet
 							if (!note._token) return;
 							// On Fatzelboeks
 							if (id[1] == 'fb') {
-								// Send package to facebook
-								Hiro.lib.facebook.pipe({
-									todo: function(obj) {
-										// Open share dialog
-										FB.ui({							
-											method: 'feed',
-											link: url,
-	           								name: title,
-	            							description: text,	           								
-	            							caption: 'A Note on ' + location.host,
-								            actions: {
-								                name: 'Start Your Own',
-								                link: 'https://www.hiroapp.com/connect/facebook',
-								            }											
-										});
-									}
-								});
+								// Send this to facebook
+								Hiro.ui.sharer.fb({
+									title: title,
+									caption: 'A Note on ' + location.host,
+									text: text || 'Start Writing',
+									url: url,
+						            actions: {
+						                name: 'Start Your Own',
+						                link: 'https://www.hiroapp.com/connect/facebook',
+						            }										
+								})
 							// Tweet (Love to 'Ooops, oh my' song by her)
 							} else if (id[1] == 'tw') {
-								Hiro.ui.tweet(url + ' ' + (note.c.text.substring(0,200) || title));
+								Hiro.ui.sharer.tweet((note.c.title.substring(0,120) || note.c.text.substring(0,120) || 'See my Notes at ') + ' ' + url);
 							// Send mail	
 							} else if (id[1] == 'mail') {
-								Hiro.ui.mail(title, url + ' ' + text);
+								Hiro.ui.sharer.mail(title, 'Join in via ' + url + ' , preview attached:\n\n' + text.substring(0,2000));
 							}
 							// Log respective event
 							Hiro.user.track.logevent('Started sharing a note',{
@@ -4049,7 +4045,7 @@ var Hiro = {
 
 			// Switch dialog content if it's open
 			if (Hiro.ui.dialog.open) {
-				Hiro.ui.switchview('d_msg');
+				Hiro.ui.switchview('d_offline');
 				Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' });
 			}			
 
@@ -5226,8 +5222,7 @@ var Hiro = {
 						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);
 
 						// Set flag
-						Hiro.ui.landingvisible = false;					
-						//window.parent.analytics.track('Started Interacting');					
+						Hiro.ui.landingvisible = false;								
 						break;		
 					case 'signin':		
 						// Show dialog			
@@ -5442,33 +5437,7 @@ var Hiro = {
 				// In old browsers we do it via embed
 				document.getElementById(this.wastebinid).innerHTML = '<embed src="' + url + '" hidden="true" autostart="true" loop="false" />';
 			}
-		}, 	
-
-		// Little twitter helper
-		tweet: function(string) {
-			var a, e;
-			// ABort if no string
-			if (!string) return;
-
-			// Build proper string
-			string = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(string.substring(0,200));
-
-			// Open twitter window or redirect to twitter
-			if (this.mobileapp) {
-				// iOS hack from http://stackoverflow.com/questions/7930001/force-link-to-open-in-mobile-safari-from-a-web-app-with-javascript
-			    a = document.createElement('a');
-			    a.setAttribute("href", string);
-			    a.setAttribute("data-href", string);			    
-			    a.setAttribute("target", "_blank");
-
-			    e = document.createEvent("HTMLEvents");
-			    e.initEvent("click", true, true);
-			    a.dispatchEvent(e);
-			// Normal modal  
-			} else {
-				window.open(string,'twitter','height=282,width=600');
-			} 
-		},	
+		}, 		
 
 		// Mail helper
 		mail: function(subject,text,recipients) {
@@ -5868,7 +5837,7 @@ var Hiro = {
 			show: function(container, section, focus, close) {
 				// If we're offline, show a default message, in case hync is offline do not show login
 				if (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landingvisible && !Hiro.data.get('profile','c.tier'))) {
-					container = 'd_msg';
+					container = 'd_offline';
 					section = focus = undefined;
 					close = true;
 				}		
@@ -6014,7 +5983,7 @@ var Hiro = {
 
 					// 'hexecute'
 					switch (action) {
-						case 'd_msg':
+						case 'd_offline':
 						case 'd_close':	
 							Hiro.ui.dialog.hide();
 							break;																	
@@ -6087,7 +6056,32 @@ var Hiro = {
 						case 'checkout':
 							// Calls teh checkout
 							Hiro.user.checkout.validate();
-							break;				
+							break;	
+						case 'share':
+							// First we have to kill all events!							
+							Hiro.util.stopEvent(event);							
+							// Post to FB
+							if (param == 'fb') {
+								// Use the 2.0 dialog
+								FB.ui({
+									method: 'share',
+									href: 'https://www.hiroapp.com',
+								}, function(response){
+									if (response && !response.error_code) {
+										// Log respective event
+										Hiro.user.track.logevent('Shared Hiro via Facebook');	
+									}									
+								});
+							// Tweet sumethin
+							} else if (param == 'tw') {
+								Hiro.ui.sharer.tweet('Neat new notetaking app, launching soon www.hiroapp.com #upcoming');
+							// Mail
+							} else if (param == 'mail') {
+								Hiro.ui.sharer.mail('Do you know Hiro?','Neat new notetaking app, launching soon, but you can get in at ' + location.host);
+							// Finally SMS
+							} else if (param == 'sms') {
+								Hiro.ui.sharer.sms("Let's start a Note on " + location.host);
+							}
 					}
 				}
 			},
@@ -6483,6 +6477,82 @@ var Hiro = {
 				// Test if we have an id & supported history in the first place
 				if (history && 'pushState' in history && event.state) Hiro.canvas.load(event.state,true);	
 			}			
+		},
+
+		// Collection of sharing functions like tweet, post to facebook, mail etc
+		sharer: {
+			// Open proper tweet window etc
+			tweet: function(tweet) {
+				var anchorelement, syntheticevent, properties, height, width, url;
+
+				// ABort if no string
+				if (!tweet) return;
+
+				// Build proper string
+				url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(tweet.substring(0,200).replace(/\r?\n|\r/g,''));
+
+				// Open twitter window or redirect to twitter
+				if (Hiro.ui.mobileapp || Hiro.ui.touch) {
+					// iOS hack from http://stackoverflow.com/questions/7930001/force-link-to-open-in-mobile-safari-from-a-web-app-with-javascript
+				    anchorelement = document.createElement('a');
+				    anchorelement.setAttribute("href", url);
+				    anchorelement.setAttribute("data-href", url);			    
+				    anchorelement.setAttribute("target", "_blank");
+
+				    syntheticevent = document.createEvent("HTMLEvents");
+				    syntheticevent.initEvent("click", true, true);
+				    a.dispatchEvent(syntheticevent);
+				// Normal modal  
+				} else {
+					// Crappy popup similar to https://dev.twitter.com/web/intents#tweet-intent
+					height = 522,
+					width = 550,
+					properties = 'height=' + height + ',width=' + width;
+					// Center if possiple
+					if (screen.availHeight) properties = properties + ',top=' + ((screen.availHeight - height) / 2);
+					if (screen.availWidth) properties = properties + ',left=' + ((screen.availWidth - width) / 2);					
+					// Open it
+					window.open(url,'twitter',properties);
+					// Prevent any funky redirects
+					return false;
+				} 
+			},
+
+			// Post to facebook,
+			fb: function(obj) {
+				// Send package to facebook
+				Hiro.lib.facebook.pipe({
+					todo: function(obj) {
+						// Open share dialog
+						FB.ui({							
+							method: 'feed',
+							link: obj.url,
+							name: obj.title,
+							description: obj.text,	           								
+							caption: obj.caption,
+				            actions: obj.actions									
+						});
+					}
+				});
+			},
+
+			// Make sure mailto trgger proper browser (gmail etc) or desktop client behaviour
+			// Acording to teh Interwebs 1910 chars total URL length is what most browsers should be able to handle
+			mail: function(subject,body) {
+				// Compose string
+				var urlstring =  'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+				// Fire!
+				window.location = urlstring.substring(0,1910);
+			},
+
+			// Make sure mailto trgger proper browser (gmail etc) or desktop client behaviour
+			// Acording to teh Interwebs 1910 chars total URL length is what most browsers should be able to handle
+			sms: function(sms) {
+				// Compose string
+				var urlstring =  'sms://?body=' + encodeURIComponent(sms);
+				// Fire!
+				window.location = urlstring;
+			}
 		}		
 	},
 
