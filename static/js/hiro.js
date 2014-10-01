@@ -4763,7 +4763,7 @@ var Hiro = {
             	}   
 
             	// Set it
-            	Hiro.canvas.setcursor(range)
+            	Hiro.canvas.setcursor(newrange)
 			}
 		}
 	},
