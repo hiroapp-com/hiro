@@ -5983,7 +5983,7 @@ var Hiro = {
 
 			// If the user clicks somewhere in the dialog 
 			clickhandler: function(action,type,target,branch,event) {
-				var param = action.split(':')[1], el;
+				var param = action.split(':')[1], el, inputs;
 
 				// Split actions into array
 				action = action.split(':')[0];	
@@ -6017,13 +6017,31 @@ var Hiro = {
 							if (target.id == 'shield') Hiro.ui.dialog.hide();
 							break;						
 						case 'switch_s_signup':
+							// Get input fields
+							inputs = Hiro.user.el_register.getElementsByTagName('input');
+							// Switch view
 							Hiro.ui.switchview(document.getElementById('s_signup'));
-							Hiro.user.el_register.getElementsByTagName('input')[0].focus();						
+							// Focus mail/phone, or password if it's blank & other already there
+							if (!inputs[0].value || !Hiro.util.mailorphone(inputs[0].value)) {
+								inputs[0].focus();
+							// Otherwise focus password	
+							} else {
+								inputs[1].focus();
+							}						
 							break;							
-						case 'switch_s_signin':						
+						case 'switch_s_signin':	
+							// Get input fields
+							inputs = Hiro.user.el_login.getElementsByTagName('input');
+							// Switch view
 							Hiro.ui.switchview(document.getElementById('s_signin'));
-							Hiro.user.el_login.getElementsByTagName('input')[0].focus();					
-							break;	
+							// Focus mail/phone, or password if it's blank & other already there
+							if (!inputs[0].value || !Hiro.util.mailorphone(inputs[0].value)) {
+								inputs[0].focus();
+							// Otherwise focus password	
+							} else {
+								inputs[1].focus();
+							}						
+							break;											
 						case 'requestpwdreset':
 							Hiro.user.requestpwdreset();
 							break;							
