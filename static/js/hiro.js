@@ -985,8 +985,7 @@ var Hiro = {
 	            type: "POST",
 	            payload: JSON.stringify(payload),
 				success: function(req,data) {
-					// Reset DOM & flag	
-	                b.innerText = (login) ? 'Log-In' : 'Create Account';
+					// Reset flag	
 	                Hiro.user.authinprogress = false;
 
 					// Try fetching a name if registration form was used
@@ -4702,7 +4701,7 @@ var Hiro = {
 
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
-				var n = Hiro.data.get('note_' + id), diffs, patch, start;
+				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor;
 
 				// Time start
 				start = Hiro.util.now();
@@ -4726,12 +4725,14 @@ var Hiro = {
 
                     // Apply the changes to the cache if it's the current document
                     if (id == Hiro.canvas.currentnote) {
+                    	// Get current cursor position
+                    	cursor = Hiro.canvas.getcursor();
                     	// Apply patch to cache and set current version to cache
                     	Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
                     	// Paint it
                     	Hiro.canvas.paint();
                     	// Recalculate cursor
-                    	this.computecursor(diffs);
+                    	this.resetcursor(diffs,cursor);
                     // Apply the changes to the current version	
                     } else {
 		                // Apply to 
@@ -4744,21 +4745,25 @@ var Hiro = {
 			},
 
 			// Calculate new cursor position
-			computecursor: function(diffs) {
-				var oldcursor = Hiro.canvas.getcursor(), newcursor = this.dmp.diff_xIndex(diffs,oldcursor[0]), range;
+			resetcursor: function(diffs,oldcursor) {
+				var newrange;
 
+				// Do not compute if changes occur after our position
+				if (diffs[0][0] == 0 && diffs[0][1].length > oldcursor[1]) {
+					// Copy whatever value we got
+					newrange = oldcursor;
             	// We had a single cursor
-            	if (oldcursor[0] == oldcursor[1]) {
-            		range = [newcursor,newcursor];
+            	} else if (oldcursor[0] == oldcursor[1]) {
+            		// Set with int
+            		newrange = this.dmp.diff_xIndex(diffs,oldcursor[0]);
             	// We had a selection, preserving it            		
             	} else {
-            		range = [newcursor,this.dmp.diff_xIndex(diffs,oldcursor[1])];
+            		// Set with array
+            		newrange = [this.dmp.diff_xIndex(diffs,oldcursor[0]),this.dmp.diff_xIndex(diffs,oldcursor[1])];
             	}   
 
-            	console.log('moving cursor',oldcursor,[oldcursor[0],newcursor])      	
-
-            	// Force-set new position, this also fires resize
-            	Hiro.canvas.setcursor(range);				
+            	// Set it
+            	Hiro.canvas.setcursor(range)
 			}
 		}
 	},
