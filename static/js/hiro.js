@@ -405,7 +405,7 @@ var Hiro = {
 			} else {
 				note._lasteditor = user.c.uid;
 				note._lastedit = Hiro.util.now();			
-			}		
+			}				
 
 			// Save kick off setter flows						
 			Hiro.data.set('note_' + id,'',note,source);
@@ -413,6 +413,9 @@ var Hiro = {
 
 			// Showit!
 			if (id.length == 4) Hiro.canvas.load(id);
+
+			// Update settings dialog if it's open (update note counter)
+			if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();				
 
 			// Return the id of the we just created
 			return id;
@@ -2909,6 +2912,9 @@ var Hiro = {
 				// Update contact lookup
 				Hiro.user.contacts.update();	
 
+				// Update settings dialog if it's open
+				if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();					
+
 				// Update sharing dialog if it's open
 				if (Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();				
 
@@ -3340,6 +3346,9 @@ var Hiro = {
 		rx_session_create_handler: function(data) {
 			var n, note, sf, cf, fv, peers, req, sp, cp, peer, user, i, l, keeper;
 
+			// Close dialog first so UI builds while closing
+			if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();				
+
 			// Remove all synced data
 			Hiro.data.cleanup();
 
@@ -3450,10 +3459,7 @@ var Hiro = {
 
 				// See if we got any more tokens to consume
 				if (this.tokens.length > 0) this.consumetoken();				
-			}
-
-			// Close dialog
-			if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();			
+			}		
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
 			Hiro.data.set('folio','',cf,'s');	
