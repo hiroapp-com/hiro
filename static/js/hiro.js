@@ -5864,13 +5864,30 @@ var Hiro = {
 			lastaction: undefined,
 			upgradeteaser: false,
 
+			// List of messages to show
+			messages: {
+				offline: {
+					title: 'Hiro is currently offline.',
+					msg: 'Your settings will be available as soon as you come back online.'
+				},
+				update: {
+					title: 'Your Hiro was just updated!',
+					msg: "We try our best to improve Hiro every day and just did. <b>All your changes were saved</b> and you're ready to go. Enjoy, and thanks again for using Hiro.",
+					button: {
+						action: 'reload',
+						label: 'Use New Version'
+					}	
+				}
+			},
+
 			// Open dialog
-			show: function(container, section, focus, close) {
-				// If we're offline, show a default message, in case hync is offline do not show login
-				if (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landingvisible && !Hiro.data.get('profile','c.tier'))) {
-					container = 'd_offline';
-					section = focus = undefined;
-					close = true;
+			show: function(container, section, focus, close, showmessage) {
+				// In case we'Re only and not about to show an overriding message
+				if (!showmessage && (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landingvisible && !Hiro.data.get('profile','c.tier')))) {
+					// Trigger showmessage dialog, overriding default
+					this.showmessage('offline');
+					// Abort here
+					return;
 				}		
 
 				// Fade in dialog
@@ -5918,6 +5935,40 @@ var Hiro = {
 
 				// Set flag
 				this.open = true;
+			},
+
+			// Show a certain message
+			showmessage: function(message) {
+				// Get el's etc
+				var root = document.getElementById('d_msg'),
+					messageholder = root.getElementsByClassName('message')[0],
+					button = root.getElementsByClassName('hirobutton')[0],
+					obj = this.messages[message];
+
+				// Set classname to message label, we can throw away hidden here
+				root.className = message;	
+
+				// See if we have a button, show hide it
+				button.style.display = (obj.button) ? 'block' : 'none';
+
+				// Set button message & label
+				if (obj.button) {
+					// Show it first
+					button.style.display = 'block'
+					// Set innertext
+					button.innerText = obj.button.label;
+					// Set action attribute
+					button.setAttribute('data-hiro-action',obj.button.action)	
+				// Just hide the button
+				} else {
+					button.style.display = 'none';
+				}
+
+				// Render message
+				messageholder.innerHTML = '<em>' + obj.title + '</em>' + obj.msg;
+
+				// Show dialog
+				this.show('d_msg', undefined, undefined, true, true)
 			},
 
 			// Fill data into settings dialog & and other preparations

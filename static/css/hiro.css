@@ -1063,13 +1063,16 @@ input.error:focus {
   background-image: url(../img/icons.3.png);
   background-repeat: no-repeat;
   background-size: 160px auto;
-  background-position: center -410px;
   position: absolute;
   top: 30%;
   bottom: 40%;
   width: 100%;
   opacity: 0.25; 
   height: 145px;  
+}
+
+#d_msg.offline .icon {
+  background-position: center -410px;  
 }
 
 #d_msg .message {
