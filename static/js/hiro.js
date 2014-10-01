@@ -64,7 +64,7 @@
 
 
 var Hiro = {
-	version: '1.10.3',
+	version: '',
 
 	// Sidebar and internal data structure
 	folio: {
@@ -6489,7 +6489,7 @@ var Hiro = {
 				if (token) url = url + '#' + token;
 
 				// Don't do it as long as we're not in production
-				//if (!Hiro.sys.production) return;	
+				if (!Hiro.sys.production) return;	
 
 				// On the first call we only change the state insteading of adding a new one
 				if ((this.first || replaceonly) && history && 'replaceState' in history) {
@@ -6558,7 +6558,7 @@ var Hiro = {
 			// Post to facebook,
 			fb: function(item) {
 				var payload = {};
-				
+
 				// Make sure we don't have improper focus on touch devices
 				if (Hiro.ui.touch && document.activeElement) document.activeElement.blur();
 

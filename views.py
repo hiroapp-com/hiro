@@ -15,6 +15,7 @@ from flask.ext.oauth import OAuth
 from secret_keys import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
 
 from models import User, Session
+import subprocess
 
 oauth = OAuth()
 facebook = oauth.remote_app('facebook',
@@ -27,6 +28,9 @@ facebook = oauth.remote_app('facebook',
         request_token_params={'scope': 'email'}
 )
 facebook.tokengetter(lambda: session.get('oauth_token'))
+
+def version():
+    return jsonify(version=subprocess.check_output(["git", "describe"]).rstrip('\n'))
 
 def home():
     return render_template('hync_home.html', want_manifest=(not current_app.config['DEBUG']))  
