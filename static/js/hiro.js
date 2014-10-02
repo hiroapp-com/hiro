@@ -302,7 +302,8 @@ var Hiro = {
 				if (note._lasteditor && note._lasteditor != Hiro.data.get('profile','c.uid')) {
 					// Lookup last user, we do not touch the peers here as iterating through them as well would be most likely too slow
 					// All known users who we can get updates from should be in to contact anyway
-					user = Hiro.user.contacts.lookup[note._lasteditor];
+					// fall back to object as shortcut to make the check below work
+					user = Hiro.user.contacts.lookup[note._lasteditor] || {};
 
 					// Complete string
 					time = time + ' by ' + (user.name || user.email || user.phone || ' someone else');	
@@ -693,7 +694,7 @@ var Hiro = {
 			// This should nearly always only happen if user uses malformed / forbidden url
 			if (!note) {
 				// Log
-				Hiro.sys.log('Tried to load an unknown note, loading first note in folio.',[id,folio],warn);
+				Hiro.sys.log('Tried to load an unknown note, loading first note in folio.',[id,folio],'warn');
 				// Fall back on first note 
 				id = folio[0].nid;
 				// Reset note
