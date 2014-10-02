@@ -43,7 +43,7 @@ def checkout(branch='master'):
     with cd(ROOT + '/refs'):
         tmpdir = tempfile.mkdtemp(prefix='.clone-', dir='.')
         run('git clone --depth 1 --branch {0} {1} {2}'.format(branch, REPO_URL, tmpdir))
-        run('git fetch --tags')        
+        # Flo, pls add sumthin like run('git fetch --tags')        
         ref = run('git --git-dir={0} describe --always --long'.format(tmpdir + '/.git'))
         if 'path_exists' == run('[ -d {0} ] && echo "path_exists" || echo "Path clear"'.format(ref)):
             abort("Curent revision is already checked out. Aborting")
