@@ -2234,7 +2234,7 @@ var Hiro = {
 				if (us || (peer.last_seen && peer.last_seen >= Hiro.data.get('note_' + Hiro.canvas.currentnote,'_lastedit'))) {	
 					// Pimp title
 					if (tt) tt += ': ';
-					tt += (us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen) + ' ago';
+					tt = tt + (us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen).toLowerCase() + ' ago';
 
 					// Add green tick to icon				
 					d.className += " seen";
@@ -4871,7 +4871,7 @@ var Hiro = {
 			// If a version was provided	
 			} else if (version) {
 				// Compare & show modal
-				if (version.split('-')[0] != currentversion) Hiro.ui.dialog.showmessage('update')
+				if (version.split('-')[0] != currentversion) Hiro.ui.dialog.showmessage('update',true)
 			// Fetch a new one from server		
 			} else {
 				// Get current version
@@ -4884,7 +4884,7 @@ var Hiro = {
 						Hiro.sys.log('Update to ' + data.version + ' (' + data.name + ')' + ' available.')
 						// Show modal
 						// TODO Bruno: User can still click this away, think of better way to handle this 
-						Hiro.ui.dialog.showmessage('update');						
+						Hiro.ui.dialog.showmessage('update',true);						
 					}
 				});
 			}
@@ -5965,7 +5965,7 @@ var Hiro = {
 			},
 
 			// Show a certain message
-			showmessage: function(message) {
+			showmessage: function(message, tabsync) {
 				// Get el's etc
 				var root = document.getElementById('d_msg'),
 					messageholder = root.getElementsByClassName('message')[0],
@@ -5990,6 +5990,9 @@ var Hiro = {
 				} else {
 					button.style.display = 'none';
 				}
+
+				// Sync with other tabs, if requested
+				if (tabsync) Hiro.data.local.tabtx('Hiro.ui.dialog.showmessage("' + message + '");');
 
 				// Set reload hook
 				if (obj.forcereload) this.onclose = function() { Hiro.sys.reload() };				
