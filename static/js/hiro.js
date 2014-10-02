@@ -2637,8 +2637,8 @@ var Hiro = {
 			// Switch 
 			switch (event.type) {
 				case 'updateready':
-					// Swap cache for next load
-					// window.applicationCache.swapCache();	
+					// See if we have breaking changes by checking the current tag
+					Hiro.sys.versioncheck();	
 					// Release lock	
 					Hiro.sync.cachelock = false;								
 					break;				
@@ -4870,7 +4870,7 @@ var Hiro = {
 			// If a version was provided	
 			} else if (version) {
 				// Compare & show modal
-				if (version.split('-')[0] != currentversion) console.log('fooo');
+				if (version.split('-')[0] != currentversion) Hiro.ui.dialog.showmessage('update')
 			// Fetch a new one from server		
 			} else {
 				// Get current version
@@ -4878,10 +4878,12 @@ var Hiro = {
 					url: '/version',
 					success: function(req,data) {
 						// Compare & see if theres something to do
-						if (data.version.split('-') == currentversion) return;
+						if (data.version.split('-')[0] == currentversion) return;
 						// Log
-						Hiro.sys.log('Update to ' + version + ' (' + name + ')' + ' available.')
-						console.log(data);
+						Hiro.sys.log('Update to ' + data.version + ' (' + data.name + ')' + ' available.')
+						// Show modal
+						// TODO Bruno: User can still click this away, think of better way to handle this 
+						Hiro.ui.dialog.showmessage('update');						
 					}
 				});
 			}
@@ -6073,6 +6075,11 @@ var Hiro = {
 							var el = document.getElementById(action);
 							// In this case give the data tag priority over id
 							if (el && el.getAttribute('data-hiro-action')) Hiro.ui.dialog.clickhandler(el.getAttribute('data-hiro-action'),type,target,branch,event)							
+							break;
+						case 'reload':
+							// Reload window
+							// TODO Bruno: Think about making this a generic fastbutton action
+							window.location.href = "/";
 							break;
 						case 'd_close':	
 							Hiro.ui.dialog.hide();
