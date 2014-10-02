@@ -13,10 +13,10 @@
 			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('savename','full');" class="pseudobutton"></input>			
 		</form>		
 		<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
-		<a data-hiro-action="share:fb" href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share fb">via&nbsp;<b>Facebook</b></a>
-		<a data-hiro-action="share:tw" href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23new%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share tw">via&nbsp;<b>Twitter</b></a>	
-		<a data-hiro-action="share:mail" href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20new%20note-taking%20app%3A%20www.hiroapp.com" class="hirobutton share mail green">via&nbsp;<b>Mail</b></a>
-		<a data-hiro-action="share:sms" href="sms://?body=Let%27s%20start%20a%20Note%20on%20www.hiroapp.com" class="hirobutton share sms">via&nbsp;<b>SMS</b></a>
+		<a data-hiro-action="share:fb" href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share fb">via{{ " " }}<b>Facebook</b></a>
+		<a data-hiro-action="share:tw" href="https://twitter.com/intent/tweet?text=Hiro.%20Notes%20With%20Friends.%20%23new%20%23notetaking%20%23app%20%23launchingsoon%20https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share tw">via{{ " " }}<b>Twitter</b></a>	
+		<a data-hiro-action="share:mail" href="mailto:?subject=You%20Know%20Hiro%3F&body=Neat%20new%20note-taking%20app%3A%20www.hiroapp.com" class="hirobutton share mail green">via{{ " " }}<b>Mail</b></a>
+		<a data-hiro-action="share:sms" href="sms://?body=Let%27s%20start%20a%20Note%20on%20www.hiroapp.com" class="hirobutton share sms">via{{ " " }}<b>SMS</b></a>
 	</div>					
 </div>
 	
@@ -31,7 +31,7 @@
 		<div class="box 1" data-hiro-action="selectplan:1">
 			<div class="head">Basic</div>
 			<div class="price">Free!</div>
-			<div class="curr">&nbsp;</div>	
+			<div class="curr">{{ " " }}</div>	
 			<ul>
 				<li>
 				<li>Fine for daily usage
@@ -91,7 +91,7 @@
 			<div class="mainerror error"></div>		
 			<a class="hirobutton green" data-hiro-action="checkout">
 			Upgrade</a>	
-			<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by&nbsp;<b>stripe</b></div>						
+			<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by{{ " " }}<b>stripe</b></div>						
 			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('checkout','full');" class="pseudobutton"></input>
 		</form>						
 	</div>	
@@ -108,8 +108,8 @@
 		<div class="claim"><em>Hiro is for people with big ideas</em><br />
 		who want a better tool to keep them.</div>
 
-		Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services or 3 menus before you can do anything. Something you open when an idea you don't want to lose crosses your mind. A place where it is&nbsp;<em>safe and not accessed by anybody else</em>.<br /><br />
+		Why do we still have so many textfiles on our desktop, or send emails to ourselves? Sure, there are plenty of apps to write longer texts, create colorful scrapbooks or intricate mindmaps. But we wanted something incredibly simple, fast, that works on any device, without complicated syncing through third party services or 3 menus before you can do anything. Something you open when an idea you don't want to lose crosses your mind. A place where it is{{ " " }}<em>safe and not accessed by anybody else</em>.<br /><br />
 
-		<span class="contact">We hope you like Hiro as much as we do. We're always there at&nbsp;<a href="mailto:hello@hiroapp.com" target="_blank">hello@hiroapp.com</a>&nbsp;and share the best tricks of how people manage their ideas on&nbsp;<a href="https://www.facebook.com/hiroapp" target="_new">facebook.com/hiroapp</a>.</span>
+		<span class="contact">We hope you like Hiro as much as we do. We're always there at{{ " " }}<a href="mailto:hello@hiroapp.com" target="_blank">hello@hiroapp.com</a>{{ " " }}and share the best tricks of how people manage their ideas on{{ " " }}<a href="https://www.facebook.com/hiroapp" target="_new">facebook.com/hiroapp</a>.</span>
 	</div>	
 </div>

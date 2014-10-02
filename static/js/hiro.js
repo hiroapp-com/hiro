@@ -6883,7 +6883,8 @@ var Hiro = {
     				accessToken: this.key,
     				captureUncaught: true,
     				payload: this.getpayload(),
-    				enabled: Hiro.sys.production
+    				enabled: Hiro.sys.production,
+    				maxItems: 50
     			}	
 
     			// https://github.com/rollbar/rollbar.js/blob/9b13c193eb6994e4143d0a13a4f3aae7db073a2d/src/shim.js
@@ -7131,6 +7132,9 @@ var Hiro = {
 				// Add server settings
 				payload.server = {};
 				payload.server.host = location.host;
+
+				// Add client settings
+				payload.client = { javascript: { code_version: Hiro.version }}
 
 				// Log page id instead of context
 				// TODO Bruno: Think of a way to be more descriptive with state, if we need this (eg error ocurred when settings were open)
