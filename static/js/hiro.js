@@ -1153,13 +1153,10 @@ var Hiro = {
 			Hiro.data.local.wipe();
 
 			// Log
-			Hiro.sys.log('Local data wiped, reloading page');
+			Hiro.sys.log('Local data wiped, reloading page');	
 
-			// Make sure other tabs refresh as well
-			Hiro.data.local.tabtx('window.location.href = "/"');						                    		
-
-			// Start fading out body, reload our own window after that
-			Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/" });			
+			// Reloading system
+			Hiro.sys.reload(true);			
 		},	
 
 		// Request password reset
@@ -4912,6 +4909,16 @@ var Hiro = {
 			this.log(description,data,'error');
 		},
 
+		// Hard reload of page
+		reload: function(fade) {
+			// Make sure other tabs refresh as well
+			Hiro.data.local.tabtx('window.location.href = "/"');								                    		
+
+			// Start fading out body, reload our own window after that
+			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/" });
+			else window.location.href = "/";
+		},
+
 		// console.log wrapper
 		log: function(description,data,type) {
 			// Set specific types
@@ -5867,6 +5874,9 @@ var Hiro = {
 			lastaction: undefined,
 			upgradeteaser: false,
 
+			// Hooks
+			onclose: undefined, 
+
 			// List of messages to show
 			messages: {
 				offline: {
@@ -5880,6 +5890,7 @@ var Hiro = {
 						action: 'reload',
 						label: 'Use New Version'
 					},
+					forcereload: true,
 					css: 'yeah'	
 				},
 				upgrade: {
@@ -5977,6 +5988,9 @@ var Hiro = {
 					button.style.display = 'none';
 				}
 
+				// Set reload hook
+				if (obj.forcereload) this.onclose = function() { Hiro.sys.reload() };				
+
 				// Set root to button action or default to close
 				root.setAttribute('data-hiro-action', action || 'd_close')
 
@@ -6011,7 +6025,15 @@ var Hiro = {
 			// Close the dialog 
 			hide: function() {
 				// Remove blur filters, only if we set them before
-				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';			
+				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';		
+
+				// If we got a onclose hook
+				if (this.onclose) {
+					// Fire
+					this.onclose();
+					// Reset
+					this.onclose = undefined;
+				}	
 
 				Hiro.ui.render(function(){
 					// Reset filter CSS
@@ -6082,16 +6104,7 @@ var Hiro = {
 					// 'hexecute'
 					switch (action) {
 						case 'd_msg':
-							// In case we clicked a message, we look if there was an action & rewire
-							var el = document.getElementById(action);
-							// In this case give the data tag priority over id
-							if (el && el.getAttribute('data-hiro-action')) Hiro.ui.dialog.clickhandler(el.getAttribute('data-hiro-action'),type,target,branch,event)							
-							break;
 						case 'reload':
-							// Reload window
-							// TODO Bruno: Think about making this a generic fastbutton action
-							window.location.href = "/";
-							break;
 						case 'd_close':	
 							Hiro.ui.dialog.hide();
 							break;																	
