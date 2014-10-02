@@ -29,19 +29,12 @@ facebook = oauth.remote_app('facebook',
 )
 facebook.tokengetter(lambda: session.get('oauth_token'))
 
-try:
-    # Version number fetched from Git, this is either the tag (if latest commit was tagged) or "tag-commitsAheadOfTag-currentCommitHash"
-    gittag = subprocess.check_output(["git", "describe", "--always"]).splitlines()[0]
-    gitname = subprocess.check_output(["git", "tag", "-l", "-n1"]).splitlines()[-1][16:]
-except: 
-    gittag = gitname = 0;
-
-
 def version():
-    return jsonify(version=gittag,name=gitname)
+    git = getgit()
+    return jsonify(version=git['version'], name=git['name']);
 
 def home():
-    return render_template('hync_home.html', want_manifest=(not current_app.config['DEBUG']), version=gittag, versionname=gitname)  
+    return render_template('hync_home.html', want_manifest=(not current_app.config['DEBUG']), git=getgit())  
 
 def crash():
     raise Exception("intended crash")
@@ -146,10 +139,10 @@ def settings():
     return render_template('hync_settings.html')       
 
 def note(note_id):
-    return render_template('hync_home.html', version=gittag, versionname=gitname) 
+    return render_template('hync_home.html', git=getgit()) 
 
 def offline():
-    return render_template('hync_home.html', version=gittag, versionname=gitname)       
+    return render_template('hync_home.html', git=getgit())       
 
 def manifestwrapper():
     return render_template('hync_manifestwrapper.html')           
@@ -232,3 +225,13 @@ def jsonify_err(status, **kwargs):
     resp = jsonify(**kwargs)
     resp.status_code = status
     return resp
+
+# Fetch current git properties, not cached atm
+def getgit():
+    try:
+        tag = subprocess.check_output(["git", "tag", "-l", "-n1"]).splitlines()[-1]
+        version = '-'.join([tag.partition(' ')[0],subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip()])
+        git = { 'name': tag[16:], 'version': version }
+        return git
+    except:
+        return False    
