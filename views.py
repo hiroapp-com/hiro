@@ -29,9 +29,12 @@ facebook = oauth.remote_app('facebook',
 )
 facebook.tokengetter(lambda: session.get('oauth_token'))
 
-# Version number fetched from Git, this is either the tag (if latest commit was tagged) or "tag-commitsAheadOfTag-currentCommitHash"
-gittag = subprocess.check_output(["git", "describe", "--always"]).splitlines()[0]
-gitname = subprocess.check_output(["git", "tag", "-l", "-n1"]).splitlines()[-1][16:]
+try:
+    # Version number fetched from Git, this is either the tag (if latest commit was tagged) or "tag-commitsAheadOfTag-currentCommitHash"
+    gittag = subprocess.check_output(["git", "describe", "--always"]).splitlines()[0]
+    gitname = subprocess.check_output(["git", "tag", "-l", "-n1"]).splitlines()[-1][16:]
+except: 
+    gittag = gitname = 0;
 
 
 def version():
