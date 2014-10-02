@@ -5943,7 +5943,7 @@ var Hiro = {
 				var root = document.getElementById('d_msg'),
 					messageholder = root.getElementsByClassName('message')[0],
 					button = root.getElementsByClassName('hirobutton')[0],
-					obj = this.messages[message];
+					obj = this.messages[message], action;
 
 				// Set classname to message label, we can throw away hidden here
 				root.className = message;	
@@ -5958,11 +5958,14 @@ var Hiro = {
 					// Set innertext
 					button.innerText = obj.button.label;
 					// Set action attribute
-					button.setAttribute('data-hiro-action',obj.button.action)	
+					action = obj.button.action;
 				// Just hide the button
 				} else {
 					button.style.display = 'none';
 				}
+
+				// Set root to button action or default to close
+				root.setAttribute('data-hiro-action', action || 'd_close')
 
 				// Render message
 				messageholder.innerHTML = '<em>' + obj.title + '</em>' + obj.msg;
@@ -6065,7 +6068,12 @@ var Hiro = {
 
 					// 'hexecute'
 					switch (action) {
-						case 'd_offline':
+						case 'd_msg':
+							// In case we clicked a message, we look if there was an action & rewire
+							var el = document.getElementById(action);
+							// In this case give the data tag priority over id
+							if (el && el.getAttribute('data-hiro-action')) Hiro.ui.dialog.clickhandler(el.getAttribute('data-hiro-action'),type,target,branch,event)							
+							break;
 						case 'd_close':	
 							Hiro.ui.dialog.hide();
 							break;																	
