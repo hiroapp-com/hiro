@@ -3845,7 +3845,7 @@ var Hiro = {
 				if (this.tokens.length > 0) this.consumetoken();
 			// Strange, we received an unknown token
 			} else {
-				Hiro.sys.error('Server said it consumed token unknown to us',[this.tokens,data]);
+				Hiro.sys.log('Server said it consumed token unknown to us',[this.tokens,data],'warn');
 			}
 		},
 
