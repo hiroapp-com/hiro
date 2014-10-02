@@ -305,7 +305,7 @@ var Hiro = {
 					user = Hiro.user.contacts.lookup[note._lasteditor];
 
 					// Complete string
-					time = time + ' by ' + (user.name || user.email || user.phone || 'an anonymous user');	
+					time = time + ' by ' + (user.name || user.email || user.phone || ' someone else');	
 				}
 
 			} else {
@@ -1756,10 +1756,10 @@ var Hiro = {
 
 				// Show widget
 				if (!el.style.display || el.style.display == 'none') el.style.display = 'block';
-			});
 
-			// Make sure proper elements are focussed etc
-			Hiro.apps[app].focus();			
+				// Make sure proper elements are focussed etc
+				Hiro.apps[app].focus();					
+			});		
 		},
 
 		close: function(app) {
@@ -1921,7 +1921,7 @@ var Hiro = {
 					if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
 					else el.select();
 				// Only focus the others		
-				} else {								
+				} else {							
 					el.focus();							
 				}	
 			},	

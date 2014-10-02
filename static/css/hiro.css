@@ -699,12 +699,12 @@ input.error:focus {
   cursor: pointer;
 }
 
-#apps .app .widget .cancel:hover, #apps .app .widget .remove:hover {
+#apps .app .widget .cancel:hover, #apps .app .widget .remove:hover, #apps .app .widget .title a:hover em {
   opacity: 1;
 }
 
 #apps .app .widget .cancel {
-  top: 5px;
+  top: 6px;
   right: 8px; 
   position: absolute;
   background-position: -30px -32px;
@@ -727,6 +727,33 @@ input.error:focus {
   font-size: 18px;
   min-width: 250px;
   margin: 0 20px 10px 0;  
+}
+
+#apps .app .widget .title a {
+  float: right;
+  color: #fff; 
+  position: relative;
+  padding-right: 35px;  
+}
+
+#apps .app .widget .title a em {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  right: 0;
+  background: url(../img/icons.4.png) no-repeat;
+  background-size: 130px auto;
+  background-position: 0px -302px;
+  opacity: 0.35;
+}
+
+#apps .app .widget .hidden .title a em {
+  background-position: -50px -304px;
+}
+
+#apps .app .widget .title a:hover {
+  color: #333; 
 }
 
 #apps .app .widget small  {
@@ -897,6 +924,10 @@ input.error:focus {
     top: 3px;
     right: 3px;
   }
+
+  #apps .app .widget .title {
+    margin-right: -4px;
+  }  
 
   #apps .app.app_sharing .widget .peers .peer {
     padding: 5px 0 5px 25px;
