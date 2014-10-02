@@ -1059,6 +1059,11 @@ input.error:focus {
   height: 100%;
 }
 
+#d_msg.yeah {
+  background-image: url(../img/site/yeah.png);
+  background-size: cover;  
+}
+
 #d_msg .icon {
   background-image: url(../img/icons.3.png);
   background-repeat: no-repeat;
@@ -1069,6 +1074,10 @@ input.error:focus {
   width: 100%;
   opacity: 0.25; 
   height: 145px;  
+}
+
+#d_msg.yeah .icon {
+  background-image: none; 
 }
 
 #d_msg.offline .icon {
@@ -1085,6 +1094,22 @@ input.error:focus {
   color: #999;  
 }
 
+#d_msg.yeah .message {
+  padding-top: 80px;
+  color: #444;  
+  margin-top: 70px;
+  background-color: rgba(255,255,255,0.8);  
+}
+
+#d_msg.yeah .message em, #d_msg.yeah .message b {
+  color: #111;
+}
+
+#d_msg.yeah .message em {
+  font-weight: 800;
+  font-size: 18px;
+}
+
 #d_msg .message em {
   display: block;
   color: #333;
@@ -1094,6 +1119,15 @@ input.error:focus {
 #d_msg .message b {
   font-weight: normal;
   color: #666;
+}
+
+#d_msg a.hirobutton {
+  display: block;
+  top: 22%;
+  position: absolute;
+  left: 200px;
+  right: 200px;
+  margin-top: 258px;
 }
 
 #s_signin, #s_signup {
@@ -1479,13 +1513,19 @@ input.error:focus {
     right: 2px;
   }
 
-  #d_msg .icon, #d_msg .message {
+  #d_msg .icon, #d_msg .message, #d_msg a.hirobutton {
     top: 22%;
   }
 
   #d_msg .message {
     padding: 150px 20px 20px 20px;
   }  
+
+  #d_msg a.hirobutton {
+    left: 10%;
+    right: 10%;
+    margin-top: 240px;    
+  }
 
   #d_settings {
     height: 100%;

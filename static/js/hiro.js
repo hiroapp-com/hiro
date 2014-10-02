@@ -1557,7 +1557,8 @@ var Hiro = {
 								// w00p w00p, set stage and everything
 			                    Hiro.ui.setstage(data.tier);	
 			                    Hiro.user.checkout.active = false;	
-			                    Hiro.ui.dialog.hide();	
+			                    // Show "Thank you!" dialog
+			                    Hiro.ui.dialog.showmessage('upgrade')	
 								// Clean up form 
 								button.innerText = 'Upgrade';	
 								// Log respective event
@@ -5874,12 +5875,22 @@ var Hiro = {
 				},
 				update: {
 					title: 'Your Hiro was just updated!',
-					msg: "We try our best to improve Hiro every day and just did. <b>All your changes were saved</b> and you're ready to go. Enjoy, and thanks again for using Hiro.",
+					msg: "We try our best to improve Hiro every day, and just did. <b>All your changes were saved</b> and you're ready to go. Enjoy, and thanks again for using Hiro.",
 					button: {
 						action: 'reload',
 						label: 'Use New Version'
-					}	
-				}
+					},
+					css: 'yeah'	
+				},
+				upgrade: {
+					title: 'Your Hiro is upgraded!',
+					msg: "Thanks, for your trust, really. Please let us know at founders@hiroapp.com if there's anything we can do to make Hiro even better for you.",
+					button: {
+						action: 'd_close',
+						label: 'Explore New Features'
+					},
+					css: 'yeah'	
+				}				
 			},
 
 			// Open dialog
@@ -5893,7 +5904,7 @@ var Hiro = {
 				}		
 
 				// Fade in dialog
-				Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
+				if (!this.open) Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
 					// Blurring is slooow on small mobile browsers, so don't do it
 					if (Hiro.ui.mini()) return;
 
@@ -5948,7 +5959,7 @@ var Hiro = {
 					obj = this.messages[message], action;
 
 				// Set classname to message label, we can throw away hidden here
-				root.className = message;	
+				root.className = obj.css || message;	
 
 				// See if we have a button, show hide it
 				button.style.display = (obj.button) ? 'block' : 'none';
