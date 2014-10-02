@@ -250,7 +250,7 @@ input.error:focus {
 
 #showmenu {
   position: fixed;
-  background: url(../img/icons.3.png) no-repeat;
+  background: url(../img/icons.4.png) no-repeat;
   background-size: 108px auto;
   background-position: -27px -151px;;
   left: 0;
@@ -304,7 +304,7 @@ input.error:focus {
   position: absolute;
   top: 0;
   left: 10px;
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-size: 108px auto;
   opacity: .5;
   cursor: pointer;
@@ -373,7 +373,7 @@ input.error:focus {
 }
 
 #folio .notes .note a .sharing {
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-size: 140px auto;
   background-repeat: no-repeat;
   background-position: 5px -107px;
@@ -408,7 +408,7 @@ input.error:focus {
 }
 
 #folio .footer a.signin, #folio .footer a.archivelink {
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-repeat: no-repeat;
   background-size: 108px auto;
   padding: 15px 10px 15px 50px;
@@ -418,7 +418,7 @@ input.error:focus {
 } 
 
 #folio .footer a.icon {
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-repeat: no-repeat;
   background-size: 108px auto;
   float: right;
@@ -672,7 +672,7 @@ input.error:focus {
   display: block;
   width: 45px;
   height: 50px;
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-repeat: no-repeat;
   background-size: 200px auto;
   opacity: .15;
@@ -692,7 +692,7 @@ input.error:focus {
 }
 
 #apps .app .widget .cancel, #apps .app .widget .remove {
-  background: url(../img/icons.3.png) no-repeat;
+  background: url(../img/icons.4.png) no-repeat;
   background-size: 115px auto;
   color: #fff;
   opacity: .3;
@@ -830,7 +830,7 @@ input.error:focus {
   padding: 3px 0 3px 25px;
   font-size: 18px;
   color: #333;
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-repeat: no-repeat;
   background-size: 160px auto;
   background-position: -132px -313px;
@@ -1060,7 +1060,7 @@ input.error:focus {
 }
 
 #d_close {
-  background: url(../img/icons.3.png) no-repeat;
+  background: url(../img/icons.4.png) no-repeat;
   background-size: 102px auto;
   background-position: -12px -29px;
   position: absolute;
@@ -1096,7 +1096,7 @@ input.error:focus {
 }
 
 #d_msg .icon {
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-repeat: no-repeat;
   background-size: 160px auto;
   position: absolute;
@@ -1335,7 +1335,7 @@ input.error:focus {
   margin-top: -44px;
   float: right;
   cursor: pointer;
-  background-image: url(../img/icons.3.png);
+  background-image: url(../img/icons.4.png);
   background-repeat: no-repeat;
   background-size: 90px auto;  
   background-position: 6px -98px;   
