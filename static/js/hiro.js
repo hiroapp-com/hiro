@@ -4041,7 +4041,9 @@ var Hiro = {
 
 			// Switch dialog content if it's open
 			if (Hiro.ui.dialog.open) {
-				Hiro.ui.switchview('d_offline');
+				// TODO Bruno: Maybe wrap this in timeout so very short hiccups (hync reconnect)
+				// don't let the UI flicker
+				Hiro.ui.dialog.showmessage('offline');
 				Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' });
 			}			
 
