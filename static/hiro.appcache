@@ -1,5 +1,4 @@
 CACHE MANIFEST{{ "\n" }}
-# Can we have version number here? {{ "\n" }}
 
 CACHE:{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
@@ -7,6 +6,7 @@ CACHE:{{ "\n" }}
 /static/img/icons.3.png{{ "\n" }}
 /static/img/site/landing.mobile.3.png{{ "\n" }}
 /static/img/site/landing.3.png{{ "\n" }}
+/static/img/site/yeah.png{{ "\n" }}
 /static/img/favicon.png{{ "\n" }}
 /static/img/faviconred.png{{ "\n" }}
 /static/sounds/unseen.wav{{ "\n" }}
