@@ -3546,7 +3546,7 @@ var Hiro = {
 
 							// Set version numbers to backup
 							store.cv = backup.cv;
-							store.sv = backup.sv;						
+							// store.sv = backup.sv;						
 
 							// Delete stack
 							store.edits = [];
