@@ -44,20 +44,18 @@ def anon():
     return jsonify(token=User.anon_token())
 
 def login():
-    data  = request.json
-    sid = data.get('sid')
-    pwd = data.get('password')
+    pwd, email, phone = request.json.get('password'), request.json.get('email'), request.json.get('phone')
     if not pwd:
         return jsonify_err(400, password="Password required")
-
-    users = User.find_by(email=data.get('email'), phone=data.get('phone'))
-    for user in users:
+    if not any((email, phone)) or all((email, phone)):
+        return jsonify_err(400, password="Please enter your email or phone number")
+    user = User.find_by(email=email, phone=phone)
+    if user:
+        if email and user.email_status != 'verified':
+            return jsonify_err(400, password="Please verify your email first.")
+        if phone and user.phone_status != 'verified':
+            return jsonify_err(400, password="Please verify your phone number first.")
         if user.check_pwd(pwd):
-            sess = Session.load(sid) if sid else None
-            if sess:
-                user.copy_noterefs_from(sess.user)
-                user.steal_ownerships_from(sess.user)
-            # TODO: delete old user/session?
             return jsonify(token=user.token('login'))
     return jsonify_err(400, password="Wrong password or not signed up yet?")
 
@@ -68,55 +66,52 @@ def register():
     email = valid_email(data.get('email', ''))
     phone = data.get('phone', '')
     pwd = data.get('password')
-    if email == phone == '':
-        return jsonify_err(403, email='Your Email or Phone #')
+    if not any((email, phone)) or all((email, phone)):
+        return jsonify_err(403, email='Either Email or Phone #')
     if passwd_valid(pwd) is not None:
         return jsonify_err(400, password=passwd_valid(pwd))
 
-    sess = Session.load(sid) if sid else None
-    existing = User.find_by(email=email, phone=phone)
-    if len(existing) > 0:
-        for user in existing:
-            if user.check_pwd(pwd):
-                if sess:
-                    user.copy_noterefs_from(sess.user)
-                    user.steal_ownerships_from(sess.user)
-                    # TODO: delete old user/session?
-                return jsonify(token=user.token('login'))
+    # check if user is already registered
+    user = User.find_by(email=email, phone=phone)
+    if user:
+        if user.check_pwd(pwd):
+            return jsonify(token=user.token('login'))
         return jsonify_err(400, password="Wrong password")
 
-    # if no sid: create new user and return new logintoken. 
-    # sends verify emails/texts if no password provided
-    if not sess:
+    
+    print "ping1"
+    sess = Session.load(sid) if sid else None
+    if sess and email and sess.user.email == email:
+        print "ping2"
+        # tier can only be 0 at this point, otherwise User.find_by would have 
+        # found it already above
+        if sess.user.signup(pwd) and sess.user.send_post_signup_mail():
+            print "ping3"
+            return jsonify(token=sess.user.token('login'))
+    elif sess and phone and sess.user.phone == phone:
+        print "ping4"
+        # tier can only be 0 at this point, otherwise User.find_by would have 
+        # found it already above
+        if not sess.user.signup(pwd) and sess.user.send_post_signup_txt():
+            print "ping5"
+            return jsonify(token=sess.user.token('login'))
+    else:
+        print "ping6"
         user = User.create(name=name, email=email, phone=phone, pwd=pwd)
         if user is None:
+            print "ping7"
             # this should not not happen
             return jsonify_err(400, email="Email already registered")
-        user.send_signup_token()
-        return jsonify(token=user.token('login'))
-
-    # we have a valid session, yay!
-    if sess.user.tier > 0:
-        # session is already authenticated, abort
-        return jsonify_err(403, session='session already authenicated')
-    if not sess.user.signup(email, phone, pwd):
-        return jsonify_err(400, session='signup failed')
-    # check if we can auto-verify email or phone (and thus, merge his files over)
-    if sess.token_user:
-        # token used by session was a sharing token, targeted at a specific user
-        # check, if we can auto-verify some email or phone
-        if email and email == sess.token_user.email:
-            if sess.user.set_verified(email=email):
-                sess.user.copy_noterefs_from(sess.token_user)
-                #delete_user(sess.token_user.uid)
-        if phone and phone == sess.token_user.phone:
-            if sess.user.set_verified(phone=phone):
-                sess.user.copy_noterefs_from(sess.token_user)
-                #delete_user(sess.token_user.uid)
-    # will only send tokens for email/phone if its status is still 'unverified' 
-    # status could have been changed by set_verified(..) call
-    sess.user.send_signup_token()
-    return jsonify(token=sess.user.token('login'))
+        if email:
+            print 'ping888'
+        if email and user.send_post_signup_email():
+            print "ping8"
+            return jsonify(token=user.token('login'))
+        elif phone and  user.send_post_signup_txt():
+            print "ping9"
+            return jsonify(token=user.token('login'))
+    return jsonify_err(400, password="Something went wrong. Please try again")
+         
 
 def change_plan():
     data = request.json or {}
@@ -183,30 +178,18 @@ def fb_callback():
 
     # first search user by fb id
     user = User.find_by(fb_uid=me.data['id'])
-    user = user[0] if len(user) == 1 else None
     if not user and me.data.get('email'):
         # let's try (verified) email
         user = User.find_by(email=me.data['email'])
-        user = user[0] if len(user) > 0 else None
     if not user:
         # well, lets create new one!
         user = User.create(email=me.data.get('email', ''), fb_uid=me.data['id'])
     elif not user.fb_uid:
         user.update(fb_uid=me.data['id'])
-    user.set_verified(email=user.email)
-    # TODO(flo) we need to somehow pass over the sid
-    #           to the callback, so we can takeover session
-    #           notes. do we want to send fb the raw sid?
-    #           it will(should) be abandoned shortly anyway
-    #sess = Session.load(sid) if sid else None
-    #if sess:
-    #    user.copy_noterefs_from(sess.user)
-    #    user.steal_ownerships_from(sess.user)
+    token = user.token('verify-email') if user.email_status =='unverified' else user.token('login')
     return {'GET': redirect(request.args.get('next', '/')),
-            'POST': jsonify(token=user.token('login'))
+            'POST': jsonify(token=token)
             }[request.method]
-
-
 
 # helper functions
 def valid_email(email):
