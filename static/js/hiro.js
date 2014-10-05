@@ -823,8 +823,11 @@ var Hiro = {
 		    	//Mozilla and DOM 3.0
 		        x = el.selectionStart;
 				y = el.selectionEnd;
-				l = el.selectionEnd - el.selectionStart;
-				content = el.value.substr(el.selectionStart, l)
+				// Get selection contents if we have one
+				if (x != y) {
+					l = el.selectionEnd - el.selectionStart;
+					content = el.value.substr(el.selectionStart, l)
+				}
 		    } else if (document.selection) {
 		    	//IE
 		        el.focus();
@@ -845,7 +848,8 @@ var Hiro = {
 		        y = x + part.length;
 		        content = r.text;
 		    }  
-		    return [x, y, content];	
+
+		    return [x, y, content || ''];	
 		},
 
 		// Set cursor position, accepts either number or array of two numbers representing selection start & end
@@ -1876,7 +1880,7 @@ var Hiro = {
 								})
 							// Tweet (Love to 'Ooops, oh my' song by her)
 							} else if (id[1] == 'tw') {
-								Hiro.ui.sharer.tweet((note.c.title.substring(0,120) || note.c.text.substring(0,120) || 'See my Notes at ') + ' ' + url);
+								Hiro.ui.sharer.tweet((note.c.title.substring(0,120) || note.c.text.substring(0,120) || 'See my note at ') + ' ' + url);
 							// Send mail	
 							} else if (id[1] == 'mail') {
 								Hiro.ui.sharer.mail(title, 'Join in via ' + url + ' , preview attached:\n\n' + text.substring(0,2000));

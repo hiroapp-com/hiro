@@ -511,7 +511,7 @@ input.error:focus {
 
 #canvas textarea {
   position: relative;  
-  color: rgba(0,0,0,0.5); 
+  color: rgba(0,0,0,0.8); 
   padding: 127px 395px 30px 96px;   
   background-color: transparent; 
   overflow-y: auto;
