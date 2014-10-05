@@ -165,7 +165,7 @@ class User(object):
             self.tier = 1
         return ok
 
-    def send_post_signup_email(self):
+    def email_post_signup(self):
         if not self.email or not self.tier > 0:
             return False
         if self.email_status == 'unverified':
@@ -184,6 +184,18 @@ class User(object):
             return False
         return True
 
+    def email_reset_pwd(self):
+        if not self.email:
+            return
+        token = self.token('verify-email') if self.email_status == 'unverified' else self.token('login')
+        send_email("reset-pwd", "", self.email, dict(token=token))
+
+    def email_verify(self):
+        if not self.email or self.email_status == 'verified':
+            return
+        token = self.token('verify-email')
+        send_email("verify", "", self.email, dict(token=token))
+
     @staticmethod
     def anon_token():
         token, hashed = gen_token()
@@ -193,6 +205,7 @@ class User(object):
         return token
 
     def token(self, kind):
+        # TODO(flo): invlidate old tokens for e.g. verify tokens on recreation
         if not self.uid:
             return None
         conn = get_db()

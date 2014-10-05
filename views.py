@@ -85,14 +85,14 @@ def register():
         print "ping2"
         # tier can only be 0 at this point, otherwise User.find_by would have 
         # found it already above
-        if sess.user.signup(pwd) and sess.user.send_post_signup_mail():
+        if sess.user.signup(pwd) and sess.user.email_post_signup():
             print "ping3"
             return jsonify(token=sess.user.token('login'))
     elif sess and phone and sess.user.phone == phone:
         print "ping4"
         # tier can only be 0 at this point, otherwise User.find_by would have 
         # found it already above
-        if not sess.user.signup(pwd) and sess.user.send_post_signup_txt():
+        if not sess.user.signup(pwd) and sess.user.email_post_signup():
             print "ping5"
             return jsonify(token=sess.user.token('login'))
     else:
@@ -104,14 +104,37 @@ def register():
             return jsonify_err(400, email="Email already registered")
         if email:
             print 'ping888'
-        if email and user.send_post_signup_email():
+        if email and user.email_post_signup():
             print "ping8"
             return jsonify(token=user.token('login'))
-        elif phone and  user.send_post_signup_txt():
+        elif phone and  user.email_post_signup():
             print "ping9"
             return jsonify(token=user.token('login'))
     return jsonify_err(400, password="Something went wrong. Please try again")
          
+def reset_pwd():
+    email = valid_email(request.json.get('email', ''))
+    phone = request.json.get('phone', '')
+    if not any((email, phone)) or all((email, phone)):
+        return jsonify_err(403, email='Either Email or Phone #')
+    # check if user is already registered
+    user = User.find_by(email=email, phone=phone)
+    if user:
+        user.email_reset_pwd()
+        #user.txt_reset_pwd() #sms templates not implemented
+    return jsonify(status="ok")
+
+def verify():
+    email = valid_email(request.json.get('email', ''))
+    phone = request.json.get('phone', '')
+    if not any((email, phone)) or all((email, phone)):
+        return jsonify_err(403, email='Either Email or Phone #')
+    # check if user is already registered
+    user = User.find_by(email=email, phone=phone)
+    if user:
+        user.email_verify()
+        #user.txt_verify() #sms templates not implemented
+    return jsonify(status="ok")
 
 def change_plan():
     data = request.json or {}
@@ -125,6 +148,7 @@ def change_plan():
     if err:
         return jsonify_err(400, error=err)
     return jsonify(status="ok")
+
 
 # Direct Templates
 def landing():
