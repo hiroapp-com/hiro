@@ -65,7 +65,7 @@ def register():
     name = data.get('name', '')
     email = valid_email(data.get('email', ''))
     phone = data.get('phone', '')
-    pwd = data.get('password')
+    pwd = data.get('password', '')
     if not any((email, phone)) or all((email, phone)):
         return jsonify_err(403, email='Either Email or Phone #')
     if passwd_valid(pwd) is not None:
@@ -222,9 +222,7 @@ def valid_email(email):
     return email
 
 def passwd_valid(pwd):
-    if pwd is None:
-        return None
-    if len(pwd) < 4:
+    if 0 < len(pwd) < 4:
         return "Too short (at least 4)"
     return None
 

@@ -88,7 +88,7 @@ class User(object):
     def create(cls, name='', email='', phone='', fb_uid='', pwd=None):
         conn = get_db()
         uid = gen_uid()
-        passwd = pbkdf2_sha512.encrypt(pwd) if pwd is not None else None
+        passwd = pbkdf2_sha512.encrypt(pwd) if pwd else None
         user = User(uid=uid, tier=1, name=name, email=email, phone=phone, fb_uid=fb_uid, pwd=pwd)
         user.email_status = 'unverified' if email else ''
         user.phone_status = 'unverified' if phone else ''
@@ -158,7 +158,7 @@ class User(object):
         if not self.uid:
             return False
         cur = get_db().cursor()
-        passwd = pbkdf2_sha512.encrypt(pwd) if pwd is not None else None
+        passwd = pbkdf2_sha512.encrypt(pwd) if pwd else None
         self.pwd = passwd
         ok = bool(cur.execute("UPDATE users SET tier = 1, password = ?, signup_at = datetime('now') WHERE uid = ? ", (passwd, self.uid)).rowcount)
         if ok:
