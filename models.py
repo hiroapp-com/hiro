@@ -166,24 +166,20 @@ class User(object):
         return ok
 
     def send_post_signup_email(self):
-        print 'email1'
         if not self.email or not self.tier > 0:
-            print 'email2', self.email, self.tier
             return False
         if self.email_status == 'unverified':
-            print 'email3'
             token = self.token('verify-email')
             if self.pwd:
-                send_email("signup", "", self.email, dict(token=token))
+                send_email("signup-verify", "", self.email, dict(token=token))
             else:
-                send_email("signup-setpass", "", self.email, dict(token=token))
+                send_email("signup-setpwd", "", self.email, dict(token=token))
         elif self.email_status == 'verified':
-            print 'email4'
             token = self.token('login')
             if self.pwd:
                 send_email("welcome", "", self.email, dict(token=token))
             else:
-                send_email("welcome-setpass", "", self.email, dict(token=token))
+                send_email("welcome-setpwd", "", self.email, dict(token=token))
         else:
             return False
         return True
