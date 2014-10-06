@@ -147,6 +147,8 @@ class User(object):
         args.append(self.uid)
         conn.execute("UPDATE users SET {} WHERE uid = ?".format(u', '.join(setter)), tuple(args)).fetchone()
         conn.commit()
+        for k, v in kwds.iteritems():
+            setattr(self, k, v)
         return True
 
     def check_pwd(self, pwd):

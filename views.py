@@ -79,36 +79,33 @@ def register():
         return jsonify_err(400, password="Wrong password")
 
     
-    print "ping1"
     sess = Session.load(sid) if sid else None
     if sess and email and sess.user.email == email:
-        print "ping2"
         # tier can only be 0 at this point, otherwise User.find_by would have 
         # found it already above
         if sess.user.signup(pwd) and sess.user.email_post_signup():
-            print "ping3"
             return jsonify(token=sess.user.token('login'))
     elif sess and phone and sess.user.phone == phone:
-        print "ping4"
         # tier can only be 0 at this point, otherwise User.find_by would have 
         # found it already above
         if not sess.user.signup(pwd) and sess.user.email_post_signup():
-            print "ping5"
             return jsonify(token=sess.user.token('login'))
     else:
-        print "ping6"
-        user = User.create(name=name, email=email, phone=phone, pwd=pwd)
+        user = None
+        if sess and sess.user and sess.user.tier == 0:
+            # re-use old session's user
+            user = sess.user 
+            user.update(email=email, email_status=('unverified' if email else ''), phone=phone, phone_status=('unverified' if phone else ''))
+        else:
+            # create new one
+            user = User.create(name=name, email=email, phone=phone)
         if user is None:
-            print "ping7"
             # this should not not happen
             return jsonify_err(400, email="Email already registered")
-        if email:
-            print 'ping888'
+        user.signup(pwd)
         if email and user.email_post_signup():
-            print "ping8"
             return jsonify(token=user.token('login'))
         elif phone and  user.email_post_signup():
-            print "ping9"
             return jsonify(token=user.token('login'))
     return jsonify_err(400, password="Something went wrong. Please try again")
          
