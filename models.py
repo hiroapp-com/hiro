@@ -243,7 +243,6 @@ class User(object):
         return token
 
     def token(self, kind):
-        # TODO(flo): invlidate old tokens for e.g. verify tokens on recreation
         if not self.uid:
             return None
         conn = get_db()
@@ -251,9 +250,15 @@ class User(object):
         if kind == 'login':
             conn.execute("INSERT INTO tokens (token, kind, uid) VALUES (?, 'login', ?)", (hashed, self.uid))
         elif kind == 'verify-email' and self.email:
-            conn.execute("INSERT INTO tokens (token, kind, uid, email) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.email))
+            if conn.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND email <> '' AND times_consumed = 0 AND uid = ?", (self.uid,)).fetchone():
+                conn.execute("UPDATE tokens SET token = ?, email = ?, valid_from = datetime('now') WHERE uid = ? AND email <> '' AND times_consumed = 0", (hashed, self.email, self.uid))
+            else:
+                conn.execute("INSERT INTO tokens (token, kind, uid, email) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.email))
         elif kind == 'verify-phone' and self.phone:
-            conn.execute("INSERT INTO tokens (token, kind, uid, phone) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.phone))
+            if conn.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND phone <> '' AND times_consumed = 0 AND uid = ?", (self.uid,)).fetchone():
+                conn.execute("UPDATE tokens SET token = ?, phone = ?, valid_from = datetime('now') WHERE uid = ? AND phone <> '' AND times_consumed = 0", (hashed, self.phone, self.uid))
+            else:
+                conn.execute("INSERT INTO tokens (token, kind, uid, phone) VALUES (?, 'verify', ?, ?)", (hashed, self.uid, self.phone))
         else:
             return None
         conn.commit()
@@ -302,7 +307,7 @@ class User(object):
                 # subscription will end by the end of the month, save how
                 # it's still paid for and deactivate after expiration, see XXX
                 # TODO: backgroundtask for expired plan cancelation
-                now = datetime.now()
+                now = datetime.datetime.now()
                 last_day = calendar.monthrange(now.year, now.month)[1]
                 expiry = now.replace(day=last_day, hour=23, minute=59)
                 conn.execute("UPDATE users SET tier = ?, plan_expires_at = ? WHERE uid = ?", (User.PLANS[new_plan], expiry, self.uid,))
