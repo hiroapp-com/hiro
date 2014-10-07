@@ -39,6 +39,15 @@ def send_email(kind, to_name, to_email, data):
                                              },
                                          "data": data
                                          })
+def send_sms(kind, to_name, to_phone, data):
+    print "sending sms", kind, to_name, to_phone, data
+    comm_client.call("WrapRPC.Send", 2, {"kind": kind,
+                                         "rcpt": {"name": to_name,
+                                             "addr": to_phone,
+                                             "kind": "phone"
+                                             },
+                                         "data": data
+                                         })
 
 def gen_token():
     token = uuid.uuid4().hex
@@ -167,6 +176,23 @@ class User(object):
             self.tier = 1
         return ok
 
+    def sms_post_signup(self):
+        if not self.phone or not self.tier > 0:
+            return False
+        if self.phone_status == 'unverified':
+            token = self.token('verify-phone')
+            if self.pwd:
+                send_sms("signup-verify", "", self.phone, dict(token=token))
+            else:
+                send_sms("signup-setpwd", "", self.phone, dict(token=token))
+        elif self.phone_status == 'verified':
+            token = self.token('login')
+            if not self.pwd:
+                send_sms("welcome-setpwd", "", self.phone, dict(token=token))
+        else:
+            return False
+        return True
+
     def email_post_signup(self):
         if not self.email or not self.tier > 0:
             return False
@@ -178,19 +204,29 @@ class User(object):
                 send_email("signup-setpwd", "", self.email, dict(token=token))
         elif self.email_status == 'verified':
             token = self.token('login')
-            if self.pwd:
-                send_email("welcome", "", self.email, dict(token=token))
-            else:
+            if not self.pwd:
                 send_email("welcome-setpwd", "", self.email, dict(token=token))
         else:
             return False
         return True
+
+    def sms_reset_pwd(self):
+        if not self.phone:
+            return
+        token = self.token('verify-phone') if self.phone_status == 'unverified' else self.token('login')
+        send_sms("reset-pwd", "", self.phone, dict(token=token))
 
     def email_reset_pwd(self):
         if not self.email:
             return
         token = self.token('verify-email') if self.email_status == 'unverified' else self.token('login')
         send_email("reset-pwd", "", self.email, dict(token=token))
+
+    def sms_verify(self):
+        if not self.phone or self.phone_status == 'verified':
+            return
+        token = self.token('verify-phone')
+        send_sms("verify", "", self.phone, dict(token=token))
 
     def email_verify(self):
         if not self.email or self.email_status == 'verified':

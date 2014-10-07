@@ -88,7 +88,7 @@ def register():
     elif sess and phone and sess.user.phone == phone:
         # tier can only be 0 at this point, otherwise User.find_by would have 
         # found it already above
-        if not sess.user.signup(pwd) and sess.user.email_post_signup():
+        if sess.user.signup(pwd) and sess.user.sms_post_signup():
             return jsonify(token=sess.user.token('login'))
     else:
         user = None
@@ -105,7 +105,7 @@ def register():
         user.signup(pwd)
         if email and user.email_post_signup():
             return jsonify(token=user.token('login'))
-        elif phone and  user.email_post_signup():
+        elif phone and user.sms_post_signup():
             return jsonify(token=user.token('login'))
     return jsonify_err(400, password="Something went wrong. Please try again")
          
@@ -117,8 +117,10 @@ def reset_pwd():
     # check if user is already registered
     user = User.find_by(email=email, phone=phone)
     if user:
-        user.email_reset_pwd()
-        #user.txt_reset_pwd() #sms templates not implemented
+        if email:
+            user.email_reset_pwd()
+        elif phone:
+            user.sms_reset_pwd() 
     return jsonify(status="ok")
 
 def verify():
@@ -129,8 +131,10 @@ def verify():
     # check if user is already registered
     user = User.find_by(email=email, phone=phone)
     if user:
-        user.email_verify()
-        #user.txt_verify() #sms templates not implemented
+        if email:
+            user.email_verify()
+        elif phone:
+            user.sms_verify() 
     return jsonify(status="ok")
 
 def change_plan():
