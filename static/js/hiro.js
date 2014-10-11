@@ -1203,6 +1203,36 @@ var Hiro = {
 			});	
 		},	
 
+		// Submit password reset
+		resetpwd: function() {
+			var root = document.getElementById('s_reset'),
+				inputs = root.getElementsByTagName('input'),
+				error = root.getElementsByClassName('mainerror')[0],
+				button = root.getElementsByClassName('hirobutton')[0];
+
+			// Clear error first
+			error.innerText = '';	
+
+			console.log(inputs[0].value);
+
+			// No passwords at all provided
+			if (!inputs[0].value && !inputs[1].value) {
+				error.innerText = 'Please choose a new password';
+				button.innerText = 'Try again';
+				inputs[0].focus();
+			// String mismatch	
+			} else if (inputs[0].value != inputs[1].value) {
+				error.innerText = 'Passwords do not match';
+				button.innerText = 'Try again';
+				inputs[1].focus();				
+			// Yay, new password have	
+			} else {
+				button.innerText = 'Changing password...';
+				//TODO Bruno: Post this properly...
+			}
+				
+		},
+
 		// Change name to new value
 		setname: function(newname,fetchsuggestion,force) {
 			var oldname = Hiro.data.get('profile','c.name');
@@ -3170,10 +3200,17 @@ var Hiro = {
 				// If we have no connection or token
 				if (!token || !Hiro.sync.synconline) return;
 
-				// If the action requires a new session
-				if (newsessionactions.indexOf(token.action) > -1 ) {
+				// If the action requires a new session or we do have none yet
+				if (!Hiro.data.get('profile','c.sid') || newsessionactions.indexOf(token.action) > -1 ) {
 					// Create a new session
 					Hiro.sync.createsession(token.id);
+					// Show new password overlay if it's a reset request
+					if (token.action == 'reset') {
+						// Make sure create session doesn't close it rigfht away
+						Hiro.ui.dialog.onclose = 'prevent';
+						// Show it
+						Hiro.ui.dialog.show('d_logio','s_reset',document.getElementById('new_password'));
+					}	
 				// Fall back to normal consumption
 				} else {
 					// Consume
@@ -3316,10 +3353,11 @@ var Hiro = {
 
 				// Add existing sid if present
 				if (sid) {
+					// Tell server which session is requesting a new one
 					r.sid = sid;
 
 		        	// Logging
-					Hiro.sys.log('Requesting new while we do have an active one ' + sid,token,'warn');				
+					Hiro.sys.log('Requesting new while we do have an active one ', sid,'warn');				
 				}
 
 	        	// Logging
@@ -3348,7 +3386,7 @@ var Hiro = {
 				this.lastsend = Hiro.util.now();	
 
 				// Enrich data object with sid (if we have one) & tag
-				if (!data[i].sid && sid) data[i].sid = sid;		
+				// if (!data[i].sid && sid) data[i].sid = sid;		
 
 				// Add tag fallback		
 				if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);	
@@ -5918,7 +5956,6 @@ var Hiro = {
 			open: false,
 			lastx: 0,
 			lasty: 0,
-			lastaction: undefined,
 			upgradeteaser: false,
 
 			// Hooks
@@ -6075,14 +6112,18 @@ var Hiro = {
 			// Close the dialog 
 			hide: function() {
 				// Remove blur filters, only if we set them before
-				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';		
+				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter', prevent;		
 
 				// If we got a onclose hook
 				if (this.onclose) {
 					// Fire
-					this.onclose();
+					if (typeof this.onclose == 'function') this.onclose();
+					// If we have a prevent flag
+					if (this.onclose == 'prevent') prevent = true;
 					// Reset
 					this.onclose = undefined;
+					// Stop closing
+					if (prevent) return;
 				}	
 
 				Hiro.ui.render(function(){
@@ -6190,6 +6231,9 @@ var Hiro = {
 							break;											
 						case 'requestpwdreset':
 							Hiro.user.requestpwdreset();
+							break;	
+						case 'resetpwd':
+							Hiro.user.resetpwd();
 							break;							
 						case 'register':
 						case 'login':
