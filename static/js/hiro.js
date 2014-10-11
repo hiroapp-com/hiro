@@ -2255,7 +2255,7 @@ var Hiro = {
 
 				// Add Owner tooltip or removal link
 				if (peer.role == "owner") {
-					tt = 'Owner';					
+					tt = 'Owner: ';					
 				} else {
 					// Set tooltip for invited only
 					if (parseInt(peer.user.tier) == -1) tt = 'Invited';
@@ -2269,8 +2269,7 @@ var Hiro = {
 				// Add seen flag to classname
 				if (us || (peer.last_seen && peer.last_seen >= Hiro.data.get('note_' + Hiro.canvas.currentnote,'_lastedit'))) {	
 					// Pimp title
-					if (tt) tt += ': ';
-					tt = tt + (us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen).toLowerCase() + ' ago';
+					tt = (tt || '') + ((us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen).toLowerCase() + ' ago');
 
 					// Add green tick to icon				
 					d.className += " seen";
