@@ -2258,7 +2258,7 @@ var Hiro = {
 					tt = 'Owner';					
 				} else {
 					// Set tooltip for invited only
-					if (peer.role == 'invited') tt = 'Invited';
+					if (parseInt(peer.user.tier) == -1) tt = 'Invited';
 					// Add remove link if user is not owner					
 					r = document.createElement('a');
 					r.className = 'remove';
@@ -2281,7 +2281,7 @@ var Hiro = {
 
 				// Add user name span
 				n = document.createElement('span');
-				n.className = (peer.role == 'invited') ? 'name invited' : 'name';
+				n.className = (parseInt(peer.user.tier) == -1) ? 'name invited' : 'name';
 				n.innerText = text || 'Anonymous';
 				d.appendChild(n)
 
