@@ -2836,7 +2836,7 @@ var Hiro = {
 		},
 
 		// Remove all synced data, this happens if we get new session data
-		cleanup: function() {
+		cleanup: function(newfoliolength) {
 			var i, l, f = this.get('folio','c'), c = this.get('profile','c.contacts'), note;
 
 			// Only cleanup if we got something to cleanup
@@ -2848,9 +2848,10 @@ var Hiro = {
 				if (f[i].nid.length == 4) {
 					// Fetch note
 					note = this.get('note_' + f[i].nid,'c');
+					console.log(newfoliolength,f.length);
 
-					// Keep unsynced notes that have distinctive values
-					if (note.text || note.title || note.peers.length > 0) continue;
+					// Keep unsynced notes that have distinctive values, or if we'd remove the very last
+					if ((newfoliolength == 0 && f.length == 1) || (note.text || note.title || note.peers.length > 0))  continue;
 				}	
 
 				// Update state arrays
@@ -3447,7 +3448,7 @@ var Hiro = {
 			if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();				
 
 			// Remove all synced data
-			Hiro.data.cleanup();
+			Hiro.data.cleanup(data.session.folio.val.length);
 
 			// Create new blank profile object
 			sp = data.session.profile; 
