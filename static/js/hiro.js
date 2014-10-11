@@ -1187,12 +1187,12 @@ var Hiro = {
 
 			// Send request to backend
 			Hiro.sync.ajax.send({
-				url: '/tokens/signup',
+				url: '/tokens/resetpwd',
 				type: "POST",
 	            payload: JSON.stringify(payload),
 				success: function(req,data) {
 					// Show message
-	                e.innerText = "Success, check your " + parse[0] + " for the reset link.";										                    
+	                e.innerText = "Success, check your " + parse[0] + " to continue.";										                    
 				},
 				error: function(req,data) {		
 					// Reset DOM & flag	
@@ -4817,7 +4817,7 @@ var Hiro = {
 			// Check for hashes
 			if (window.location.hash) this.hashhandler();
 
-			// Setup other app parts (NOTE: ORder is rather critical, only mess if you're sure about it)
+			// Setup other app parts (NOTE: Order is rather critical, only mess if you're sure about it)
 			Hiro.folio.init();
 			Hiro.canvas.init();
 			Hiro.ui.init();	
@@ -4851,14 +4851,29 @@ var Hiro = {
 		},
 
 		// Called if we have a hash on init
-		// Hash format is #baaceed1406d406e80b65e7053ab51fa:reset, where strings shorter than 20 chars are actions while longer are tokens
+		// Hash format is #r:baaceed1406d406e80b65e7053ab51fa are tokens
 		hashhandler: function() {
-			var h = window.location.hash.substring(1).split(':'), t = Hiro.data.get('tokens'), i, l;
+			var hashes = window.location.hash.substring(1).split(':'), knowntokens, token, i, l;
 
 			// Iterate through hash components
-			for (i = 0, l = h.length; i < l; i++) {
-				// If we have 32 chars long token we don't know yet
-				if (h[i].length == 32 && (!t || t.indexOf(h[i]) == -1)) Hiro.sync.tokens.push(h[i]);
+			for (i = 0, l = hashes.length; i < l; i++) {
+				// If we have 32 chars long string it's not an email
+				if (hashes[i].length == 32 && hashes[i].indexOf('@') == -1) {
+					// Get known tokens
+					knowntokens = Hiro.data.get('tokens');	
+
+					// Set token to current value
+					token = hashes[i];
+
+					// See if we have a command preceeding the token
+					if (i != 0 && hashes[i - 1].length == 1) token = hashes[i - 1] + token;
+
+					// See if it's an unknown token, abort if otherwise
+					if (knowntokens && knowntokens.indexOf(token) > -1) continue;
+
+					// Add token
+					Hiro.sync.tokens.push(h[i]);
+				}	
 			}
 		},
 
@@ -5972,7 +5987,7 @@ var Hiro = {
 			showmessage: function(message, tabsync) {
 				// Get el's etc
 				var root = document.getElementById('d_msg'),
-					messageholder = root.getElementsByClassName('message')[0],
+					messageholder = root.getElementsByClassName('text')[0],
 					button = root.getElementsByClassName('hirobutton')[0],
 					obj = this.messages[message], action;
 

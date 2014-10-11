@@ -1146,12 +1146,7 @@ input.error:focus {
 }
 
 #d_msg a.hirobutton {
-  display: block;
-  top: 22%;
-  position: absolute;
-  left: 200px;
-  right: 200px;
-  margin-top: 258px;
+  margin: 9px 20px 0 20px;
 }
 
 #s_signin, #s_signup {
