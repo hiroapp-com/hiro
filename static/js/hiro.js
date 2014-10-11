@@ -1142,11 +1142,13 @@ var Hiro = {
 				// Remove landing page
 				Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);	
 				// Set the flag
-				Hiro.ui.landingvisible = false;			
-			}		
+				Hiro.ui.landingvisible = false;	
+				// Connect to hync
+				Hiro.sync.connect();		
+			}	
 
-			// Use token to request new session
-			Hiro.sync.createsession(data.token);	
+			// Add token to known list
+			Hiro.data.tokens.add({ id: data.token, action: 'login'})		
 		},
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
@@ -2527,8 +2529,8 @@ var Hiro = {
 				Hiro.ui.el_landingpage.style.display = 'none';
 
 				// Load internal values, add tokens if stored offline
-				this.unsynced = this.local.fromdisk('unsynced');			
-				if (t[0]) Hiro.sync.tokens =  Hiro.sync.tokens.concat(t);
+				this.unsynced = this.local.fromdisk('unsynced');
+				this.tokens.bag = t;
 
 				// Remove first locks
 				p._tag = f._tag = undefined;
@@ -2563,7 +2565,7 @@ var Hiro = {
 				// Set stage
 				Hiro.ui.setstage();							
 			// If we started with a token											
-			} else if (Hiro.sync.tokens[0]) {
+			} else if (t) {
 				// Remove landing page
 				Hiro.ui.el_landingpage.style.display = 'none';
 
@@ -2982,8 +2984,7 @@ var Hiro = {
 				}
 
 				// Persist list of unsynced values and tokens
-				this.todisk('unsynced',Hiro.data.unsynced);
-				this.todisk('tokens',Hiro.sync.tokens);				
+				this.todisk('unsynced',Hiro.data.unsynced);			
 
 				// Empty array
 				Hiro.data.unsaved = [];
@@ -3121,6 +3122,110 @@ var Hiro = {
 				// Report success
 				return true;
 			}		
+		},
+
+		// Small token handling lib that makes sure tokens are properly handled even if hync or user is offline
+		tokens: {
+			// Collection of token objects, properties are id and optional action
+			bag: [],
+
+			// Add a token
+			add: function(token) {
+				var i, l;
+
+				// Iterate through know tokens
+				for (i = 0, l = this.bag.length; i < l; i++ ) {
+					// Abort if it's a duplicate
+					if (this.bag[i].id == token.id) {
+						// Log
+						Hiro.sys.log('Tried to add know token', token, 'warn');
+						// Abort
+						return false;
+					}				
+				}
+
+				// Otherwise add it
+				this.bag.push(token);
+
+				// Save tokens to disc
+				Hiro.data.local.todisk('tokens',this.bag);	
+
+				// Try to process it right away
+				this.process();				
+
+				// Signal success				
+				return true;
+			},
+
+			// Do the right thaaaaaang
+			process: function(spawn) {
+				var newsessionactions = ['verify','reset','anon','login'], token;
+
+				// Pick first token from stash
+				token = this.bag[0];
+
+				// Get anon token if we have none yet and spawn flag is set 
+				if (spawn && !token) this.getanon();
+
+				// If we have no connection or token
+				if (!token || !Hiro.sync.synconline) return;
+
+				// If the action requires a new session
+				if (newsessionactions.indexOf(token.action) > -1 ) {
+					// Create a new session
+					Hiro.sync.createsession(token.id);
+				// Fall back to normal consumption
+				} else {
+					// Consume
+					Hiro.sync.consumetoken(token.id);
+				}
+			},
+
+			// Get token from Flask and use it to create new session
+			getanon: function() {
+	        	// Logging
+				Hiro.sys.log('Requesting anonymous token');		
+
+				// Send request to backend
+				Hiro.sync.ajax.send({
+					url: '/tokens/anon',
+		            type: 'GET',
+					success: function(req,data) {
+			        	// Logging
+						Hiro.sys.log('Received anonymous token ' + data.token);	
+
+						// Request session	
+						Hiro.data.tokens.add({ id: data.token, action: 'anon'})													                    
+					},
+					error: function(req,data) {	
+			        	// Logging
+						Hiro.sys.error('Unable to fetch Anon token',req);                 		                    						                    
+					}										
+				});			
+			},			
+
+			// Delete a token by id
+			remove: function(tokenid) {
+				var i, l;
+
+				// Iterate through know tokens
+				for (i = 0, l = this.bag.length; i < l; i++ ) {
+					// Abort if it's a duplicate
+					if (this.bag[i].id == tokenid) {
+						// Remove
+						this.bag.splice(i,1);
+						// Save tokens to disc
+						Hiro.data.local.todisk('tokens',this.bag);						
+						// Log
+						Hiro.sys.log('Successfully consumed & removed token ' + tokenid);
+						// End it here
+						return true;
+					}
+				}	
+
+				// Signal failure
+				return false;			
+			}
 		}
 	},
 
@@ -3140,9 +3245,6 @@ var Hiro = {
 		// Onlinestates incl initial values
 		synconline: false,
 		webonline: false,
-
-		// Token(s) we will try to fallback on
-		tokens: [],
 
 		// Init sync
 		init: function(ws_url) {
@@ -3188,14 +3290,14 @@ var Hiro = {
 				if (!this.commit()) this.ping();	
 
 				// See if we got any tokens to consume
-				if (this.tokens.length > 0) this.consumetoken();				
+				Hiro.data.tokens.process();			
 			// We have no session! 	
 			} else {
 	        	// Logging
-				Hiro.sys.log('No session found, creating new one');
+				Hiro.sys.log('No session found, creating new one');		
 
-				// Create session with new anontoken				
-				this.createsession();					
+				// Spawn a new token
+				Hiro.data.tokens.process(true);							
 			}
 		},	
 
@@ -3203,23 +3305,12 @@ var Hiro = {
 		createsession: function(token) {
 			var r = { "name": "session-create" }, sid = Hiro.data.get('profile','c.sid');
 
-			// If login etc gave us an unknown token
-			if (token && this.tokens.indexOf(token) == -1) {
-				// Add it to the bag
-				this.tokens.push(token);
-				// Save just in case the sync server shoud be offline or connection dies right now
-				Hiro.data.local.todisk('tokens',Hiro.sync.tokens)		
-			// Try to fallback on stored tokens				
-			} else if (!token) {
-				token = this.tokens[0];
-			}
-
 			// If we are offline, try connecting first
 			if (!this.synconline) {
 				// Prepare connection
 				Hiro.sync.connect();
 			// See if a token was provided
-			} else if (token) {
+			} else {
 				// Add token and optional session data to request
 				r.token = token;
 
@@ -3228,7 +3319,7 @@ var Hiro = {
 					r.sid = sid;
 
 		        	// Logging
-					Hiro.sys.log('Requesting new session with existing SID ',sid,'warn');				
+					Hiro.sys.log('Requesting new while we do have an active one ' + sid,token,'warn');				
 				}
 
 	        	// Logging
@@ -3236,35 +3327,8 @@ var Hiro = {
 
 				// Sending request
 				this.tx(r)				
-			// No token provided, get one now	
-			} else {
-				// Get token (fires createsession again if successful)				
-				this.getanontoken();
 			}
 		},	
-
-		// Get token from Flask and use it to create new session
-		getanontoken: function() {
-        	// Logging
-			Hiro.sys.log('Requesting anonymous token');		
-
-			// Send request to backend
-			Hiro.sync.ajax.send({
-				url: '/tokens/anon',
-	            type: 'GET',
-				success: function(req,data) {
-		        	// Logging
-					Hiro.sys.log('Received anonymous token ' + data.token);	
-
-					// Request session					
-					Hiro.sync.createsession(data.token);										                    
-				},
-				error: function(req,data) {	
-		        	// Logging
-					Hiro.sys.error('Unable to fetch Anon token',req);                 		                    						                    
-				}										
-			});			
-		},
 
 		// Send message to server
 		tx: function(data) {
@@ -3445,16 +3509,7 @@ var Hiro = {
 			cf.id = sf.id;
 
 			// Update tokens
-			if (this.tokens.indexOf(data.token) > -1) {
-				// Remove token
-				this.tokens.splice(this.tokens.indexOf(data.token),1);
-
-				// Log
-				Hiro.sys.log('Succesfully consumed token ' + data.token + ' on session create.')	
-
-				// See if we got any more tokens to consume
-				if (this.tokens.length > 0) this.consumetoken();				
-			}		
+			Hiro.data.tokens.remove(data.token);		
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
 			Hiro.data.set('folio','',cf,'s');	
@@ -3834,22 +3889,7 @@ var Hiro = {
 		// Process consume token response
 		rx_token_consume_handler: function(data) {
 			// Remove data from tokens
-			if (this.tokens.indexOf(data.token) > -1) {
-				// Remove token
-				this.tokens.splice(this.tokens.indexOf(data.token),1);
-
-				// Save
-				Hiro.data.local.todisk('tokens',this.tokens);				
-
-				// Log
-				Hiro.sys.log('Succesfully consumed token ' + data.token);
-
-				// See if we got any other token waiting and consume again
-				if (this.tokens.length > 0) this.consumetoken();
-			// Strange, we received an unknown token
-			} else {
-				Hiro.sys.log('Server said it consumed token unknown to us',[this.tokens,data],'warn');
-			}
+			Hiro.data.tokens.remove(data.token);
 		},
 
 		// Send simple ping to server, either generic if no store id is provided or latest store edits / empty delta
@@ -3886,10 +3926,7 @@ var Hiro = {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;	
-
-			// See if we got any tokens to consume
-			if (this.tokens.length > 0) this.consumetoken();							
+			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;								
 
 			// Start building commit
 			newcommit = [];				
@@ -3982,9 +4019,6 @@ var Hiro = {
 
 		// Consume a provided token
 		consumetoken: function(token) {
-			// Token fallback
-			token = token || this.tokens[0];
-
 			var sid = Hiro.data.get('profile','c.sid'),
 				msg = {
 					name: 'token-consume',
@@ -3993,15 +4027,7 @@ var Hiro = {
 				};
 
 			// Abort if there's absolutely no token or session
-			if (!sid || !token) return;
-
-			// Save provided token if not done so
-			if (this.tokens.indexOf(token) == -1) {
-				// Add
-				this.tokens.push(token);
-				// Save
-				Hiro.data.local.todisk('tokens',this.tokens);
-			}		
+			if (!sid || !token) return;		
 
 			// Else send it
 			this.tx(msg);
@@ -4853,7 +4879,8 @@ var Hiro = {
 		// Called if we have a hash on init
 		// Hash format is #r:baaceed1406d406e80b65e7053ab51fa are tokens
 		hashhandler: function() {
-			var hashes = window.location.hash.substring(1).split(':'), knowntokens, token, i, l;
+			var hashes = window.location.hash.substring(1).split(':'), knowntokens, token, i, l,
+				actionmap = { v: 'verify', r: 'reset' };
 
 			// Iterate through hash components
 			for (i = 0, l = hashes.length; i < l; i++) {
@@ -4863,17 +4890,15 @@ var Hiro = {
 					knowntokens = Hiro.data.get('tokens');	
 
 					// Set token to current value
-					token = hashes[i];
+					token = {};
+					token.id = hashes[i];
 
 					// See if we have a command preceeding the token
-					if (i != 0 && hashes[i - 1].length == 1) token = hashes[i - 1] + token;
-
-					// See if it's an unknown token, abort if otherwise
-					if (knowntokens && knowntokens.indexOf(token) > -1) continue;
+					if (i != 0) token.action = actionmap[hashes[i - 1]];
 
 					// Add token
-					Hiro.sync.tokens.push(h[i]);
-				}	
+					Hiro.data.tokens.add(token);
+				}
 			}
 		},
 
