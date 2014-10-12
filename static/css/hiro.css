@@ -312,7 +312,7 @@ input.error:focus {
   display: none;
 }
 
-#folio .notes .note:hover .archive {
+#folio .notes .note:hover .archive, body.touch #folio.open .notes .note .archive {
   display: block;
 }
 

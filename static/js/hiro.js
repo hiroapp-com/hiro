@@ -5142,7 +5142,10 @@ var Hiro = {
 			}
 
 			// Always load settings from server to determine contents and webserver availability
-			this.dialog.load();									
+			this.dialog.load();		
+
+			// Set body style if we're on a touch device
+			if (this.touch) document.body.className = 'touch';							
 		},
 
 		// Render changes via rAF or, if window is not focused, right away
@@ -5455,12 +5458,14 @@ var Hiro = {
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
-					// Timessssup
+					// Timessssup, set internal values
 					Hiro.folio.open = (direction > 0) ? true : false;
 					_this.slidedirection = 0;
 					_this.slidetimer = 0;
-					// Callback
+					// Fire callback
 					if (callback) callback();
+					// Set classname
+					Hiro.folio.el_root.className = (direction > 0) ? 'open' : 'closed';
 				} else {
 					_this.slidetimer = requestAnimationFrame(step);
 				}	
