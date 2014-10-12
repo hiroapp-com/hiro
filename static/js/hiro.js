@@ -174,7 +174,12 @@ var Hiro = {
 				f0 = document.createElement('div'), f1, link;
 
 			// Kick off regular updates, only once
-			if (!that.updatetimeout) that.updatetimeout = setInterval( function(){ Hiro.folio.paint(true) },61000);
+			if (!that.updatetimeout) that.updatetimeout = setInterval( function(){ 
+				// Repaint
+				Hiro.folio.paint(true) 
+				// Also ping application cache regularely, if we have one
+				if (window.applicationCache && window.applicationCache.status == 1) window.applicationCache.update();
+			},61000);
 
 			// Get data from store			
 			data = Hiro.data.get('folio','c');
@@ -4965,7 +4970,6 @@ var Hiro = {
 						// Log
 						Hiro.sys.log('Update to ' + data.version + ' (' + data.name + ')' + ' available.')
 						// Show modal
-						// TODO Bruno: User can still click this away, think of better way to handle this 
 						Hiro.ui.dialog.showmessage('update',true);						
 					}
 				});
