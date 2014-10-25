@@ -117,8 +117,8 @@ class User(object):
                               , %s
                               , %s
                               , %s
-                              , datetime('now')
-                              , datetime('now')
+                              , now()
+                              , now()
                               , %s
                               )""", (uid, user.tier, name, email, phone, user.email_status, user.phone_status, fb_uid,  passwd))
         conn.commit()
@@ -172,7 +172,7 @@ class User(object):
         cur = conn.cursor()
         passwd = pbkdf2_sha512.encrypt(pwd) if pwd else None
         self.pwd = passwd
-        ok = bool(cur.execute("UPDATE users SET tier = 1, password = %s, signup_at = datetime('now') WHERE uid = %s ", (passwd, self.uid)).rowcount)
+        ok = bool(cur.execute("UPDATE users SET tier = 1, password = %s, signup_at = now() WHERE uid = %s ", (passwd, self.uid)).rowcount)
         if ok:
             self.tier = 1
         conn.close()
@@ -256,12 +256,12 @@ class User(object):
             cur.execute("INSERT INTO tokens (token, kind, uid) VALUES (%s, 'login', %s)", (hashed, self.uid))
         elif kind == 'verify-email' and self.email:
             if cur.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND email <> '' AND times_consumed = 0 AND uid = %s", (self.uid,)):
-                cur.execute("UPDATE tokens SET token = %s, email = %s, valid_from = datetime('now') WHERE uid = %s AND email <> '' AND times_consumed = 0", (hashed, self.email, self.uid))
+                cur.execute("UPDATE tokens SET token = %s, email = %s, valid_from = now() WHERE uid = %s AND email <> '' AND times_consumed = 0", (hashed, self.email, self.uid))
             else:
                 cur.execute("INSERT INTO tokens (token, kind, uid, email) VALUES (%s, 'verify', %s, %s)", (hashed, self.uid, self.email))
         elif kind == 'verify-phone' and self.phone:
             if cur.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND phone <> '' AND times_consumed = 0 AND uid = %s", (self.uid,)):
-                cur.execute("UPDATE tokens SET token = %s, phone = %s, valid_from = datetime('now') WHERE uid = %s AND phone <> '' AND times_consumed = 0", (hashed, self.phone, self.uid))
+                cur.execute("UPDATE tokens SET token = %s, phone = %s, valid_from = now() WHERE uid = %s AND phone <> '' AND times_consumed = 0", (hashed, self.phone, self.uid))
             else:
                 cur.execute("INSERT INTO tokens (token, kind, uid, phone) VALUES (%s, 'verify', %s, %s)", (hashed, self.uid, self.phone))
         else:
@@ -361,7 +361,7 @@ class Session(object):
 def tokenhistory_add(token, uid):
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("INSERT INTO stripe_tokens (token, uid, seen_at) VALUES (%s, %s, datetime('now'))", (token, uid))
+    cur.execute("INSERT INTO stripe_tokens (token, uid, seen_at) VALUES (%s, %s, now())", (token, uid))
     conn.commit()
     conn.close()
 
