@@ -1,7 +1,7 @@
 DEBUG = True
 
 WS_URL = 'ws://localhost:8888/0/ws'
-DB_PATH = 'postgres://hiro:hiro@localhost:5433/hiro?sslmode=require'
+DB_PATH = 'postgres://hiro:hiro@localhost:5432/hiro?sslmode=require'
 
 ### DEV KEYS
 CSRF_ENABLED = True
