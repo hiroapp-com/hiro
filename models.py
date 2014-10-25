@@ -135,11 +135,11 @@ class User(object):
                                    (email <> '' AND email = %s) 
                                    OR (phone <> '' AND phone = %s)
                                    OR (fb_uid <> '' AND fb_uid = %s)
-                                   )""", (email, phone, fb_uid)).fetchone()
+                                   )""", (email, phone, fb_uid))
         conn.close()
         if not row:
             return None
-        return User.load(row[0])
+        return User.load(row.fetchone()[0])
 
     def update(self, **kwds):
         if not kwds:
