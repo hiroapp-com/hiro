@@ -68,19 +68,19 @@ class User(object):
     def load(cls, uid):
         conn = get_db()
         cur = conn.cursor()
-        row = cur.execute("""select name
-                                  , tier
-                                  , email
-                                  , email_status
-                                  , phone
-                                  , phone_status
-                                  , fb_uid
-                                  , password 
-                             from users where uid = %s""", (uid,))
+        cur.execute("""select name
+                            , tier
+                            , email
+                            , email_status
+                            , phone
+                            , phone_status
+                            , fb_uid
+                            , password 
+                       from users where uid = %s""", (uid,))
+        row = cur.fetchone()
         conn.close()
         if not row:
             return None
-        row = row.fetchone()
         user = cls(uid, row[0], row[1], row[2], row[4], row[6], row[7])
         user.email_status = row[3]
         user.phone_status = row[5]
@@ -129,18 +129,19 @@ class User(object):
     def find_by(cls, email="", phone="", fb_uid="", verified_only=False):
         conn = get_db()
         cur = conn.cursor()
-        row = cur.execute("""SELECT uid
-                                FROM users 
-                                WHERE tier > 0
-                                   AND (
-                                   (email <> '' AND email = %s) 
-                                   OR (phone <> '' AND phone = %s)
-                                   OR (fb_uid <> '' AND fb_uid = %s)
-                                   )""", (email, phone, fb_uid))
+        cur.execute("""SELECT uid
+                          FROM users 
+                          WHERE tier > 0
+                             AND (
+                             (email <> '' AND email = %s) 
+                             OR (phone <> '' AND phone = %s)
+                             OR (fb_uid <> '' AND fb_uid = %s)
+                             )""", (email, phone, fb_uid))
+        row = cur.fetchone()
         conn.close()
         if not row:
             return None
-        return User.load(row.fetchone()[0])
+        return User.load(row[0])
 
     def update(self, **kwds):
         if not kwds:
@@ -172,10 +173,11 @@ class User(object):
         cur = conn.cursor()
         passwd = pbkdf2_sha512.encrypt(pwd) if pwd else None
         self.pwd = passwd
-        ok = bool(cur.execute("UPDATE users SET tier = 1, password = %s, signup_at = now() WHERE uid = %s ", (passwd, self.uid)).rowcount)
+        cur.execute("UPDATE users SET tier = 1, password = %s, signup_at = now() WHERE uid = %s ", (passwd, self.uid))
+        ok = bool(cur.rowcount)
+        conn.close()
         if ok:
             self.tier = 1
-        conn.close()
         return ok
 
     def sms_post_signup(self):
@@ -255,12 +257,14 @@ class User(object):
         if kind == 'login':
             cur.execute("INSERT INTO tokens (token, kind, uid) VALUES (%s, 'login', %s)", (hashed, self.uid))
         elif kind == 'verify-email' and self.email:
-            if cur.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND email <> '' AND times_consumed = 0 AND uid = %s", (self.uid,)):
+            cur.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND email <> '' AND times_consumed = 0 AND uid = %s", (self.uid,))
+            if cur.fetchone():
                 cur.execute("UPDATE tokens SET token = %s, email = %s, valid_from = now() WHERE uid = %s AND email <> '' AND times_consumed = 0", (hashed, self.email, self.uid))
             else:
                 cur.execute("INSERT INTO tokens (token, kind, uid, email) VALUES (%s, 'verify', %s, %s)", (hashed, self.uid, self.email))
         elif kind == 'verify-phone' and self.phone:
-            if cur.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND phone <> '' AND times_consumed = 0 AND uid = %s", (self.uid,)):
+            cur.execute("SELECT 1 FROM tokens WHERE kind = 'verify' AND phone <> '' AND times_consumed = 0 AND uid = %s", (self.uid,))
+            if cur.fetchone():
                 cur.execute("UPDATE tokens SET token = %s, phone = %s, valid_from = now() WHERE uid = %s AND phone <> '' AND times_consumed = 0", (hashed, self.phone, self.uid))
             else:
                 cur.execute("INSERT INTO tokens (token, kind, uid, phone) VALUES (%s, 'verify', %s, %s)", (hashed, self.uid, self.phone))
@@ -273,11 +277,12 @@ class User(object):
     def get_stripe_customer(self, token=None):
         conn = get_db()
         cur = conn.cursor()
-        row = cur.execute("SELECT stripe_customer_id FROM users WHERE uid = %s", (self.uid,))
+        cur.execute("SELECT stripe_customer_id FROM users WHERE uid = %s", (self.uid,))
+        row = cur.fetchone()
         if not row:
             conn.close()
             raise Exception("cannot fetch stripe customer, uid ({}) does not exist".format(self.uid))
-        cust_id = row.fetchone()[0]
+        cust_id = row[0]
         stripe.api_key = STRIPE_SECRET_KEY
         if not cust_id:
             if token is None:
@@ -302,11 +307,12 @@ class User(object):
             return "Trying to change to unknown plan, valid options: {0}".format(', '.join(User.PLANS.keys()))
         conn = get_db()
         cur = conn.cursor()
-        row = cur.execute("SELECT tier FROM users WHERE uid = %s", (self.uid,))
+        cur.execute("SELECT tier FROM users WHERE uid = %s", (self.uid,))
+        row = cur.fetchone()
         if not row:
             conn.close()
             return "User with uid `{}` not found".format(self.uid)
-        current_plan = dict(zip(User.PLANS.values(), User.PLANS.keys())).get(row.fetchone()[0])
+        current_plan = dict(zip(User.PLANS.values(), User.PLANS.keys())).get(row[0])
         if current_plan == new_plan:
             # makes no sense, dude
             return "Cannot change to plan you already have"
@@ -350,11 +356,12 @@ class Session(object):
     def load(cls, sid):
         conn = get_db()
         cur = conn.cursor()
-        row = cur.execute("select uid from sessions where sid = %s", (sid,))
+        cur.execute("select uid from sessions where sid = %s", (sid,))
+        row = cur.fetchone()
         if not row:
             return None
         sess = cls(sid)
-        sess.user = User.load(row.fetchone()[0])
+        sess.user = User.load(row[0])
         conn.close()
         return sess
 
@@ -368,6 +375,7 @@ def tokenhistory_add(token, uid):
 def tokenhistory_seen(token):
     conn = get_db()
     cur = conn.cursor()
-    row = cur.execute("SELECT 1 FROM stripe_tokens WHERE token = %s", (token,))
+    cur.execute("SELECT 1 FROM stripe_tokens WHERE token = %s", (token,))
+    row = cur.fetchone()
     conn.close()
     return bool(row)
