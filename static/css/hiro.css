@@ -533,22 +533,23 @@ input.error:focus {
 
 #overlay .flag {
   width: 0;
-  display: inline-block;
+  display: inline;
   position: relative;
 }
 
 #overlay .flag .name {
   position: absolute;
-  top: -30px;
+  top: -16px;
   font-family: "urbana", sans-serif;
-  right: -11px;
+  right: -12px;
   white-space: nowrap;
   color: #fff;
   background: #bbb;
   font-size: 11px;
-  padding: 2px 5px 2px 5px;
+  padding: 3px 5px 3px 5px;
   line-height: 11px; 
   border-radius: 3px;
+  border: 1px solid #fff;
 }
 
 #overlay .flag .name:after, #overlay .flag .name:before {
