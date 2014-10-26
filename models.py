@@ -174,6 +174,7 @@ class User(object):
         passwd = pbkdf2_sha512.encrypt(pwd) if pwd else None
         self.pwd = passwd
         cur.execute("UPDATE users SET tier = 1, password = %s, signup_at = now() WHERE uid = %s ", (passwd, self.uid))
+        conn.commit()
         ok = bool(cur.rowcount)
         conn.close()
         if ok:
