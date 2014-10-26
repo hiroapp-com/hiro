@@ -954,7 +954,7 @@ var Hiro = {
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
 				// Get node
-				target = this.getnode(offset,suffix);
+				target = this.getnode(offset,suffix,'patch');
 
 				console.log(delta);
 
@@ -991,14 +991,16 @@ var Hiro = {
 				// Set new value
 				node.textContent = val;
 				// Resize
-				Hiro.canvas.resize();						
+				Hiro.canvas.resize();	
+
+
 
 				// Change textlength and node length
 				this.textlength += changelength;
 				this.textnodes[target[1]] += changelength;				
 
 				// Set new val
-				console.log('chaaaaaaangin',offset,actions)				
+				console.log('chaaaaaaangin',offset,actions,target[1],this.textnodes)				
 			},
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
@@ -1054,7 +1056,7 @@ var Hiro = {
 
 			// Fetch a textnode given an offset from the start and/or end of the full text
 			// Returns an array with the node and it's relative offset
-			getnode: function(offset,suffix) {
+			getnode: function(offset,suffix,source) {
 				var	subnodeoffset, nodes = this.textnodes, subnode, i, l, domnodes, nodecount = 0;
 
 				// Fallback
@@ -1075,11 +1077,12 @@ var Hiro = {
 					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - offset);					
 				} else {
 					// Set initial counter
-					subnodeoffset = nodes[0];					
+					subnodeoffset = nodes[0];	
+
 					// Start with the second node
-					for (i = 1, l = nodes.length; i < l; i++ ) {
+					for (i = 1, l = nodes.length; i < l; i++ ) {					
 						// Jackpot, we found the right one
-						if (offset >= subnodeoffset && suffix >= subnodeoffset && offset <= (subnodeoffset + nodes[i]) && suffix <= (subnodeoffset + nodes[i]) ) {
+						if (offset >= subnodeoffset && offset <= (subnodeoffset + nodes[i]) && (this.textlength - suffix) <= (subnodeoffset + nodes[i]) ) {
 							// Set right subnode
 							subnode = i;
 							// Set the right offset
