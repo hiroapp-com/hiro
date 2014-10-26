@@ -957,11 +957,31 @@ var Hiro = {
 					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - prefix);
 					console.log('offffffffffset',nodes[nodes.length - 1],this.textlength, prefix,subnodeoffset);					
 				} else {
-					// Fallback: Change is unknown or spans multiple textnodes, so we repaint					
+					// Set initial counter
+					subnodeoffset = nodes[0];					
+					// Start with the second node
+					for (i = 1, l = nodes.length; i < l; i++ ) {
+						// Jackpot, we found the right one
+						if (prefix >= subnodeoffset && suffix >= subnodeoffset && prefix <= (subnodeoffset + nodes[i]) && suffix <= (subnodeoffset + nodes[i]) ) {
+							// Set right subnode
+							targetnode = i;
+							// Set the right offset
+							subnodeoffset = prefix - subnodeoffset;
+							// Abort loop
+							break;
+						}
+						// Add node length to counter and iterate to next node
+						subnodeoffset += nodes[i];
+					}					
+				}
+
+				// Fallback: Change is unknown or spans multiple textnodes
+				if (targetnode === undefined) {
+					// Paint from scratch
 					this.paint();
 					// Stop here
-					return;
-				}
+					return;	
+				}							
 
 				// Execute changes
 				this.changenode(targetnode,subnodeoffset,actions)
@@ -1010,54 +1030,6 @@ var Hiro = {
 
 				// Abort if user has no known cursor position
 				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return;
-			},
-
-			// Insert string at pos x
-			// YAY, TODAYS LEGACY, WILL NOT BE USED
-			insert: function(payload,pos) {
-				var nodes = this.textnodes, subnode, subnodeoffset, counter, el, val, i, l;
-
-				// Find the right subnode to update, and the offset within it
-				// See if it's the first one by any chance
-				if (pos <= nodes[0]) {
-					// Yay, we found it
-					subnode = 0;
-					// Offset within this node is the inital offset
-					subnodeoffset = pos;
-				// Let's find the right one	
-				} else {
-					// Set initial counter
-					counter = nodes[0];
-					// Start with the second node
-					for (i = 1, l = nodes.length; i < l; i++ ) {
-						// Jackpot, we found the right one
-						if (pos <= counter) {
-							// Set right subnode
-							subnode = i;
-							// Set the right offset
-							subnodeoffset = pos - counter;
-							// Abort loop
-							break;
-						}
-						// Add node length to counter
-						counter = counter + nodes[i];
-					}
-				}
-
-				// Link to proper textnode
-				el = this.tn()[subnode];
-				val = el.nodeValue;
-
-				// Update textnode
-				Hiro.ui.render(function(){
-					// Set new value
-					el.textContent = val.substring(0,subnodeoffset) + payload + val.substring(subnodeoffset);
-					// Resize
-					Hiro.canvas.resize()					
-				})
-
-				// Set new length value
-				nodes[subnode] += payload.length;
 			},
 
 			// Returns all textnodes in the overlay
