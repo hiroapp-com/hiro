@@ -7,7 +7,8 @@
 	Hiro.canvas: The currently loaded document
 	Hiro.canvas.cache: A collection of values and references that allow fast updates
 	Hiro.canvas.overlay: Rendering links, peer carets etc
-	Hiro.canvas.context: Search and right hand sidebar related functions
+
+	Hiro.context: Search and right hand sidebar related functions
 
 	Hiro.user: User management incl login logout etc
 	Hiro.user.contacts: Contacts including lookup object etc
@@ -541,7 +542,12 @@ var Hiro = {
 
 				// Update overlay if it's a textarea update
 				// TODO Bruno: Move this slightly delayed block below if it degrades writing performance
-				if (id == 'content') Hiro.canvas.overlay.patch(Hiro.sync.diff.delta(old,cache[id]));							
+				if (id == 'content') Hiro.ui.render(function(){
+					// If we have a change to existing contents apply it at next animation frame
+					if (old && cache[id]) Hiro.canvas.overlay.patch(Hiro.sync.diff.delta(old,cache[id]));
+					// Otherwise paint so we properly clean up workspace
+					else Hiro.canvas.overlay.paint();
+				}); 							
 
 				// Kick off write if it't isn't locked
 				if (!lock) {
@@ -912,7 +918,7 @@ var Hiro = {
 				// Paint overlay
 				Hiro.ui.render(function(){
 					// Set text contents, append empty space at end for proper Safari linebreak handling
-					el.textContent = string + ' ';
+					el.textContent = string;
 
 					// Resize
 					Hiro.canvas.resize();
@@ -931,65 +937,29 @@ var Hiro = {
 
 			// Take the standard dmp delta format and apply it across, potentially, multiple DOM nodes
 			patch: function(delta) {
-				var actions = delta.split('	'), prefix, suffix,
-					subnodeoffset,
-					nodes = this.textnodes, targetnode, i, l;
+				var actions = delta.split('	'), prefix, suffix, target, node, offset, val, i, l, changelength = 0;
 
 				// Create trimmings
 				if (actions[0].charAt(0) == '=') prefix = parseInt(actions.shift().slice(1));
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
+				// Get node
+				target = this.getnode(prefix,suffix);
+
 				console.log(delta);
 
-				// Find subnode(s) to operate on
-				// TODO Bruno: Quadruple check for off by one errors etc
-				// Lucky us, change is within the first node or no prefix at all
-				if (!prefix || (suffix && this.textlength - suffix <= nodes[0])) {
-					// Select which node it is
-					targetnode = 0;	
-					// Offset stays same
-					subnodeoffset = prefix || 0;
-				// Hm, maybe it's in the last node
-				} else if (!suffix || (prefix && prefix >= this.textlength - nodes[nodes.length - 1])) {
-					// Choose last text node from array
-					targetnode = nodes.length - 1;
-					// Offset is n chars away from end of 
-					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - prefix);
-					console.log('offffffffffset',nodes[nodes.length - 1],this.textlength, prefix,subnodeoffset);					
-				} else {
-					// Set initial counter
-					subnodeoffset = nodes[0];					
-					// Start with the second node
-					for (i = 1, l = nodes.length; i < l; i++ ) {
-						// Jackpot, we found the right one
-						if (prefix >= subnodeoffset && suffix >= subnodeoffset && prefix <= (subnodeoffset + nodes[i]) && suffix <= (subnodeoffset + nodes[i]) ) {
-							// Set right subnode
-							targetnode = i;
-							// Set the right offset
-							subnodeoffset = prefix - subnodeoffset;
-							// Abort loop
-							break;
-						}
-						// Add node length to counter and iterate to next node
-						subnodeoffset += nodes[i];
-					}					
-				}
-
-				// Fallback: Change is unknown or spans multiple textnodes
-				if (targetnode === undefined) {
+				// We couldn't identify the node, let'S fully repaint
+				if (!target) {
 					// Paint from scratch
 					this.paint();
 					// Stop here
 					return;	
-				}							
+				}	
 
-				// Execute changes
-				this.changenode(targetnode,subnodeoffset,actions)
-			},
-
-			// Change a certain textnodes content
-			changenode: function(node,offset,actions) {
-				var i, l, changelength = 0, el = this.tn()[node], val = el.nodeValue;
+				// Set initial values
+				node = target[0];
+				offset = target[2];				
+				val = node.nodeValue;
 
 				// Iterate through actions
 				for (i = 0, l = actions.length; i < l; i++ ) {
@@ -1008,20 +978,17 @@ var Hiro = {
 					}
 				}
 
-				// Update textnode
-				Hiro.ui.render(function(){
-					// Set new value
-					el.textContent = val;
-					// Resize
-					Hiro.canvas.resize()					
-				})				
+				// Set new value
+				node.textContent = val;
+				// Resize
+				Hiro.canvas.resize();						
 
 				// Change textlength and node length
 				this.textlength += changelength;
-				this.textnodes[node] += changelength;				
+				this.textnodes[target[1]] += changelength;				
 
 				// Set new val
-				console.log('chaaaaaaangin',offset,actions)
+				console.log('chaaaaaaangin',offset,actions)				
 			},
 
 			// Paint the caret of a certain peer at a certain point
@@ -1032,26 +999,77 @@ var Hiro = {
 				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return;
 			},
 
-			// Returns all textnodes in the overlay
-			tn: function() {
-				var nodes = this.el_root.childNodes, textnodes = [], i, l;
+			// Fetch a textnode given an offset from the start and/or end of the full text
+			// Returns an array with the node and it's relative offset
+			getnode: function(prefix,suffix) {
+				var	subnodeoffset, nodes = this.textnodes, subnode, i, l, domnodes, nodecount = 0;
 
-				// Filter all text nodes
-				for (i = 0, l = nodes.length; i < l; i++ ) {
-					if (nodes[i].nodeType == 3) textnodes.push(nodes[i])
+				// Find subnode(s) to operate on
+				// TODO Bruno: Quadruple check for off by one errors etc
+				// Lucky us, change is within the first node or no prefix at all
+				if (!prefix || (suffix && this.textlength - suffix <= nodes[0])) {
+					// Set node to first
+					subnode = 0;	
+					// Offset stays same
+					subnodeoffset = prefix || 0;
+				// Hm, maybe it's in the last node
+				} else if (!suffix || (prefix && prefix >= this.textlength - nodes[nodes.length - 1])) {
+					// Choose last text node from array
+					subnode = nodes.length - 1;
+					// Offset is n chars away from end of 
+					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - prefix);					
+				} else {
+					// Set initial counter
+					subnodeoffset = nodes[0];					
+					// Start with the second node
+					for (i = 1, l = nodes.length; i < l; i++ ) {
+						// Jackpot, we found the right one
+						if (prefix >= subnodeoffset && suffix >= subnodeoffset && prefix <= (subnodeoffset + nodes[i]) && suffix <= (subnodeoffset + nodes[i]) ) {
+							// Set right subnode
+							subnode = i;
+							// Set the right offset
+							subnodeoffset = prefix - subnodeoffset;
+							// Abort loop
+							break;
+						}
+						// Add node length to counter and iterate to next node
+						subnodeoffset += nodes[i];
+					}					
 				}
 
-				// Return results
-				return textnodes;
+				// Abort if we havent't found anything
+				if (subnode === undefined) return false;
+
+				// Fetch all overlay childnodes
+				domnodes = this.el_root.childNodes;
+
+				// Iterate through them
+				for (i = 0, l = domnodes.length; i < l; i++ ) {
+					// Only work with textnodes
+					if (domnodes[i].nodeType == 3) {
+						// If we found the proper node, return it
+						if (nodecount == subnode) return [domnodes[i],subnode,subnodeoffset];
+						// Iterate counter
+						nodecount++;
+					}	
+				}
 			}
-
-		},
-
-		// Context sidebar
-		context: {
-			el_root: document.getElementById('context')
-		} 	
+		}	
 	},
+
+	// "Context Engine" related stuff
+	context: {
+		// DOM Nodes
+		el_root: document.getElementById('context'),
+
+		// Returns array of links found in given string
+		extractlinks: function(string) {
+			var regex = /((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/g;
+			
+			// See if we have a match
+			if (regex.test(string)) return string.match(regex);		
+		}
+	},	
 
 	// All user related stuff
 	user: {
@@ -5584,7 +5602,7 @@ var Hiro = {
 
 				// Change DOM CSS values
 				Hiro.canvas.el_root.style.left = v + 'px';
-				Hiro.canvas.el_root.style.right = Hiro.canvas.context.el_root.style.right = (v*-1)+'px'; 
+				Hiro.canvas.el_root.style.right = Hiro.context.el_root.style.right = (v*-1)+'px'; 
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
