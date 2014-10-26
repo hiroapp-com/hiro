@@ -547,22 +547,21 @@ input.error:focus {
 
 #overlay .flag .name {
   position: absolute;
-  top: -15px;
+  top: -14px;
   font-family: "urbana", sans-serif;
   right: -12px;
   white-space: nowrap;
-  color: #fff;
-  background: #bbb;
+  color: #168012;
+  background: #fff;
   font-size: 11px;
-  padding: 3px 5px 3px 5px;
+  padding: 2px 5px;
   line-height: 11px; 
   border-radius: 3px;
-  border: 1px solid #fff;
+  border: 1px solid #168012;
 }
 
 #overlay .flag .name:after, #overlay .flag .name:before {
   top: 100%;
-  right: 7px;
   border: solid transparent;
   content: " ";
   height: 0;
@@ -572,17 +571,19 @@ input.error:focus {
 }
 
 #overlay .flag .name:before {
-    border-color: rgba(157, 166, 166, 0);
-    border-top-color: #bbb;
-    border-width: 4px;
-    margin-left: -11px;
+    border-color: rgba(22, 128, 18, 0);
+    border-top-color: #168012;
+    border-width: 5px;
+    margin-left: -5px;
+    right: 7px;    
   }    
 
 #overlay .flag .name:after {
     border-color: rgba(255, 255, 255, 0);
-    border-top-color: #bbb;
+    border-top-color: #fff;
     border-width: 4px;
-    margin-left: -10px;
+    margin-left: -4px;
+    right: 8px;
   }
 
 #nicequote {
