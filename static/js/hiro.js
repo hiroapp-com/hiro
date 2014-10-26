@@ -1006,6 +1006,9 @@ var Hiro = {
 			splice: function(node,offset) {
 				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val;
 
+				// Out of bounds, this should only happe when we shorten the text below the cursor pos
+				if (!target) return;
+
 				// Set proper values
 				val = target[0].nodeValue;
 
