@@ -542,12 +542,12 @@ var Hiro = {
 
 				// Update overlay if it's a textarea update
 				// TODO Bruno: Move this slightly delayed block below if it degrades writing performance
-				if (id == 'content') Hiro.ui.render(function(){
+				if (id == 'content') {
 					// If we have a change to existing contents apply it at next animation frame
 					if (old && cache[id]) Hiro.canvas.overlay.patch(Hiro.sync.diff.delta(old,cache[id]));
 					// Otherwise paint so we properly clean up workspace
 					else Hiro.canvas.overlay.paint();
-				}); 							
+				}; 							
 
 				// Kick off write if it't isn't locked
 				if (!lock) {
@@ -947,60 +947,59 @@ var Hiro = {
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
 			patch: function(delta) {
-				var actions = delta.split('	'), offset, suffix, target, node, offset, val, addition, i, l, changelength = 0;
+				var actions = delta.split('	'), offset, suffix, target, node, offset, val, addition, i, l, changelength = 0, that = this;
 
 				// Create trimmings
 				if (actions[0].charAt(0) == '=') offset = parseInt(actions.shift().slice(1));
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
-				// Get node
-				target = this.getnode(offset,suffix);
+				// Wrap in render for performance
+				Hiro.ui.render(function(){
+					// Get node
+					target = that.getnode(offset,suffix);
 
-				// We couldn't identify the node, let'S fully repaint
-				if (!target) {
-					// Paint from scratch
-					this.paint();
-					// Stop here
-					return;	
-				}	
+					// We couldn't identify the node, let's fully repaint
+					if (!target) {
+						// Paint from scratch
+						that.paint();
+						// Stop here
+						return;	
+					}	
 
-				// Set initial values
-				node = target[0];
-				offset = target[2];				
-				val = node.nodeValue;
+					// Set initial values
+					node = target[0];
+					offset = target[2];				
+					val = node.nodeValue;
 
-				// Iterate through actions
-				for (i = 0, l = actions.length; i < l; i++ ) {
-					// Remove something
-					if (actions[i].charAt(0) == '-') {
-						// Parse change length
-						changelength += parseInt(actions[i]);
-						// Build new string
-						val = val.substring(0,offset) + val.substring(offset - changelength);						 
-					// Add a character
-					} else if (actions[i].charAt(0) == '+') {
-						addition = decodeURI(actions[i].substring(1))
-						// Length of addition
-						changelength += addition.length;
-						// Build string
-						val = val.substring(0,offset) + addition + val.substring(offset);
-						// See if it might be a link
-						// if ()						
-					}
-				}
+					// Iterate through actions
+					for (i = 0, l = actions.length; i < l; i++ ) {
+						// Remove something
+						if (actions[i].charAt(0) == '-') {
+							// Parse change length
+							changelength += parseInt(actions[i]);
+							// Build new string
+							val = val.substring(0,offset) + val.substring(offset - changelength);						 
+						// Add a character
+						} else if (actions[i].charAt(0) == '+') {
+							addition = decodeURI(actions[i].substring(1))
+							// Length of addition
+							changelength += addition.length;
+							// Build string
+							val = val.substring(0,offset) + addition + val.substring(offset);
+							// See if it might be a link
+							// if ()						
+						}
+					}					
+					// Set new value
+					node.textContent = val;
 
-				// Set new value
-				node.textContent = val;
+					// Resize
+					Hiro.canvas.resize();
 
-				// Resize
-				Hiro.canvas.resize();	
-
-				// Change textlength and node length
-				this.textlength += changelength;
-				this.textnodes[target[1]] += changelength;			
-
-				// Set new val
-				console.log('chaaaaaaangin',offset,actions,target[1],this.textnodes)				
+					// Change textlength and node length
+					that.textlength += changelength;
+					that.textnodes[target[1]] += changelength;											
+				})							
 			},
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
