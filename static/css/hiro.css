@@ -531,6 +531,51 @@ input.error:focus {
   word-wrap: break-word;  
 }
 
+#overlay .flag {
+  width: 0;
+  display: inline-block;
+  position: relative;
+}
+
+#overlay .flag .name {
+  position: absolute;
+  top: -30px;
+  font-family: "urbana", sans-serif;
+  right: -11px;
+  white-space: nowrap;
+  color: #fff;
+  background: #bbb;
+  font-size: 11px;
+  padding: 2px 5px 2px 5px;
+  line-height: 11px; 
+  border-radius: 3px;
+}
+
+#overlay .flag .name:after, #overlay .flag .name:before {
+  top: 100%;
+  right: 7px;
+  border: solid transparent;
+  content: " ";
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+#overlay .flag .name:before {
+    border-color: rgba(157, 166, 166, 0);
+    border-top-color: #bbb;
+    border-width: 4px;
+    margin-left: -11px;
+  }    
+
+#overlay .flag .name:after {
+    border-color: rgba(255, 255, 255, 0);
+    border-top-color: #bbb;
+    border-width: 4px;
+    margin-left: -10px;
+  }
+
 #nicequote {
   position: absolute;
   z-index: 2030;

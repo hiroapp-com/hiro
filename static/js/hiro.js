@@ -906,7 +906,7 @@ var Hiro = {
 
 			// Generate new overlay
 			paint: function() {
-				var el = this.el_root, fadedirection, string = Hiro.canvas.cache.content, l = string.length;
+				var el = this.el_root, fadedirection, string = Hiro.canvas.cache.content, l = string.length, peers, peernode, i, l;
 
 				// Reset nodes cache and fill it with initial string length
 				this.textnodes.length = 0;
@@ -915,10 +915,20 @@ var Hiro = {
 				// Save initial length
 				this.textlength = l;
 
+				// Get local peers
+				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers');
+
 				// Paint overlay
 				Hiro.ui.render(function(){
-					// Set text contents, append empty space at end for proper Safari linebreak handling
+					// Set text contents, 
+					// TODO Bruno: Re-append empty space at end for proper Safari linebreak handling
 					el.textContent = string;
+
+					// Iterate through peers to set flags
+					for ( i = 0, l = peers.length; i < l; i++ ) {
+						// Render peer
+						Hiro.canvas.overlay.pc(peers[i]);
+					}
 
 					// Resize
 					Hiro.canvas.resize();
@@ -935,16 +945,16 @@ var Hiro = {
 				});
 			},
 
-			// Take the standard dmp delta format and apply it across, potentially, multiple DOM nodes
+			// Take the standard dmp delta format and apply it to a single DOM textnode
 			patch: function(delta) {
-				var actions = delta.split('	'), prefix, suffix, target, node, offset, val, i, l, changelength = 0;
+				var actions = delta.split('	'), offset, suffix, target, node, offset, val, i, l, changelength = 0;
 
 				// Create trimmings
-				if (actions[0].charAt(0) == '=') prefix = parseInt(actions.shift().slice(1));
+				if (actions[0].charAt(0) == '=') offset = parseInt(actions.shift().slice(1));
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
 				// Get node
-				target = this.getnode(prefix,suffix);
+				target = this.getnode(offset,suffix);
 
 				console.log(delta);
 
@@ -991,44 +1001,89 @@ var Hiro = {
 				console.log('chaaaaaaangin',offset,actions)				
 			},
 
+			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
+			splice: function(node,offset) {
+				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val;
+
+				// Set proper values
+				val = target[0].nodeValue;
+
+				// Make offset relative
+				offset = target[2];
+
+				// Create new split textnodes
+				before = document.createTextNode(val.substring(0,offset));
+				after = document.createTextNode(val.substring(offset));
+
+				// Append elements
+				fragment.appendChild(before);
+				fragment.appendChild(node);				
+				fragment.appendChild(after);	
+				Hiro.ui.render(function(){
+					// Replace old textnode with new fragment
+					target[0].parentNode.replaceChild(fragment,target[0])
+				})
+
+				// Replace one internal value with two new ones
+				this.textnodes.splice(target[1],1,offset, val.length - offset);
+			},
+
 			// Paint the caret of a certain peer at a certain point
 			pc: function(peer) {
-				var cursor = peer.cursor_pos;
+				var cursor = peer.cursor_pos, contact, el, el_name;
 
 				// Abort if user has no known cursor position
-				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return;
+				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;
+
+				// Try fetching contact
+				contact = Hiro.user.contacts.lookup[peer.user.uid];
+
+				// Create basic div
+				el = document.createElement('div');
+				el.className = 'flag';
+
+				// Create & append name part
+				el_name = document.createElement('div');
+				el_name.className = 'name';
+				el_name.textContent = ((contact) ? contact.name || contact.email || contact.phone : '') || 'Anonymous';
+				el.appendChild(el_name);
+
+				// Append it	
+				this.splice(el,cursor);
 			},
 
 			// Fetch a textnode given an offset from the start and/or end of the full text
 			// Returns an array with the node and it's relative offset
-			getnode: function(prefix,suffix) {
+			getnode: function(offset,suffix) {
 				var	subnodeoffset, nodes = this.textnodes, subnode, i, l, domnodes, nodecount = 0;
 
+				// Fallback
+				suffix = suffix || this.textlength - offset || 0;
+
 				// Find subnode(s) to operate on
-				// TODO Bruno: Quadruple check for off by one errors etc
-				// Lucky us, change is within the first node or no prefix at all
-				if (!prefix || (suffix && this.textlength - suffix <= nodes[0])) {
+				// Lucky us, change is within the first node
+				if (this.textlength - suffix <= nodes[0]) {
 					// Set node to first
 					subnode = 0;	
 					// Offset stays same
-					subnodeoffset = prefix || 0;
+					subnodeoffset = offset || 0;
 				// Hm, maybe it's in the last node
-				} else if (!suffix || (prefix && prefix >= this.textlength - nodes[nodes.length - 1])) {
+				} else if (offset >= this.textlength - nodes[nodes.length - 1]) {
 					// Choose last text node from array
 					subnode = nodes.length - 1;
 					// Offset is n chars away from end of 
-					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - prefix);					
+					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - offset);					
 				} else {
 					// Set initial counter
 					subnodeoffset = nodes[0];					
 					// Start with the second node
 					for (i = 1, l = nodes.length; i < l; i++ ) {
 						// Jackpot, we found the right one
-						if (prefix >= subnodeoffset && suffix >= subnodeoffset && prefix <= (subnodeoffset + nodes[i]) && suffix <= (subnodeoffset + nodes[i]) ) {
+						if (offset >= subnodeoffset && suffix >= subnodeoffset && offset <= (subnodeoffset + nodes[i]) && suffix <= (subnodeoffset + nodes[i]) ) {
 							// Set right subnode
 							subnode = i;
 							// Set the right offset
-							subnodeoffset = prefix - subnodeoffset;
+							subnodeoffset = offset - subnodeoffset;
 							// Abort loop
 							break;
 						}
