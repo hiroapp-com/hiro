@@ -947,7 +947,9 @@ var Hiro = {
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
 			patch: function(delta) {
-				var actions = delta.split('	'), offset, suffix, target, node, offset, val, addition, i, l, changelength = 0, that = this;
+				var actions = delta.split('	'), offset, localoffset, suffix, target, node, offset, 
+				val, addition, i, l, changelength = 0, 
+				links, that = this;
 
 				// Create trimmings
 				if (actions[0].charAt(0) == '=') offset = parseInt(actions.shift().slice(1));
@@ -968,7 +970,7 @@ var Hiro = {
 
 					// Set initial values
 					node = target[0];
-					offset = target[2];				
+					localoffset = target[2];				
 					val = node.nodeValue;
 
 					// Iterate through actions
@@ -978,16 +980,16 @@ var Hiro = {
 							// Parse change length
 							changelength += parseInt(actions[i]);
 							// Build new string
-							val = val.substring(0,offset) + val.substring(offset - changelength);						 
+							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);						 
 						// Add a character
 						} else if (actions[i].charAt(0) == '+') {
 							addition = decodeURI(actions[i].substring(1))
 							// Length of addition
 							changelength += addition.length;
 							// Build string
-							val = val.substring(0,offset) + addition + val.substring(offset);
+							val = val.substring(0,localoffset) + addition + val.substring(localoffset);
 							// See if it might be a link
-							// if ()						
+							if (addition.length > 4 || /\s/.test(addition)) links = Hiro.context.extractlinks(val);						
 						}
 					}					
 					// Set new value
@@ -996,10 +998,46 @@ var Hiro = {
 					// Resize
 					Hiro.canvas.resize();
 
+					// Process links
+					if (links) {
+						// Iterate through array
+						for (i = 0, l = links.length; i < l; i++ ) {
+							// Execute wrapper
+							that.wrap('a',undefined,offset - localoffset + val.indexOf(links[i]),links[i].length);
+						}						
+					}
+
 					// Change textlength and node length
 					that.textlength += changelength;
 					that.textnodes[target[1]] += changelength;											
 				})							
+			},
+
+			// Wrap a Range in a DOM element, for now this only works within a single text node
+			wrap: function(tag,action,start,length) {
+				var range = document.createRange(), startnode, endnode, el, initallength;
+
+				// Get nodes
+				startnode = this.getnode(start);
+				endnode = this.getnode(start + length);
+
+				// Copy values 
+				initallength = startnode[0].nodeValue.length;
+
+				// Set range
+				range.setStart(startnode[0],startnode[2]);
+				range.setEnd(endnode[0],endnode[2]);	
+
+				// Build element
+				el = document.createElement(tag);			
+
+				// Same node?
+				if (startnode[0] == endnode[0]) {
+					// Simply use surroundcontent
+					range.surroundContents(el);
+					// Update internal values by splitting into three right away
+					this.textnodes.splice(startnode[1],1,startnode[2],length,initallength - endnode[2]);					
+				}
 			},
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
@@ -1028,7 +1066,7 @@ var Hiro = {
 				target[0].parentNode.replaceChild(fragment,target[0])
 
 				// Replace one internal value with two new ones
-				this.textnodes.splice(target[1],1,offset, val.length - offset);
+				this.textnodes.splice(target[1],1,offset,val.length - offset);
 			},
 
 			// Paint the caret of a certain peer at a certain point
@@ -1057,7 +1095,7 @@ var Hiro = {
 
 			// Fetch a textnode given an offset from the start and/or end of the full text
 			// Returns an array with the node and it's relative offset
-			getnode: function(offset,suffix,source) {
+			getnode: function(offset,suffix) {
 				var	subnodeoffset, nodes = this.textnodes, subnode, i, l, domnodes, nodecount = 0;
 
 				// Fallback
@@ -1095,6 +1133,8 @@ var Hiro = {
 						subnodeoffset += nodes[i];
 					}					
 				}
+
+				console.log('trying to find node for pos ' + offset,subnode)
 
 				// Abort if we havent't found anything
 				if (subnode === undefined) return false;
