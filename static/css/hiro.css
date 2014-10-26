@@ -511,7 +511,7 @@ input.error:focus {
 
 #canvas textarea {
   position: relative;  
-  color: rgba(0,0,0,0.8); 
+  color: rgba(0,0,0,0.4); 
   padding: 127px 395px 30px 96px;   
   background-color: transparent; 
   overflow-y: auto;
@@ -524,7 +524,7 @@ input.error:focus {
   position: absolute;
   background-color: #fff;
   padding: 127px 395px 80px 96px;   
-  color: red;
+  color: #333;
   z-index: 2009;
   white-space: pre-wrap;
   word-break: break-word;
@@ -532,11 +532,11 @@ input.error:focus {
 }
 
 #overlay a {
-  border: 1px solid #369;
-  border-radius: 5px;
+  border: 1px solid #94B2CF;
+  border-radius: 4px;
   padding: 3px 5px 0px 5px;
   margin: 0 -6px;
-  background: #DAE9F8;
+  background: #F2F5F8;
 }
 
 #overlay .flag {
@@ -575,7 +575,7 @@ input.error:focus {
     border-top-color: #168012;
     border-width: 5px;
     margin-left: -5px;
-    right: 7px;    
+    right: 5px;    
   }    
 
 #overlay .flag .name:after {
@@ -583,7 +583,7 @@ input.error:focus {
     border-top-color: #fff;
     border-width: 4px;
     margin-left: -4px;
-    right: 8px;
+    right: 6px;
   }
 
 #nicequote {
