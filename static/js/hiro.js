@@ -3934,6 +3934,8 @@ var Hiro = {
 								Hiro.apps.sharing.getpeer(obj,store.id).cursor_pos = ops[j].value;
 								// Also set shortcut value if it's us
 								if (ops[j].path.split(':')[1] == Hiro.data.get('profile','c.uid')) store._cursor = ops[j].value;
+								// Repaint overlay
+								Hiro.canvas.overlay.paint();
 							// Call swap user
 							} else if (ops[j].op == 'swap-user') {
 								Hiro.apps.sharing.swappeer(obj,store.id,ops[j].value,true);	
