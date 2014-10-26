@@ -907,7 +907,7 @@ var Hiro = {
 				this.textnodes.push(l);
 
 				// Save initial length
-				textlength = l;
+				this.textlength = l;
 
 				// Paint overlay
 				Hiro.ui.render(function(){
@@ -943,18 +943,19 @@ var Hiro = {
 
 				// Find subnode(s) to operate on
 				// TODO Bruno: Quadruple check for off by one errors etc
-				// Lucky us, change is in first node
-				if (suffix && this.textlength - suffix <= nodes[0]) {
+				// Lucky us, change is within the first node or no prefix at all
+				if (!prefix || (suffix && this.textlength - suffix <= nodes[0])) {
 					// Select which node it is
 					targetnode = 0;	
 					// Offset stays same
-					subnodeoffset = prefix;
+					subnodeoffset = prefix || 0;
 				// Hm, maybe it's in the last node
-				} else if (prefix && prefix >= this.textlength - nodes[nodes.length - 1]) {
+				} else if (!suffix || (prefix && prefix >= this.textlength - nodes[nodes.length - 1])) {
 					// Choose last text node from array
 					targetnode = nodes.length - 1;
 					// Offset is n chars away from end of 
 					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - prefix);
+					console.log('offffffffffset',nodes[nodes.length - 1],this.textlength, prefix,subnodeoffset);					
 				} else {
 					// Fallback: Change is unknown or spans multiple textnodes, so we repaint					
 					this.paint();
@@ -968,32 +969,29 @@ var Hiro = {
 
 			// Change a certain textnodes content
 			changenode: function(node,offset,actions) {
-				var i, l, cmd, changelength = 0, el = this.tn()[node], val = el.nodeValue, newval;
+				var i, l, changelength = 0, el = this.tn()[node], val = el.nodeValue;
 
 				// Iterate through actions
 				for (i = 0, l = actions.length; i < l; i++ ) {
-					// Get & remove leading char indicating action (+ or -)
-					cmd = actions[i].charAt(0);
-
 					// Remove something
-					if (cmd == '-') {
+					if (actions[i].charAt(0) == '-') {
 						// Parse change length
 						changelength += parseInt(actions[i]);
 						// Build new string
-						newval =  val.substring(0,offset) + val.substring(offset - changelength);						 
+						val = val.substring(0,offset) + val.substring(offset - changelength);						 
 					// Add a character
-					} else if (cmd == '+') {
+					} else if (actions[i].charAt(0) == '+') {
 						// Length of addition
 						changelength += actions[i].length - 1;
 						// Build string
-						newval = val.substring(0,offset) + decodeURI(actions[i].substring(1)) + val.substring(offset);
+						val = val.substring(0,offset) + decodeURI(actions[i].substring(1)) + val.substring(offset);
 					}
 				}
 
 				// Update textnode
 				Hiro.ui.render(function(){
 					// Set new value
-					el.textContent = newval;
+					el.textContent = val;
 					// Resize
 					Hiro.canvas.resize()					
 				})				
