@@ -498,7 +498,7 @@ input.error:focus {
     outline: none;
 }
 
-#canvas textarea, #canvas pre {   
+#canvas textarea, #overlay {   
   margin: 0;
   font-family: "ff-meta-serif-web-pro",serif;
   font-weight: 500;
@@ -519,7 +519,7 @@ input.error:focus {
   z-index: 2010;     
 }
 
-#canvas pre { 
+#overlay { 
   top: 0;
   position: absolute;
   background-color: #fff;
@@ -586,7 +586,7 @@ input.error:focus {
     -webkit-overflow-scrolling: touch; 
   } 
 
-  #canvas pre { 
+  #overlay { 
     display: none;
   }  
 
@@ -609,7 +609,7 @@ input.error:focus {
     border: 0;
   }  
 
-  #canvas pre {
+  #overlay {
     padding: 98px 70px 80px 70px;
     line-height: 30px;
   }  
@@ -2034,7 +2034,7 @@ body#landingPage2 .l_footer .l_box .l_header {
   color: #333; 
 }
 
-#canvas pre {
+#overlay {
   padding: 40mm 10% 10mm 10%;
   color: #333;
 }

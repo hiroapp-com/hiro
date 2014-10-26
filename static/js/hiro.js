@@ -253,7 +253,7 @@ var Hiro = {
 
 			t = document.createElement('span');
 			t.className = 'notetitle';
-			t.innerText = title;
+			t.textContent = title;
 
 			stats = document.createElement('small');	
 
@@ -324,7 +324,7 @@ var Hiro = {
 				// Show that document has unseen updates
 				sn = document.createElement('div');
 				sn.className = "bubble red";
-				sn.innerText = '*';
+				sn.textContent = '*';
 				link.appendChild(sn);		
 
 				// Iterate counter for our bubble
@@ -470,12 +470,12 @@ var Hiro = {
 			if (this.archiveopen) {
 				this.el_notelist.style.display = 'block';
 				this.el_archivelist.style.display = 'none';
-				this.el_archivelink.innerText = 'Archive  ' + c;
+				this.el_archivelink.textContent = 'Archive  ' + c;
 				this.archiveopen = false;
 			} else {
 				this.el_notelist.style.display = 'none';
 				this.el_archivelist.style.display = 'block';
-				this.el_archivelink.innerText = 'Close Archive'
+				this.el_archivelink.textContent = 'Close Archive'
 				this.archiveopen = true;
 			}	
 		}			
@@ -518,7 +518,7 @@ var Hiro = {
 
 		// Poor man FRP stream
 		keystream: function(event) {
-			var t = event.target || event.srcElement; cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = t.id;			
+			var t = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = t.id, old;			
 
 			// Only listen to title & content
 			if (id != 'title' && id != 'content') return;
@@ -528,6 +528,9 @@ var Hiro = {
 
 			// Check cache if values changed
 			if (cache[id] != t.value) {
+				// Get old value for diff
+				old = cache[id];
+
 				// (Re)set cache values
 				cache[id] = t.value;
 				cache._changed = true;
@@ -536,8 +539,9 @@ var Hiro = {
 				// Reset document title
 				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );
 
-				// Reset overlay if it's a text update
-				if (id == 'content') Hiro.canvas.overlay.paint(t.value);									
+				// Update overlay if it's a textarea update
+				// TODO Bruno: Move this slightly delayed block below if it degrades writing performance
+				if (id == 'content') Hiro.canvas.overlay.patch(Hiro.sync.diff.delta(old,cache[id]));							
 
 				// Kick off write if it't isn't locked
 				if (!lock) {
@@ -777,7 +781,7 @@ var Hiro = {
 				if (Hiro.canvas.el_text.value != c.content) Hiro.canvas.el_text.value = c.content;	
 
 				// Render overlay
-				Hiro.canvas.overlay.paint(c.content);
+				Hiro.canvas.overlay.paint();
 
 				// Set cursor (this should not fire on mobiles as it's called from a new requestanimationframe stack)
 				if (setcursor) Hiro.canvas.setcursor();																		
@@ -888,32 +892,187 @@ var Hiro = {
 		// Overlay (clickable URLs, peer carets etc) 
 		overlay: {
 			// DOM Nodes
-			el_root: document.getElementById('overlay'),				
+			el_root: document.getElementById('overlay'),	
 
-			// Geerate new overlay
-			paint: function(string) {
-				var el = this.el_root, d;
+			// Cache
+			textnodes: [],
+			textlength: 0,
+
+			// Generate new overlay
+			paint: function() {
+				var el = this.el_root, fadedirection, string = Hiro.canvas.cache.content, l = string.length;
+
+				// Reset nodes cache and fill it with initial string length
+				this.textnodes.length = 0;
+				this.textnodes.push(l);
+
+				// Save initial length
+				textlength = l;
 
 				// Paint overlay
 				Hiro.ui.render(function(){
-					// Set text contents
-					el.innerText = string + ' ';
+					// Set text contents, append empty space at end for proper Safari linebreak handling
+					el.textContent = string + ' ';
 
 					// Resize
 					Hiro.canvas.resize();
 
 					// Switch quote on/off based on user actions
 					if ((string.length > 0 && Hiro.canvas.quoteshown) || (string.length == 0 && !Hiro.canvas.quoteshown)) {
-						d = (Hiro.canvas.quoteshown) ? -1 : 1;
-						Hiro.ui.fade(Hiro.canvas.el_quote,d,450);
+						fadedirection = (Hiro.canvas.quoteshown) ? -1 : 1;
+						Hiro.ui.fade(Hiro.canvas.el_quote,fadedirection,450);
 						Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
-					} 						
+					}
+
+					// Log
+					console.log('Overlay repainted from scratch.') 						
 				});
 			},
 
-			// Insert string at pos x
-			insert: function() {
+			// Take the standard dmp delta format and apply it across, potentially, multiple DOM nodes
+			patch: function(delta) {
+				var actions = delta.split('	'), prefix, suffix,
+					subnodeoffset,
+					nodes = this.textnodes, targetnode, i, l;
 
+				// Create trimmings
+				if (actions[0].charAt(0) == '=') prefix = parseInt(actions.shift().slice(1));
+				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
+
+				console.log(delta);
+
+				// Find subnode(s) to operate on
+				// TODO Bruno: Quadruple check for off by one errors etc
+				// Lucky us, change is in first node
+				if (suffix && this.textlength - suffix <= nodes[0]) {
+					// Select which node it is
+					targetnode = 0;	
+					// Offset stays same
+					subnodeoffset = prefix;
+				// Hm, maybe it's in the last node
+				} else if (prefix && prefix >= this.textlength - nodes[nodes.length - 1]) {
+					// Choose last text node from array
+					targetnode = nodes.length - 1;
+					// Offset is n chars away from end of 
+					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - prefix);
+				} else {
+					// Fallback: Change is unknown or spans multiple textnodes, so we repaint					
+					this.paint();
+					// Stop here
+					return;
+				}
+
+				// Execute changes
+				this.changenode(targetnode,subnodeoffset,actions)
+			},
+
+			// Change a certain textnodes content
+			changenode: function(node,offset,actions) {
+				var i, l, cmd, changelength = 0, el = this.tn()[node], val = el.nodeValue, newval;
+
+				// Iterate through actions
+				for (i = 0, l = actions.length; i < l; i++ ) {
+					// Get & remove leading char indicating action (+ or -)
+					cmd = actions[i].charAt(0);
+
+					// Remove something
+					if (cmd == '-') {
+						// Parse change length
+						changelength += parseInt(actions[i]);
+						// Build new string
+						newval =  val.substring(0,offset) + val.substring(offset - changelength);						 
+					// Add a character
+					} else if (cmd == '+') {
+						// Length of addition
+						changelength += actions[i].length - 1;
+						// Build string
+						newval = val.substring(0,offset) + decodeURI(actions[i].substring(1)) + val.substring(offset);
+					}
+				}
+
+				// Update textnode
+				Hiro.ui.render(function(){
+					// Set new value
+					el.textContent = newval;
+					// Resize
+					Hiro.canvas.resize()					
+				})				
+
+				// Change textlength and node length
+				this.textlength += changelength;
+				this.textnodes[node] += changelength;				
+
+				// Set new val
+				console.log('chaaaaaaangin',offset,actions)
+			},
+
+			// Paint the caret of a certain peer at a certain point
+			pc: function(peer) {
+				var cursor = peer.cursor_pos;
+
+				// Abort if user has no known cursor position
+				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return;
+			},
+
+			// Insert string at pos x
+			// YAY, TODAYS LEGACY, WILL NOT BE USED
+			insert: function(payload,pos) {
+				var nodes = this.textnodes, subnode, subnodeoffset, counter, el, val, i, l;
+
+				// Find the right subnode to update, and the offset within it
+				// See if it's the first one by any chance
+				if (pos <= nodes[0]) {
+					// Yay, we found it
+					subnode = 0;
+					// Offset within this node is the inital offset
+					subnodeoffset = pos;
+				// Let's find the right one	
+				} else {
+					// Set initial counter
+					counter = nodes[0];
+					// Start with the second node
+					for (i = 1, l = nodes.length; i < l; i++ ) {
+						// Jackpot, we found the right one
+						if (pos <= counter) {
+							// Set right subnode
+							subnode = i;
+							// Set the right offset
+							subnodeoffset = pos - counter;
+							// Abort loop
+							break;
+						}
+						// Add node length to counter
+						counter = counter + nodes[i];
+					}
+				}
+
+				// Link to proper textnode
+				el = this.tn()[subnode];
+				val = el.nodeValue;
+
+				// Update textnode
+				Hiro.ui.render(function(){
+					// Set new value
+					el.textContent = val.substring(0,subnodeoffset) + payload + val.substring(subnodeoffset);
+					// Resize
+					Hiro.canvas.resize()					
+				})
+
+				// Set new length value
+				nodes[subnode] += payload.length;
+			},
+
+			// Returns all textnodes in the overlay
+			tn: function() {
+				var nodes = this.el_root.childNodes, textnodes = [], i, l;
+
+				// Filter all text nodes
+				for (i = 0, l = nodes.length; i < l; i++ ) {
+					if (nodes[i].nodeType == 3) textnodes.push(nodes[i])
+				}
+
+				// Return results
+				return textnodes;
 			}
 
 		},
@@ -960,12 +1119,12 @@ var Hiro = {
 				// Bit redundant but cleaner UX this way
 				if (!v[1].value) {
                 	v[1].className += ' error';
-                	v[1].nextSibling.innerText = "Your password";
+                	v[1].nextSibling.textContent = "Your password";
                 	v[1].focus();					
 				}	
 				if (!parse) {
                 	v[0].className += ' error';
-                	v[0].nextSibling.innerText = "Your Email or Phone #";
+                	v[0].nextSibling.textContent = "Your Email or Phone #";
                 	v[0].focus();					
 				}				
 				// Abort here
@@ -978,7 +1137,7 @@ var Hiro = {
 
 			// Letttsssss gooo
 			this.authinprogress = true;				
-			b.innerText = (login) ? 'Logging in...' : 'Signing Up...';
+			b.textContent = (login) ? 'Logging in...' : 'Signing Up...';
 
 			// Begin loading bar
 			Hiro.ui.hprogress.begin();	
@@ -1009,7 +1168,7 @@ var Hiro = {
 				},
 				error: function(req,data) {		
 					// Reset DOM & flag	
-	                b.innerText = (login) ? 'Log-In' : 'Create Account';
+	                b.textContent = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;
 
 					// End loading bar in error
@@ -1017,18 +1176,18 @@ var Hiro = {
 
 	                // Show error						
 					if (req.status==500) {
-						e.innerText = "Something went wrong, please try again.";
+						e.textContent = "Something went wrong, please try again.";
 						Hiro.sys.error('Auth server error for ' + payload.email,req);							
 						return;
 					}
 	                if (data.email) {
 	                	v[0].className += ' error';
-	                	v[0].nextSibling.innerText = data.email;
+	                	v[0].nextSibling.textContent = data.email;
 	                	v[0].focus();
 	                }	
 	                if (data.password) {
 	                	v[1].className += ' error';	                    	
-	                	v[1].nextSibling.innerText = data.password;  
+	                	v[1].nextSibling.textContent = data.password;  
 	                	v[1].focus();	                	
 	                }	                 		                    						                    
 				}										
@@ -1049,7 +1208,7 @@ var Hiro = {
 			Hiro.ui.hprogress.begin();				
 
 			// Set UI
-			button.innerText = 'Connecting...';
+			button.textContent = 'Connecting...';
 
 			// Send action to FB
 			// TODO Bruno: See if new all.js supports mobiles better or if we still have to redirect to window.location = '/connect/facebook?next=/';
@@ -1118,13 +1277,13 @@ var Hiro = {
 				error: function(reason,data) {
 					// We screwed up
 					if (reason == 'backend') {
-						e.innerText = 'Hiro not available, please try again later.';	
-						button.innerText = 'Try again';	
+						e.textContent = 'Hiro not available, please try again later.';	
+						button.textContent = 'Try again';	
 						Hiro.sys.error('Facebook login failed on our side',data);
 					// FB not available or user offline										
 					} else if (reason == 'sourceoffline') {
-						e.innerText = 'Facebook not available, please try later.';	
-						button.innerText = 'Try again';	
+						e.textContent = 'Facebook not available, please try later.';	
+						button.textContent = 'Try again';	
 					// User aborted											
 					} else {
 						button.innerHTML = ((login) ? 'Log-In' : 'Sign-Up') + ' with <b>Facebook</b>';	
@@ -1184,7 +1343,7 @@ var Hiro = {
 				// Show error & refocus
 				input.className += ' error';
 				input.focus();
-				e.innerText = "Please enter your mail or phone and click 'Reset password' again";
+				e.textContent = "Please enter your mail or phone and click 'Reset password' again";
 				return;
 			}	
 
@@ -1199,11 +1358,11 @@ var Hiro = {
 	            payload: JSON.stringify(payload),
 				success: function(req,data) {
 					// Show message
-	                e.innerText = "Success, check your " + parse[0] + " to continue.";										                    
+	                e.textContent = "Success, check your " + parse[0] + " to continue.";										                    
 				},
 				error: function(req,data) {		
 					// Reset DOM & flag	
-	               	e.innerText = "Please try again.";	                 		                    						                    
+	               	e.textContent = "Please try again.";	                 		                    						                    
 				}
 			});	
 		},	
@@ -1216,23 +1375,23 @@ var Hiro = {
 				button = root.getElementsByClassName('hirobutton')[0];
 
 			// Clear error first
-			error.innerText = '';	
+			error.textContent = '';	
 
 			console.log(inputs[0].value);
 
 			// No passwords at all provided
 			if (!inputs[0].value && !inputs[1].value) {
-				error.innerText = 'Please choose a new password';
-				button.innerText = 'Try again';
+				error.textContent = 'Please choose a new password';
+				button.textContent = 'Try again';
 				inputs[0].focus();
 			// String mismatch	
 			} else if (inputs[0].value != inputs[1].value) {
-				error.innerText = 'Passwords do not match';
-				button.innerText = 'Try again';
+				error.textContent = 'Passwords do not match';
+				button.textContent = 'Try again';
 				inputs[1].focus();				
 			// Yay, new password have	
 			} else {
-				button.innerText = 'Changing password...';
+				button.textContent = 'Changing password...';
 				//TODO Bruno: Post this properly...
 			}
 				
@@ -1505,7 +1664,7 @@ var Hiro = {
 					root.getElementsByTagName('input')[0].setAttribute('title',tip);
 
 					// Set button description
-					root.getElementsByClassName('hirobutton').innerText = action;
+					root.getElementsByClassName('hirobutton').textContent = action;
 
 					// Switch view
 					Hiro.ui.switchview(document.getElementById('s_checkout'));
@@ -1542,7 +1701,7 @@ var Hiro = {
 				me = form.getElementsByClassName('mainerror')[0];
 
 				// Show user whats going on
-				button.innerText = 'Validating...';					
+				button.textContent = 'Validating...';					
 
 				// Build subscription object
 				subscription = {};
@@ -1566,17 +1725,17 @@ var Hiro = {
 
 						// Add error message for number
 						if (response.error.param == 'number') {							
-							fields[1].nextSibling.innerText = response.error.message;
+							fields[1].nextSibling.textContent = response.error.message;
 							fields[1].nextSibling.className += ' error';
 
 						// Or all other errors to generic field											
 						} else if (me) {
-							me.innerText = response.error.message;							
+							me.textContent = response.error.message;							
 						}
 
 						// Reset
 						Hiro.user.checkout.active = false;
-						button.innerText = "Try again";
+						button.textContent = "Try again";
 
 						// Log & return
 						Hiro.sys.error('CC check gone wrong, Stripe sez:',response);							
@@ -1599,7 +1758,7 @@ var Hiro = {
 			                    // Show "Thank you!" dialog
 			                    Hiro.ui.dialog.showmessage('upgrade')	
 								// Clean up form 
-								button.innerText = 'Upgrade';	
+								button.textContent = 'Upgrade';	
 								// Log respective event
 								Hiro.user.track.logevent('Upgraded!',{
 									upgrade_date: Math.round(new Date() / 1000),
@@ -1616,8 +1775,8 @@ var Hiro = {
 			                	Hiro.sys.error('Checkout went wrong on our side: ', data);		
 			                	// Reset and show
 			                    Hiro.user.checkout.active = false;
-			                    me.innerText = data.error || "Hiro wasn't available, please try again a little bit later";
-								button.innerText = "Try again";			                    				                	                	
+			                    me.textContent = data.error || "Hiro wasn't available, please try again a little bit later";
+								button.textContent = "Try again";			                    				                	                	
 			                }					
 						});														
 					}								
@@ -1635,7 +1794,7 @@ var Hiro = {
 
 				// Get box & render button content
 				button = root.getElementsByClassName(tier)[0].getElementsByClassName('light')[0];
-				button.innerText = 'Downgrading...';
+				button.textContent = 'Downgrading...';
 
 				// Build subscription object
 				subscription.plan = this.plans[tier];		
@@ -2204,7 +2363,7 @@ var Hiro = {
 					counter.style.display = (onlyus) ? 'none' : 'block';
 
 					// Add one if we had a dummy us
-					counter.innerText = ( (!us) ? peers.length + 1 : peers.length ).toString();						
+					counter.textContent = ( (!us) ? peers.length + 1 : peers.length ).toString();						
 
 					// Add dummy user for ourselves (if doc was created offline and not synced yet)
 					if (!us) us = { role: 'owner'};						
@@ -2286,7 +2445,7 @@ var Hiro = {
 				// Add user name span
 				n = document.createElement('span');
 				n.className = (peer.user && parseInt(peer.user.tier) == -1) ? 'name invited' : 'name';
-				n.innerText = text || 'Anonymous';
+				n.textContent = text || 'Anonymous';
 				d.appendChild(n)
 
 				// Return object
@@ -2852,7 +3011,6 @@ var Hiro = {
 				if (f[i].nid.length == 4) {
 					// Fetch note
 					note = this.get('note_' + f[i].nid,'c');
-					console.log(newfoliolength,f.length);
 
 					// Keep unsynced notes that have distinctive values, or if we'd remove the very last
 					if ((newfoliolength == 0 && f.length == 1) || (note.text || note.title || note.peers.length > 0))  continue;
@@ -3058,8 +3216,10 @@ var Hiro = {
 					var notes = [], i , l = localStorage.length, k;
 
 					for (i = 0; i < l; i++ ) {
+						// save key
 						k = localStorage.key(i);
-						if (k.substring(0,10) == 'Hiro.note_') notes.push(JSON.parse(localStorage.getItem(k)));
+						// Add notes to array, but not backups
+						if (k.substring(0,10) == 'Hiro.note_' && k.substring(20) != '.backup') notes.push(JSON.parse(localStorage.getItem(k)));
 					}
 					return notes;					
 				}
@@ -6072,8 +6232,8 @@ var Hiro = {
 				if (obj.button) {
 					// Show it first
 					button.style.display = 'block'
-					// Set innertext
-					button.innerText = obj.button.label;
+					// Set textContent
+					button.textContent = obj.button.label;
 					// Set action attribute
 					action = obj.button.action;
 				// Just hide the button
@@ -6275,7 +6435,7 @@ var Hiro = {
 							Hiro.user.setname(el.value,false,true);												
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
-							target.innerText = 'Saved!';
+							target.textContent = 'Saved!';
 							break;	
 						case 'checkout':
 							// Calls teh checkout
@@ -6338,7 +6498,7 @@ var Hiro = {
 					case 'name':		
 						if (t.value != name) {
 							t.nextSibling.style.display = 'block';
-							t.nextSibling.firstChild.innerText = 'Save changes';
+							t.nextSibling.firstChild.textContent = 'Save changes';
 						} else {
 							t.nextSibling.style.display = 'none';							
 						}
