@@ -539,7 +539,7 @@ input.error:focus {
 
 #overlay .flag .name {
   position: absolute;
-  top: -16px;
+  top: -15px;
   font-family: "urbana", sans-serif;
   right: -12px;
   white-space: nowrap;

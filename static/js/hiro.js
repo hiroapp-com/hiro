@@ -947,16 +947,14 @@ var Hiro = {
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
 			patch: function(delta) {
-				var actions = delta.split('	'), offset, suffix, target, node, offset, val, i, l, changelength = 0;
+				var actions = delta.split('	'), offset, suffix, target, node, offset, val, addition, i, l, changelength = 0;
 
 				// Create trimmings
 				if (actions[0].charAt(0) == '=') offset = parseInt(actions.shift().slice(1));
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
 				// Get node
-				target = this.getnode(offset,suffix,'patch');
-
-				console.log(delta);
+				target = this.getnode(offset,suffix);
 
 				// We couldn't identify the node, let'S fully repaint
 				if (!target) {
@@ -981,23 +979,25 @@ var Hiro = {
 						val = val.substring(0,offset) + val.substring(offset - changelength);						 
 					// Add a character
 					} else if (actions[i].charAt(0) == '+') {
+						addition = decodeURI(actions[i].substring(1))
 						// Length of addition
-						changelength += actions[i].length - 1;
+						changelength += addition.length;
 						// Build string
-						val = val.substring(0,offset) + decodeURI(actions[i].substring(1)) + val.substring(offset);
+						val = val.substring(0,offset) + addition + val.substring(offset);
+						// See if it might be a link
+						// if ()						
 					}
 				}
 
 				// Set new value
 				node.textContent = val;
+
 				// Resize
 				Hiro.canvas.resize();	
 
-
-
 				// Change textlength and node length
 				this.textlength += changelength;
-				this.textnodes[target[1]] += changelength;				
+				this.textnodes[target[1]] += changelength;			
 
 				// Set new val
 				console.log('chaaaaaaangin',offset,actions,target[1],this.textnodes)				
@@ -1021,10 +1021,9 @@ var Hiro = {
 				fragment.appendChild(before);
 				fragment.appendChild(node);				
 				fragment.appendChild(after);	
-				Hiro.ui.render(function(){
-					// Replace old textnode with new fragment
-					target[0].parentNode.replaceChild(fragment,target[0])
-				})
+
+				// Replace old textnode with new fragment
+				target[0].parentNode.replaceChild(fragment,target[0])
 
 				// Replace one internal value with two new ones
 				this.textnodes.splice(target[1],1,offset, val.length - offset);
@@ -2354,7 +2353,7 @@ var Hiro = {
 			},
 
 			// Populate header and widget with data from currentnote, triggerd by show and peer changes from server
-			update: function() {
+			update: function(repaintoverlay) {
 				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers'),
 					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
@@ -2363,6 +2362,9 @@ var Hiro = {
 
 				// Abort if we have no peers array (yet) 	
 				if (typeof peers == 'undefined') return;		
+
+				// Repaint the overlay as well
+				if (repaintoverlay) Hiro.canvas.overlay.paint();
 
 				// Populate!
 				Hiro.ui.render(function(){
@@ -2420,7 +2422,7 @@ var Hiro = {
 					// Add ourselves and then rest to DOM
  					el_peers[1].appendChild(Hiro.apps.sharing.renderpeer(us,true,onlyus))					
 					if (Hiro.ui.mini()) el_peers[1].insertBefore(f,el_peers[1].firstChild);
-					else el_peers[1].appendChild(f);					
+					else el_peers[1].appendChild(f);						
 				});		
 			},
 
@@ -2721,8 +2723,8 @@ var Hiro = {
 								peers.splice(i,1);
 								// Paint folio to update counters
 								Hiro.folio.paint();
-								// Rerender peers widget if operation concerns current peer
-								if (noteid == Hiro.canvas.currentnote) this.update();
+								// Rerender peers widget if operation concerns current note
+								if (noteid == Hiro.canvas.currentnote) this.update(true);
 								// Set internal peerchange flag
 								Hiro.data.get('note_' + noteid)._peerchange = true;
 								// Save changes
@@ -3930,7 +3932,7 @@ var Hiro = {
 								Hiro.apps.sharing.getpeer(obj,store.id).cursor_pos = ops[j].value;
 								// Also set shortcut value if it's us
 								if (ops[j].path.split(':')[1] == Hiro.data.get('profile','c.uid')) store._cursor = ops[j].value;
-							// Call sap user
+							// Call swap user
 							} else if (ops[j].op == 'swap-user') {
 								Hiro.apps.sharing.swappeer(obj,store.id,ops[j].value,true);	
 							// Set other values (hackish shortcut depending on ops name not changing)
@@ -5007,11 +5009,11 @@ var Hiro = {
                     	// Get current cursor position
                     	cursor = Hiro.canvas.getcursor();
                     	// Apply patch to cache and set current version to cache
-                    	Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
-                    	// Paint it
-                    	Hiro.canvas.paint();
+                    	Hiro.canvas.el_text.value = Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
                     	// Recalculate cursor
                     	this.resetcursor(diffs,cursor);
+                    	// Update the overlay
+                    	Hiro.canvas.overlay.patch(delta);                    	
                     // Apply the changes to the current version	
                     } else {
 		                // Apply to 
