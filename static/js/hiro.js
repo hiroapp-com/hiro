@@ -947,7 +947,7 @@ var Hiro = {
 					}
 
 					// Log
-					console.log('Overlay repainted from scratch.') 						
+					Hiro.sys.log('Overlay repainted from scratch.') 						
 				});
 			},
 
@@ -1115,7 +1115,7 @@ var Hiro = {
 				if (!target) return;
 
 				// Set proper values
-				val = target[0].nodeValue;	
+				val = target[0].nodeValue || '';	
 
 				// Make offset relative
 				offset = target[2];
@@ -1219,8 +1219,6 @@ var Hiro = {
 						subnodeoffset += nodes[i];
 					}					
 				}
-
-				console.log('trying to find node for pos ' + offset,subnode)
 
 				// Abort if we havent't found anything
 				if (subnode === undefined) return false;
@@ -1549,8 +1547,6 @@ var Hiro = {
 
 			// Clear error first
 			error.textContent = '';	
-
-			console.log(inputs[0].value);
 
 			// No passwords at all provided
 			if (!inputs[0].value && !inputs[1].value) {
