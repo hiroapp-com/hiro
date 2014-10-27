@@ -946,7 +946,7 @@ var Hiro = {
 			},
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
-			patch: function(delta,server) {
+			patch: function(delta) {
 				var actions = delta.split('	'), offset, localoffset, suffix, target, node, offset, 
 				val, addition, i, l, changelength = 0, 
 				links, that = this;
@@ -997,7 +997,7 @@ var Hiro = {
 						// Move the offset
 						} else if (actions[i].charAt(0) == '=') {
 							// Forward!
-							localoffset += actions[i].substring(1);
+							localoffset += parseInt(actions[i].substring(1));
 						}
 					}					
 					// Set new value
@@ -1022,15 +1022,15 @@ var Hiro = {
 			},
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
-			wrap: function(tag,action,offset,length,padding) {
-				var range = document.createRange(), startnode, endnode, el, initallength, val, extract;
+			wrap: function(tag,action,offset,length) {
+				var range = document.createRange(), startnode, endnode, el, initallength, val;
 
 				// Get nodes
 				startnode = this.getnode(offset);
 				endnode = this.getnode(offset + length);				
 
 				// Build element
-				el = document.createElement(tag);			
+				el = document.createElement(tag);					
 
 				// Same node?
 				if (startnode[0] == endnode[0]) {
@@ -1044,7 +1044,7 @@ var Hiro = {
 					startnode[0].textContent = val.substring(0,startnode[2]) + val.substring(startnode[2] + length);
 
 					// Splice it in!
-					this.splice(el,offset,length,padding);
+					this.splice(el,offset,length);
 				// Spanning multiple nodes						
 				} else {	
 					// Warn
@@ -1066,43 +1066,21 @@ var Hiro = {
 			},
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
-			splice: function(node,offset,length,padding) {
+			splice: function(node,offset,length) {
 				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val, cache;
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
 				if (!target) return;
 
 				// Set proper values
-				val = target[0].nodeValue;
-				padding = padding || '';
-
-				// If we wrap someting
-				if (length) {
-					// Check if we have still same textlengths
-					if (this.textlength != Hiro.canvas.cache.content.length) {
-						// If not, paint
-						this.paint();
-
-						// & Abort
-						return;						
-					}
-
-					// Copy cache value
-					cache = Hiro.canvas.cache.content;
-
-					// Make sure we add the same padding to input & cache
-					Hiro.canvas.el_text.value = Hiro.canvas.cache.content = cache.substring(0,offset) + padding + cache.substring(offset,offset + length) + padding + cache.substring(offset + length);
-
-					// Extend textlength
-					this.textlength += padding.length * 2;
-				}	
+				val = target[0].nodeValue;	
 
 				// Make offset relative
 				offset = target[2];
 
 				// Create new split textnodes
-				before = document.createTextNode(val.substring(0,offset) + padding);
-				after = document.createTextNode(padding + val.substring(offset));
+				before = document.createTextNode(val.substring(0,offset));
+				after = document.createTextNode(val.substring(offset));
 
 				// Append elements
 				fragment.appendChild(before);
@@ -1114,7 +1092,7 @@ var Hiro = {
 
 				// Replace internal array with three new values
 				if (length) {
-					this.textnodes.splice(target[1],1,offset + padding.length,length,val.length - offset + padding.length);
+					this.textnodes.splice(target[1],1,offset,length,val.length - offset);
 				// Replace one internal value with two new ones
 				} else {
 					this.textnodes.splice(target[1],1,offset,val.length - offset);

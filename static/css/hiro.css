@@ -532,11 +532,12 @@ input.error:focus {
 }
 
 #overlay a {
-  border: 1px solid #94B2CF;
+  border: 1px solid #C0CFDF;
   border-radius: 4px;
-  padding: 3px 5px 0px 5px;
-  margin: 0 -6px;
-  background: #F2F5F8;
+  padding: 3px 7px 0px 7px;
+  margin: 0 -8px;
+  background: #F8F9FA;
+  color: #6097CE;  
 }
 
 #overlay .flag {
