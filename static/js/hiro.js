@@ -946,7 +946,7 @@ var Hiro = {
 			},
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
-			patch: function(delta) {
+			patch: function(delta,server) {
 				var actions = delta.split('	'), offset, localoffset, suffix, target, node, offset, 
 				val, addition, i, l, changelength = 0, 
 				links, that = this;
@@ -994,6 +994,10 @@ var Hiro = {
 							if (node.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
 							// Check if it's still a proper link
 							else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) that.paint();
+						// Move the offset
+						} else if (actions[i].charAt(0) == '=') {
+							// Forward!
+							localoffset += actions[i].substring(1);
 						}
 					}					
 					// Set new value
@@ -1018,7 +1022,7 @@ var Hiro = {
 			},
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
-			wrap: function(tag,action,offset,length) {
+			wrap: function(tag,action,offset,length,padding) {
 				var range = document.createRange(), startnode, endnode, el, initallength, val, extract;
 
 				// Get nodes
@@ -1040,7 +1044,7 @@ var Hiro = {
 					startnode[0].textContent = val.substring(0,startnode[2]) + val.substring(startnode[2] + length);
 
 					// Splice it in!
-					this.splice(el,offset,length);
+					this.splice(el,offset,length,padding);
 				// Spanning multiple nodes						
 				} else {	
 					// Warn
@@ -1062,20 +1066,18 @@ var Hiro = {
 			},
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
-			splice: function(node,offset,length) {
-				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val, padding = '', cache;
+			splice: function(node,offset,length,padding) {
+				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val, cache;
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
 				if (!target) return;
 
 				// Set proper values
 				val = target[0].nodeValue;
+				padding = padding || '';
 
 				// If we wrap someting
 				if (length) {
-					// Add some padding to the overlay
-					padding = '  ';
-
 					// Check if we have still same textlengths
 					if (this.textlength != Hiro.canvas.cache.content.length) {
 						// If not, paint
