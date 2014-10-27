@@ -998,6 +998,10 @@ var Hiro = {
 					// Resize
 					Hiro.canvas.resize();
 
+					// Change textlength and node length
+					that.textlength += changelength;
+					that.textnodes[target[1]] += changelength;					
+
 					// Process links
 					if (links) {
 						// Iterate through array
@@ -1005,11 +1009,7 @@ var Hiro = {
 							// Execute wrapper
 							that.wrap('a',undefined,offset - localoffset + val.indexOf(links[i]),links[i].length);
 						}						
-					}
-
-					// Change textlength and node length
-					that.textlength += changelength;
-					that.textnodes[target[1]] += changelength;											
+					}										
 				})							
 			},
 
