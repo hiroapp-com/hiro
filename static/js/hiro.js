@@ -2547,7 +2547,9 @@ var Hiro = {
 
 					// Add green tick to icon				
 					d.className += " seen";
-				}		
+				} else {
+					tt = (tt || '') + 'Has not seen the latest version';
+				}	
 
 				// Set tooltip
 				if (tt) d.setAttribute('title', tt);						
