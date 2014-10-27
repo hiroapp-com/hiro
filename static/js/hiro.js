@@ -3722,6 +3722,22 @@ var Hiro = {
 		rx_session_create_handler: function(data) {
 			var n, note, sf, cf, fv, peers, req, sp, cp, peer, user, i, l, keeper;
 
+			// Remove any used tokens
+			Hiro.data.tokens.remove(data.token);			
+
+			// See if there was a problem with the session
+			if (!data.sid) {
+				// If we had a proper error
+				if (data.remark && data.remark.lvl == 'error') {
+					// Log
+					Hiro.sys.error(data.remark.msg);
+					// End hprogress
+					Hiro.ui.hprogress.done(true)
+				}
+				// Abort
+				return;
+			}
+
 			// Close dialog first so UI builds while closing
 			if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();				
 
@@ -3823,10 +3839,7 @@ var Hiro = {
 			cf.s = JSON.parse(fv);
 			cf.c = (cf.c) ? cf.c.concat(JSON.parse(fv)) : JSON.parse(fv);	
 			cf.kind = sf.kind;
-			cf.id = sf.id;
-
-			// Update tokens
-			Hiro.data.tokens.remove(data.token);		
+			cf.id = sf.id;		
 
 			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
 			Hiro.data.set('folio','',cf,'s');	
@@ -4207,6 +4220,14 @@ var Hiro = {
 
 		// Process consume token response
 		rx_token_consume_handler: function(data) {
+			// If we had a proper error just log i tfor now
+			// TODO Bruno: Find good way to notify user
+			if (data.remark && data.remark.lvl == 'error') {
+				// Log
+				Hiro.sys.error(data.remark.msg);
+				// End hprogress
+				Hiro.ui.hprogress.done(true)
+			}			
 			// Remove data from tokens
 			Hiro.data.tokens.remove(data.token);
 		},
