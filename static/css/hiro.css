@@ -551,13 +551,33 @@ input.error:focus {
   font-family: "urbana", sans-serif;
   right: -12px;
   white-space: nowrap;
-  color: #168012;
+  color: #999;
   background: #fff;
   font-size: 11px;
   padding: 2px 5px;
   line-height: 11px; 
   border-radius: 3px;
-  border: 1px solid #168012;
+  border: 1px solid #999;
+}
+
+#overlay .flag.active .name {
+  color: #168012;
+  border-color: #168012;
+}
+
+#overlay .flag.active .name:before {
+  border-color: rgba(22, 128, 18, 0);
+  border-top-color: #168012;    
+}
+
+#overlay .flag.old .name {
+  color: #bbb;
+  border-color: #bbb;
+}
+
+#overlay .flag.old .name:before {
+  border-color: rgba(187, 187, 187, 0);
+  border-top-color: #bbb;    
 }
 
 #overlay .flag .name:after, #overlay .flag .name:before {
@@ -571,20 +591,20 @@ input.error:focus {
 }
 
 #overlay .flag .name:before {
-    border-color: rgba(22, 128, 18, 0);
-    border-top-color: #168012;
-    border-width: 5px;
-    margin-left: -5px;
-    right: 5px;    
-  }    
+  border-color: rgba(153, 153, 153, 0);
+  border-top-color: #999;
+  border-width: 5px;
+  margin-left: -5px;
+  right: 5px;    
+}    
 
 #overlay .flag .name:after {
-    border-color: rgba(255, 255, 255, 0);
-    border-top-color: #fff;
-    border-width: 4px;
-    margin-left: -4px;
-    right: 6px;
-  }
+  border-color: rgba(255, 255, 255, 0);
+  border-top-color: #fff;
+  border-width: 4px;
+  margin-left: -4px;
+  right: 6px;
+}
 
 #nicequote {
   position: absolute;

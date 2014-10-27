@@ -1071,7 +1071,7 @@ var Hiro = {
 
 			// Paint the caret of a certain peer at a certain point
 			pc: function(peer) {
-				var cursor = peer.cursor_pos, contact, el, el_name;
+				var cursor = peer.cursor_pos, contact, el, el_name, age;
 
 				// Abort if user has no known cursor position
 				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;
@@ -1079,9 +1079,16 @@ var Hiro = {
 				// Try fetching contact
 				contact = Hiro.user.contacts.lookup[peer.user.uid];
 
+				// Fetch last interaction
+				age = parseInt((Hiro.util.now() - peer.last_edit) / 60000);
+
 				// Create basic div
 				el = document.createElement('div');
 				el.className = 'flag';
+
+				// Append classname based on age
+				if (age < 10) el.className += ' active';
+				if (age > 1440) el.className += ' old';
 
 				// Create & append name part
 				el_name = document.createElement('div');
