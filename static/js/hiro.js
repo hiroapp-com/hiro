@@ -1014,34 +1014,51 @@ var Hiro = {
 			},
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
-			wrap: function(tag,action,start,length) {
-				var range = document.createRange(), startnode, endnode, el, initallength;
+			wrap: function(tag,action,offset,length) {
+				var range = document.createRange(), startnode, endnode, el, initallength, val, extract;
 
 				// Get nodes
-				startnode = this.getnode(start);
-				endnode = this.getnode(start + length);
-
-				// Copy values 
-				initallength = startnode[0].nodeValue.length;
-
-				// Set range
-				range.setStart(startnode[0],startnode[2]);
-				range.setEnd(endnode[0],endnode[2]);	
+				startnode = this.getnode(offset);
+				endnode = this.getnode(offset + length);				
 
 				// Build element
 				el = document.createElement(tag);			
 
 				// Same node?
 				if (startnode[0] == endnode[0]) {
+					// Copy node value
+					val = startnode[0].nodeValue;
+
+					// Fill el with extracted string part
+					el.textContent = val.substring(startnode[2],startnode[2] + length);
+
+					// Remove link from node contents
+					startnode[0].textContent = val.substring(0,startnode[2]) + val.substring(startnode[2] + length);
+
+					// Splice it in!
+					this.splice(el,offset,length);
+				// Spanning multiple nodes						
+				} else {	
+					// Warn
+					Hiro.sys.error('Tried to wrap overlay Range spanning multiplle nodes');
+
+					// Copy values
+					initallength = startnode[0].nodeValue.length;
+
+					// Set range
+					range.setStart(startnode[0],startnode[2]);
+					range.setEnd(endnode[0],endnode[2]);
+
 					// Simply use surroundcontent
-					range.surroundContents(el);
+					range.surroundContents(el);	
+
 					// Update internal values by splitting into three right away
-					this.textnodes.splice(startnode[1],1,startnode[2],length,initallength - endnode[2]);					
+					this.textnodes.splice(startnode[1],1,startnode[2],length,initallength - endnode[2]);									
 				}
 			},
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
-			splice: function(node,offset) {
+			splice: function(node,offset,length) {
 				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val;
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
@@ -1065,13 +1082,18 @@ var Hiro = {
 				// Replace old textnode with new fragment
 				target[0].parentNode.replaceChild(fragment,target[0])
 
+				// Replace internal array with three new values
+				if (length) {
+					this.textnodes.splice(target[1],1,offset,length,val.length - offset);
 				// Replace one internal value with two new ones
-				this.textnodes.splice(target[1],1,offset,val.length - offset);
+				} else {
+					this.textnodes.splice(target[1],1,offset,val.length - offset);
+				}
 			},
 
 			// Paint the caret of a certain peer at a certain point
 			pc: function(peer) {
-				var cursor = peer.cursor_pos, contact, el, el_name, name, age;
+				var cursor = peer.cursor_pos, contact, el, el_name, name, age;				
 
 				// Abort if user has no known cursor position
 				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;
@@ -1099,6 +1121,9 @@ var Hiro = {
 				el_name.className = 'name';
 				el_name.textContent = name;
 				el.appendChild(el_name);
+
+				// Reduce cursor if it's too far out
+				if (this.textlength < cursor) cursor = this.textlength;
 
 				// Append it	
 				this.splice(el,cursor);
@@ -1156,7 +1181,7 @@ var Hiro = {
 				// Iterate through them
 				for (i = 0, l = domnodes.length; i < l; i++ ) {
 					// Only work with textnodes
-					if (domnodes[i].nodeType == 3) {
+					if (domnodes[i].nodeType == 3 || domnodes[i].nodeName == 'A') {
 						// If we found the proper node, return it
 						if (nodecount == subnode) return [domnodes[i],subnode,subnodeoffset];
 						// Iterate counter
@@ -2470,10 +2495,7 @@ var Hiro = {
 					counter.style.display = (onlyus) ? 'none' : 'block';
 
 					// Add one if we had a dummy us
-					counter.textContent = ( (!us) ? peers.length + 1 : peers.length ).toString();	
-
-					// Abort here if the widget is not open
-					if (Hiro.apps.open.indexOf('sharing') > -1) return;										
+					counter.textContent = ( (!us) ? peers.length + 1 : peers.length ).toString();										
 
 					// Add dummy user for ourselves (if doc was created offline and not synced yet)
 					if (!us) us = { role: 'owner'};						
@@ -3737,9 +3759,9 @@ var Hiro = {
 				// Bootstrap workspace if none exists
 				if (!Hiro.data.get('profile')) Hiro.data.bootstrap();
 
-				// Retry to authenticate session
-				if (!data.sid) this.auth();
-				
+				// Retry to authenticate session if we have no sid at all
+				if (!data.sid && !Hiro.data.get('profile','c.sid')) this.auth();
+
 				// Abort
 				return;
 			}
