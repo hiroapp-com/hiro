@@ -3726,7 +3726,7 @@ var Hiro = {
 			Hiro.data.tokens.remove(data.token);			
 
 			// See if there was a problem with the session
-			if (!data.sid) {
+			if (!data.session) {
 				// If we had a proper error
 				if (data.remark && data.remark.lvl == 'error') {
 					// Log
@@ -3734,6 +3734,12 @@ var Hiro = {
 					// End hprogress
 					Hiro.ui.hprogress.done(true)
 				}
+				// Bootstrap workspace if none exists
+				if (!Hiro.data.get('profile')) Hiro.data.bootstrap();
+
+				// Retry to authenticate session
+				if (!data.sid) this.auth();
+				
 				// Abort
 				return;
 			}
