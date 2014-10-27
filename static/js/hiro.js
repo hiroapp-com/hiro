@@ -1705,6 +1705,12 @@ var Hiro = {
 						}
 					}
 
+					// If the swapped user is part of the current note
+					if (Hiro.apps.sharing.getpeer({ user: { uid: contact.uid } })) {
+						// Repaint the all peers & the overlay
+						Hiro.apps.sharing.update(true);
+					}
+
 					// Return
 					return true;
 				// Nothing found				
@@ -2464,7 +2470,10 @@ var Hiro = {
 					counter.style.display = (onlyus) ? 'none' : 'block';
 
 					// Add one if we had a dummy us
-					counter.textContent = ( (!us) ? peers.length + 1 : peers.length ).toString();						
+					counter.textContent = ( (!us) ? peers.length + 1 : peers.length ).toString();	
+
+					// Abort here if the widget is not open
+					if (Hiro.apps.open.indexOf('sharing') > -1) return;										
 
 					// Add dummy user for ourselves (if doc was created offline and not synced yet)
 					if (!us) us = { role: 'owner'};						
@@ -2728,6 +2737,8 @@ var Hiro = {
 						if (shadow[i].user.uid != peer.user.uid) continue;
 						// Change data
 						shadow[i].user = newvalue;
+						// Update visuals
+						if (noteid == Hiro.canvas.currentnote) this.update(true);
 						// End loop
 						break;
 					}
