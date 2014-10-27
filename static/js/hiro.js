@@ -906,7 +906,7 @@ var Hiro = {
 
 			// Generate new overlay
 			paint: function() {
-				var el = this.el_root, fadedirection, string = Hiro.canvas.cache.content, l = string.length, peers, peernode, i, l;
+				var el = this.el_root, fadedirection, string = Hiro.canvas.cache.content, links, l = string.length, peers, i, l, that = this;
 
 				// Reset nodes cache and fill it with initial string length
 				this.textnodes.length = 0;
@@ -924,10 +924,16 @@ var Hiro = {
 					// TODO Bruno: Re-append empty space at end for proper Safari linebreak handling
 					el.textContent = string;
 
+					// See if we have any links
+					links = Hiro.context.extractlinks(string);
+
+					// Yay, render them
+					if (links) that.decorate(string,0,links,'a');											
+
 					// Iterate through peers to set flags
 					for ( i = 0, l = peers.length; i < l; i++ ) {
 						// Render peer
-						Hiro.canvas.overlay.pc(peers[i]);
+						that.pc(peers[i]);
 					}
 
 					// Resize
@@ -1010,15 +1016,51 @@ var Hiro = {
 					that.textlength += changelength;
 					that.textnodes[target[1]] += changelength;					
 
-					// Process links
-					if (links) {
-						// Iterate through array
-						for (i = 0, l = links.length; i < l; i++ ) {
-							// Execute wrapper
-							that.wrap('a',undefined,offset - localoffset + val.indexOf(links[i]),links[i].length);
-						}						
-					}										
+					// Process links AFTER we reset the lengths above
+					if (links) that.decorate(val,offset - target[2],links,'a');															
 				})							
+			},
+
+			// Takes a string, the global and local offsets, an array of strings to be decorated and wraps them all
+			decorate: function(string,stringstartoffset,patterns,tag) {
+				var occurence, nextpattern, position, removed = 0,
+					i, l;
+
+				// We keep nabbing at the string
+				while (string) {
+					// Reset to 0
+					nextpattern = 0;
+					occurence = undefined;
+
+					// Find out if there is a patterns that occures before the first one
+					for (i = 0, l = patterns.length; i < l; i++ ) {
+						// Save position
+						position = string.indexOf(patterns[i]);
+						// If the pattern doesn't occur at all anymore, ignore it
+						if (position == -1) continue;
+						// Set if we have no occurence yet
+						if (occurence === undefined) occurence = position;
+						// Note if it's the next occurence
+						if (position <= occurence) nextpattern = i;
+						// Abort if it's not possible the have any earlier occurence
+						if (position < patterns[i].length) break;
+					}					
+
+					// Find the position in the full string
+					position = string.indexOf(patterns[nextpattern]);	
+
+					// Abort if we do not have any occurences anymore
+					if (position == -1) break;
+
+					// Send off to wrapping			
+					this.wrap('a',undefined,stringstartoffset + removed + position,patterns[nextpattern].length);					
+
+					// Add to removed
+					removed += (position + patterns[nextpattern].length);
+
+					// Truncate string
+					string = string.substring(position + patterns[nextpattern].length);
+				}	
 			},
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
