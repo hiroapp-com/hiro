@@ -952,7 +952,7 @@ var Hiro = {
 				links, that = this;
 
 				// Create trimmings
-				if (actions[0].charAt(0) == '=') offset = parseInt(actions.shift().slice(1));
+				offset = (actions[0].charAt(0) == '=') ? parseInt(actions.shift().slice(1)) : 0;
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
 				// Wrap in render for performance
@@ -971,7 +971,7 @@ var Hiro = {
 					// Set initial values
 					node = target[0];
 					localoffset = target[2];				
-					val = node.nodeValue;
+					val = node.nodeValue || node.textContent || node.innerText || '';
 
 					// Iterate through actions
 					for (i = 0, l = actions.length; i < l; i++ ) {
@@ -980,7 +980,9 @@ var Hiro = {
 							// Parse change length
 							changelength += parseInt(actions[i]);
 							// Build new string
-							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);						 
+							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);			
+							// Check if ew should remove a link
+							if (node.nodeName == 'A' && !Hiro.context.extractlinks(val)) that.paint();
 						// Add a character
 						} else if (actions[i].charAt(0) == '+') {
 							addition = decodeURI(actions[i].substring(1))
@@ -988,8 +990,10 @@ var Hiro = {
 							changelength += addition.length;
 							// Build string
 							val = val.substring(0,localoffset) + addition + val.substring(localoffset);
-							// See if it might be a link
-							if (addition.length > 4 || /\s/.test(addition)) links = Hiro.context.extractlinks(val);						
+							// See if it might be a link if we input a whitespace or pasted something longer							
+							if (node.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
+							// Check if it's still a proper link
+							else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) that.paint();
 						}
 					}					
 					// Set new value
@@ -1032,7 +1036,7 @@ var Hiro = {
 					// Fill el with extracted string part
 					el.textContent = val.substring(startnode[2],startnode[2] + length);
 
-					// Remove link from node contents
+					// Remove link from node contents, but add 
 					startnode[0].textContent = val.substring(0,startnode[2]) + val.substring(startnode[2] + length);
 
 					// Splice it in!
@@ -1040,7 +1044,7 @@ var Hiro = {
 				// Spanning multiple nodes						
 				} else {	
 					// Warn
-					Hiro.sys.error('Tried to wrap overlay Range spanning multiplle nodes');
+					Hiro.sys.error('Tried to wrap overlay Range spanning multiple nodes');
 
 					// Copy values
 					initallength = startnode[0].nodeValue.length;
@@ -1059,7 +1063,7 @@ var Hiro = {
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
 			splice: function(node,offset,length) {
-				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val;
+				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val, padding = '', cache;
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
 				if (!target) return;
@@ -1067,12 +1071,36 @@ var Hiro = {
 				// Set proper values
 				val = target[0].nodeValue;
 
+				// If we wrap someting
+				if (length) {
+					// Add some padding to the overlay
+					padding = '  ';
+
+					// Check if we have still same textlengths
+					if (this.textlength != Hiro.canvas.cache.content.length) {
+						// If not, paint
+						this.paint();
+
+						// & Abort
+						return;						
+					}
+
+					// Copy cache value
+					cache = Hiro.canvas.cache.content;
+
+					// Make sure we add the same padding to input & cache
+					Hiro.canvas.el_text.value = Hiro.canvas.cache.content = cache.substring(0,offset) + padding + cache.substring(offset,offset + length) + padding + cache.substring(offset + length);
+
+					// Extend textlength
+					this.textlength += padding.length * 2;
+				}	
+
 				// Make offset relative
 				offset = target[2];
 
 				// Create new split textnodes
-				before = document.createTextNode(val.substring(0,offset));
-				after = document.createTextNode(val.substring(offset));
+				before = document.createTextNode(val.substring(0,offset) + padding);
+				after = document.createTextNode(padding + val.substring(offset));
 
 				// Append elements
 				fragment.appendChild(before);
@@ -1084,7 +1112,7 @@ var Hiro = {
 
 				// Replace internal array with three new values
 				if (length) {
-					this.textnodes.splice(target[1],1,offset,length,val.length - offset);
+					this.textnodes.splice(target[1],1,offset + padding.length,length,val.length - offset + padding.length);
 				// Replace one internal value with two new ones
 				} else {
 					this.textnodes.splice(target[1],1,offset,val.length - offset);
