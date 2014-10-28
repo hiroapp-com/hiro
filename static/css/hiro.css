@@ -519,7 +519,12 @@ input.error:focus {
   overflow-y: auto;
   resize: none; 
   z-index: 2010;
-  -webkit-appearance: none;    
+  -webkit-appearance: none;   
+}
+
+body.ios #canvas textarea {
+  margin-left: -3px;
+  padding-right: 31px;
 }
 
 
@@ -682,6 +687,11 @@ input.error:focus {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   } 
+
+  body.ios #canvas textarea {
+    padding-right: 6px;
+  }
+
 
   #overlay { 
     padding: 45px 12px 60px 12px;
