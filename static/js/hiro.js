@@ -1080,13 +1080,13 @@ var Hiro = {
 
 				// Wrap in rAF
 				//Hiro.ui.render(function(){
-					var target = event.target || event.srcElement, top;
+					var target = event.target || event.srcElement;
 
 					// Only read textarea once
-					top = (target.scrollTop * -1) + 'px';
+					// top = (target.scrollTop * -1) + 'px';
 
 					// Check & set
-					if (that.el_root.style.top != top) that.el_root.style.top = top;
+					if (that.el_root.scrollTop != target.scrollTop) that.el_root.scrollTop = target.scrollTop;
 
 					// that.scrolling = false;
 				// })
@@ -5861,9 +5861,9 @@ var Hiro = {
 					v = _this.slidepos = x1;
 				} 
 
-				// Change DOM CSS values
+				// Change DOM CSS values = Hiro.context.el_root.style.right
 				Hiro.canvas.el_root.style.left = v + 'px';
-				Hiro.canvas.el_root.style.right = Hiro.context.el_root.style.right = (v*-1)+'px'; 
+				Hiro.canvas.el_root.style.right = (v*-1)+'px'; 
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
