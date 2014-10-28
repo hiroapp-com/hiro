@@ -726,12 +726,11 @@ body.ios #canvas textarea {
   #canvas textarea {
     padding: 98px 70px 30px 70px;
     line-height: 30px;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 
-    left: 0;
-  }     
+  } 
+
+  body.ios #canvas textarea {
+    padding-right: 64px;
+  }      
 
   #nicequote {
     left: 70px;
