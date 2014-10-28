@@ -801,7 +801,7 @@ var Hiro = {
 			// With the next available frame
 			Hiro.ui.render(function(){
 				// Do not resize on mobile devices
-				if (Hiro.ui.mini) return;	
+				if (Hiro.ui.mini()) return;	
 							
 				// Get basic values
 				o = h = Hiro.canvas.overlay.el_root.offsetHeight;
@@ -903,6 +903,9 @@ var Hiro = {
 			// Cache
 			textnodes: [],
 			textlength: 0,
+
+			// Flags
+			scrolling: false,
 
 			// Generate new overlay
 			paint: function() {
@@ -1066,6 +1069,29 @@ var Hiro = {
 				}	
 			},
 
+			// Align the under & overlays with the textarea if it's being scrolled
+			scroll: function(event) {
+				var that = this;
+				// Check if we already qeued an event
+				// if (this.scrolling) return;
+
+				// Set falg
+				// this.scrolling = true;
+
+				// Wrap in rAF
+				//Hiro.ui.render(function(){
+					var target = event.target || event.srcElement, top;
+
+					// Only read textarea once
+					top = (target.scrollTop * -1) + 'px';
+
+					// Check & set
+					if (that.el_root.style.top != top) that.el_root.style.top = top;
+
+					// that.scrolling = false;
+				// })
+			},
+
 			// Wrap a Range in a DOM element, for now this only works within a single text node
 			wrap: function(tag,action,offset,length) {
 				var range = document.createRange(), startnode, endnode, el, initallength, val;
@@ -1171,7 +1197,7 @@ var Hiro = {
 
 				// Create & append name part
 				el_name = document.createElement('div');
-				el_name.className = (Hiro.ui.mini) ? 'name left' : 'name';
+				el_name.className = (Hiro.ui.mini()) ? 'name left' : 'name';
 				el_name.textContent = name;
 				el.appendChild(el_name);
 
@@ -1832,7 +1858,7 @@ var Hiro = {
 						tip = '';
 						action = 'Upgrade';
 					} else if (tt == 3) {
-						d = (Hiro.ui.mini) ? 'Pro Plan: $ 29' : "Pro Plan: $ 29 ($ 9 Advance until it's available)";
+						d = (Hiro.ui.mini()) ? 'Pro Plan: $ 29' : "Pro Plan: $ 29 ($ 9 Advance until it's available)";
 						tip = 'Be among the very first to be switched over, automatically!';
 						action: 'Preorder';
 					}
@@ -2291,7 +2317,7 @@ var Hiro = {
 					// Do not select if no token present
 					if (this.notoken) {
 						// Remove keyboard on mobile devices in underlaying textarea
-						if (Hiro.ui.touch && Hiro.ui.mini && document.activeElement && document.activeElement.id == 'content') document.activeElement.blur();
+						if (Hiro.ui.touch && Hiro.ui.mini() && document.activeElement && document.activeElement.id == 'content') document.activeElement.blur();
 						// Abort
 						return;	
 					}				
@@ -2455,7 +2481,7 @@ var Hiro = {
 
 						// Switch button to standard
 						el_button.className = 'hirobutton grey';
-						el_button.innerHTML = (Hiro.ui.mini) ? 'Invite next' : 'Added! Invite next';	
+						el_button.innerHTML = (Hiro.ui.mini()) ? 'Invite next' : 'Added! Invite next';	
 
 						// Show quick inviting
 						Hiro.ui.statsy.add('invite',3,'Invited.');	
@@ -2554,7 +2580,7 @@ var Hiro = {
 
 					// Add ourselves and then rest to DOM
  					el_peers[1].appendChild(Hiro.apps.sharing.renderpeer(us,true,onlyus))					
-					if (Hiro.ui.mini) el_peers[1].insertBefore(f,el_peers[1].firstChild);
+					if (Hiro.ui.mini()) el_peers[1].insertBefore(f,el_peers[1].firstChild);
 					else el_peers[1].appendChild(f);						
 				});		
 			},
@@ -2725,7 +2751,7 @@ var Hiro = {
 				shadow = Hiro.data.get('note_' + noteid, 's.peers') || [];
 
 				// On small screens we add the new peer to the top of the array
-				if (Hiro.ui.mini) peers.unshift(peer); 
+				if (Hiro.ui.mini()) peers.unshift(peer); 
 				else peers.push(peer);
 
 				// If the server triggered the add 
@@ -5400,10 +5426,12 @@ var Hiro = {
 		// General properties
 		// TODO Bruno: Compare with http://patrickhlauke.github.io/touch/tests/results/
 		touch: ('ontouchstart' in document.documentElement),
-		mobileapp: window.navigator.standalone,
-		mini: (document.body.offsetWidth < 481),
-		midi: (document.body.offsetWidth > 480 && document.body.offsetWidth < 901),		
+		mobileapp: window.navigator.standalone,	
 		ios: /(iPad|iPhone|iPod)/g.test(navigator.userAgent),
+
+		// This values might change over time, thus we wrap it in anon functions
+		mini: function() { return (document.body.offsetWidth < 481) },
+		midi: function() { return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },			
 
 		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
 		el_wastebin: document.getElementById('wastebin'),
@@ -5524,7 +5552,10 @@ var Hiro = {
 				document.body.className = 'touch';	
 				// iOS Specifics (textarea indent)
 				if (this.ios) document.body.className += ' ios';	
-			}						
+			}	
+
+			// Attach scroll handler to textarea
+			Hiro.util.registerEvent(Hiro.canvas.el_text,'scroll',function(e) { if (Hiro.ui.mini()) Hiro.canvas.overlay.scroll(e); });				
 		},
 
 		// Render changes via rAF or, if window is not focused, right away
@@ -5624,8 +5655,7 @@ var Hiro = {
 		        document.onfocusin = document.onfocusout =  handler;
 
 		    // All others (aka wishfull thinking)
-		    else
-		        window.onpageshow = window.onpagehide = window.onfocus = window.onblur =  handler;
+		    else window.onpageshow = window.onpagehide = window.onfocus = window.onblur =  handler;
 		},	
 
 		// If the focus of the current tab changed
@@ -5781,7 +5811,7 @@ var Hiro = {
 			if (!direction) direction = (this.slidedirection == 1 || Hiro.folio.open) ? -1 : 1;	
 
 			// Make room on mobiles
-			if (direction == 1 && Hiro.ui.mini && Hiro.apps.open.length > 0) Hiro.apps.close();
+			if (direction == 1 && Hiro.ui.mini() && Hiro.apps.open.length > 0) Hiro.apps.close();
 
 			// Repaint folio
 			if (direction == 1) Hiro.folio.paint(true);		
@@ -6389,7 +6419,7 @@ var Hiro = {
 				// Fade in dialog
 				if (!this.open) Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
 					// Blurring is slooow on small mobile browsers, so don't do it
-					if (Hiro.ui.mini) return;
+					if (Hiro.ui.mini()) return;
 
 					// Blur background
 					Hiro.ui.render(function(){
@@ -6488,7 +6518,7 @@ var Hiro = {
 				fields[0].value = user.name || '';
 				fields[1].value = user.email || user.phone || '';
 				fields[2].value = 'Member Since: ' + Hiro.util.monthddyyyy(user.signup_at) || 'Some time';
-				fields[3].value = plans[user.tier] + ((Hiro.ui.mini) ? '' : ' plan') + ': ' + Hiro.folio.owncount + ((user.tier < 2) ? ' of 10' : '') + ' notes';	
+				fields[3].value = plans[user.tier] + ((Hiro.ui.mini()) ? '' : ' plan') + ': ' + Hiro.folio.owncount + ((user.tier < 2) ? ' of 10' : '') + ' notes';	
 
 				// Remove upgrade link if user is already aying customer
 				fields[3].nextSibling.style.display = (user.tier > 1) ? 'none' : 'block';			
@@ -6578,7 +6608,7 @@ var Hiro = {
 					}
 				} else if (type == 'full') {
 					// Kill focus on mobile devices if we execute an action
-					if (target && target.tagName.toLowerCase() != 'input' && Hiro.ui.mini && document.activeElement && document.activeElement.tagName.toLowerCase() == 'input') document.activeElement.blur();
+					if (target && target.tagName.toLowerCase() != 'input' && Hiro.ui.mini() && document.activeElement && document.activeElement.tagName.toLowerCase() == 'input') document.activeElement.blur();
 
 					// 'hexecute'
 					switch (action) {

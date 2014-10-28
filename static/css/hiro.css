@@ -696,6 +696,7 @@ body.ios #canvas textarea {
   #overlay { 
     padding: 45px 12px 60px 12px;
     line-height: 28px;
+    overflow-y: scroll;
   }  
 
   #nicequote {
