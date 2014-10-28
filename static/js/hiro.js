@@ -922,7 +922,7 @@ var Hiro = {
 				Hiro.ui.render(function(){
 					// Set text contents, 
 					// TODO Bruno: Re-append empty space at end for proper Safari linebreak handling
-					el.textContent = string + ' ';
+					el.textContent = string;
 
 					// See if we have any links
 					links = Hiro.context.extractlinks(string);
@@ -986,9 +986,10 @@ var Hiro = {
 							// Parse change length
 							changelength += parseInt(actions[i]);
 							// Build new string
-							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);			
-							// Check if ew should remove a link
-							if (node.nodeName == 'A' && !Hiro.context.extractlinks(val)) that.paint();
+							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);	
+							console.log('removing',parseInt(actions[i]),val.length)		
+							// Check if we deleted beyond node bounds or should remove a link
+							if (val.length < parseInt(actions[i]) * -1 || node.nodeName == 'A' && !Hiro.context.extractlinks(val)) that.paint();
 						// Add a character
 						} else if (actions[i].charAt(0) == '+') {
 							addition = decodeURI(actions[i].substring(1))
@@ -1017,7 +1018,11 @@ var Hiro = {
 					that.textnodes[target[1]] += changelength;					
 
 					// Process links AFTER we reset the lengths above
-					if (links) that.decorate(val,offset - target[2],links,'a');															
+					if (links) that.decorate(val,offset - target[2],links,'a');	
+
+					// Sanity check	(disabled while debugging)
+					if (that.textlength != Hiro.canvas.cache.content.length) that.paint();		
+									console.log(that.textlength,Hiro.canvas.cache.content.length);															
 				})							
 			},
 
