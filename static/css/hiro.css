@@ -478,8 +478,7 @@ input.error:focus {
   min-height: 100%;
   z-index: 2000;
   background: #fff;
-  border-left: 1px solid #222;   
-  -webkit-overflow-scrolling: touch;   
+  border-left: 1px solid #222;     
 }
 
 #canvas input.title {  
@@ -518,8 +517,7 @@ input.error:focus {
   background-color: transparent; 
   overflow-y: auto;
   resize: none; 
-  z-index: 2010;
-  -webkit-appearance: none;   
+  z-index: 2010;  
 }
 
 body.ios #canvas textarea {
@@ -667,7 +665,10 @@ body.ios #canvas textarea {
 @media (max-width: 480px) {
   #canvas {
     margin-left: 0;
-    border-left: none;
+    border-left: none;    
+    position: fixed;
+    top: 0;
+    bottom: 0;  
   } 
 
   #canvas input.title {
@@ -684,14 +685,13 @@ body.ios #canvas textarea {
     padding: 45px 12px 20px 12px;
     line-height: 28px;
     height: 100% !important;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;     
   } 
 
   body.ios #canvas textarea {
     padding-right: 6px;
   }
-
 
   #overlay { 
     padding: 45px 12px 60px 12px;
@@ -699,6 +699,7 @@ body.ios #canvas textarea {
   }  
 
   #nicequote {
+    position: absolute;    
     left: 20px;
     bottom: 14px;
     right: 20px;  
@@ -1003,7 +1004,6 @@ body.ios #canvas textarea {
 
   #apps .app .icon .symbol {
     background-size: 170px auto;
-    position: absolute;
   }  
 
   #apps .app.app_sharing .icon .symbol {
