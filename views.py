@@ -209,6 +209,7 @@ def fb_callback():
     if not user:
         # well, lets create new one!
         user = User.create(email=me.data.get('email', ''), fb_uid=me.data['id'])
+        user.update(email_status='verified')
     elif not user.fb_uid:
         user.update(fb_uid=me.data['id'])
     token = user.token('verify-email') if user.email_status =='unverified' else user.token('login')
