@@ -562,6 +562,11 @@ input.error:focus {
   border: 1px solid #999;
 }
 
+#overlay .flag .name.left {
+  left: -9px;
+  right: auto;
+}
+
 #overlay .flag.active .name {
   color: #168012;
   border-color: #168012;
@@ -606,6 +611,18 @@ input.error:focus {
   border-width: 4px;
   margin-left: -4px;
   right: 6px;
+}
+
+#overlay .flag .name.left:before {
+  margin-left: -5px;
+  left: 9px;  
+  right: auto;  
+} 
+
+#overlay .flag .name.left:after {
+  margin-left: -4px;
+  left: 9px;
+  right: auto;   
 }
 
 #nicequote {
@@ -706,8 +723,6 @@ input.error:focus {
 
 #apps {
   position: absolute;
-  right: 395px;
-  top: 54px;
   z-index: 3000; 
 }
 
@@ -956,12 +971,18 @@ input.error:focus {
   } 
 }
 
-@media (max-width: 480px) {
+@media (min-width: 901px) {
   #apps {
-    right: 0;
-    top: 0;   
+    right: 395px;
+    top: 54px; 
+  }
+}
+
+@media (max-width: 480px) {
+  #apps {  
     z-index: 2040; 
     position: fixed;
+    width: 100%;
   }
 
   #apps .app .icon .counter {
@@ -971,6 +992,8 @@ input.error:focus {
 
   #apps .app .icon .symbol {
     background-size: 170px auto;
+    position: absolute;
+    right: 0;
   }  
 
   #apps .app.app_sharing .icon .symbol {

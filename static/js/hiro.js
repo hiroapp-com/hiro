@@ -986,8 +986,7 @@ var Hiro = {
 							// Parse change length
 							changelength += parseInt(actions[i]);
 							// Build new string
-							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);	
-							console.log('removing',parseInt(actions[i]),val.length)		
+							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);		
 							// Check if we deleted beyond node bounds or should remove a link
 							if (val.length < parseInt(actions[i]) * -1 || node.nodeName == 'A' && !Hiro.context.extractlinks(val)) that.paint();
 						// Add a character
@@ -1021,8 +1020,7 @@ var Hiro = {
 					if (links) that.decorate(val,offset - target[2],links,'a');	
 
 					// Sanity check	(disabled while debugging)
-					if (that.textlength != Hiro.canvas.cache.content.length) that.paint();		
-									console.log(that.textlength,Hiro.canvas.cache.content.length);															
+					// if (that.textlength != Hiro.canvas.cache.content.length) that.paint();																
 				})							
 			},
 
@@ -1173,7 +1171,7 @@ var Hiro = {
 
 				// Create & append name part
 				el_name = document.createElement('div');
-				el_name.className = 'name';
+				el_name.className = (Hiro.ui.mini()) ? 'name left' : 'name';
 				el_name.textContent = name;
 				el.appendChild(el_name);
 
