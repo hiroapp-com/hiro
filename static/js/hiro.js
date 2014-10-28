@@ -584,7 +584,10 @@ var Hiro = {
 
 				// Set text & title
 				if (that.cache.content != note.c.text) Hiro.data.set(id,'c.text', ( that.cache.content || '') );
-				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));			
+				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));
+
+				// Check if we're the latest in the folio
+				if (Hiro.data.get('folio','c')[0].nid != Hiro.canvas.currentnote) Hiro.folio.sort();			
 
 				// Reset changed flag
 				that.cache._changed = false;		
