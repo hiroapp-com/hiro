@@ -40,7 +40,7 @@ em {
 
 @media (max-width: 480px) {
   html{
-    overflow-y: hidden; 
+    overflow-y: auto; 
   }
 }
 
@@ -479,6 +479,7 @@ input.error:focus {
   z-index: 2000;
   background: #fff;
   border-left: 1px solid #222;   
+  -webkit-overflow-scrolling: touch;   
 }
 
 #canvas input.title {  
@@ -650,20 +651,18 @@ input.error:focus {
     font-size: 27px;
     background-color: transparent;
     margin-left: -48px;
+    position: fixed;
   } 
 
   #canvas textarea {
-    position: absolute;
-    color: #333;
-    padding: 45px 12px 20px 12px;
+    padding: 45px 12px 0 12px;
     line-height: 28px;
-    height: 100% !important;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch; 
   } 
 
   #overlay { 
-    display: none;
+    padding: 45px 12px 60px 12px;
+    line-height: 28px;
+    color: #333;
   }  
 
   #nicequote {
@@ -962,6 +961,7 @@ input.error:focus {
     right: 0;
     top: 0;   
     z-index: 2040; 
+    position: fixed;
   }
 
   #apps .app .icon .counter {

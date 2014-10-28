@@ -801,7 +801,7 @@ var Hiro = {
 			// With the next available frame
 			Hiro.ui.render(function(){
 				// Do not resize on mobile devices
-				if (Hiro.ui.mini()) return;	
+				// if (Hiro.ui.mini()) return;	
 							
 				// Get basic values
 				o = h = Hiro.canvas.overlay.el_root.offsetHeight;
@@ -922,7 +922,7 @@ var Hiro = {
 				Hiro.ui.render(function(){
 					// Set text contents, 
 					// TODO Bruno: Re-append empty space at end for proper Safari linebreak handling
-					el.textContent = string;
+					el.textContent = string + ' ';
 
 					// See if we have any links
 					links = Hiro.context.extractlinks(string);
