@@ -1151,7 +1151,7 @@ var Hiro = {
 				// Try fetching contact
 				contact = Hiro.user.contacts.lookup[peer.user.uid];
 
-				// Fetch last interaction
+				// Fetch last interaction in minutes
 				age = parseInt((Hiro.util.now() - peer.last_edit) / 60000);
 
 				// Create basic div
@@ -1936,7 +1936,7 @@ var Hiro = {
 								button.textContent = 'Upgrade';	
 								// Log respective event
 								Hiro.user.track.logevent('Upgraded!',{
-									upgrade_date: Math.round(new Date() / 1000),
+									upgrade_date: Math.round(Hiro.util.now() / 1000),
 									plan: subscription.plan,
 									stripe_token: subscription.stripetoken,
 									price: {
@@ -1988,7 +1988,7 @@ var Hiro = {
 
 						// Log respective event
 						Hiro.user.track.logevent('Downgraded',{
-							downgrade_date: Math.round(new Date() / 1000),
+							downgrade_date: Math.round(Hiro.util.now() / 1000),
 							Old: old,
 							New: tier
 						});	                    			                    
@@ -3341,7 +3341,7 @@ var Hiro = {
 			persist: function() {
 				// Do not run multiple saves at once
 				if (this.saving) return;
-				var start, end, dur, key, value, i, l;
+				var start, dur, key, value, i, l;
 
 				// Set flag and notify user
 				this.saving = true;
@@ -3368,8 +3368,7 @@ var Hiro = {
 				if (this.msgqueue.length) this.tabtx(null,true);
 
 				// Measure duration
-				end = Date.now(); 
-				dur = (end - start);
+				dur = (Date.now() - start);
 
 				// Log longer persistance times
 				if (dur > 20) Hiro.sys.log('Data persisted bit slowly, within (ms):',dur,'warn');
@@ -3601,7 +3600,7 @@ var Hiro = {
 						// Save tokens to disc
 						Hiro.data.local.todisk('tokens',this.bag);						
 						// Log
-						Hiro.sys.log('Successfully consumed & removed token ' + tokenid);
+						Hiro.sys.log('Consumed and removed token ' + tokenid);
 						// End it here
 						return true;
 					}
@@ -5148,7 +5147,7 @@ var Hiro = {
 				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor;
 
 				// Time start
-				start = Hiro.util.now();
+				start = Date.now();
 
             	// Build diffs from the server delta
             	try { 
@@ -5184,7 +5183,7 @@ var Hiro = {
                     }
 
                     // Log                                      
-	                Hiro.sys.log('Patches successfully applied in ' + (Hiro.util.now() - start) + 'msecs');
+	                Hiro.sys.log('Patches successfully applied in ' + (Date.now() - start) + 'msecs');
                 }             	
 			},
 
@@ -7698,7 +7697,7 @@ var Hiro = {
 				if (user.email) settings.email = user.email;
 				if (user.tier) {
 					settings.tier = user.tier;
-					settings.created_at = Math.round(new Date(user.signup_at).getTime() / 1000);
+					settings.created_at = Math.round(user.signup_at / 1000);
 				}	
 
 				// Other properties we track
