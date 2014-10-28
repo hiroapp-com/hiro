@@ -248,6 +248,9 @@ var Hiro = {
 			d.className = 'note';
 			d.setAttribute('id','note_' + note.id);
 
+			// If it's the active note
+			if (note.id == Hiro.canvas.currentnote) d.className += ' active';
+
 			// Insert Link, Title and stats
 			link = document.createElement('a');
 			link.setAttribute('href','/note/' + note.id);	
@@ -343,7 +346,7 @@ var Hiro = {
 		},
 
 		// Move folio entry to top and resort rest of folio for both, local client and server versions
-		sort: function(totop) {
+		sort: function() {
 			var fc = Hiro.data.get('folio','c'), i, l, as, bs;
 
 			// Sort array by last edit
@@ -355,16 +358,6 @@ var Hiro = {
 				// Comparison function
 				return bs._ownedit - as._ownedit;
 			});		
-
-			// Update client array, remove 
-			// TODO Bruno: Figure out how to use the sort above to achive this in one loop, too tired to understand it 
-			for (i=0,l=fc.length;i<l;i++) {
-				if (totop && fc[i].nid == totop && i > 0) {
-					// Remove item from array and insert at beginning
-					fc.unshift(fc.splice(i,1)[0]);				
-					break;	
-				} 
-			}	
 
 			// Save changes and trigger repaint		
 			Hiro.data.set('folio','c',fc);

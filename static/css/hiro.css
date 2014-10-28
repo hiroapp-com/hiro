@@ -340,8 +340,12 @@ input.error:focus {
   cursor: pointer;  
 }
 
-#folio .notes .note:hover a, #folio .notes .note:hover a small {
+#folio .notes .note:hover a, #folio .notes .note:hover a small, #folio .notes .note.active a, #folio .notes .note.active a small {
   color: #fff;
+}
+
+#folio .notes .note.active a {
+  cursor: default;
 }
 
 #folio .notes .note a .notetitle {
@@ -485,7 +489,7 @@ input.error:focus {
 
 #canvas input.title {  
   position: absolute;
-  padding: 75px 446px 11px 96px;
+  padding: 62px 446px 11px 96px;
   margin: 0;
   border: 0; 
   font-size: 30px;
@@ -520,6 +524,7 @@ input.error:focus {
   overflow-y: auto;
   resize: none; 
   z-index: 2010;  
+  margin-bottom: -5px;
 }
 
 body.ios #canvas textarea {
