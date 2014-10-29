@@ -2960,7 +2960,7 @@ var Hiro = {
 				urlid = window.location.pathname.split('/')[2];
 
 				// If we have a note id in the url, load this one
-				if (urlid && urlid.length == 10) {
+				if (urlid && urlid.length == 10 && !Hiro.ui.mobileapp) {
 					Hiro.canvas.load(urlid, false);	
 				// Otherwise load latest note										
 				} else {
