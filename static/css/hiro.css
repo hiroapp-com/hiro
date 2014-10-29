@@ -721,18 +721,18 @@ body.ios #canvas textarea {
 
 @media (min-width: 481px) and (max-width: 900px) {
   #canvas input.title {
-    padding: 40px 120px 10px 70px;
+    padding: 50px 120px 10px 70px;
     font-size: 27px;
     border: 0;
   }  
 
   #overlay {
-    padding: 98px 70px 80px 70px;
+    padding: 113px 70px 80px 70px;
     line-height: 30px;
   }  
 
   #canvas textarea {
-    padding: 98px 70px 30px 70px;
+    padding: 113px 70px 30px 70px;
     line-height: 30px;
   } 
 
@@ -753,7 +753,7 @@ body.ios #canvas textarea {
 #apps {
   position: absolute;
   right: 395px;
-  top: 54px;  
+  top: 64px;  
   z-index: 3000; 
 }
 
@@ -994,7 +994,7 @@ body.ios #canvas textarea {
 @media (min-width: 481px) and (max-width: 900px) {
   #apps {
     right: 70px;
-    top: 36px;
+    top: 46px;
   } 
 }
 
