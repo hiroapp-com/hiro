@@ -2508,7 +2508,7 @@ var Hiro = {
 			},
 
 			// Populate header and widget with data from currentnote, triggerd by show and peer changes from server
-			update: function(repaintoverlay) {
+			update: function(repaintoverlay) {				
 				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers'),
 					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
@@ -2526,7 +2526,7 @@ var Hiro = {
 					// Insert URL into sharing part
 					if (token) {
 						// Set new value
-						el_url[el_url.length - 1].value = 'https://' + location.host + '/#' + token;
+						el_url[el_url.length - 1].value = 'https://' + location.host + '/note/' + Hiro.canvas.currentnote + '#' + token;
 						// Remember if token was missing
 						focus = that.notoken;
 						// Render active & reset flag
