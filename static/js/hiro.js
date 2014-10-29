@@ -3557,10 +3557,13 @@ var Hiro = {
 				if (token.urlid) {
 					// Get folio
 					folio = Hiro.data.get('folio','c');
-					// Check if it concerns a url we already know 
-					for ( i = 0, l = folio.length; i < l; i++) {
-						// Abort if we already know this url
-						if (folio[i].nid == token.urlid) return false;
+					// CHeck fi we got a folio at all
+					if (folio && folio.length) {
+						// Check if it concerns a url we already know 
+						for ( i = 0, l = folio.length; i < l; i++) {
+							// Abort if we already know this url
+							if (folio[i].nid == token.urlid) return false;
+						}
 					}
 				}
 
