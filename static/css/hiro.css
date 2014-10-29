@@ -40,7 +40,7 @@ em {
 
 @media (max-width: 480px) {
   html{
-    overflow-y: hidden; 
+    -webkit-overflow-scrolling: touch; 
   }
 }
 
@@ -556,6 +556,10 @@ body.ios #canvas textarea {
   color: #6097CE;  
 }
 
+#overlay:after {
+  content: " ";
+}
+
 #overlay .flag {
   width: 0;
   display: inline;
@@ -675,10 +679,10 @@ body.ios #canvas textarea {
   #canvas {
     margin-left: 0;
     border-left: none;
-    border-top: none;    
-    position: fixed;
-    top: 0;
-    bottom: 0;  
+    border-top: none;        
+    top: auto;
+    bottom: auto;
+    min-height: 100%;
   } 
 
   #canvas input.title {
@@ -690,16 +694,14 @@ body.ios #canvas textarea {
     position: fixed;
   } 
 
-  #canvas textarea, #overlay {
-    position: absolute;
-    padding: 45px 12px 20px 12px;
-    line-height: 28px;
-    height: 100% !important;
-    overflow-y: scroll; 
-  }
-
   #canvas textarea {
-    -webkit-overflow-scrolling: touch;     
+    padding: 45px 12px 0 12px;
+    line-height: 28px;
+  }  
+
+  #overlay {
+    padding: 45px 12px 40px 12px;
+    line-height: 28px;
   }   
 
   body.ios #canvas textarea {
@@ -1000,20 +1002,25 @@ body.ios #canvas textarea {
 
 @media (max-width: 480px) {
   #apps {
-    right: 0;
-    top: 0;
+    right: auto;
+    top: auto;
     z-index: 2040;
+    position: fixed;
+    width: 100%;
   }
+
   #apps .app .icon .counter {
     top: 8px;
     right: 8px;
   }  
 
-  #apps .app .icon .symbol {
+  #apps .app .icon .symbol {    
     background-size: 170px auto;
   }  
 
   #apps .app.app_sharing .icon .symbol {
+    position: absolute;
+    right: 0px;    
     background-position: -66px -322px;
   }
 

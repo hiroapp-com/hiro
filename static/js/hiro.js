@@ -797,7 +797,7 @@ var Hiro = {
 			// With the next available frame
 			Hiro.ui.render(function(){
 				// Do not resize on mobile devices
-				if (Hiro.ui.mini()) return;	
+				// if (Hiro.ui.mini()) return;	
 							
 				// Get basic values
 				o = h = Hiro.canvas.overlay.el_root.offsetHeight;
@@ -1067,6 +1067,8 @@ var Hiro = {
 
 			// Align the under & overlays with the textarea if it's being scrolled
 			scroll: function(event) {
+
+				return;
 				var that = this;
 				// Check if we already qeued an event
 				// if (this.scrolling) return;
