@@ -2921,16 +2921,24 @@ var Hiro = {
 				n = this.local.fromdisk('_allnotes'), 
 				f = this.local.fromdisk('folio'),
 				t = this.local.fromdisk('tokens'),
-				urlid;
+				urlid, i, l;
 
 			// If we do have data stored locally
 			if (p && n) {	
 				// Remove landing page
 				Hiro.ui.el_landingpage.style.display = 'none';
 
-				// Load internal values, add tokens if stored offline
+				// Load internal values
 				this.unsynced = this.local.fromdisk('unsynced');
-				this.tokens.bag = t;
+
+				// Add tokens via tokens.add();
+				if (t && t.length) {
+					// Iterate through them
+					for (i = 0, l = t.length; i < l; i++ ){
+						// Add them
+						this.tokens.add(t[i]);
+					}
+				};
 
 				// Remove first locks
 				p._tag = f._tag = undefined;
@@ -3527,22 +3535,33 @@ var Hiro = {
 
 		// Small token handling lib that makes sure tokens are properly handled even if hync or user is offline
 		tokens: {
-			// Collection of token objects, properties are id and optional action
+			// Collection of token objects, properties are id, optional action and url
 			bag: [],
 
 			// Add a token
 			add: function(token) {
-				var i, l;
+				var i, l, folio;
 
-				// Iterate through know tokens
+				// See if we have already know the token
 				for (i = 0, l = this.bag.length; i < l; i++ ) {
 					// Abort if it's a duplicate
 					if (this.bag[i].id == token.id) {
 						// Log
-						Hiro.sys.log('Tried to add know token', token, 'warn');
+						Hiro.sys.log('Tried to add known token', token, 'warn');
 						// Abort
 						return false;
 					}				
+				}
+
+				// If the token is part of a note id
+				if (token.urlid) {
+					// Get folio
+					folio = Hiro.data.get('folio','c');
+					// Check if it concerns a url we already know 
+					for ( i = 0, l = folio.length; i < l; i++) {
+						// Abort if we already know this url
+						if (folio[i].nid == token.urlid) return false;
+					}
 				}
 
 				// Otherwise add it
@@ -5317,22 +5336,23 @@ var Hiro = {
 		// Called if we have a hash on init
 		// Hash format is #r:baaceed1406d406e80b65e7053ab51fa are tokens
 		hashhandler: function() {
-			var hashes = window.location.hash.substring(1).split(':'), knowntokens, token, i, l,
+			var hashes = window.location.hash.substring(1).split(':'), token, i, l,
 				actionmap = { v: 'verify', r: 'reset' };
 
 			// Iterate through hash components
 			for (i = 0, l = hashes.length; i < l; i++) {
 				// If we have 32 chars long string it's not an email
 				if (hashes[i].length == 32 && hashes[i].indexOf('@') == -1) {
-					// Get known tokens
-					knowntokens = Hiro.data.get('tokens');	
-
 					// Set token to current value
 					token = {};
 					token.id = hashes[i];
 
 					// See if we have a command preceeding the token
 					if (i != 0) token.action = actionmap[hashes[i - 1]];
+
+					// Get urlid and add to token
+					urlid = window.location.pathname.split('/')[2];
+					if (urlid) token.urlid = urlid;
 
 					// Add token
 					Hiro.data.tokens.add(token);
