@@ -477,8 +477,6 @@ input.error:focus {
   position: absolute;
   left: 0;
   right: 0;
-  top: 50px;
-  bottom: 0;
   margin-left: 50px;
   margin-right: 0;
   z-index: 2000;
@@ -486,7 +484,13 @@ input.error:focus {
   border-left: 1px solid #222; 
   border-top: 1px solid #222;  
   border-top-left-radius: 3px;  
-  box-shadow: 3px 3px 8px black;   
+  box-shadow: 3px 3px 8px black;  
+  margin-top: 50px;
+  margin-bottom: -51px;
+  min-height: 100%;
+  overflow: hidden;
+  padding-bottom: 51px;
+  box-sizing: border-box;  
 }
 
 #canvas input.title {  
@@ -680,9 +684,9 @@ body.ios #canvas textarea {
     margin-left: 0;
     border-left: none;
     border-top: none;        
-    top: auto;
-    bottom: auto;
-    min-height: 100%;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
   } 
 
   #canvas input.title {

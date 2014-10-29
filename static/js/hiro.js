@@ -1067,27 +1067,20 @@ var Hiro = {
 
 			// Align the under & overlays with the textarea if it's being scrolled
 			scroll: function(event) {
-
-				return;
 				var that = this;
-				// Check if we already qeued an event
-				// if (this.scrolling) return;
+
+				// Check if we already queued an event
+				if (this.scrolling) return;
 
 				// Set falg
-				// this.scrolling = true;
+				this.scrolling = true;
 
 				// Wrap in rAF
-				//Hiro.ui.render(function(){
+				Hiro.ui.render(function(){
 					var target = event.target || event.srcElement;
 
-					// Only read textarea once
-					// top = (target.scrollTop * -1) + 'px';
-
-					// Check & set
-					if (that.el_root.scrollTop != target.scrollTop) that.el_root.scrollTop = target.scrollTop;
-
-					// that.scrolling = false;
-				// })
+					that.scrolling = false;
+				})
 			},
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
@@ -5576,7 +5569,7 @@ var Hiro = {
 			}	
 
 			// Attach scroll handler to textarea
-			Hiro.util.registerEvent(Hiro.canvas.el_text,'scroll',function(e) { if (Hiro.ui.mini()) Hiro.canvas.overlay.scroll(e); });				
+			// Hiro.util.registerEvent(Hiro.canvas.el_text,'scroll',function(e) { if (Hiro.ui.mini()) Hiro.canvas.overlay.scroll(e); });				
 		},
 
 		// Render changes via rAF or, if window is not focused, right away
