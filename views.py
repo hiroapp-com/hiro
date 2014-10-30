@@ -119,7 +119,26 @@ def register():
             return jsonify(token=user.token('login'))
     return jsonify_err(400, password="Something went wrong. Please try again")
          
-def reset_pwd():
+def set_pwd():
+    sid = request.json.get('sid', '')
+    old_pwd = request.json.get('old_pwd', '')
+    new_pwd = request.json.get('new_pwd', '')
+    token = request.json.get('token', '')
+    if not sid or not any ((old_pwd, token)) or not new_pwd:
+        # TODO rollbar
+        return jsonify_err(403, password='Missing data, cannot set password.')
+
+    sess = Session.load(sid) if sid else None
+    if not sess:
+        return jsonify_err(403, password='Invalid Session')
+    if not sess.user:
+        return jsonify_err(403, password='User not found.')
+    err = sess.user.set_pwd(new_pwd, old_pwd=old_pwd, token=token)
+    if err:
+        return jsonify_err(403, password=err)
+    return jsonify(status="ok")
+
+def req_reset_pwd():
     email = valid_email(request.json.get('email', ''))
     phone = request.json.get('phone', '')
     if not any((email, phone)) or all((email, phone)):

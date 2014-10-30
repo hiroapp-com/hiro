@@ -166,6 +166,29 @@ class User(object):
             return False
         return pbkdf2_sha512.verify(pwd, self.pwd)
 
+    def set_pwd(self, new_pwd, old_pwd=None, token=None):
+        if not new_pwd:
+            return "No new password provided"
+        if old_pwd:
+            if not self.check_pwd(old_pwd):
+                return 'Wrong old password.'
+        elif token:
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute("SELECT uid FROM tokens WHERE token = %s AND last_consumed_at > now() - interval '3 minutes'", (sha512(token).hexdigest(),))
+            print (sha512(token).hexdigest())
+            uid = cur.fetchone()
+            print uid
+            conn.close()
+            if not uid or uid[0] != self.uid:
+                return 'Invalid token provideed'
+        else:
+            return 'Either token or Old Password needed to set new password'
+        self.pwd = pbkdf2_sha512.encrypt(new_pwd)
+        self.update(password=self.pwd)
+        return None
+
+
     def signup(self, pwd):
         if not self.uid:
             return False
