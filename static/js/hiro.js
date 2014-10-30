@@ -1079,6 +1079,8 @@ var Hiro = {
 				Hiro.ui.render(function(){
 					var target = event.target || event.srcElement;
 
+					if (Hiro.ui.ios) Hiro.canvas.el_text.value = document.documentElement.scrollHeight;
+
 					that.scrolling = false;
 				})
 			},
@@ -5562,14 +5564,16 @@ var Hiro = {
 
 			// Set body style if we're on a touch device
 			if (this.touch) {
-				// Generic
-				document.body.className = 'touch';	
-				// iOS Specifics (textarea indent)
-				if (this.ios) document.body.className += ' ios';	
+				Hiro.ui.render(function(){
+					// Generic
+					document.documentElement.className = 'touch';	
+					// iOS Specifics (textarea indent)
+					if (Hiro.ui.ios) document.documentElement.className += ' ios';	
+				});
 			}	
 
 			// Attach scroll handler to textarea
-			// Hiro.util.registerEvent(Hiro.canvas.el_text,'scroll',function(e) { if (Hiro.ui.mini()) Hiro.canvas.overlay.scroll(e); });				
+			Hiro.util.registerEvent(window,'scroll',function(e) { if (Hiro.ui.touch) Hiro.canvas.overlay.scroll(e); });				
 		},
 
 		// Render changes via rAF or, if window is not focused, right away

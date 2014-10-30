@@ -1,7 +1,5 @@
 html,
-body,
-#folio {
-  height: 100%;
+body {
   margin: 0;
 }
 
@@ -10,12 +8,17 @@ html {
    overflow-y: scroll;
    overflow-x: hidden; 
    background-color: #fcfcfc;
+  -webkit-overflow-scrolling: touch;    
 }
 
 body {
   font-family: "urbana", sans-serif;
   color: #1a1a1a;
   background-color: #fcfcfc;  
+}
+
+html.touch, html.touch body {
+  background-color: #2f2f2f;  
 }
 
 input {
@@ -35,12 +38,6 @@ em {
 @media (max-width: 480px), (min-width: 481px) and (max-width: 900px), only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (-webkit-min-device-pixel-ratio: 1) and (orientation : landscape) {
   body{
     -webkit-text-size-adjust: none;
-  }
-}
-
-@media (max-width: 480px) {
-  html{
-    -webkit-overflow-scrolling: touch; 
   }
 }
 
@@ -312,7 +309,7 @@ input.error:focus {
   display: none;
 }
 
-#folio .notes .note:hover .archive, body.touch #folio.open .notes .note .archive {
+#folio .notes .note:hover .archive, html.touch body #folio.open .notes .note .archive {
   display: block;
 }
 
@@ -488,9 +485,14 @@ input.error:focus {
   margin-top: 50px;
   margin-bottom: -51px;
   min-height: 100%;
-  overflow: hidden;
-  padding-bottom: 51px;
   box-sizing: border-box;  
+  overflow: hidden;
+}
+
+html.touch body #canvas {
+  border-bottom: 1px solid #222;  
+  border-bottom-left-radius: 3px;  
+  overflow: visible; 
 }
 
 #canvas input.title {  
@@ -534,9 +536,9 @@ input.error:focus {
   margin-bottom: -5px;
 }
 
-body.ios #canvas textarea {
+html.ios body #canvas textarea {
   margin-left: -3px;
-  padding-right: 31px;
+  padding-right: 389px;
 }
 
 
@@ -652,10 +654,15 @@ body.ios #canvas textarea {
   z-index: 2030;
   bottom: 54px; 
   display: none; 
-  position: fixed;     
+  position: absolute;     
   width: 100%;
-  padding: 0 395px 0 96px;
+  padding-right: 395px;
+  padding-left: 96px;
   box-sizing: border-box;  
+}
+
+html.touch #nicequote {
+  padding-bottom: 50px;
 }
 
 #nicequote .quote {
@@ -684,8 +691,7 @@ body.ios #canvas textarea {
 @media (max-width: 480px) {
   #canvas {
     margin-left: 0;
-    border-left: none;
-    border-top: none;        
+    border: none;       
     margin-top: 0;
     margin-bottom: 0;
     padding-bottom: 0;
@@ -710,7 +716,7 @@ body.ios #canvas textarea {
     line-height: 28px;
   }   
 
-  body.ios #canvas textarea {
+  html.ios body #canvas textarea {
     padding-right: 6px;
   } 
 
@@ -742,7 +748,7 @@ body.ios #canvas textarea {
     line-height: 30px;
   } 
 
-  body.ios #canvas textarea {
+  html.ios body #canvas textarea {
     padding-right: 64px;
   }      
 
@@ -1073,9 +1079,9 @@ body.ios #canvas textarea {
   background-color: #f0f0ed;
   width: 300px;
   position: fixed;
-  top: 0;
   right: 0;
-  bottom: 0;
+  top: 0;
+  height: 10000px;
   z-index: 4000;
   border-left: 1px solid #dcdcdc;
   box-shadow: 6px 0px 12px black  
