@@ -652,17 +652,12 @@ html.ios body #canvas textarea {
 
 #nicequote {
   z-index: 2030;
-  bottom: 54px; 
+  bottom: 104px; 
   display: none; 
   position: absolute;     
   width: 100%;
-  padding-right: 395px;
-  padding-left: 96px;
+  padding: 0 395px 0 96px;
   box-sizing: border-box;  
-}
-
-html.touch #nicequote {
-  padding-bottom: 50px;
 }
 
 #nicequote .quote {
@@ -753,7 +748,7 @@ html.touch #nicequote {
   }      
 
   #nicequote {
-    bottom: 50px;
+    bottom: 100px;
     padding: 0 70px 0 70px;    
   }  
 }

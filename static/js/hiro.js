@@ -1079,6 +1079,13 @@ var Hiro = {
 				Hiro.ui.render(function(){
 					var target = event.target || event.srcElement;
 
+				// This should also happen on orientationchange
+				if (Hiro.ui.touch) {
+					// Reset viewport tag
+					measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+					document.getElementById('viewport').setAttribute('content', measure);	
+				}					
+
 					if (Hiro.ui.ios) Hiro.canvas.el_text.value = document.documentElement.scrollHeight;
 
 					that.scrolling = false;
@@ -5534,6 +5541,14 @@ var Hiro = {
 
 				// Attach swipe event listener 
 				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);
+
+				// Set <html> classnames
+				Hiro.ui.render(function(){
+					// Generic
+					document.documentElement.className = 'touch';	
+					// iOS Specifics (textarea indent)
+					if (Hiro.ui.ios) document.documentElement.className += ' ios';	
+				});				
 			}			
 
 			// Start hprogress on init
@@ -5561,16 +5576,6 @@ var Hiro = {
 
 			// Always load settings from server to determine contents and webserver availability
 			this.dialog.load();		
-
-			// Set body style if we're on a touch device
-			if (this.touch) {
-				Hiro.ui.render(function(){
-					// Generic
-					document.documentElement.className = 'touch';	
-					// iOS Specifics (textarea indent)
-					if (Hiro.ui.ios) document.documentElement.className += ' ios';	
-				});
-			}	
 
 			// Attach scroll handler to textarea
 			Hiro.util.registerEvent(window,'scroll',function(e) { if (Hiro.ui.touch) Hiro.canvas.overlay.scroll(e); });				
@@ -5633,7 +5638,7 @@ var Hiro = {
 			// Ignore if we wait for paint
 			if (Hiro.ui.resizing) return;
 
-			// Set falg to true
+			// Set flag to true
 			Hiro.ui.resizing = true;
 
 			// Wrap in rendering
@@ -5643,6 +5648,13 @@ var Hiro = {
 
 				// Reset dialog position
 				if (Hiro.ui.dialog.open) Hiro.ui.dialog.center();
+
+				// This should also happen on orientationchange
+				if (Hiro.ui.touch) {
+					// Reset viewport tag
+					measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+					document.getElementById('viewport').setAttribute('content', measure);	
+				}
 
 				// Reset flag
 				Hiro.ui.resizing = false;				
