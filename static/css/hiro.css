@@ -452,6 +452,7 @@ input.error:focus {
   }
 
   #folio .footer {
+    position: fixed;
     max-width: 295px;    
     right: 55px;
     width: auto;
@@ -483,7 +484,7 @@ input.error:focus {
   border-top-left-radius: 3px;  
   box-shadow: 3px 3px 8px black;  
   margin-top: 50px;
-  margin-bottom: -51px;
+  margin-bottom: -50px;
   min-height: 100%;
   box-sizing: border-box;  
   overflow: hidden;
@@ -693,11 +694,10 @@ html.ios body #canvas textarea {
   } 
 
   #canvas input.title {
-    padding: 9px 0 5px 95px;
+    padding: 9px 0 5px 47px;
     border: 0;
     font-size: 27px;
     background-color: transparent;
-    margin-left: -48px;
     position: fixed;
   } 
 
@@ -2147,24 +2147,33 @@ body#landingPage2 .l_footer .l_box .l_header {
 /* ----- Print foooo -------*/
 
 @media print {
+  #showmenu, #folio, #shield, #hprogress, #wastebin, #apps, #context, #canvas textarea {
+    display: none;
+  }
 
-#showmenu, #folio, #shield, #hprogress, #wastebin, #apps, #context, #canvas textarea {
-  display: none;
-}
+  #canvas {
+    margin-left: 0;
+    border-left: 0;
+  }
 
-#canvas {
-  margin-left: 0;
-  border-left: 0;
-}
+  #canvas input.title {
+    padding: 16mm 10% 0 10%;
+    color: #333; 
+  }
 
-#canvas input.title {
-  padding: 16mm 10% 0 10%;
-  color: #333; 
-}
-
-#overlay {
-  padding: 40mm 10% 10mm 10%;
-  color: #333;
-}
-
+  #overlay {
+    padding: 40mm 10% 10mm 10%;
+    color: #333;
+  }
 } 
+
+#foo {
+  display: none;
+  width: 100px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 1000px;
+  background: red;
+  z-index: 5000;
+}

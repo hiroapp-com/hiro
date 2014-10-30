@@ -5473,7 +5473,7 @@ var Hiro = {
 		// Setup and browser capability testing
 		init: function() {
 			var style = this.el_wastebin.style,
-				v = this.vendors, i, l, r, measure;
+				v = this.vendors, i, l, r, measure, scrollables;
 
 			// Determine CSS opacity property
 			if (style.opacity !== undefined) this.opacity = 'opacity';
@@ -5524,14 +5524,14 @@ var Hiro = {
 			}());
 
 			// Mobile specific setup
-			if (this.touch) {
+			if (true) {
 				// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
 				// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
 				measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 				document.getElementById('viewport').setAttribute('content', measure);	
 
-				// Attach swipe event listener 
-				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);
+				// Attach swipe event listener (this also kills all touchmove events)
+				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);					
 
 				// Set <html> classnames
 				Hiro.ui.render(function(){
@@ -5539,7 +5539,7 @@ var Hiro = {
 					document.documentElement.className = 'touch';	
 					// iOS Specifics (textarea indent)
 					if (Hiro.ui.ios) document.documentElement.className += ' ios';	
-				});				
+				});								
 			}			
 
 			// Start hprogress on init
@@ -6012,7 +6012,7 @@ var Hiro = {
 			window.location.href = s;
 		},	
 
-		// Left / right swipes
+		// Left / right swipes, also add stability by preventing some default behaviour
 		swipe: {
 			start_x: 0,
 			start_y: 0,
@@ -6020,15 +6020,16 @@ var Hiro = {
 			id: undefined,
 
 			// Track movements
-			move: function(e) {
+			move: function(event) {
 				var that = Hiro.ui.swipe;			
+
 				// If the user starts moving
-	    		if (e.touches.length == 1 && !that.active && that.identifier != e.touches[0].identifier) {	   
+	    		if (event.touches.length == 1 && !that.active && that.identifier != event.touches[0].identifier) {	 
 	    			// Store reference to starting touch 			    			
-	    			that.start_x = e.touches[0].screenX;
-	    			that.start_y = e.touches[0].screenY;
+	    			that.start_x = event.touches[0].screenX;
+	    			that.start_y = event.touches[0].screenY;
 	    			that.active = true;
-	    			that.identifier = e.touches[0].identifier;
+	    			that.identifier = event.touches[0].identifier;
 
 	    			// Set timeout after which assume it wasn't a swipe
 	    			setTimeout(function(){
@@ -6039,21 +6040,21 @@ var Hiro = {
 	    		// As long as we didn't time out / move off course	
 	    		} else if (that.active) { 
 	    			// init rest of variables  			
-		    	 	var x = e.touches[0].screenX,
-		    			y = e.touches[0].screenY,
+		    	 	var x = event.touches[0].screenX,
+		    			y = event.touches[0].screenY,
 		    			dx = that.start_x - x,
-		    			dy = that.start_y - y;    			
+		    			dy = that.start_y - y;  		
 
 		    		// If the left/right movement was more than 45 devicepixels	
 		    		if (Math.abs(dx) >= (45 * window.devicePixelRatio)) {	
 		    			// Cancel event listener	    			
 		    			that.cancel();
 
-		    			// Prevent further move action (stabilises ui)
-		    			Hiro.util.stopEvent(e)
-
 		    			// Cancel if we veered outside a 45° corridor
 		    			if (Math.abs(dy) > Math.abs(dx*0.5)) return;
+
+		    			// Prevent further move action (stabilises ui)
+		    			Hiro.util.stopEvent(event);   		    			
 
 		    			// User swiped left
 		    			if(dx > 0) {	    				
@@ -7762,7 +7763,7 @@ var Hiro = {
 
 				// Other properties we track
 				settings.notes = Hiro.folio.owncount;
-				settings.contacts = user.contacts.length;
+				settings.contacts = (user.contacts) ? user.contacts.length : 0;
 
 				// Update the window object
 				window.intercomSettings = settings;
