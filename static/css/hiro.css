@@ -392,10 +392,11 @@ input.error:focus {
 }
 
 #folio .footer {
-  position: absolute;
+  position: fixed;
   left: 0;
   bottom: 0;
   width: 340px;
+  z-index: 1001;
 }
 
 #folio .footer a {
@@ -428,7 +429,7 @@ input.error:focus {
 } 
 
 #folio .footer a.signin {
-  background-position: -68px -110px;
+  background-position: -70px -110px;
 }
 
 #folio .footer a.archivelink {
@@ -441,10 +442,6 @@ input.error:focus {
 }
 
 @media (max-width: 480px) {
-  #folio {
-    width: 100%;
-  }
-
   #folio .notes {
     max-width: 295px;
     right: 57px;
@@ -470,6 +467,14 @@ input.error:focus {
 
 /* ------ Editor ------*/
 
+.rails {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding-top: 50px;
+}
 
 #canvas {
   position: absolute;
@@ -483,11 +488,8 @@ input.error:focus {
   border-top: 1px solid #222;  
   border-top-left-radius: 3px;  
   box-shadow: 3px 3px 8px black;  
-  margin-top: 50px;
-  margin-bottom: -50px;
   min-height: 100%;
   box-sizing: border-box;  
-  overflow: hidden;
 }
 
 html.touch body #canvas {
@@ -686,7 +688,7 @@ html.ios body #canvas textarea {
 
 @media (max-width: 480px) {
   #canvas {
-    margin-left: 0;
+    margin-left: 50px;
     border: none;       
     margin-top: 0;
     margin-bottom: 0;
@@ -694,11 +696,11 @@ html.ios body #canvas textarea {
   } 
 
   #canvas input.title {
-    padding: 9px 0 5px 47px;
+    padding: 9px 0 5px 95px;
     border: 0;
     font-size: 27px;
     background-color: transparent;
-    position: fixed;
+    margin-left: -48px;
   } 
 
   #canvas textarea {
@@ -1076,10 +1078,11 @@ html.ios body #canvas textarea {
   position: fixed;
   right: 0;
   top: 0;
-  height: 10000px;
+  bottom: 0;
   z-index: 4000;
   border-left: 1px solid #dcdcdc;
   box-shadow: 6px 0px 12px black  
+
 }
 
 #status {
@@ -2147,7 +2150,7 @@ body#landingPage2 .l_footer .l_box .l_header {
 /* ----- Print foooo -------*/
 
 @media print {
-  #showmenu, #folio, #shield, #hprogress, #wastebin, #apps, #context, #canvas textarea {
+  #showmenu, #folio, #shield, #hprogress, #wastebin, #apps, #context, #logio, #canvas textarea {
     display: none;
   }
 
@@ -2166,14 +2169,3 @@ body#landingPage2 .l_footer .l_box .l_header {
     color: #333;
   }
 } 
-
-#foo {
-  display: none;
-  width: 100px;
-  position: fixed;
-  top: 0;
-  right: 0;
-  height: 1000px;
-  background: red;
-  z-index: 5000;
-}

@@ -74,11 +74,12 @@ var Hiro = {
 		archiveopen: false,
 
 		// DOM IDs
-		el_root: document.getElementById('folio'),
+		el_root: document.getElementById('folio'),		
 		el_notelist: document.getElementById('notelist'),
 		el_archivelist: document.getElementById('archivelist'),
 		el_showmenu: document.getElementById('showmenu'),
 		el_archivelink: document.getElementById('archivelink'),		
+		el_logio: document.getElementById('logio'),		
 
 		// Internal values
 		archivecount: 0,
@@ -93,6 +94,7 @@ var Hiro = {
 			// Event setup
 			Hiro.ui.fastbutton.attach(this.el_root,Hiro.folio.folioclick);	
 			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);
+			Hiro.ui.fastbutton.attach(this.el_logio,Hiro.folio.folioclick);			
 
 			// Open the folio if a user hovers		
 			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);	
@@ -5528,7 +5530,9 @@ var Hiro = {
 				// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
 				// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
 				measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
-				document.getElementById('viewport').setAttribute('content', measure);	
+				document.getElementById('viewport').setAttribute('content', measure);
+
+				document.getElementById('foo').innerText = measure;
 
 				// Attach swipe event listener (this also kills all touchmove events)
 				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);					
@@ -5645,6 +5649,7 @@ var Hiro = {
 					// Reset viewport tag
 					measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 					document.getElementById('viewport').setAttribute('content', measure);	
+									document.getElementById('foo').innerText = measure;
 				}
 
 				// Reset flag

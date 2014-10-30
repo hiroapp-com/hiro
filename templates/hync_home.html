@@ -7,10 +7,11 @@
         <meta name="description" content="From ideas for your business to party preparations: Hiro is the easiest way to stay organized throughout the day." />
         <meta name="keywords" content="Hiro, notes, notepad, notes with firends, shared notes, notetaking, evernote, simplenote, shared notes, writing, writing app, word processor, text, text editor" />
         <meta name="title" content="Hiro." />	    
-		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="mobile-web-app-capable" content="yes" />		
 		<meta name="apple-touch-fullscreen" content="yes" />
 		<meta name="apple-mobile-web-app-title" content="Hiro" />	
+		<meta name="apple-mobile-web-app-capable" content="yes" />		
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">			
 		<meta name="mobile-web-app-title" content="Hiro" />			
 		<meta name="viewport" id="viewport" content="height=device-height,width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 		<meta property="og:site_name" content="Hiro" />
@@ -20,8 +21,7 @@
         <meta property="og:type" content="website" />
         <meta property="og:description" content="Notes with friends." />
         {{ get_asset('new_css') }}
-		<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png"/>	
-		<meta name="apple-mobile-web-app-status-bar-style" content="black">		
+		<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png"/>		
 		<link rel="canonical" href="{{ request.url }}"/>	
 	</head>
 	<body>
@@ -97,8 +97,6 @@
 			</div>
 
 		</div>
-
-		<div id="foo"></div>
 		
 		<div id="shield">
 			<div class="wrapper">		
@@ -156,4 +154,4 @@
 		<div id="wastebin"></div>
 	
         {{ get_asset('new_js') }}
-        <script type="text/javascript">Hiro.sys.init({v:'{{ version }}',vn:'Sad Skeletor',ws:'{{ config.WS_URL }}',st:'{{ config.STRIPE_PUBLIC_KEY }}',fb:'{{ config.FACEBOOK_APP_ID }}',ic:'{{ config.INTERCOM_ID }}',rb:'{{ config.ROLLBAR_CLIENT_TOKEN }}'});</script></body></html>
+        <script type="text/javascript">Hiro.sys.init({v:'{{ git.version }}',vn:'{{ git.name }}',ws:'{{ config.WS_URL }}',st:'{{ config.STRIPE_PUBLIC_KEY }}',fb:'{{ config.FACEBOOK_APP_ID }}',ic:'{{ config.INTERCOM_ID }}',rb:'{{ config.ROLLBAR_CLIENT_TOKEN }}'});</script></body></html>
