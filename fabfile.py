@@ -1,4 +1,5 @@
 import os
+import json
 import tempfile
 
 import requests
@@ -43,8 +44,7 @@ def checkout(branch='master'):
     with cd(ROOT + '/refs'):
         tmpdir = tempfile.mkdtemp(prefix='.clone-', dir='.')
         run('git clone --depth 1 --branch {0} {1} {2}'.format(branch, REPO_URL, tmpdir))
-        # Flo, pls add sumthin like run('git fetch --tags')        
-        ref = run('git --git-dir={0} describe --always --long'.format(tmpdir + '/.git'))
+        ref = run('git --git-dir={0} rev-parse --short HEAD'.format(tmpdir + '/.git'))
         if 'path_exists' == run('[ -d {0} ] && echo "path_exists" || echo "Path clear"'.format(ref)):
             abort("Curent revision is already checked out. Aborting")
         run('mv {0} {1}'.format(tmpdir, ref))
@@ -73,6 +73,15 @@ def rebuild_assets(ref):
     with cd(ROOT + '/refs/' + ref):
         run('source {0} && ./assets.py'.format(ROOT + '/venv/bin/activate'))
         print(green('{0}: assets rebuilt'.format(ref)))
+
+@task 
+@roles('frontend')
+def write_versionfile(ref): 
+    version = run(r'git ls-remote --tags {0} | grep -v "\^{{}}" | cut -d "/" -f 3 | sort -V | tail -1'.format(REPO_URL))
+    version_json = json.dumps({'version': '-'.join((version, ref))})
+    version_file = ROOT + '/refs/' + ref + '/version'
+    run("echo '{0}' > {1}".format(version_json, version_file))
+
 
 
 @task 
@@ -117,6 +126,7 @@ def deploy():
     ref = result.values()[0]
     execute(prepare, ref)
     execute(rebuild_assets, ref)
+    execute(write_versionfile, ref)
     execute(activate, ref)
     execute(rollbar_record_deploy, ref)
     print(green('deploymet of HEAD finished'))
