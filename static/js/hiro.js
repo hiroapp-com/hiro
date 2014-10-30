@@ -1079,15 +1079,6 @@ var Hiro = {
 				Hiro.ui.render(function(){
 					var target = event.target || event.srcElement;
 
-				// This should also happen on orientationchange
-				if (Hiro.ui.touch) {
-					// Reset viewport tag
-					measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
-					document.getElementById('viewport').setAttribute('content', measure);	
-				}					
-
-					if (Hiro.ui.ios) Hiro.canvas.el_text.value = document.documentElement.scrollHeight;
-
 					that.scrolling = false;
 				})
 			},
