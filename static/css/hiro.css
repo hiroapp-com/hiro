@@ -1,14 +1,13 @@
 html,
 body {
   margin: 0;
+  overflow: hidden;
+  height: 100%;  
 }
 
 html {
   -webkit-font-smoothing: antialiased;
-   overflow-y: scroll;
-   overflow-x: hidden; 
-   background-color: #fcfcfc;
-  -webkit-overflow-scrolling: touch;    
+   background-color: #fcfcfc;   
 }
 
 body {
@@ -225,12 +224,12 @@ input.error:focus {
 
 #folio {
   position: fixed;
+  background-color: #2f2f2f;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
   top: 0;
   left: 0;
-  bottom: 0;
-  background-color: #2f2f2f;
-  z-index: 1000;
-  right: 0;
 }
 
 #folio a {
@@ -396,7 +395,6 @@ input.error:focus {
   left: 0;
   bottom: 0;
   width: 340px;
-  z-index: 1001;
 }
 
 #folio .footer a {
@@ -467,20 +465,22 @@ input.error:focus {
 
 /* ------ Editor ------*/
 
-.rails {
+#rails {
   position: fixed;
   top: 0;
-  right: 0;
-  bottom: 0;
   left: 0;
+  margin-left: 50px;
   padding-top: 50px;
+  -webkit-overflow-scrolling: touch;  
+  overflow-x: hidden;
+  overflow-y: scroll;
+  z-index: 1001;
+  height: 100%;
+  width: 100%;
 }
 
 #canvas {
   position: absolute;
-  left: 0;
-  right: 0;
-  margin-left: 50px;
   margin-right: 0;
   z-index: 2000;
   background: #fff;
@@ -490,12 +490,12 @@ input.error:focus {
   box-shadow: 3px 3px 8px black;  
   min-height: 100%;
   box-sizing: border-box;  
+  width: 100%;
 }
 
-html.touch body #canvas {
+html.touch body #rails #canvas {
   border-bottom: 1px solid #222;  
   border-bottom-left-radius: 3px;  
-  overflow: visible; 
 }
 
 #canvas input.title {  
@@ -539,7 +539,7 @@ html.touch body #canvas {
   margin-bottom: -5px;
 }
 
-html.ios body #canvas textarea {
+html.ios body #rails #canvas textarea {
   margin-left: -3px;
   padding-right: 389px;
 }
@@ -687,8 +687,12 @@ html.ios body #canvas textarea {
 }
 
 @media (max-width: 480px) {
+  #rails {
+    padding-top: 0;
+    margin-left: 0;
+  }
   #canvas {
-    margin-left: 50px;
+    margin-left: 0;
     border: none;       
     margin-top: 0;
     margin-bottom: 0;
@@ -713,7 +717,7 @@ html.ios body #canvas textarea {
     line-height: 28px;
   }   
 
-  html.ios body #canvas textarea {
+  html.ios body #rails #canvas textarea {
     padding-right: 6px;
   } 
 
@@ -745,7 +749,7 @@ html.ios body #canvas textarea {
     line-height: 30px;
   } 
 
-  html.ios body #canvas textarea {
+  html.ios body #rails #canvas textarea {
     padding-right: 64px;
   }      
 
@@ -1008,8 +1012,8 @@ html.ios body #canvas textarea {
 
 @media (max-width: 480px) {
   #apps {
-    right: auto;
-    top: auto;
+    right: 0;
+    top: 0;
     z-index: 2040;
     position: fixed;
     width: 100%;

@@ -74,12 +74,11 @@ var Hiro = {
 		archiveopen: false,
 
 		// DOM IDs
-		el_root: document.getElementById('folio'),		
+		el_root: document.getElementById('folio'),					
 		el_notelist: document.getElementById('notelist'),
 		el_archivelist: document.getElementById('archivelist'),
 		el_showmenu: document.getElementById('showmenu'),
-		el_archivelink: document.getElementById('archivelink'),		
-		el_logio: document.getElementById('logio'),		
+		el_archivelink: document.getElementById('archivelink'),			
 
 		// Internal values
 		archivecount: 0,
@@ -93,8 +92,7 @@ var Hiro = {
 		init: function() {
 			// Event setup
 			Hiro.ui.fastbutton.attach(this.el_root,Hiro.folio.folioclick);	
-			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);
-			Hiro.ui.fastbutton.attach(this.el_logio,Hiro.folio.folioclick);			
+			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);		
 
 			// Open the folio if a user hovers		
 			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);	
@@ -485,6 +483,7 @@ var Hiro = {
 
 		// DOM IDs
 		el_root: document.getElementById('canvas'),
+		el_rails: document.getElementById('rails'),		
 		el_title: document.getElementById('title'),
 		el_text: document.getElementById('content'),	
 		el_quote: document.getElementById('nicequote'),
@@ -506,7 +505,7 @@ var Hiro = {
 			Hiro.util.registerEvent(this.el_root,'input',Hiro.canvas.keystream);		
 			Hiro.util.registerEvent(this.el_root,'cut',Hiro.canvas.keystream);		
 			Hiro.util.registerEvent(this.el_root,'paste',Hiro.canvas.keystream);									
-			Hiro.util.registerEvent(this.el_title,'focus',Hiro.canvas.titlefocus);			
+			Hiro.util.registerEvent(this.el_title,'focus',Hiro.canvas.titlefocus);						
 
 			// When a user touches the white canvas area
 			Hiro.ui.touchy.attach(this.el_root,Hiro.canvas.canvastouch,55);		
@@ -5288,7 +5287,7 @@ var Hiro = {
 			if (vars.st) Hiro.lib.stripe.key = vars.st;
 			if (vars.rb) Hiro.lib.rollbar.key = vars.rb;
 			if (vars.ic) Hiro.lib.intercom.key = vars.ic;	
-			if (vars.v) this.versioncheck(vars.v,vars.vn);		
+			if (vars.v) this.versioncheck(vars.v);		
 
 			// Create DMP socket
 			Hiro.sync.diff.dmp = new diff_match_patch();	
@@ -5362,14 +5361,14 @@ var Hiro = {
 
 		// Takes a version nr and compares it to what we have. 
 		// If we have a new git tag, indicated by a change in the version string before first '-'
-		versioncheck: function(version,name) {
+		versioncheck: function(version) {
 			var currentversion = Hiro.version.split('-')[0];
 			// If we didn't have a version at all yet
 			if (!currentversion) {
 				// Set
 				Hiro.version = version;
 				// Log
-				Hiro.sys.log('Version is ' + version + ' (' + name + ')');
+				Hiro.sys.log('Version is ' + version);
 			// If a version was provided	
 			} else if (version) {
 				// Compare & show modal
@@ -5383,7 +5382,7 @@ var Hiro = {
 						// Compare & see if theres something to do
 						if (data.version.split('-')[0] == currentversion) return;
 						// Log
-						Hiro.sys.log('Update to ' + data.version + ' (' + data.name + ')' + ' available.')
+						Hiro.sys.log('Update to ' + data.version + ' available.')
 						// Show modal
 						Hiro.ui.dialog.showmessage('update',true);						
 					}
@@ -5526,16 +5525,17 @@ var Hiro = {
 			}());
 
 			// Mobile specific setup
-			if (true) {
+			if (Hiro.ui.touch) {
 				// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
 				// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
 				measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 				document.getElementById('viewport').setAttribute('content', measure);
 
-				document.getElementById('foo').innerText = measure;
-
 				// Attach swipe event listener (this also kills all touchmove events)
-				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);					
+				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);		
+
+				// Prevent scrolling from leaking
+				Hiro.util.registerEvent(Hiro.canvas.el_rails,'scroll',function(event) { event.stopPropagation(); });			
 
 				// Set <html> classnames
 				Hiro.ui.render(function(){
@@ -5645,7 +5645,7 @@ var Hiro = {
 				if (Hiro.ui.dialog.open) Hiro.ui.dialog.center();
 
 				// This should also happen on orientationchange
-				if (Hiro.ui.touch) {
+				if (false) {
 					// Reset viewport tag
 					measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 					document.getElementById('viewport').setAttribute('content', measure);	
@@ -5888,8 +5888,8 @@ var Hiro = {
 				} 
 
 				// Change DOM CSS values = Hiro.context.el_root.style.right
-				Hiro.canvas.el_root.style.left = v + 'px';
-				Hiro.canvas.el_root.style.right = (v*-1)+'px'; 
+				Hiro.canvas.el_rails.style.left = v + 'px';
+				Hiro.canvas.el_rails.style.right = (v*-1)+'px'; 
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
