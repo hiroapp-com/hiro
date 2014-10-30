@@ -65,7 +65,6 @@ def root_static():
 # main handlers
 app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'])
 app.add_url_rule('/crash', 'crash', view_func=views.crash, methods=['GET'])
-app.add_url_rule('/version', 'version', view_func=views.version, methods=['GET'])
 app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
 # token handlers
 app.add_url_rule('/tokens/anon', 'anontoken', view_func=views.anon, methods=['GET'])

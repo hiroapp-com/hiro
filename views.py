@@ -9,6 +9,7 @@ For example the *say_hello* handler, handling the URL route '/hello/<username>',
   must be passed *username* as the argument.
 
 """
+import json
 from flask import current_app, request, session, render_template, jsonify, Response, redirect, url_for
 from flask.ext.oauth import OAuth
 
@@ -29,12 +30,21 @@ facebook = oauth.remote_app('facebook',
 )
 facebook.tokengetter(lambda: session.get('oauth_token'))
 
+_version = None
+
 def version():
-    git = getgit()
-    return jsonify(version=git['version'], name=git['name']);
+    global _version
+    if not _version:
+        try:
+            with open('./version', 'r') as f:
+                _version = json.load(f).get('version')
+        except:
+            _version = "0.0-default"
+    return _version
+
 
 def home():
-    return render_template('hync_home.html', want_manifest=(not current_app.config['DEBUG']), git=getgit())  
+    return render_template('hync_home.html', want_manifest=(not current_app.config['DEBUG']), version=version())
 
 def crash():
     raise Exception("intended crash")
@@ -159,10 +169,10 @@ def settings():
     return render_template('hync_settings.html')       
 
 def note(note_id):
-    return render_template('hync_home.html', git=getgit()) 
+    return render_template('hync_home.html', version=version()) 
 
 def offline():
-    return render_template('hync_home.html', git=getgit())       
+    return render_template('hync_home.html', version=version())
 
 def manifestwrapper():
     return render_template('hync_manifestwrapper.html')           
@@ -232,13 +242,3 @@ def jsonify_err(status, **kwargs):
     resp = jsonify(**kwargs)
     resp.status_code = status
     return resp
-
-# Fetch current git properties, not cached atm
-def getgit():
-    try:
-        tag = subprocess.check_output(["git", "tag", "-l", "-n1"]).splitlines()[-1]
-        version = '-'.join([tag.partition(' ')[0],subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip()])
-        git = { 'name': tag[16:], 'version': version }
-        return git
-    except:
-        return False    
