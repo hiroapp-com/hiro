@@ -2933,6 +2933,7 @@ var Hiro = {
 
 				// Load internal values
 				this.unsynced = this.local.fromdisk('unsynced');
+				Hiro.version = this.local.fromdisk('version');
 
 				// Add tokens via tokens.add();
 				if (t && t.length) {
@@ -3052,15 +3053,13 @@ var Hiro = {
 		cachehandler: function(event) {
 			// Switch 
 			switch (event.type) {
-				case 'updateready':
-					// See if we have breaking changes by checking the current tag
-					Hiro.sys.versioncheck();	
-					// Release lock	
-					Hiro.sync.cachelock = false;								
-					break;				
 				case 'error':
 					Hiro.sys.error('Appcache error: ' + event.message,event);
-					break;
+					break;				
+				case 'updateready':
+					// See if we have breaking changes by checking the current tag
+					Hiro.sys.versioncheck();									
+					break;				
 				case 'cached':
 				case 'noupdate':
 					// Release cachelock
@@ -3468,13 +3467,13 @@ var Hiro = {
 
 			// Generic localstore writer, room for browser quirks
 			todisk: function(key,value) {
-				// Make sure we store a string and extend string with Hiro
-				if (typeof value !== 'string') value = JSON.stringify(value);
+				// Extend key with custom namespace
 				key = 'Hiro.' + key.toString();
 
-				// Write and log poetntial errors
+				// Write and log potential errors
 				try {
-					localStorage.setItem(key,value);
+					// Always stringify values
+					localStorage.setItem(key,JSON.stringify(value));
 				} catch(e) {		
 					Hiro.sys.error('Datastore error',e);
 				}	
@@ -5324,7 +5323,7 @@ var Hiro = {
 
 			// Attach application cache update events
 			if (window.applicationCache) {
-				// Attach it either to main window or landing page
+				// Attach it either to main window or landing page, first check if we need a fallback for local dev
 				el = (document.documentElement.getAttribute('manifest')) ? window.applicationCache : window.frames[0].window.applicationCache;
 				// Attaché!
 				Hiro.util.registerEvent(el,'updateready',Hiro.data.cachehandler);
@@ -5376,17 +5375,29 @@ var Hiro = {
 		// Takes a version nr and compares it to what we have. 
 		// If we have a new git tag, indicated by a change in the version string before first '-'
 		versioncheck: function(version) {
-			var currentversion = Hiro.version.split('-')[0];
+			var currentversion = Hiro.data.get('version');
+
+			// Log
+			Hiro.sys.log('Current version is ' + (currentversion || ' not yet set'));			
+
 			// If we didn't have a version at all yet
 			if (!currentversion) {
 				// Set
 				Hiro.version = version;
-				// Log
-				Hiro.sys.log('Version is ' + version);
+				// Save
+				Hiro.data.local.todisk('version',version);
+				// Release
+				Hiro.sync.cachelock = false;				
 			// If a version was provided	
 			} else if (version) {
 				// Compare & show modal
-				if (version.split('-')[0] != currentversion) Hiro.ui.dialog.showmessage('update',true)
+				if (version.split('-')[0] && version.split('-')[0] != currentversion.split('-')[0]) {
+					// Force update
+					Hiro.ui.dialog.showmessage('update',true)
+				} else {
+					// Release lock	
+					Hiro.sync.cachelock = false;
+				}	
 			// Fetch a new one from server		
 			} else {
 				// Get current version
@@ -5394,11 +5405,15 @@ var Hiro = {
 					url: '/version',
 					success: function(req,data) {
 						// Compare & see if theres something to do
-						if (data.version.split('-')[0] == currentversion) return;
-						// Log
-						Hiro.sys.log('Update to ' + data.version + ' available.')
-						// Show modal
-						Hiro.ui.dialog.showmessage('update',true);						
+						if (data.version.split('-')[0] == currentversion('-')[0]) {
+							// Release lock	
+							Hiro.sync.cachelock = false;	
+						} else {
+							// Log
+							Hiro.sys.log('Update to ' + data.version + ' available.')
+							// Show modal
+							Hiro.ui.dialog.showmessage('update',true);	
+						}						
 					}
 				});
 			}
