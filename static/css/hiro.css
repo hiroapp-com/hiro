@@ -483,8 +483,10 @@ input.error:focus {
 }
 
 html.touch #rails {
+  position: absolute;
   overflow-y: scroll;
-  height: 100%; 
+  top: 0;
+  bottom: 0;
   -webkit-overflow-scrolling: touch;     
 }
 
@@ -504,6 +506,7 @@ html.touch #rails {
 }
 
 html.touch body #rails #canvas {
+  margin-bottom: 0;
   border-bottom: 1px solid #222;  
   border-bottom-left-radius: 3px;  
 }
@@ -702,11 +705,8 @@ html.ios body #rails #canvas textarea {
     margin-left: 0;
   }
   #canvas {
-    margin-left: 0;
     border: none;       
-    margin-top: 0;
     margin-bottom: 0;
-    padding-bottom: 0;
   } 
 
   #canvas input.title {
@@ -1022,7 +1022,8 @@ html.ios body #rails #canvas textarea {
 
 @media (max-width: 480px) {
   #apps {
-    left: 0;
+    top: auto;
+    right: auto;
     z-index: 2040;
     position: fixed;
     width: 100%;

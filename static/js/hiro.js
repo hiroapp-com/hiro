@@ -753,8 +753,11 @@ var Hiro = {
 			// Update sharing stuff
 			Hiro.apps.sharing.update();	
 
+			// Always close the folio on 
+			if (Hiro.ui.mini && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);			
+
 			// Repaint the folio to update active note CSS
-			if (Hiro.folio.open) Hiro.folio.paint();				
+			else if (Hiro.folio.open) Hiro.folio.paint();				
 
 			// Show ready
 			Hiro.ui.statsy.add('ready',0,'Ready.','info',300);
