@@ -5650,11 +5650,10 @@ var Hiro = {
 				if (Hiro.ui.dialog.open) Hiro.ui.dialog.center();
 
 				// This should also happen on orientationchange
-				if (false) {
+				if (Hiro.ui.touch) {
 					// Reset viewport tag
 					measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
 					document.getElementById('viewport').setAttribute('content', measure);	
-									document.getElementById('foo').innerText = measure;
 				}
 
 				// Reset flag
