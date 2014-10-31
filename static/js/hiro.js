@@ -4557,6 +4557,9 @@ var Hiro = {
 					this.synconline = true;
 					this[this.protocol].rcd = 1000;
 
+					// Check for updated cache manifest
+					if (window.applicationCache && (window.applicationCache.status == 1 || window.applicationCache.status > 3)) window.applicationCache.update();
+
 					break;
 				case 'web':
 					// Set online/offline flag
