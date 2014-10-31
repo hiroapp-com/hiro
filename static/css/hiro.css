@@ -477,8 +477,9 @@ input.error:focus {
   padding-top: 50px;
   z-index: 1001;
   min-height: 100%;
-  right: 0;
-  box-sizing: border-box;  
+  box-sizing: border-box; 
+  left: 0;
+  right: 0; 
 }
 
 html.touch #rails {
