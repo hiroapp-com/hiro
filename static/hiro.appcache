@@ -13,13 +13,18 @@ CACHE:{{ "\n" }}
 /favicon.ico{{ "\n" }}
 /apple-touch-icon-precomposed.png{{ "\n" }}
 /og.png{{ "\n" }}
+/{{ "\n" }}
+
 
 FALLBACK:{{ "\n" }}
-/ /offline/app.html{{ "\n" }}
+/note/ /offline/app.html{{ "\n" }}
 
 NETWORK:{{ "\n" }}
 /component/settings/{{ "\n" }}
 /tokens/{{ "\n" }}
+/_cb/facebook{{ "\n" }}
+/settings/{{ "\n" }}
+/connect/facebook{{ "\n" }}
 *{{ "\n" }}
 http://*{{ "\n" }}
 https://*

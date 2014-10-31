@@ -45,6 +45,13 @@ em {
   }
 }
 
+@media (max-width: 480px) {
+  html.touch body, html.touch {
+    overflow: hidden;
+    width: 100%;
+  } 
+}
+
 .fb_dialog {
   z-index: 99990 !important;
 } 
@@ -396,7 +403,7 @@ input.error:focus {
 }
 
 #folio .footer {
-  position: fixed;
+  position: absolute;
   left: 0;
   bottom: 0;
   width: 340px;
@@ -452,9 +459,8 @@ input.error:focus {
   }
 
   #folio .footer {
-    position: fixed;
     max-width: 295px;    
-    right: 55px;
+    margin-right: 55px;
     width: auto;
   }
 
@@ -709,10 +715,6 @@ html.ios body #rails #canvas textarea {
     border: none;       
     margin-bottom: 0;
   } 
-
-  html.touch body #rails #canvas {
-    overflow: ĥidden;
-  }  
 
   #canvas input.title {
     padding: 9px 0 5px 95px;
