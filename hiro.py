@@ -61,6 +61,9 @@ def server_error(e):
 def root_static():
     return send_from_directory(app.static_folder, request.path[1:])
 
+def version_dev():
+    return send_from_directory(app.static_folder+'/../', request.path[1:], mimetype='application/json')
+
 ## App Routes
 # main handlers
 app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'])
@@ -88,6 +91,7 @@ app.add_url_rule('/favicon.ico', 'favicon', view_func=root_static)
 app.add_url_rule('/apple-touch-icon-precomposed.png', 'icon', view_func=root_static)   
 app.add_url_rule('/og.png', 'og', view_func=root_static)     
 app.add_url_rule('/robots.txt', 'robots', view_func=root_static)    
+app.add_url_rule('/version', 'version', view_func=version_dev)    
 
 @click.command()
 @click.option('--addr', default='127.0.0.1', help='Bind http listener to this socket')
