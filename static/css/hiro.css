@@ -567,6 +567,7 @@ html.ios body #rails #canvas textarea {
   white-space: pre-wrap;
   word-break: break-word;
   word-wrap: break-word;  
+  min-height: 95%;
 }
 
 #overlay a {
@@ -2024,11 +2025,17 @@ body#landingPage2 .l_container .l_canvas .cto {
 }
 
 body#landingPage2 .l_container .l_canvas .cto a.start {
-  padding: 12px 18px 12px 18px;
+  padding: 8px 18px 12px 18px;
   display: block;
-  font-size: 20px;
+  font-size: 28px;
   outline: none;
   margin-bottom: 14px;
+}
+
+body#landingPage2 .l_container .l_canvas .cto a.start small {
+  font-size: 14px;
+  display: block;
+  line-height: 14px;
 }
 
 body#landingPage2 .l_container .l_canvas .cto .small {
