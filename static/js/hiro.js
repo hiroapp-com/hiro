@@ -127,6 +127,8 @@ var Hiro = {
 						break;										
 					case 'newnote':
 						Hiro.folio.newnote();
+						// Close the folio if it should be open
+						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);						
 						break;
 					case 'archivelink':				
 						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; more</em>');
@@ -406,7 +408,7 @@ var Hiro = {
 			// Set default values for user inited stuff	
 			} else {
 				note._lasteditor = user.c.uid;
-				note._lastedit = Hiro.util.now();			
+				note._lastedit = Hiro.util.now();								
 			}				
 
 			// Save kick off setter flows						
@@ -720,9 +722,6 @@ var Hiro = {
 
 			// Check if we have an unseen flag and remove if so
 			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);				
-
-			// Close the folio if it should be open
-			if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
 
 			// Abort if we try to load the same note again	
 			if (id == this.currentnote) return;		
@@ -5617,7 +5616,7 @@ var Hiro = {
 					// N key, not supressable in Chrome
 					case 78:
 						Hiro.util.stopEvent(event);						
-						Hiro.folio.newnote();					
+						Hiro.folio.newnote();										
 						break;
 					// S key
 					case 83:
