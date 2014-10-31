@@ -5573,7 +5573,7 @@ var Hiro = {
 			this.dialog.load();		
 
 			// Attach scroll handler to textarea
-			Hiro.util.registerEvent(window,'scroll',function(e) { if (Hiro.ui.touch) Hiro.canvas.overlay.scroll(e); });				
+			// Hiro.util.registerEvent(window,'scroll',function(e) { if (Hiro.ui.touch) Hiro.canvas.overlay.scroll(e); });				
 		},
 
 		// Render changes via rAF or, if window is not focused, right away

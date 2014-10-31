@@ -1,9 +1,9 @@
 html,
 body {
   margin: 0;
-  overflow: hidden;
-  height: 100%;  
+  min-height: 100%;
 }
+
 
 html {
   -webkit-font-smoothing: antialiased;
@@ -13,7 +13,13 @@ html {
 body {
   font-family: "urbana", sans-serif;
   color: #1a1a1a;
-  background-color: #fcfcfc;  
+  background-color: #fcfcfc;    
+  overflow-x: hidden; 
+  overflow-y: scroll;
+}
+
+html.touch body {
+  overflow-y: hidden;
 }
 
 html.touch, html.touch body {
@@ -466,22 +472,23 @@ input.error:focus {
 /* ------ Editor ------*/
 
 #rails {
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: absolute;
   margin-left: 50px;
   padding-top: 50px;
-  -webkit-overflow-scrolling: touch;  
-  overflow-x: hidden;
-  overflow-y: scroll;
   z-index: 1001;
-  height: 100%;
-  width: 100%;
+  min-height: 100%;
+  right: 0;
+  box-sizing: border-box;  
+}
+
+html.touch #rails {
+  overflow-y: scroll;
+  height: 100%; 
+  -webkit-overflow-scrolling: touch;     
 }
 
 #canvas {
   position: absolute;
-  margin-right: 0;
   z-index: 2000;
   background: #fff;
   border-left: 1px solid #222; 
@@ -489,8 +496,10 @@ input.error:focus {
   border-top-left-radius: 3px;  
   box-shadow: 3px 3px 8px black;  
   min-height: 100%;
-  box-sizing: border-box;  
   width: 100%;
+  margin-bottom: -50px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 html.touch body #rails #canvas {
@@ -1012,8 +1021,7 @@ html.ios body #rails #canvas textarea {
 
 @media (max-width: 480px) {
   #apps {
-    right: 0;
-    top: 0;
+    left: 0;
     z-index: 2040;
     position: fixed;
     width: 100%;
