@@ -5241,6 +5241,10 @@ var Hiro = {
 			resetcursor: function(diffs,oldcursor) {
 				var newrange;
 
+				// Do not reset if it's not active
+				// TODO Bruno: But move our own old cursor position?
+				if (!document.activeElement || document.activeElement.id != 'content') return;
+
 				// Do not compute if changes occur after our position
 				if (diffs[0][0] == 0 && diffs[0][1].length > oldcursor[1]) {
 					// Copy whatever value we got
