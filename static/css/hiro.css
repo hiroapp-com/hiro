@@ -12,8 +12,7 @@ html {
 
 body {
   font-family: "urbana", sans-serif;
-  color: #1a1a1a;
-  background-color: #fcfcfc;    
+  color: #1a1a1a;  
   overflow-x: hidden; 
   overflow-y: scroll;
 }
@@ -22,7 +21,7 @@ html.touch body {
   overflow-y: hidden;
 }
 
-html.touch, html.touch body {
+html.touch {
   background-color: #2f2f2f;  
 }
 
@@ -509,6 +508,7 @@ html.touch body #rails #canvas {
   margin-bottom: 0;
   border-bottom: 1px solid #222;  
   border-bottom-left-radius: 3px;  
+  overflow: visible;
 }
 
 #canvas input.title {  
@@ -708,6 +708,10 @@ html.ios body #rails #canvas textarea {
     border: none;       
     margin-bottom: 0;
   } 
+
+  html.touch body #rails #canvas {
+    overflow: ĥidden;
+  }  
 
   #canvas input.title {
     padding: 9px 0 5px 95px;
@@ -1939,36 +1943,43 @@ iframe#landing  {
 }
 
 body#landingPage2 {
-  text-align: center;
-  background-color: #fcfcfc;   
+  text-align: center;  
   display: none;
 }
 
-@media (max-width: 550px) and (min-height: 370px) {
+@media (max-width: 550px) and (min-height: 390px) {
   body#landingPage2 {
     background: url(../img/site/landing.mobile.3.png) no-repeat;
     background-size: 100% auto;
     background-position: center bottom; 
+    height: 100%;
+    position: absolute;
+    width: 100%;
+    overflow: hidden;       
   }  
   body#landingPage2 .l_container .l_overlay {
     top: 220px;
     left: 0;
-    right: 0;
     bottom: 0;
+    min-width: 100%;
   }  
 }
 
-@media (max-width: 550px) and (max-height: 369px) {
+@media (max-width: 550px) and (max-height: 399px) {
   body#landingPage2 {
     background: url(../img/site/landing.mobile.3.png) no-repeat;
     background-size: 100% auto;
     background-position: center 200px; 
+    height: 100%;
+    position: absolute;
+    width: 100%;
+    overflow: hidden;    
   }
   body#landingPage2 .l_container .l_overlay {
     top: 220px;
     left: 0;
-    right: 0;
     bottom: 0;
+    min-width: 100%;
   }     
 }
 

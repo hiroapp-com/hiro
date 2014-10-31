@@ -128,7 +128,9 @@ var Hiro = {
 					case 'newnote':
 						Hiro.folio.newnote();
 						// Close the folio if it should be open
-						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);						
+						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
+						// And force focus on touch devices
+						if (Hiro.ui.touch) Hiro.canvas.setcursor(0,true);					
 						break;
 					case 'archivelink':				
 						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; more</em>');
@@ -408,7 +410,7 @@ var Hiro = {
 			// Set default values for user inited stuff	
 			} else {
 				note._lasteditor = user.c.uid;
-				note._lastedit = Hiro.util.now();								
+				note._lastedit = Hiro.util.now();							
 			}				
 
 			// Save kick off setter flows						
@@ -721,7 +723,10 @@ var Hiro = {
 			Hiro.folio.sort(id);			
 
 			// Check if we have an unseen flag and remove if so
-			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);				
+			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);			
+
+			// Always close the folio on small screens
+			if (Hiro.ui.mini() && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);			
 
 			// Abort if we try to load the same note again	
 			if (id == this.currentnote) return;		
@@ -739,25 +744,22 @@ var Hiro = {
 			this.cache = {
 				title: note.c.title,
 				content: note.c.text
-			};
+			};			
 
 			// Mount me reference
 			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
 			// Repaint canvas
-			this.paint(true);		
+			this.paint(true);	
+
+			// Repaint the folio to update active note CSS
+			if (Hiro.folio.open) Hiro.folio.paint();				
 
 			// Close apps if they should be open
 			if (Hiro.apps.open.length > 0) Hiro.apps.close();						
 
 			// Update sharing stuff
-			Hiro.apps.sharing.update();	
-
-			// Always close the folio on small screens
-			if (Hiro.ui.mini() && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);			
-
-			// Repaint the folio to update active note CSS
-			else if (Hiro.folio.open) Hiro.folio.paint();				
+			Hiro.apps.sharing.update();					
 
 			// Show ready
 			Hiro.ui.statsy.add('ready',0,'Ready.','info',300);
@@ -870,11 +872,11 @@ var Hiro = {
 		},
 
 		// Set cursor position, accepts either number or array of two numbers representing selection start & end
-		setcursor: function(pos) {
+		setcursor: function(pos,force) {
 			var el = this.el_text;
 
 			// Never set focus in moving or open folio on touch devices (pulls up keyboard)
-			if (Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1)) return;			
+			if (!force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1)) return;			
 
 			// Set default value
 			pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
