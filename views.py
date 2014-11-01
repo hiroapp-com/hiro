@@ -16,7 +16,6 @@ from flask.ext.oauth import OAuth
 from secret_keys import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
 
 from models import User, Session
-import subprocess
 
 oauth = OAuth()
 facebook = oauth.remote_app('facebook',
@@ -177,12 +176,12 @@ def verify():
 def change_plan():
     data = request.json or {}
     sid, plan, token = data.get('sid'), data.get('plan'), data.get('stripetoken')
-    if not all([sid, plan, token]):
+    if not all([sid, plan]):
         return jsonify_err(400, error='Something went wrong on our side, please try again later.')
     sess = Session.load(sid)
     if not sess:
         return jsonify_err(403, error=sid)    
-    err = sess.user.change_plan(plan,token)
+    err = sess.user.change_plan(plan, token)
     if err:
         return jsonify_err(400, error=err)
     return jsonify(status="ok")

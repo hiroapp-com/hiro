@@ -365,7 +365,7 @@ class User(object):
                 conn.close()
                 return "Trying non-forced upgrade to paid plan without valid stripeToken"
             # make sure, previous plan-expirations are unset after upgrade
-            cur.execute("UPDATE users SET tier = %s, plan_expires_at = '' WHERE uid = %s", (User.PLANS[new_plan], self.uid))
+            cur.execute("UPDATE users SET tier = %s, plan_expires_at = null WHERE uid = %s", (User.PLANS[new_plan], self.uid))
         conn.commit()
         conn.close()
         return None
@@ -397,6 +397,8 @@ def tokenhistory_add(token, uid):
     conn.close()
 
 def tokenhistory_seen(token):
+    if not token:
+        return False
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT 1 FROM stripe_tokens WHERE token = %s", (token,))
