@@ -651,7 +651,8 @@ var Hiro = {
 		},
 
 		canvasclick: function(action,type,target,branch,event)  {
-			var minitouchopen, title;
+			var title;
+
 			// Forwarding to other handlers		
 			if (Hiro.apps.el_root.contains(target)) {
 				// First up if it's an app click	
@@ -659,9 +660,6 @@ var Hiro = {
 			// Handle all others ourselves	
 			} else {
 				console.log(event)
-				// Special cases
-				minitouchopen = (Hiro.ui.touch && Hiro.folio.open && Hiro.ui.mini());
-
 				// Distinguish between touchstart/mouseover
 				if (type == 'half') {
 
@@ -669,11 +667,11 @@ var Hiro = {
 					if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
 
 					// Close menu on mini touches
-					if (minitouchopen) Hiro.ui.slidefolio(-1,100);
+					if (Hiro.ui.touch && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 
 				} else {
 					// Do not pull up keyboard on minis in this case
-					if (minitouchopen) return;
+					if (Hiro.ui.touch && Hiro.folio.open && Hiro.ui.mini()) return;
 
 					// Execute actions
 					switch(action) {
@@ -5901,6 +5899,8 @@ var Hiro = {
 				// Change DOM CSS values = Hiro.context.el_root.style.right
 				Hiro.canvas.el_rails.style.left = v + 'px';
 				Hiro.canvas.el_rails.style.right = (v*-1)+'px'; 
+
+				// On minis we have to 
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
@@ -6283,9 +6283,9 @@ var Hiro = {
 						Hiro.ui.fastbutton.bustthis.splice(0,2);
 					},that.delay);		
 
-					// Always stop fired event
-					Hiro.util.stopEvent(event);		
-
+					// Always stop fired event on non input elements
+					if (target.tagName != 'INPUT' && target.tagName != 'TEXTAREA') Hiro.util.stopEvent(event);		
+							
 					// Call handler
 					if (id && handler) handler(id,'full',target,branch,event)	
 				} 	
@@ -6306,7 +6306,10 @@ var Hiro = {
 				});				
 
 				// Prevent clicks from happening
-				Hiro.util.registerEvent(document,'click',Hiro.ui.fastbutton.bust,true);				
+				Hiro.util.registerEvent(document,'click',Hiro.ui.fastbutton.bust,true);		
+
+				// Set flag to prevent multiple settings
+				this.installed = true;		
 			},
 
 			// Fires when buster installed & click event happens on document
@@ -6316,8 +6319,11 @@ var Hiro = {
 
 				// See if the click is close the where we fired the full handler above
 				for (var i = 0, l = Hiro.ui.fastbutton.bustthis.length; i < l; i += 2) {
+					// Compare vertical offset
 					if (Math.abs(Hiro.ui.fastbutton.bustthis[i] - event.screenY) < 25 
+						// Compare horizontal offset
 						&& Math.abs(Hiro.ui.fastbutton.bustthis[i + 1] - event.screenX) < 25) {
+							// Bust events
 							Hiro.util.stopEvent(event);						
 					}
 				}				
@@ -6717,8 +6723,8 @@ var Hiro = {
 			// Center triggered initially and on resize
 			center: function() {
 				Hiro.ui.render( function(){
-					var wh = document.body.clientHeight || document.documentElement.clientHeight || window.innerHeight,
-						ww = document.body.clientWidth || document.documentElement.clientWidth || window.innerWidth,											
+					var wh = document.documentElement.clientHeight || window.innerHeight,
+						ww = document.documentElement.clientWidth || window.innerWidth,											
 						dh = Hiro.ui.dialog.el_wrapper.clientHeight,
 						dw = Hiro.ui.dialog.el_wrapper.clientWidth;
 
