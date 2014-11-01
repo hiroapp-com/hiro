@@ -782,6 +782,9 @@ var Hiro = {
 			// Set internal values
 			this.currentnote = id;	
 
+			// Scroll to top of note
+			Hiro.canvas.totop();			
+
 			// Reset cache
 			this.cache = {
 				title: note.c.title,
@@ -924,6 +927,17 @@ var Hiro = {
     		} else {
     			el.focus();
     		}	
+		},
+
+		// Scroll note as far up as possible
+		totop: function() {
+			// Wrap in rAF
+			Hiro.ui.render(function(){
+				// Scroll body to top
+				document.body.scrollTop = 0;
+				// Scroll rails to top if we're on mini UI
+				if (Hiro.ui.mini()) Hiro.canvas.el_rails.scrollTop = 0;
+			})
 		},
 
 		// Overlay (clickable URLs, peer carets etc) 
@@ -2186,7 +2200,10 @@ var Hiro = {
 			this.open.push(app);
 
 			// Log respective event
-			Hiro.user.track.logevent('Opened ' + app + ' widget');				
+			Hiro.user.track.logevent('Opened ' + app + ' widget');	
+
+			// Move canvas to very top on minis
+			if (Hiro.ui.mini()) Hiro.canvas.totop();			
 
 			// Update & display app			
 			Hiro.ui.render(function(){		
