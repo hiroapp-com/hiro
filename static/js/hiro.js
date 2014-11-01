@@ -651,14 +651,15 @@ var Hiro = {
 		},
 
 		canvasclick: function(action,type,target,branch,event)  {
-			var minitouchopen;
+			var minitouchopen, title;
 			// Forwarding to other handlers		
 			if (Hiro.apps.el_root.contains(target)) {
 				// First up if it's an app click	
 				Hiro.apps.clickhandler(action,type,target,branch,event);
 			// Handle all others ourselves	
 			} else {
-				// Sepcial cases
+				console.log(event)
+				// Special cases
 				minitouchopen = (Hiro.ui.touch && Hiro.folio.open && Hiro.ui.mini());
 
 				// Distinguish between touchstart/mouseover
@@ -671,17 +672,26 @@ var Hiro = {
 					if (minitouchopen) Hiro.ui.slidefolio(-1,100);
 
 				} else {
-					// Prevent any default action
-					Hiro.util.stopEvent(event);
-
 					// Do not pull up keyboard on minis in this case
 					if (minitouchopen) return;
 
 					// Execute actions
 					switch(action) {
 						case 'content':
-						case 'title':
+							// Stick to default beaviour if we have a value
+							if (target.value) return;
+							// Immediately focus if it's empty
 							target.focus();	
+							// Prevent any default action
+							Hiro.util.stopEvent(event);							
+							break;								
+						case 'title':
+							// Stick to default behaviour if we already have a value
+							if (Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title')) return;
+							// Immediately focus if it's empty
+							target.focus();	
+							// Prevent any default action
+							Hiro.util.stopEvent(event);							
 							break;																				
 					}
 				}			
