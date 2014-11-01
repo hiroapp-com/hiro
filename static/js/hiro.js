@@ -1903,7 +1903,7 @@ var Hiro = {
 					}
 
 					// If the swapped user is part of the current note
-					if (Hiro.apps.sharing.getpeer({ user: { uid: contact.uid } })) {
+					if (Hiro.apps.sharing.getpeer({ user: { uid: contact.uid } }, Hiro.canvas.currentnote)) {
 						// Repaint the all peers & the overlay
 						Hiro.apps.sharing.update(true);
 					}
