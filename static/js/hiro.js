@@ -6746,8 +6746,8 @@ var Hiro = {
 				var user = Hiro.data.get('profile','c'), fields = this.el_settings.getElementsByTagName('input'), d,
 					plans = ['Anonymous','Basic','Advanced'];
 
-				// Abort here if user is not signed up yet
-				if (!(user.tier > 0)) return;
+				// Abort here if user is not signed up yet or settings dialog is not loaded
+				if (!(user.tier > 0) || fields.length < 3) return;
 
 				// Fill the fields
 				fields[0].value = user.name || '';
