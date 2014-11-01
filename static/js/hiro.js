@@ -7838,7 +7838,7 @@ var Hiro = {
 				// Log page id instead of context
 				// TODO Bruno: Think of a way to be more descriptive with state, if we need this (eg error ocurred when settings were open)
 				payload.context = location.pathname;
-				payload.environment = (Hiro.sys.production) ? 'Production' : 'Development';
+				payload.environment = window.location.hostname.split('.')[0] || 'Unknown';
 
 				// Return object
 				return payload;			
