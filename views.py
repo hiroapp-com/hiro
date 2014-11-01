@@ -54,6 +54,14 @@ def anon():
     return jsonify(token=User.anon_token())
 
 def login():
+    sid = request.json.get('sid')
+    sess = Session.load(sid) if sid else None
+    if sess:
+        # session-renew requested
+        # TODO check if SID is still valid/renewable
+        # TODO invalidate and shut down old session
+        return jsonify(token=sess.user.token('login'))
+
     pwd, email, phone = request.json.get('password'), request.json.get('email'), request.json.get('phone')
     if not pwd:
         return jsonify_err(400, password="Password required")
