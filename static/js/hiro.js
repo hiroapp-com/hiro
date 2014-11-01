@@ -105,7 +105,7 @@ var Hiro = {
 
 			// Clicks on the main elements, fired immediately on touchstart/mousedown
 			if (type == 'half') {	
-				// Always open folio on touch devices, except if the user clicks on the signing icon
+				// Always open folio on touch devices, except if the user clicks on the signing icon while the folio is closed
 				if (id != 'signin' && Hiro.ui.touch) Hiro.folio.foliotouch(); 
 
 				// Fire actions			
@@ -116,6 +116,7 @@ var Hiro = {
 					case 'folio':
 					case 'notelist':
 					case 'archivelist':
+					case 'showmenu':
 						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);					
 				}
 			} else if (type == 'full') {
@@ -659,7 +660,6 @@ var Hiro = {
 				Hiro.apps.clickhandler(action,type,target,branch,event);
 			// Handle all others ourselves	
 			} else {
-				console.log(event)
 				// Distinguish between touchstart/mouseover
 				if (type == 'half') {
 
@@ -671,7 +671,7 @@ var Hiro = {
 
 				} else {
 					// Do not pull up keyboard on minis in this case
-					if (Hiro.ui.touch && Hiro.folio.open && Hiro.ui.mini()) return;
+					if (Hiro.ui.touch && Hiro.folio.open) return;
 
 					// Execute actions
 					switch(action) {
