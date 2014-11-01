@@ -3970,7 +3970,7 @@ var Hiro = {
 				// If we had a proper error
 				if (data.remark && data.remark.lvl == 'error') {
 					// Log
-					Hiro.sys.error(data.remark.msg);
+					Hiro.sys.log('Server sent ' + data.remark.slug + ' error',data.remark,'warn');
 					// End hprogress
 					Hiro.ui.hprogress.done(true)
 				}
@@ -4471,7 +4471,7 @@ var Hiro = {
 			// TODO Bruno: Find good way to notify user
 			if (data.remark && data.remark.lvl == 'error') {
 				// Log
-				Hiro.sys.error(data.remark.msg);
+				Hiro.sys.log('Server sent ' + data.remark.slug + ' error',data.remark,'warn');
 				// End hprogress
 				Hiro.ui.hprogress.done(true)
 			}			
