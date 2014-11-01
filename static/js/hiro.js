@@ -750,8 +750,8 @@ var Hiro = {
 			// Repaint canvas
 			this.paint(true);	
 
-			// Repaint the folio to update active note CSS
-			if (Hiro.folio.open) Hiro.folio.paint();				
+			// Repaint the folio to update active note CSS & visually remove
+			Hiro.folio.paint(true);				
 
 			// Close apps if they should be open
 			if (Hiro.apps.open.length > 0) Hiro.apps.close();						
@@ -3252,7 +3252,7 @@ var Hiro = {
 					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// If the whole thing or client title changed, repaint the folio
-				if (key == 'c.title' || (key == 'c.text' && !n.c.title) || source == 's' || key == '_unseen') Hiro.folio.paint();	
+				if (key == 'c.title' || (key == 'c.text' && !n.c.title) || source == 's') Hiro.folio.paint();	
 
 				// Update sharing dialog if it's open and it's no client update
 				if (source != 'c' && current && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
@@ -4172,8 +4172,9 @@ var Hiro = {
 									store._lasteditor = obj.user.uid;
 									// If it was someone else, also set _unseen
 									if (obj.user.uid != me.uid) {
-										// Set flag
-										if (store.id != Hiro.canvas.currentnote) store._unseen = true;	
+										// If it's not the current note we use a clever oneliner
+										// that checks the previous value, sets the new and hard repaints if it changed
+										if (store.id != Hiro.canvas.currentnote) Hiro.folio.paint(!store._unseen && (store._unseen = true));
 										// Add notification if we're not focused
 										if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store.id);	
 									}																				
@@ -4191,8 +4192,8 @@ var Hiro = {
 								// Update sharing dialog if it's open
 								if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
 							
-								// Remove unseen flag if present & update came from one of our other sessions
-								if (obj.user.uid == me.uid && store._unseen) store._unseen = false;
+								// Remove unseen flag if present & update came from one of our other sessions, same syntax as above
+								if (obj.user.uid == me.uid && store._unseen) Hiro.folio.paint(store._unseen && !(store._unseen = false));
 							}	
 
 							// Always iterate & save
