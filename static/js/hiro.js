@@ -652,7 +652,7 @@ var Hiro = {
 		},
 
 		canvasclick: function(action,type,target,branch,event)  {
-			var title;
+			var title, url;
 
 			// Forwarding to other handlers		
 			if (Hiro.apps.el_root.contains(target)) {
@@ -675,7 +675,9 @@ var Hiro = {
 					switch(action) {
 						case 'content':
 							// Check for links
-							Hiro.canvas.overlay.getclicked(event);
+							url = Hiro.canvas.overlay.getclicked(event);
+							// Open them in new tab
+							if (url) Hiro.ui.openlink(url.innerText);							
 							// Do not pull up keyboard on touch devices
 							if (Hiro.ui.touch && Hiro.folio.open) return;						
 							// Stick to default beaviour if we have a value
@@ -1319,8 +1321,8 @@ var Hiro = {
 				elements = this.el_root.getElementsByTagName('A');
 
 				// And other values
-				eventx = event.clientX;
-				eventy = event.clientY;
+				eventx = event.clientX || event.changedTouches[0].clientX;
+				eventy = event.clientY || event.changedTouches[0].clientY;
 				viewportheight = document.documentElement.clientHeight || window.innerHeight;
 
 				// Go through all elements, first checking the bounding box
@@ -6103,6 +6105,14 @@ var Hiro = {
 			// TODO Bruno: Proper mail client detection etc
 			window.location.href = s;
 		},	
+
+		// Open link in new tab/window
+		openlink: function(url) {
+			// Check if URL has http, otherwise append
+			if (!/^https?:\/\//g.test(url)) url = 'http://' + url;
+			// Open it!
+			window.open(url,'_blank');
+		},
 
 		// Landing page specific stuff
 		landing: {
