@@ -670,12 +670,14 @@ var Hiro = {
 					if (Hiro.ui.touch && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 
 				} else {
-					// Do not pull up keyboard on minis in this case
-					if (Hiro.ui.touch && Hiro.folio.open) return;
 
 					// Execute actions
 					switch(action) {
 						case 'content':
+							// Check for links
+							Hiro.canvas.overlay.getclicked(event);
+							// Do not pull up keyboard on touch devices
+							if (Hiro.ui.touch && Hiro.folio.open) return;						
 							// Stick to default beaviour if we have a value
 							if (target.value) return;
 							// Immediately focus if it's empty
@@ -684,6 +686,8 @@ var Hiro = {
 							Hiro.util.stopEvent(event);							
 							break;								
 						case 'title':
+							// Do not pull up keyboard on touch devices
+							if (Hiro.ui.touch && Hiro.folio.open) return;						
 							// Stick to default behaviour if we already have a value
 							if (Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title')) return;
 							// Immediately focus if it's empty
@@ -1304,6 +1308,61 @@ var Hiro = {
 						// Iterate counter
 						nodecount++;
 					}	
+				}
+			},
+
+			// Check if we clicked anything in the node
+			getclicked: function(event) {
+				var elements, candidate, boundingbox, i, l, eventx, eventy, viewportheight;
+
+				// First get all the elements
+				elements = this.el_root.getElementsByTagName('A');
+
+				// And other values
+				eventx = event.clientX;
+				eventy = event.clientY;
+				viewportheight = document.documentElement.clientHeight || window.innerHeight;
+
+				// Go through all elements, first checking the bounding box
+				for (i = 0, l = elements.length; i < l; i++ ) {
+					// Get bounding box
+					boundingbox = elements[i].getBoundingClientRect();
+
+					// Ignore offscreen elements
+					if (boundingbox.bottom < 0 || boundingbox.top > viewportheight) continue;
+
+					// Se if we're out of bounds
+					if (boundingbox.top > eventy || boundingbox.bottom < eventy || boundingbox.left > eventx || boundingbox.right < eventx) continue;
+					
+					// We have a candidate
+					candidate = elements[i];
+
+					// Abort loop
+					break;
+				}
+
+				// If we have no candidate, stop here
+				if (!candidate) return undefined;
+
+				// Otherwise fetch potential subnodes
+				elements = candidate.getClientRects();
+
+				// If it's only one, return it right away
+				if (elements.length == 1) return candidate;
+
+				// Otherwise verify we're within more complex subnodes
+				else {
+					// Cycle through them
+					for ( i = 0, l = elements.length; i < l; i++ ) {
+						// Reset boundingbox to subnode
+						boundingbox = elements[i];
+
+						// Se if we're out of bounds
+						if (boundingbox.top > eventy || boundingbox.bottom < eventy || boundingbox.left > eventx || boundingbox.right < eventx) continue;
+
+						// If we get until here, return the element, weeehaaa!
+						return candidate;
+					}
 				}
 			}
 		}	
