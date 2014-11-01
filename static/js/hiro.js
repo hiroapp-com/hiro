@@ -1498,15 +1498,11 @@ var Hiro = {
 		// Post successfull auth stuff
 		// See createsession handler to see if and when we overwrite this on login
 		logiocomplete: function(data,login) {	
-			// Check if user did this while on landing page
-			if (Hiro.ui.landingvisible) {
-				// Remove landing page
-				Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);	
-				// Set the flag
-				Hiro.ui.landingvisible = false;	
-				// Connect to hync
-				Hiro.sync.connect();		
-			}	
+			// Hide landing page
+			Hiro.ui.landing.hide();
+
+			// Connect to hync
+			Hiro.sync.connect();			
 
 			// Add token to known list
 			Hiro.data.tokens.add({ id: data.token, action: 'login'})		
@@ -2073,7 +2069,7 @@ var Hiro = {
 				// GA https://developers.google.com/analytics/devguides/collection/analyticsjs/events
 				if (window.ga) {
 					// Find out, roughly, in which context the user interacts atm
-					if (Hiro.ui.landingvisible) {
+					if (Hiro.ui.landing.visible) {
 						context = 'Landingpage';
 					} else if (Hiro.ui.dialog.open) {
 						context = 'Settings';
@@ -2927,7 +2923,7 @@ var Hiro = {
 			// If we do have data stored locally
 			if (p && n) {	
 				// Remove landing page
-				Hiro.ui.el_landingpage.style.display = 'none';
+				Hiro.ui.landing.hide();
 
 				// Load internal values
 				this.unsynced = this.local.fromdisk('unsynced');
@@ -2977,14 +2973,14 @@ var Hiro = {
 			// If we started with a token											
 			} else if (t) {
 				// Remove landing page
-				Hiro.ui.el_landingpage.style.display = 'none';
+				Hiro.ui.landing.hide();
 
 				// Connect to server
 				Hiro.sync.connect();
 			// Start without session & landing page
 			} else {
 				// Show landing page contents
-				Hiro.ui.showlanding();
+				Hiro.ui.landing.show();
 
 				// End progress
 				Hiro.ui.hprogress.done();					
@@ -5280,13 +5276,9 @@ var Hiro = {
 	sys: {
 		// Init flags
 		inited: false,
-		landinginited: false,
 
 		// System vars
 		production: (window.location.href.indexOf('hiroapp') != -1),
-
-		// Other window references
-		landing: undefined,	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
 		init: function(vars) {
@@ -5371,27 +5363,6 @@ var Hiro = {
 					Hiro.data.tokens.add(token);
 				}
 			}
-		},
-
-		// Init triggered by the landing page once it's loaded, this also serves at our appCache homebase
-		landinginit: function(page) {
-			// Set shortcut to landingpage
-			this.landing = page;
-
-			// Attach application cache update events			
-			if (window.applicationCache) {
-				// Set shortcut to cache
-				Hiro.data.appcache.cache = page.applicationCache;
-
-				// Attaché!
-				Hiro.util.registerEvent(page.applicationCache,'updateready',Hiro.data.appcache.handler);
-				Hiro.util.registerEvent(page.applicationCache,'noupdate',Hiro.data.appcache.handler);	
-				Hiro.util.registerEvent(page.applicationCache,'cached',Hiro.data.appcache.handler);
-				Hiro.util.registerEvent(page.applicationCache,'error',Hiro.data.appcache.handler);											
-			// Release the cachelock	
-			} else {
-				Hiro.sync.cachelock = false;
-			}			
 		},
 
 		// Takes a version nr and compares it to what we have. 
@@ -5504,7 +5475,6 @@ var Hiro = {
 		el_archive: document.getElementById('archivelink'),
 		el_signin: document.getElementById('signin'),
 		el_settings: document.getElementById('settings'),
-		el_landingpage: document.getElementById('landing'),
 
 		// Browser specific properties
 		vendors: ['webkit','moz','o','ms'],
@@ -5520,10 +5490,6 @@ var Hiro = {
 		// Internals
 		focus: false,
 		resizing: false,
-
-		// Landingstuff
-		landingvisible: false,
-		landingurl: '/component/landing/',
 
 		// Setup and browser capability testing
 		init: function() {
@@ -5624,7 +5590,7 @@ var Hiro = {
 			}
 
 			// Load landing page
-			this.el_landingpage.src = this.landingurl; 
+			this.landing.el_root.src = this.landing.url; 
 
 			// Always load settings from server to determine contents and webserver availability
 			this.dialog.load();		
@@ -5748,7 +5714,7 @@ var Hiro = {
 	        	focus = Hiro.ui.focus = (event.type in map) ? map[event.type] : !Hiro.ui.focus; 
 
 	        // If the window gets focused & we already see a workspace
-	        if (focus && !Hiro.ui.landingvisible) {
+	        if (focus && !Hiro.ui.landing.visible) {
 	        	// Reset tab notifier
 	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.cleanup();
 
@@ -5770,16 +5736,10 @@ var Hiro = {
 			var t = Hiro.data.get('profile','c.tier');
 
 			// If the stage setting was triggered by another tab
-			if (Hiro.ui.landingvisible) {
-				// Remove the landing page
-				Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);
-				// Load first note without adding history object
-				Hiro.canvas.load(undefined,true);
-			// Not triggered by tab
-			} else {
-				// if we want to set it to existing tier, abort
-				if (tier && tier == t) return;
-			}
+			Hiro.ui.landing.hide();
+
+			// if we want to set it to existing tier, abort
+			if (tier && tier == t) return;
 
 			// Set tier if none is provided 
 			tier = tier || t || 0; 			
@@ -5806,55 +5766,6 @@ var Hiro = {
 					break;
 			}
 		},
-
-		// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
-		// Whatever comes first to make sure it's bootstrapped properly
-		showlanding: function() {
-			var b = Hiro.ui.el_landingpage.contentDocument.body;
-
-			// Abort if there is no content yet or we already hid the landing page iframe
-			if (!b || Hiro.ui.el_landingpage.style.display == 'none') return;
-
-			// Set flag
-			Hiro.ui.landingvisible = true;
-
-			// Fade in contents
-			Hiro.ui.fade(b,1)
-
-			// Attach fastbuttons to landing page if it was to fast to do it itself
-			Hiro.ui.fastbutton.attach(b,Hiro.ui.landingclick);				
-		},
-
-		// Handle clicks on landingpage
-		landingclick: function(action,type) {
-			// Woop, we inited started fiddling with something relevant
-			if (type == 'full') {			
-				// Log respective event
-				Hiro.user.track.logevent('Started Interacting',{ Clicked_On: action });	
-
-				// Remove overlay & prepare					
-				switch (action) {
-					case 'screenshot':
-					case 'cto':	
-						// Bootstrap local only workspace
-						Hiro.data.bootstrap();
-
-						// Connect to server
-						Hiro.sync.connect();
-
-						// Remove landing page
-						Hiro.ui.fade(Hiro.ui.el_landingpage,-1,150);
-
-						// Set flag
-						Hiro.ui.landingvisible = false;								
-						break;		
-					case 'signin':		
-						// Show dialog			
-						Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
-						break;									
-				}				
-			}
-		},			
 
 		// Switch to an element on the same DOM level and hide all others
 		switchview: function(el, display) {
@@ -6072,6 +5983,114 @@ var Hiro = {
 			// TODO Bruno: Proper mail client detection etc
 			window.location.href = s;
 		},	
+
+		// Landing page specific stuff
+		landing: {
+			// Internal flags
+			inited: false,
+			visible: false,
+			showoninit: false,
+			url: '/component/landing/',	
+
+			// DOM links
+			page: undefined,
+			el_root: document.getElementById('landing'),		
+
+			// Init triggered by the landing page once it's loaded, this also serves at our appCache homebase
+			init: function(page) {
+				// Don't do it twice
+				if (this.inited) return;
+
+				// Set shortcut to landingpage
+				this.page = page;			
+
+				// Attach application cache update events			
+				if (window.applicationCache) {
+					// Set shortcut to cache
+					Hiro.data.appcache.cache = page.applicationCache;
+
+					// Attaché!
+					Hiro.util.registerEvent(page.applicationCache,'updateready',Hiro.data.appcache.handler);
+					Hiro.util.registerEvent(page.applicationCache,'noupdate',Hiro.data.appcache.handler);	
+					Hiro.util.registerEvent(page.applicationCache,'cached',Hiro.data.appcache.handler);
+					Hiro.util.registerEvent(page.applicationCache,'error',Hiro.data.appcache.handler);											
+				// Release the cachelock	
+				} else {
+					Hiro.sync.cachelock = false;
+				}	
+
+				// Set flag
+				this.inited = true;		
+
+				// Fade in if we're told to do so
+				if (this.showoninit) this.show();			
+			},
+
+			// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
+			// Whatever comes first to make sure it's bootstrapped properly
+			show: function() {
+				// Make sure to set the show on init flag if the landing page is not loaded yet
+				this.showoninit = true;
+
+				// But abort if there is no content yet, or we already showed it
+				if (!this.inited || this.visible) return;
+
+				// Set flag
+				this.visible = true;
+
+				// Fade in page contents
+				Hiro.ui.fade(this.page.document.body,1)		
+
+				// Attach fastbuttons to landing page
+				Hiro.ui.fastbutton.attach(this.page,Hiro.ui.landing.click);						
+			},
+
+			// Remove it completely
+			hide: function() {
+				// Check if user did this while on landing page
+				if (this.visible) {
+					// Fade out landing page element
+					Hiro.ui.fade(this.el_root,-1,150);		
+				} else {
+					// Remove overlay instantly
+					this.el_root.style.display = 'none';	
+				}
+
+				// Set the flag
+				this.visible = false;						
+			},
+
+			// Handle clicks on landingpage
+			click: function(action,type) {
+				// Woop, we inited started fiddling with something relevant
+				if (type == 'full') {			
+					// Log respective event
+					Hiro.user.track.logevent('Started Interacting',{ Clicked_On: action });	
+
+					// Remove overlay & prepare					
+					switch (action) {
+						case 'screenshot':
+						case 'cto':	
+							// Bootstrap local only workspace
+							Hiro.data.bootstrap();
+
+							// Connect to server
+							Hiro.sync.connect();
+
+							// Remove landing page
+							Hiro.ui.fade(Hiro.ui.landing.el_root,-1,150);
+
+							// Set flag
+							Hiro.ui.landingvisible = false;								
+							break;		
+						case 'signin':		
+							// Show dialog			
+							Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
+							break;									
+					}				
+				}
+			}			
+		},		
 
 		// Left / right swipes, also add stability by preventing some default behaviour
 		swipe: {
@@ -6492,7 +6511,7 @@ var Hiro = {
 			// Open dialog
 			show: function(container, section, focus, close, showmessage) {
 				// In case we'Re only and not about to show an overriding message
-				if (!showmessage && (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landingvisible && !Hiro.data.get('profile','c.tier')))) {
+				if (!showmessage && (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landing.visible && !Hiro.data.get('profile','c.tier')))) {
 					// Trigger showmessage dialog, overriding default
 					this.showmessage('offline');
 					// Abort here
