@@ -5589,9 +5589,6 @@ var Hiro = {
 				Hiro.util.registerEvent(window,'popstate', function(e) { Hiro.ui.history.goback(e) });			
 			}
 
-			// Load landing page
-			this.landing.el_root.src = this.landing.url; 
-
 			// Always load settings from server to determine contents and webserver availability
 			this.dialog.load();		
 
@@ -5988,8 +5985,8 @@ var Hiro = {
 		landing: {
 			// Internal flags
 			inited: false,
-			visible: false,
 			showoninit: false,
+			visible: false,			
 			url: '/component/landing/',	
 
 			// DOM links
@@ -6029,11 +6026,18 @@ var Hiro = {
 			// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
 			// Whatever comes first to make sure it's bootstrapped properly
 			show: function() {
-				// Make sure to set the show on init flag if the landing page is not loaded yet
-				this.showoninit = true;
+				// Noes, no landing page yet!
+				if (!this.inited) {
+					// Make sure to fade it in once it's loaded
+					this.showoninit = true;
+					// Load it, it will fire init abvoe once it's done
+					this.el_root.src = this.url; 	
+					// Stop for now	
+					return;			
+				}
 
 				// But abort if there is no content yet, or we already showed it
-				if (!this.inited || this.visible) return;
+				if (this.visible) return;
 
 				// Set flag
 				this.visible = true;
