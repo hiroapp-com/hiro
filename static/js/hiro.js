@@ -5507,6 +5507,8 @@ var Hiro = {
 				if (version.split('-')[0] && version.split('-')[0] != currentversion.split('-')[0]) {
 					// Force update
 					Hiro.ui.dialog.showmessage('update',true)
+					// Save
+					Hiro.data.local.todisk('version',version);					
 				} else {
 					// Release lock	
 					Hiro.sync.cachelock = false;
@@ -5525,7 +5527,9 @@ var Hiro = {
 							// Log
 							Hiro.sys.log('Update to ' + data.version + ' available.')
 							// Show modal
-							Hiro.ui.dialog.showmessage('update',true);	
+							Hiro.ui.dialog.showmessage('update',true);
+							// Save
+							Hiro.data.local.todisk('version',data.version);								
 						}						
 					}
 				});
@@ -6610,6 +6614,7 @@ var Hiro = {
 			lastx: 0,
 			lasty: 0,
 			upgradeteaser: false,
+			currentmessage: undefined,
 
 			// Hooks
 			onclose: undefined, 
@@ -6628,6 +6633,7 @@ var Hiro = {
 						label: 'Use New Version'
 					},
 					forcereload: true,
+					sticky: true,
 					css: 'yeah'	
 				},
 				upgrade: {
@@ -6637,12 +6643,16 @@ var Hiro = {
 						action: 'd_close',
 						label: 'Explore New Features'
 					},
+					sticky: true,
 					css: 'yeah'	
 				}				
 			},
 
 			// Open dialog
 			show: function(container, section, focus, close, showmessage) {
+				// Never override messages that are sticky
+				if (this.messages[this.currentmessage].sticky) return;
+
 				// In case we'Re only and not about to show an overriding message
 				if (!showmessage && (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landing.visible && !Hiro.data.get('profile','c.tier')))) {
 					// Trigger showmessage dialog, overriding default
@@ -6765,7 +6775,7 @@ var Hiro = {
 			// Close the dialog 
 			hide: function() {
 				// Remove blur filters, only if we set them before
-				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter', prevent;		
+				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter', prevent, that = this;		
 
 				// If we got a onclose hook
 				if (this.onclose) {
@@ -6790,19 +6800,21 @@ var Hiro = {
 				// Reset left margin for inward movement after we closed the dialog
 				setTimeout(function(){	
 					Hiro.ui.render(function(){							
-						Hiro.ui.dialog.el_wrapper.style.marginLeft = '300px';
+						that.el_wrapper.style.marginLeft = '300px';
 						// Reset CSS class if we had a teaser
-						if (Hiro.ui.dialog.upgradeteaser) {
+						if (that.upgradeteaser) {
 							// Reset classname
 							document.getElementById('s_plan').removeAttribute('class');
 							document.getElementById('s_checkout').removeAttribute('class');	
-							// Set flag
-							Hiro.ui.dialog.upgradeteaser = false;
+
+							// Reset flags
+							that.upgradeteaser = false;							
 						}	
 					});						
 				},150);										
 
-				// Reset internal value			
+				// Reset internal values
+				this.currentmessage = undefined;	
 				this.open = false;				
 			},		
 
