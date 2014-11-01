@@ -101,18 +101,22 @@ var Hiro = {
 
 		// If the user clicked somewhere in the folio
 		folioclick: function(id,type,target) {	
-			var tier = Hiro.data.get('profile','c.tier'); 	
+			var tier = Hiro.data.get('profile','c.tier'), direction; 	
 
 			// Clicks on the main elements, fired immediately on touchstart/mousedown
-			if (type == 'half') {				
+			if (type == 'half') {	
+				// Always open folio on touch devices, except if the user clicks on the signing icon
+				if (id != 'signin' && Hiro.ui.touch) Hiro.folio.foliotouch(); 
+
+				// Fire actions			
 				switch (id) {					
 					case 'archivelink':				
 						if (tier > 1) Hiro.folio.archiveswitch();
-						break;
-					case 'showmenu':					
-						var d = (!Hiro.folio.open || Hiro.ui.slidedirection == -1) ? 1 : -1;
-						Hiro.ui.slidefolio(d,150);
-						break;						
+						break;	
+					case 'folio':
+					case 'notelist':
+					case 'archivelist':
+						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);					
 				}
 			} else if (type == 'full') {
 				// Deconstruct note id	
@@ -160,13 +164,9 @@ var Hiro = {
 		},
 
 		// If the user hovered over the folio with mouse/finger
-		foliotouch: function(event) {
-			var target = event.target || event.srcElement;
-
+		foliotouch: function() {
 			// Open the folio
-			if (!Hiro.folio.open) {
-				Hiro.ui.slidefolio(1,170);
-			}		
+			if (!Hiro.folio.open) Hiro.ui.slidefolio(1,170);
 		},
 
 		// Rerender data

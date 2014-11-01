@@ -25,6 +25,11 @@ html.touch {
   background-color: #2f2f2f;  
 }
 
+html.touch * {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);  
+}
+  
+
 input {
   font-family: "urbana",sans-serif; 
   box-sizing: border-box;   
@@ -529,8 +534,7 @@ html.touch body #rails #canvas {
   width: 100%;
   z-index: 2050;
   -webkit-appearance: none;   
-  background-color: transparent; 
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);  
+  background-color: transparent;  
 }
 
 #title:focus, #content:focus {
@@ -562,7 +566,6 @@ html.touch body #rails #canvas {
 html.ios body #rails #canvas textarea {
   margin-left: -3px;
   padding-right: 389px;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
 
