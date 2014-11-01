@@ -672,21 +672,16 @@ var Hiro = {
 
 				} else {
 					// Prevent any default action
-					event.preventDefault();
-									
+					Hiro.util.stopEvent(event);
+
 					// Do not pull up keyboard on minis in this case
 					if (minitouchopen) return;
 
 					// Execute actions
 					switch(action) {
 						case 'content':
-							target.focus();
-							event.preventDefault();	
-							break;
 						case 'title':
-							target.focus();
-							event.preventDefault();
-							// alert(action)	
+							target.focus();	
 							break;																				
 					}
 				}			

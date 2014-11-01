@@ -573,7 +573,6 @@ html.ios body #rails #canvas textarea {
   white-space: pre-wrap;
   word-break: break-word;
   word-wrap: break-word;  
-  min-height: 95%;
 }
 
 #overlay a {
@@ -694,7 +693,7 @@ html.ios body #rails #canvas textarea {
   font-size: 14px;
 }
 
-@media (min-width: 481px) and (max-height: 285px) {
+@media (min-width: 481px) and (max-height: 365px) {
   #nicequote {
     visibility: hidden; 
   }  
