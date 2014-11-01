@@ -651,15 +651,45 @@ var Hiro = {
 		},
 
 		canvasclick: function(action,type,target,branch,event)  {
+			var minitouchopen;
 			// Forwarding to other handlers		
 			if (Hiro.apps.el_root.contains(target)) {
 				// First up if it's an app click	
 				Hiro.apps.clickhandler(action,type,target,branch,event);
 			// Handle all others ourselves	
 			} else {
-				// If we had an app open, close it
-				if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
-				console.log('fooooooooooooooooo',target);
+				// Sepcial cases
+				minitouchopen = (Hiro.ui.touch && Hiro.folio.open && Hiro.ui.mini());
+
+				// Distinguish between touchstart/mouseover
+				if (type == 'half') {
+
+					// If we had an app open, close it
+					if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
+
+					// Close menu on mini touches
+					if (minitouchopen) Hiro.ui.slidefolio(-1,100);
+
+				} else {
+					// Prevent any default action
+					event.preventDefault();
+									
+					// Do not pull up keyboard on minis in this case
+					if (minitouchopen) return;
+
+					// Execute actions
+					switch(action) {
+						case 'content':
+							target.focus();
+							event.preventDefault();	
+							break;
+						case 'title':
+							target.focus();
+							event.preventDefault();
+							// alert(action)	
+							break;																				
+					}
+				}			
 			}
 		},
 
@@ -2139,11 +2169,12 @@ var Hiro = {
 		},
 
 		// Fires on touch or click within an app, delegate to respective app
+		// This is piped through the canvas clickhandler
 		clickhandler: function(id,type,target,branch,event) {
 			var i, l, el, app, that = Hiro.apps;
 
 			// If we clicked on the icon, forward to hoverhandler
-			if (id.substring(0,3) == 'app_') {
+			if (type == 'half' && id.substring(0,4) == 'app_') {
 				that.hoverhandler(event,document.getElementById(id))
 			// Otherwise forward to right subclickhandler	
 			} else {
@@ -6056,7 +6087,7 @@ var Hiro = {
 				this.showoninit = true;
 
 				// But abort if there is no content yet, or we already showed it
-				if (this.visible) return;
+				if (!this.inited || this.visible) return;
 
 				// Set flag
 				this.visible = true;
@@ -6238,7 +6269,7 @@ var Hiro = {
 				x = (event.screenX >= 0) ? event.screenX : ((event.touches.length > 0) ? event.touches[0].screenX : that.touchx); 
 				y = (event.screenY >= 0) ? event.screenY : ((event.touches.length > 0) ? event.touches[0].screenY : that.touchy);																		
 				
-				// Stope events from propagating beyond our scope
+				// Stop events from propagating beyond our scope
 				event.stopPropagation();
 
 				// Note values and fire handler for beginning of interaction
