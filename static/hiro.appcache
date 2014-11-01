@@ -15,7 +15,6 @@ CACHE:{{ "\n" }}
 /og.png{{ "\n" }}
 /{{ "\n" }}
 
-
 FALLBACK:{{ "\n" }}
 /note/ /offline/app.html{{ "\n" }}
 

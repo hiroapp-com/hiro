@@ -182,8 +182,6 @@ var Hiro = {
 			if (!that.updatetimeout) that.updatetimeout = setInterval( function(){ 
 				// Repaint
 				Hiro.folio.paint(true) 
-				// Also ping application cache regularely, if we have one
-				if (window.applicationCache && window.applicationCache.status == 1) window.applicationCache.update();
 			},61000);
 
 			// Get data from store			
@@ -3049,25 +3047,6 @@ var Hiro = {
 			if (event.newValue) Hiro.data.set(event.key.split('.')[1],'',JSON.parse(event.newValue),'l',true);	
 		},
 
-		// Handle appcache progress events
-		cachehandler: function(event) {
-			// Switch 
-			switch (event.type) {
-				case 'error':
-					Hiro.sys.error('Appcache error: ' + event.message,event);
-					break;				
-				case 'updateready':
-					// See if we have breaking changes by checking the current tag
-					Hiro.sys.versioncheck();									
-					break;				
-				case 'cached':
-				case 'noupdate':
-					// Release cachelock
-					Hiro.sync.cachelock = false;
-					break;
-			}			
-		},
-
 		// Set local data
 		set: function(store,key,value,source,paint) {
 			source = source || 'c';
@@ -3658,6 +3637,36 @@ var Hiro = {
 				// Signal failure
 				return false;			
 			}
+		},
+
+		// Appcache stuff
+		appcache: {
+			cache: undefined,
+
+			// Check for new appcache
+			update: function() {
+				// Check if browser supports cache & we have our landing page window mounted correctly
+				if (window.applicationCache && this.cache && (this.cache.status == 1 || this.cache.status > 3)) this.cache.update();
+			},
+
+			// Handle appcache progress events
+			handler: function(event) {
+				// Switch 
+				switch (event.type) {
+					case 'error':
+						Hiro.sys.error('Appcache error: ' + event.message,event);
+						break;				
+					case 'updateready':
+						// See if we have breaking changes by checking the current tag
+						Hiro.sys.versioncheck();									
+						break;				
+					case 'cached':
+					case 'noupdate':
+						// Release cachelock
+						Hiro.sync.cachelock = false;
+						break;
+				}			
+			}			
 		}
 	},
 
@@ -4554,10 +4563,10 @@ var Hiro = {
 				case 'sync':
 					// Set online/offline flag, reset reconnect delay
 					this.synconline = true;
-					this[this.protocol].rcd = 1000;
+					this[this.protocol].rcd = 1000;					
 
 					// Check for updated cache manifest
-					if (window.applicationCache && (window.applicationCache.status == 1 || window.applicationCache.status > 3)) window.applicationCache.update();
+					Hiro.data.appcache.update();
 
 					break;
 				case 'web':
@@ -5269,9 +5278,15 @@ var Hiro = {
 
 	// Core system functionality
 	sys: {
-		version: undefined,
+		// Init flags
 		inited: false,
-		production: (window.location.href.indexOf('hiroapp') != -1),	
+		landinginited: false,
+
+		// System vars
+		production: (window.location.href.indexOf('hiroapp') != -1),
+
+		// Other window references
+		landing: undefined,	
 
 		// System setup, this is called once on startup and then calls inits for the various app parts 
 		init: function(vars) {
@@ -5321,20 +5336,6 @@ var Hiro = {
 			Hiro.lib.init();		
 			Hiro.apps.init();			
 
-			// Attach application cache update events
-			if (window.applicationCache) {
-				// Attach it either to main window or landing page, first check if we need a fallback for local dev
-				el = (document.documentElement.getAttribute('manifest')) ? window.applicationCache : window.frames[0].window.applicationCache;
-				// Attaché!
-				Hiro.util.registerEvent(el,'updateready',Hiro.data.cachehandler);
-				Hiro.util.registerEvent(el,'noupdate',Hiro.data.cachehandler);	
-				Hiro.util.registerEvent(el,'cached',Hiro.data.cachehandler);
-				Hiro.util.registerEvent(el,'error',Hiro.data.cachehandler);											
-			// Release the cachelock	
-			} else {
-				Hiro.sync.cachelock = false;
-			}
-
 			// Make sure we don't fire twice
 			this.inited = true;		
 
@@ -5370,6 +5371,27 @@ var Hiro = {
 					Hiro.data.tokens.add(token);
 				}
 			}
+		},
+
+		// Init triggered by the landing page once it's loaded, this also serves at our appCache homebase
+		landinginit: function(page) {
+			// Set shortcut to landingpage
+			this.landing = page;
+
+			// Attach application cache update events			
+			if (window.applicationCache) {
+				// Set shortcut to cache
+				Hiro.data.appcache.cache = page.applicationCache;
+
+				// Attaché!
+				Hiro.util.registerEvent(page.applicationCache,'updateready',Hiro.data.appcache.handler);
+				Hiro.util.registerEvent(page.applicationCache,'noupdate',Hiro.data.appcache.handler);	
+				Hiro.util.registerEvent(page.applicationCache,'cached',Hiro.data.appcache.handler);
+				Hiro.util.registerEvent(page.applicationCache,'error',Hiro.data.appcache.handler);											
+			// Release the cachelock	
+			} else {
+				Hiro.sync.cachelock = false;
+			}			
 		},
 
 		// Takes a version nr and compares it to what we have. 
@@ -5498,7 +5520,10 @@ var Hiro = {
 		// Internals
 		focus: false,
 		resizing: false,
+
+		// Landingstuff
 		landingvisible: false,
+		landingurl: '/component/landing/',
 
 		// Setup and browser capability testing
 		init: function() {
@@ -5597,6 +5622,9 @@ var Hiro = {
 			} else {
 				Hiro.util.registerEvent(window,'popstate', function(e) { Hiro.ui.history.goback(e) });			
 			}
+
+			// Load landing page
+			this.el_landingpage.src = this.landingurl; 
 
 			// Always load settings from server to determine contents and webserver availability
 			this.dialog.load();		
@@ -7142,10 +7170,7 @@ var Hiro = {
 				var token = Hiro.data.get('note_' + id,'_token'), url = '/note/' + id, type;	
 
 				// Extend URL with token if we have one
-				if (token) url = url + '#' + token;
-
-				// Don't do it as long as we're not in production
-				if (!Hiro.sys.production) return;	
+				if (token) url = url + '#' + token;	
 
 				// On the first call we only change the state insteading of adding a new one
 				if ((this.first || replaceonly) && history && 'replaceState' in history) {
