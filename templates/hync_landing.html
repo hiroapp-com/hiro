@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html style="overflow: hidden" manifest="/static/hiro.appcache">
+<html style="overflow: hidden" {% if want_manifest %}manifest="/static/hiro.appcache"{%endif%}>
 	<head>
         {{ get_asset('new_css') }}
 	</head>

@@ -79,7 +79,6 @@ app.add_url_rule('/tokens/verify', 'verify', view_func=views.verify, methods=['P
 app.add_url_rule('/component/landing/', 'landing', view_func=views.landing)
 app.add_url_rule('/component/settings/', 'settings', view_func=views.settings)
 app.add_url_rule('/offline/app.html', 'offline', view_func=views.offline)
-app.add_url_rule('/offline/manifestwrapper/', 'manifestwrapper', view_func=views.manifestwrapper)
 app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)
 # facebook & stipe callbacks
 app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect)
