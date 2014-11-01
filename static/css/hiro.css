@@ -1541,6 +1541,9 @@ html.ios body #rails #canvas textarea {
   padding-top: 5px;
   font-weight: normal;
 }
+#s_plan .box:first-child .price {
+  color: #666;
+}
 
 #s_plan .box .price sup {
   font-size: 12px;
