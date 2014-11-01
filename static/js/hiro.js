@@ -95,8 +95,8 @@ var Hiro = {
 			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);		
 
 			// Open the folio if a user hovers		
-			Hiro.ui.touchy.attach(this.el_root,Hiro.folio.foliotouch,55);	
-			Hiro.ui.touchy.attach(this.el_showmenu,Hiro.folio.foliotouch,55);								
+			Hiro.ui.hover.attach(this.el_root,Hiro.folio.foliotouch,55);	
+			Hiro.ui.hover.attach(this.el_showmenu,Hiro.folio.foliotouch,55);								
 		},
 
 		// If the user clicked somewhere in the folio
@@ -510,7 +510,10 @@ var Hiro = {
 			Hiro.util.registerEvent(this.el_title,'focus',Hiro.canvas.titlefocus);						
 
 			// When a user touches the white canvas area
-			Hiro.ui.touchy.attach(this.el_root,Hiro.canvas.canvastouch,55);		
+			Hiro.ui.hover.attach(this.el_root,Hiro.canvas.canvastouch,55);	
+
+			// When a user touches the white canvas area
+			Hiro.ui.fastbutton.attach(this.el_root,Hiro.canvas.canvasclick);					
 		},
 
 		// Poor man FRP stream
@@ -647,15 +650,23 @@ var Hiro = {
 			if (this.value && !note.c.title) this.value = '';
 		},
 
+		canvasclick: function(action,type,target,branch,event)  {
+			// Forwarding to other handlers		
+			if (Hiro.apps.el_root.contains(target)) {
+				// First up if it's an app click	
+				Hiro.apps.clickhandler(action,type,target,branch,event);
+			// Handle all others ourselves	
+			} else {
+				// If we had an app open, close it
+				if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
+				console.log('fooooooooooooooooo',target);
+			}
+		},
+
 		// If the user hovers over the canvas
 		canvastouch: function(event) {
 			// Close the folio if it should be open
-			if (Hiro.folio.open) {
-				Hiro.ui.slidefolio(-1);
-
-				// Kill the event here to make UI more stable on mobiles	
-				if (Hiro.ui.touch && event.type == 'touchstart') Hiro.util.stopEvent(event);		
-			}	
+			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);	
 		},
 
 		// Emits a current seen event to the server
@@ -2102,19 +2113,20 @@ var Hiro = {
 		open: [],
 
 		init: function() {
+			var app, el;
+
 			// Go through all available apps
-			for (var app in this.installed) {
-				var el = document.getElementById('app_' + app);
+			for (app in this.installed) {
+				el = document.getElementById('app_' + app);
 
 				// Attach touch and click handlers
-				Hiro.ui.touchy.attach(el,Hiro.apps.touchhandler,100);
-				Hiro.ui.fastbutton.attach(el,Hiro.apps.clickhandler);		
+				Hiro.ui.hover.attach(el,Hiro.apps.hoverhandler,100);		
 				Hiro.util.registerEvent(el,'keyup',Hiro.apps[app].keyhandler);	
 			}	
 		},
 
 		// Touchy handler thats fired for each app on hover or touchstart
-		touchhandler: function(event,element) {
+		hoverhandler: function(event,element) {
 			var that = Hiro.apps;
 			// If this app is already open for some reason, do nothing
 			if (that.open.indexOf(element.id.substring(4)) > -1) return;
@@ -2128,13 +2140,23 @@ var Hiro = {
 
 		// Fires on touch or click within an app, delegate to respective app
 		clickhandler: function(id,type,target,branch,event) {
-			var appid = branch.id.split('_');
+			var i, l, el, app, that = Hiro.apps;
 
-			// If we got a non-app branch
-			if (appid[0] != 'app') return;
-
-			// Call app clickhandler
-			Hiro.apps[appid[1]].clickhandler(id,type,target,branch,event)
+			// If we clicked on the icon, forward to hoverhandler
+			if (id.substring(0,3) == 'app_') {
+				that.hoverhandler(event,document.getElementById(id))
+			// Otherwise forward to right subclickhandler	
+			} else {
+				// Go through all available apps
+				for (app in that.installed) {
+					// fetch element
+					el = document.getElementById('app_' + app);
+					// If the event didn't occur within this app, continue
+					if (!el.contains(target)) continue;
+					// Otherwise call proper app clickhandler
+					Hiro.apps[app].clickhandler(id,type,target,el,event)	
+				}				
+			}
 		},
 
 		// Open app widget
@@ -6282,7 +6304,7 @@ var Hiro = {
 		},
 
 		// Attach events to areas that fire under certain conditions like hover and support delays
-		touchy: {
+		hover: {
 			defaultdelay: 300,
 			timeout: null,
 			element: null,
@@ -6290,15 +6312,12 @@ var Hiro = {
 			// Attach initial trigger
 			attach: function(element,handler,delay) {
 				// Always attach mouse event
-				Hiro.util.registerEvent(element,'mouseover', function(e) {Hiro.ui.touchy.fire(e,element,handler,delay)});
-				// Attach touchstart event for touch devices
-				if (Hiro.ui.touch) Hiro.util.registerEvent(element,'touchstart', function(e) {Hiro.ui.touchy.fire(e,element,handler,delay)});
-			},
+				Hiro.util.registerEvent(element,'mouseover', function(e) {Hiro.ui.hover.fire(e,element,handler,delay)});			},
 
 			// If the event is fired
 			fire: function(event,element,handler,delay) {
-				// If its a touch event we fire the event immediately	
-				if (event.type === 'touchstart') handler(event,element);				
+				// If its a touch event we fire abort immediately	
+				if (event.type === 'touchstart') return;				
 				else if (event.type === 'mouseover') {	
 					// Prevent event from triggering touchies fruther up the treee			
 					Hiro.util.stopEvent(event);						
@@ -6312,11 +6331,11 @@ var Hiro = {
 						// If the timeout wasnt killed by the bounds handler, we execute the handler
 						handler(event,element);
 						// And clean up 
-						Hiro.ui.touchy.abort(element);
-						Hiro.util.releaseEvent(element,'mouseout',Hiro.ui.touchy.boundschecker);						
+						Hiro.ui.hover.abort(element);
+						Hiro.util.releaseEvent(element,'mouseout',Hiro.ui.hover.boundschecker);						
 					}, delay);
 					// Register mouseout event to clean things up once we leave target area
-					Hiro.util.registerEvent(element,'mouseout', Hiro.ui.touchy.boundschecker);				
+					Hiro.util.registerEvent(element,'mouseout', Hiro.ui.hover.boundschecker);				
 				} 
 				// Log error to see if any browsers fire unknown events				
 				else Hiro.sys.error('Touchy triggered unknown event: ', event);
@@ -6330,9 +6349,9 @@ var Hiro = {
 				if (target === this || this.contains(target)) return;
 				// If we leave the DOM aree of interest, remove the handler and clean up
 				Hiro.util.stopEvent(event);
-				Hiro.util.releaseEvent(this,'mouseout',Hiro.ui.touchy.boundschecker);								
-				Hiro.ui.touchy.element = null;
-				Hiro.ui.touchy.abort(this);							
+				Hiro.util.releaseEvent(this,'mouseout',Hiro.ui.hover.boundschecker);								
+				Hiro.ui.hover.element = null;
+				Hiro.ui.hover.abort(this);							
 			},
 
 			// Abort our timeout & clean up
