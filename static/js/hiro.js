@@ -6651,7 +6651,7 @@ var Hiro = {
 			// Open dialog
 			show: function(container, section, focus, close, showmessage) {
 				// Never override messages that are sticky
-				if (this.messages[this.currentmessage].sticky) return;
+				if (this.currentmessage && this.messages[this.currentmessage].sticky) return;
 
 				// In case we'Re only and not about to show an overriding message
 				if (!showmessage && (!Hiro.sync.webonline || (!Hiro.sync.synconline && !Hiro.ui.landing.visible && !Hiro.data.get('profile','c.tier')))) {
