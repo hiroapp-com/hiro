@@ -5518,7 +5518,7 @@ var Hiro = {
 					url: '/version',
 					success: function(req,data) {
 						// Compare & see if theres something to do
-						if (data.version.split('-')[0] == currentversion('-')[0]) {
+						if (data.version.split('-')[0] == currentversion.split('-')[0]) {
 							// Release lock	
 							Hiro.sync.cachelock = false;	
 						} else {
