@@ -3955,12 +3955,8 @@ var Hiro = {
 			// See if there was a problem with the session
 			if (!data.session) {
 				// If we had a proper error
-				if (data.remark && data.remark.lvl == 'error') {
-					// Log
-					Hiro.sys.log('Server sent ' + data.remark.slug + ' error',data.remark,'warn');
-					// End hprogress
-					Hiro.ui.hprogress.done(true)
-				}
+				if (data.remark && data.remark.lvl == 'error') this.error(data);
+
 				// Bootstrap workspace if none exists
 				if (!Hiro.data.get('profile')) Hiro.data.bootstrap();
 
@@ -4455,13 +4451,8 @@ var Hiro = {
 		// Process consume token response
 		rx_token_consume_handler: function(data) {
 			// If we had a proper error just log i tfor now
-			// TODO Bruno: Find good way to notify user
-			if (data.remark && data.remark.lvl == 'error') {
-				// Log
-				Hiro.sys.log('Server sent ' + data.remark.slug + ' error',data.remark,'warn');
-				// End hprogress
-				Hiro.ui.hprogress.done(true)
-			}			
+			if (data.remark && data.remark.lvl == 'error') this.error(data);
+		
 			// Remove data from tokens
 			Hiro.data.tokens.remove(data.token);
 		},
@@ -4605,6 +4596,18 @@ var Hiro = {
 
 			// Else send it
 			this.tx(msg);
+		},
+
+		// Handle server sent error
+		error: function(data) {
+			// Log
+			Hiro.sys.log('Server sent ' + data.remark.slug + ' error',data.remark,'warn');
+
+			// End hprogress with error if it's active
+			if(Hiro.ui.hprogress.active) Hiro.ui.hprogress.done(true)	
+
+			// In case it's fatal reset session
+			if (data.remark.lvl == 'fatal') this.reset();			
 		},
 
 		// If either sync or template server just timed out or got a fatal response
