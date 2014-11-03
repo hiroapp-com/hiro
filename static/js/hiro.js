@@ -3958,7 +3958,7 @@ var Hiro = {
 			Hiro.data.tokens.remove(data.token);			
 
 			// See if there was a problem with the session
-			if (!data.session || (data.remark && this.error(data)) {
+			if (!data.session || (data.remark && this.error(data))) {
 				// Bootstrap workspace if none exists
 				if (!Hiro.data.get('profile')) Hiro.data.bootstrap();
 
@@ -4459,12 +4459,12 @@ var Hiro = {
 		},
 
 		// Process consume token response
-		rx_token_consume_handler: function(data) {
-			// If we had a proper error just log it for now
-			if (data.remark) this.error(data);
-		
+		rx_token_consume_handler: function(data) {	
 			// Remove data from tokens
 			Hiro.data.tokens.remove(data.token);
+
+			// If we had a proper error just log it for now
+			if (data.remark) this.error(data);			
 		},
 
 		// Send simple ping to server, either generic if no store id is provided or latest store edits / empty delta
