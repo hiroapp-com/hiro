@@ -1102,8 +1102,6 @@ var Hiro = {
 			decorate: function(string,stringstartoffset,patterns,tag) {
 				var occurence, nextpattern, position, removed = 0, i, l;
 
-				console.log('start lookng for link at ', stringstartoffset)
-
 				// We keep nabbing at the string
 				while (string) {
 					// Reset to 0
