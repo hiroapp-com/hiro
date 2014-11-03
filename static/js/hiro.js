@@ -1011,38 +1011,48 @@ var Hiro = {
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
 			patch: function(delta) {
-				var actions = delta.split('	'), offset, localoffset, suffix, target, node, offset, 
-				val, addition, i, l, changelength = 0, 
+				var actions = delta.split('	'), globaloffset, localoffset, suffix, target, node, offset, 
+				val, addition, i, l, changelength, 
 				links, that = this;
 
 				// Create trimmings
-				offset = (actions[0].charAt(0) == '=') ? parseInt(actions.shift().slice(1)) : 0;
+				globaloffset = (actions[0].charAt(0) == '=') ? parseInt(actions.shift().slice(1)) : 0;
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
+
+				console.log(actions);
 
 				// Wrap in render for performance
 				Hiro.ui.render(function(){
-					// Get node
-					target = that.getnode(offset,suffix);
-
-					// We couldn't identify the node, let's fully repaint
-					if (!target) {
-						// Paint from scratch
-						that.paint();
-						// Stop here
-						return;	
-					}	
-
-					// Set initial values
-					node = target[0];
-					localoffset = target[2];				
-					val = node.nodeValue || node.textContent || node.innerText || '';
-
 					// Iterate through actions
 					for (i = 0, l = actions.length; i < l; i++ ) {
+						// First, get the right node 
+						target = that.getnode(globaloffset,suffix);
+
+						console.log('executing at' + globaloffset, actions[i])
+
+						// We couldn't identify the node, let's fully repaint
+						if (!target) {
+							// Paint from scratch
+							that.paint();
+							// Stop here
+							return;	
+						}	
+
+						// Set initial values
+						node = target[0];
+						localoffset = target[2];				
+						val = node.nodeValue || node.textContent || node.innerText || '';	
+
+						// If we only have to move the offset
+						if (actions[i].charAt(0) == '=') {
+							// Forward!
+							globaloffset += parseInt(actions[i].substring(1));				
+						}
+
 						// Remove something
 						if (actions[i].charAt(0) == '-') {
 							// Parse change length
-							changelength += parseInt(actions[i]);
+							changelength = parseInt(actions[i]);
 							// Build new string
 							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);		
 							// Check if we deleted beyond node bounds or should remove a link
@@ -1051,31 +1061,34 @@ var Hiro = {
 						} else if (actions[i].charAt(0) == '+') {
 							addition = decodeURI(actions[i].substring(1))
 							// Length of addition
-							changelength += addition.length;
+							changelength = addition.length;
 							// Build string
 							val = val.substring(0,localoffset) + addition + val.substring(localoffset);
 							// See if it might be a link if we input a whitespace or pasted something longer							
 							if (node.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
 							// Check if it's still a proper link
 							else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) that.paint();
-						// Move the offset
-						} else if (actions[i].charAt(0) == '=') {
-							// Forward!
-							localoffset += parseInt(actions[i].substring(1));
-						}
-					}					
-					// Set new value
-					node.textContent = val;
+							// Also shift the globaloffset							
+							globaloffset += changelength;
+						} 
 
-					// Resize
+						// If something changed in our node
+						if (changelength) {
+							// Set new value
+							node.textContent = val;						
+
+							// Change textlength and node length
+							that.textlength += changelength;
+							that.textnodes[target[1]] += changelength;	
+						}				
+
+						// Process links AFTER we reset the lengths above
+						if (links) that.decorate(val,globaloffset - target[2],links,'a');							
+					}					
+
+					// Resize (also in next rAF)
 					Hiro.canvas.resize();
 
-					// Change textlength and node length
-					that.textlength += changelength;
-					that.textnodes[target[1]] += changelength;					
-
-					// Process links AFTER we reset the lengths above
-					if (links) that.decorate(val,offset - target[2],links,'a');	
 
 					// Sanity check	(disabled while debugging)
 					// if (that.textlength != Hiro.canvas.cache.content.length) that.paint();																
