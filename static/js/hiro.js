@@ -116,8 +116,15 @@ var Hiro = {
 					case 'folio':
 					case 'notelist':
 					case 'archivelist':
-					case 'showmenu':
-						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);					
+						// Close folio in all these cases
+						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
+						break;					
+					case 'showmenu':	
+						// Switch folio
+						direction = (Hiro.folio.open) ? -1 : 1;
+						// Do it
+						Hiro.ui.slidefolio(direction,100);
+
 				}
 			} else if (type == 'full') {
 				// Deconstruct note id	
@@ -852,8 +859,8 @@ var Hiro = {
 
 			// With the next available frame
 			Hiro.ui.render(function(){						
-				// Get basic values
-				viewport = document.documentElement.clientHeight || window.innerHeight;				
+				// Get basic values, subtract canvas border from viewport sized min height
+				viewport = (document.documentElement.clientHeight || window.innerHeight ) - 6;				
 				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewport)				
 
 				// Spare us the paint if nothing changed
@@ -6024,17 +6031,15 @@ var Hiro = {
 				// Change DOM CSS values = Hiro.context.el_root.style.right
 				Hiro.canvas.el_rails.style.left = v + 'px';
 
-				// Cross browser mini handling
-				if (mini) {
+				// Cross browser non-mini
+				if (!mini) {
 					// document.documentElement.clientHeight || window.innerHeight;
-					Hiro.apps.el_root.style.right = (v*-1)+'px'
-				} else {
+					Hiro.apps.el_root.style.right = (v*-1)+'px'					
 					// Change DOM CSS values = Hiro.context.el_root.style.right
 					Hiro.canvas.el_rails.style.right = ( v * - 1 ) + 'px'					
 				}
 					
-				// On minis we have to 
-						
+
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
 				if (done) {
 					// Timessssup, set internal values

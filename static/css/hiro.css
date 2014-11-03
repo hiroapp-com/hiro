@@ -485,20 +485,12 @@ input.error:focus {
 #rails {
   position: absolute;
   margin-left: 50px;
-  padding-top: 50px;
   z-index: 1001;
-  min-height: 100%;
   box-sizing: border-box; 
   left: 0;
   right: 0; 
-}
-
-html.touch #rails {
-  position: absolute;
-  overflow-y: scroll;
-  top: 0;
-  bottom: 0;
-  -webkit-overflow-scrolling: touch;     
+  top: 50px;
+  bottom: 0;  
 }
 
 #canvas {
@@ -561,7 +553,6 @@ html.touch body #rails #canvas {
   overflow-y: auto;
   resize: none; 
   z-index: 2010;  
-  margin-bottom: -5px;
 }
 
 html.ios body #rails #canvas textarea {
@@ -713,9 +704,15 @@ html.ios body #rails #canvas textarea {
 
 @media (max-width: 480px) {
   #rails {
-    padding-top: 0;
+    top: 0;
     margin-left: 0;
   }
+
+  html.touch #rails {
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;     
+  }  
+
   #canvas {
     border: none;       
     margin-bottom: 0;

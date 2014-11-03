@@ -55,49 +55,48 @@
 					<small>– Jack Kerouac, The Dharma Bums</small>
 				</div>			
 			</div>	
+		</div>		
 
-			<div id="apps">
-				<div class="app app_sharing" id="app_sharing">
-					<div class="icon">
-						<div class="symbol"></div>
-						<div class="counter"></div>
-					</div>
-					<div class="widget">
-						<div id="widget:invite">
-							<a class="cancel" data-hiro-action="close" title="Cancel"></a>
-							<div class="title">Invite others<a data-hiro-action="switch:share"></a></div>
-							<form action="javascript:void(0);" novalidate>
-								<input type="email" placeholder="E-Mail or Phone-Number" class="hiro" novalidate>
-								<div class="error hidden"></div>
-								<div class="peers"></div>
-								<input type="submit" value="foo" class="pseudobutton">
-							</form>
-							<a class="hirobutton grey" data-hiro-action="invite">Invite</a>
-							<small>People who have access:</small>
-							<div class="peers"></div>
-						</div>
-						<div id="widget:share" class="hidden">
-							<a class="cancel" data-hiro-action="close" title="Cancel"></a>
-							<div class="title">Share a link<a data-hiro-action="switch:invite"></a></div>	
-							<input type="text" data-hiro-action="generate">	
-							<a class="hirobutton fb" data-hiro-action="share:fb">Post on{{ " " }}<b>Facebook</b></a>			
-							<a class="hirobutton tw" data-hiro-action="share:tw">Tweet</a>										
-							<a class="hirobutton green" data-hiro-action="share:mail">Mail</a>			
-							<small>Everybody who has this link can join.</small>							
-						</div>
-					</div>	
-				</div>	
-			</div>
-
-	        <div id="context">
-				<div id="status">Loading...</div>		
-				<div id="results">	
-					<div id="msgresults"></div>
-					<div id="synresults"></div>				
-					<div id="wwwresults"></div>																		
+		<div id="apps">
+			<div class="app app_sharing" id="app_sharing">
+				<div class="icon">
+					<div class="symbol"></div>
+					<div class="counter"></div>
 				</div>
+				<div class="widget">
+					<div id="widget:invite">
+						<a class="cancel" data-hiro-action="close" title="Cancel"></a>
+						<div class="title">Invite others<a data-hiro-action="switch:share"></a></div>
+						<form action="javascript:void(0);" novalidate>
+							<input type="email" placeholder="E-Mail or Phone-Number" class="hiro" novalidate>
+							<div class="error hidden"></div>
+							<div class="peers"></div>
+							<input type="submit" value="foo" class="pseudobutton">
+						</form>
+						<a class="hirobutton grey" data-hiro-action="invite">Invite</a>
+						<small>People who have access:</small>
+						<div class="peers"></div>
+					</div>
+					<div id="widget:share" class="hidden">
+						<a class="cancel" data-hiro-action="close" title="Cancel"></a>
+						<div class="title">Share a link<a data-hiro-action="switch:invite"></a></div>	
+						<input type="text" data-hiro-action="generate">	
+						<a class="hirobutton fb" data-hiro-action="share:fb">Post on{{ " " }}<b>Facebook</b></a>			
+						<a class="hirobutton tw" data-hiro-action="share:tw">Tweet</a>										
+						<a class="hirobutton green" data-hiro-action="share:mail">Mail</a>			
+						<small>Everybody who has this link can join.</small>							
+					</div>
+				</div>	
 			</div>	
-							
+		</div>
+
+        <div id="context">
+			<div id="status">Loading...</div>		
+			<div id="results">	
+				<div id="msgresults"></div>
+				<div id="synresults"></div>				
+				<div id="wwwresults"></div>																		
+			</div>
 		</div>				
 
 		<div id="shield">
