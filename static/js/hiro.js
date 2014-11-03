@@ -1326,7 +1326,7 @@ var Hiro = {
 				if (subnode === undefined) return false;
 
 				// Helper that extracts textnodes from a provided nodelist
-				function extract(nodelist) {
+				function extract(nodelist,wanted) {
 					var i, l, results = [], children, node, deep;
 
 					// Start loop
@@ -1349,6 +1349,8 @@ var Hiro = {
 								results = results.concat(extract(children));
 							}			
 						}
+						// Stop once we reached the desired node
+						if (i > wanted) break;						
 					}
 
 					// Return results
@@ -1356,7 +1358,7 @@ var Hiro = {
 				}
 
 				// Fetch all overlay childnodes and convert them to normal array
-				domnodes = extract(this.el_root.childNodes);
+				domnodes = extract(this.el_root.childNodes,subnode);
 		
 				// Return subnode
 				return [domnodes[subnode],subnode,subnodeoffset];
