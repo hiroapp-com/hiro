@@ -486,6 +486,7 @@ input.error:focus {
   position: absolute;
   margin-left: 50px;
   padding-top: 50px;
+  z-index: 1001;
   min-height: 100%;
   box-sizing: border-box; 
   left: 0;

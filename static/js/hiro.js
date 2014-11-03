@@ -3958,10 +3958,7 @@ var Hiro = {
 			Hiro.data.tokens.remove(data.token);			
 
 			// See if there was a problem with the session
-			if (!data.session) {
-				// If we had a proper error
-				if (data.remark && data.remark.lvl == 'error') this.error(data);
-
+			if (!data.session || (data.remark && this.error(data)) {
 				// Bootstrap workspace if none exists
 				if (!Hiro.data.get('profile')) Hiro.data.bootstrap();
 
@@ -4121,10 +4118,16 @@ var Hiro = {
 			// Set ack
 			if (store) ack = (data.tag == store._tag);
 
+			// If we had a proper error
+			if (data.remark && this.error(data)) return;
+				
 			// Log edge cases
  			if (!store) {
 				// Couldn't get local data
 				Hiro.sys.error("Server sent a res-sync for a resource (" + id + ") we don't know",data);
+				// Reset sessions
+				this.reset();
+				// Abort			
 				return;				
 			} else if (store._tag && !ack) {
 				// See if we have a proper response we're waiting for or abort otherwise
@@ -4182,10 +4185,12 @@ var Hiro = {
 						} else {
 							// Log
 							if (backup) Hiro.sys.error('Corrupted backup with cv/sv ' + backup.cv + '/' + backup.sv + ' instead of ' + scv + '/' + ssv + ', aborting.',[backup,data]);
-							else Hiro.sys.error('No backup found, aborting.',data);
-							Hiro.sys.log('',null,'groupEnd');	
-							// Go to next change
-							continue;
+							else Hiro.sys.error('No backup found, resetting session',data);
+							Hiro.sys.log('',null,'groupEnd');							
+							// Reset session
+							this.reset();	
+							// Abort here
+							return;
 						}																
 					} 					
 
@@ -4455,8 +4460,8 @@ var Hiro = {
 
 		// Process consume token response
 		rx_token_consume_handler: function(data) {
-			// If we had a proper error just log i tfor now
-			if (data.remark && data.remark.lvl == 'error') this.error(data);
+			// If we had a proper error just log it for now
+			if (data.remark) this.error(data);
 		
 			// Remove data from tokens
 			Hiro.data.tokens.remove(data.token);
@@ -4606,8 +4611,9 @@ var Hiro = {
 		// Fetch new session from server to replace local state with server state
 		reset: function() {
 			var sid = Hiro.data.get('profile','c.sid');
+
         	// Logging
-			Hiro.sys.error('Local session fucked up beyond repair, requesting new login token to reset session ' + sid);		
+			Hiro.sys.error('Local session fucked up beyond repair, requesting new login token to reset session ' + sid,Hiro.data.stores);		
 
 			// Send request to backend
 			Hiro.sync.ajax.send({
@@ -4637,7 +4643,12 @@ var Hiro = {
 			if(Hiro.ui.hprogress.active) Hiro.ui.hprogress.done(true)	
 
 			// In case it's fatal reset session
-			if (data.remark.lvl == 'fatal') this.reset();			
+			if (data.remark.lvl == 'fatal') {
+				// Reset
+				this.reset();	
+				// Affirm abort
+				return true;
+			}			
 		},
 
 		// If either sync or template server just timed out or got a fatal response
