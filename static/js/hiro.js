@@ -241,7 +241,11 @@ var Hiro = {
 
 			// Abort if we try to render a link for which we don't have any data
 			if (!note) {
+				// Throw error
 				Hiro.sys.error('Tried to paint a link for note ' + id + ' but no data is available',note);
+				// Reset session
+				Hiro.sync.reset();
+				// Abort
 				return;
 			}
 
@@ -1446,7 +1450,7 @@ var Hiro = {
 			Hiro.sync.ajax.send({
 				url: url,
 	            type: "POST",
-	            payload: JSON.stringify(payload),
+	            payload: payload,
 				success: function(req,data) {
 					// Reset flag	
 	                Hiro.user.authinprogress = false;
@@ -1536,7 +1540,7 @@ var Hiro = {
 							Hiro.sync.ajax.send({
 								url: "/_cb/facebook",
 				                type: "POST",
-				                payload: JSON.stringify(fbtokens),
+				                payload: fbtokens,
 								success: function(req,data) {
 									obj.success(data);
 								},
@@ -1645,7 +1649,7 @@ var Hiro = {
 			Hiro.sync.ajax.send({
 				url: '/tokens/resetpwd',
 				type: "POST",
-	            payload: JSON.stringify(payload),
+	            payload: payload,
 				success: function(req,data) {
 					// Show message
 	                e.textContent = "Success, check your " + parse[0] + " to continue.";										                    
@@ -1907,6 +1911,8 @@ var Hiro = {
 				} else {
 					// Log
 					Hiro.sys.error("Server asked us to swap contact details of a contact we don't know",contact);
+					// Reset session
+					Hiro.sync.reset();
 				}
 
 				// No peers found & changed above
@@ -2043,7 +2049,7 @@ var Hiro = {
 						Hiro.sync.ajax.send({
 							url: "/settings/plan",
 			                type: "POST",
-			                payload: JSON.stringify(subscription),
+			                payload: subscription,
 							success: function(req,data) {
 								// TODO Bruno: Make this experience waaaaaaaayyy funkier
 								// w00p w00p, set stage and everything
@@ -2098,7 +2104,7 @@ var Hiro = {
 				Hiro.sync.ajax.send({
 					url: "/settings/plan",
 	                type: "POST",
-	                payload: JSON.stringify(subscription),
+	                payload: subscription,
 					success: function(req,data) {
 	                    Hiro.ui.setstage(data.tier);	
 	                    Hiro.user.checkout.active = false;	
@@ -3702,7 +3708,6 @@ var Hiro = {
 				// Send request to backend
 				Hiro.sync.ajax.send({
 					url: '/tokens/anon',
-		            type: 'GET',
 					success: function(req,data) {
 			        	// Logging
 						Hiro.sys.log('Received anonymous token ' + data.token);	
@@ -3863,7 +3868,7 @@ var Hiro = {
 					r.sid = sid;
 
 		        	// Logging
-					Hiro.sys.log('Requesting new while we do have an active one ', sid,'warn');				
+					Hiro.sys.log('Requesting new session while we do have an active one ', sid,'warn');				
 				}
 
 	        	// Logging
@@ -4598,6 +4603,31 @@ var Hiro = {
 			this.tx(msg);
 		},
 
+		// Fetch new session from server to replace local state with server state
+		reset: function() {
+			var sid = Hiro.data.get('profile','c.sid');
+        	// Logging
+			Hiro.sys.error('Local session fucked up beyond repair, requesting new login token to reset session ' + sid);		
+
+			// Send request to backend
+			Hiro.sync.ajax.send({
+				url: '/tokens/login',
+				type: 'POST',
+				payload: { sid: sid },
+				success: function(req,data) {
+		        	// Logging
+					Hiro.sys.log('Received new login token ' + data.token);	
+
+					// Request new session via session handler
+					Hiro.data.tokens.add({ id: data.token, action: 'anon'})													                    
+				},
+				error: function(req,data) {	
+		        	// Logging
+					Hiro.sys.error('Unable to fetch new login token',req);                 		                    						                    
+				}										
+			});	
+		},
+
 		// Handle server sent error
 		error: function(data) {
 			// Log
@@ -4786,7 +4816,7 @@ var Hiro = {
 				var method = obj.type || 'GET',
 					async = obj.async || true,
 					contentType = obj.contentType || 'application/json; charset=UTF-8',
-					payload = obj.payload || '';	
+					payload;	
 
 				// Build proper URL encoded string for Form fallback
 				if (obj.payload && contentType == 'application/x-www-form-urlencoded') {
@@ -4797,8 +4827,11 @@ var Hiro = {
 							str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj.payload[p]));
 						}
 					}
-					payload = str.join("&");				
-				}		
+					payload = str.join("&");	
+				// Encode payload to JSON				
+				} else {
+					payload = JSON.stringify(obj.payload);
+				}	
 
 				// Non Patch supporting devices, move to array check once we have more
 				if (method == 'PATCH' && navigator.appVersion.indexOf('BB10') > -1) method = 'POST';
@@ -4850,7 +4883,7 @@ var Hiro = {
 					}
 
 					// And off we go
-					req.send(payload);
+					req.send(payload || '');
 
 				} catch(e) {
 					// Proper cleanup and logging

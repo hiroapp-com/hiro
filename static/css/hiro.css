@@ -464,9 +464,10 @@ input.error:focus {
   }
 
   #folio .footer {
-    max-width: 295px;    
-    margin-right: 55px;
-    width: auto;
+    max-width: 340px;
+    padding-right: 55px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   #showmenu {
@@ -485,7 +486,6 @@ input.error:focus {
   position: absolute;
   margin-left: 50px;
   padding-top: 50px;
-  z-index: 1001;
   min-height: 100%;
   box-sizing: border-box; 
   left: 0;
