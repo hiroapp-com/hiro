@@ -785,8 +785,9 @@ html.ios body #rails #canvas textarea {
 
 #apps {
   position: absolute;
-  right: 395px;
-  top: 64px;  
+  right: 0;
+  top: 112px;
+  margin-right: 395px; 
   z-index: 3000; 
 }
 
@@ -1026,18 +1027,17 @@ html.ios body #rails #canvas textarea {
 
 @media (min-width: 481px) and (max-width: 900px) {
   #apps {
-    right: 70px;
-    top: 46px;
+    margin-right: 70px;
+    top: 96px;
   } 
 }
 
 @media (max-width: 480px) {
   #apps {
-    top: auto;
-    right: auto;
+    top: 0;
+    margin-right: 0;
     z-index: 2040;
     position: fixed;
-    width: 100%;
   }
 
   #apps .app .icon .counter {
@@ -1061,19 +1061,30 @@ html.ios body #rails #canvas textarea {
     right: 0;
     left: 0;
     bottom: 0;
-    padding: 47px 17px 20px 15px;   
+    padding: 7px 17px 20px 15px;   
+    margin-top: 40px;
   }
 
   #apps .app .widget .cancel {
-    top: 3px;
-    right: 3px;
-    height: 40px;
+    top: -40px;
+    right: 0;
+    height: 37px;
+    background-color: #fff;
+    width: 47px;
+    opacity: 1;
+    background-position: -32px -29px;
   }
 
   #apps .app .widget .title a {
-    top: 36px;
-    right: 12px;
+    top: -3px;
+    right: 0;
     width: 45px;
+    background-position: 2px -293px;  
+    height: 38px;  
+  }  
+
+  #apps .app .widget .hidden .title a {
+    background-position: -48px -295px;
   }  
 
   #apps .app.app_sharing .widget .peers .peer {

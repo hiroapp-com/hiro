@@ -654,52 +654,45 @@ var Hiro = {
 		canvasclick: function(action,type,target,branch,event)  {
 			var title, url;
 
-			// Forwarding to other handlers		
-			if (Hiro.apps.el_root.contains(target)) {
-				// First up if it's an app click	
-				Hiro.apps.clickhandler(action,type,target,branch,event);
-			// Handle all others ourselves	
+			// Distinguish between touchstart/mouseover
+			if (type == 'half') {
+
+				// If we had an app open, close it
+				if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
+
+				// Close menu on mini touches
+				if (Hiro.ui.touch && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
+
 			} else {
-				// Distinguish between touchstart/mouseover
-				if (type == 'half') {
 
-					// If we had an app open, close it
-					if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
-
-					// Close menu on mini touches
-					if (Hiro.ui.touch && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
-
-				} else {
-
-					// Execute actions
-					switch(action) {
-						case 'content':
-							// Check for links
-							url = Hiro.canvas.overlay.getclicked(event);
-							// Open them in new tab
-							if (url) Hiro.ui.openlink(url.innerText);							
-							// Do not pull up keyboard on touch devices
-							if (Hiro.ui.touch && Hiro.folio.open) return;						
-							// Stick to default beaviour if we have a value
-							if (target.value) return;
-							// Immediately focus if it's empty
-							target.focus();	
-							// Prevent any default action
-							Hiro.util.stopEvent(event);							
-							break;								
-						case 'title':
-							// Do not pull up keyboard on touch devices
-							if (Hiro.ui.touch && Hiro.folio.open) return;						
-							// Stick to default behaviour if we already have a value
-							if (Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title')) return;
-							// Immediately focus if it's empty
-							target.focus();	
-							// Prevent any default action
-							Hiro.util.stopEvent(event);							
-							break;																				
-					}
-				}			
-			}
+				// Execute actions
+				switch(action) {
+					case 'content':
+						// Check for links
+						url = Hiro.canvas.overlay.getclicked(event);
+						// Open them in new tab
+						if (url) Hiro.ui.openlink(url.innerText);							
+						// Do not pull up keyboard on touch devices
+						if (Hiro.ui.touch && Hiro.folio.open) return;						
+						// Stick to default beaviour if we have a value
+						if (target.value) return;
+						// Immediately focus if it's empty
+						target.focus();	
+						// Prevent any default action
+						Hiro.util.stopEvent(event);							
+						break;								
+					case 'title':
+						// Do not pull up keyboard on touch devices
+						if (Hiro.ui.touch && Hiro.folio.open) return;						
+						// Stick to default behaviour if we already have a value
+						if (Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title')) return;
+						// Immediately focus if it's empty
+						target.focus();	
+						// Prevent any default action
+						Hiro.util.stopEvent(event);							
+						break;																				
+				}
+			}			
 		},
 
 		// If the user hovers over the canvas
@@ -2214,6 +2207,7 @@ var Hiro = {
 
 				// Attach touch and click handlers
 				Hiro.ui.hover.attach(el,Hiro.apps.hoverhandler,100);		
+				Hiro.ui.fastbutton.attach(el,Hiro.apps.clickhandler);				
 				Hiro.util.registerEvent(el,'keyup',Hiro.apps[app].keyhandler);	
 			}	
 		},
@@ -2241,15 +2235,8 @@ var Hiro = {
 				that.hoverhandler(event,document.getElementById(id))
 			// Otherwise forward to right subclickhandler	
 			} else {
-				// Go through all available apps
-				for (app in that.installed) {
-					// fetch element
-					el = document.getElementById('app_' + app);
-					// If the event didn't occur within this app, continue
-					if (!el.contains(target)) continue;
-					// Otherwise call proper app clickhandler
-					Hiro.apps[app].clickhandler(id,type,target,el,event)	
-				}				
+				// Fire
+				Hiro.apps[branch.id.substring(4)].clickhandler(id,type,target,branch,event)					
 			}
 		},
 
@@ -5947,6 +5934,7 @@ var Hiro = {
 				sd = slideduration || this.slideduration,
 				duration = sd / distance * Math.abs(dx),
 				start = Hiro.util.now(),
+				mini = Hiro.ui.mini(),
 				_this = this;	
 
 			// Set direction
@@ -5954,6 +5942,9 @@ var Hiro = {
 
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
+
+			// Hide the apps on minis
+			if (mini && direction === 1) Hiro.apps.el_root.style.display = 'none';
 
 			// Easing function (quad), see 
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
@@ -5979,8 +5970,9 @@ var Hiro = {
 				} 
 
 				// Change DOM CSS values = Hiro.context.el_root.style.right
-				Hiro.canvas.el_rails.style.left = v + 'px';
-				Hiro.canvas.el_rails.style.right = (v*-1)+'px'; 
+				Hiro.canvas.el_root.style.left = v + 'px';
+				// Also move apps on non mini devices
+				if (!mini) Hiro.apps.el_root.style.right = (v*-1)+'px'
 
 				// On minis we have to 
 						
@@ -5994,6 +5986,8 @@ var Hiro = {
 					if (callback) callback();
 					// Set classname
 					Hiro.folio.el_root.className = (direction > 0) ? 'open' : 'closed';
+					// Display the apps again
+					if (mini && direction === -1) Hiro.apps.el_root.style.display = 'block';					
 				} else {
 					_this.slidetimer = requestAnimationFrame(step);
 				}	
