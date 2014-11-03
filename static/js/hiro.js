@@ -1161,7 +1161,7 @@ var Hiro = {
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
 			wrap: function(tag,action,offset,length) {
-				var range = document.createRange(), startnode, endnode, el, initallength, val;
+				var range, startnode, endnode, el, initallength, val;
 
 				// Get nodes
 				startnode = this.getnode(offset);
@@ -1171,7 +1171,7 @@ var Hiro = {
 				el = document.createElement(tag);					
 
 				// Same node?
-				if (startnode[0] == endnode[0]) {
+				if (startnode[0] && startnode[0] == endnode[0]) {
 					// Copy node value
 					val = startnode[0].nodeValue;
 
@@ -1185,8 +1185,27 @@ var Hiro = {
 					this.splice(el,offset,length);
 				// Spanning multiple nodes						
 				} else {	
-					// Not supported yet
-					this.paint();									
+					// Paint for now because...
+					this.paint();
+
+					// it's not supported yet
+					return;
+
+					// Log
+					Hiro.sys.error('Tried to wrap overlay Range spanning multiple nodes');
+
+					// Copy values
+					initallength = startnode[0].nodeValue.length;
+
+					// Set range
+					range.setStart(startnode[0],startnode[2]);
+					range.setEnd(endnode[0],endnode[2]);
+
+					// Simply use surroundcontent
+					range.surroundContents(el);	
+
+					// Update internal values by splitting into three right away
+					this.textnodes.splice(startnode[1],1,startnode[2],length,initallength - endnode[2]);									
 				}
 			},
 
