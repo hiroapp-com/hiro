@@ -1036,7 +1036,7 @@ var Hiro = {
 						// Set initial values
 						node = target[0];
 						localoffset = target[2];				
-						val = node.nodeValue || node.textContent || node.innerText || '';	
+						val = node.nodeValue || '';	
 
 						// If we only have to move the offset
 						if (actions[i].charAt(0) == '=') {
@@ -1086,7 +1086,7 @@ var Hiro = {
 						}				
 
 						// Process links AFTER we reset the lengths above
-						if (links) that.decorate(val,globaloffset - target[2] - 1,links,'a');							
+						if (links) that.decorate(val,globaloffset - localoffset - changelength,links,'a');							
 					}					
 
 					// Resize (also in next rAF)
@@ -1100,8 +1100,9 @@ var Hiro = {
 
 			// Takes a string, the global and local offsets, an array of strings to be decorated and wraps them all
 			decorate: function(string,stringstartoffset,patterns,tag) {
-				var occurence, nextpattern, position, removed = 0,
-					i, l;
+				var occurence, nextpattern, position, removed = 0, i, l;
+
+				console.log('start lookng for link at ', stringstartoffset)
 
 				// We keep nabbing at the string
 				while (string) {
@@ -1184,21 +1185,8 @@ var Hiro = {
 					this.splice(el,offset,length);
 				// Spanning multiple nodes						
 				} else {	
-					// Warn
-					Hiro.sys.error('Tried to wrap overlay Range spanning multiple nodes');
-
-					// Copy values
-					initallength = startnode[0].nodeValue.length;
-
-					// Set range
-					range.setStart(startnode[0],startnode[2]);
-					range.setEnd(endnode[0],endnode[2]);
-
-					// Simply use surroundcontent
-					range.surroundContents(el);	
-
-					// Update internal values by splitting into three right away
-					this.textnodes.splice(startnode[1],1,startnode[2],length,initallength - endnode[2]);									
+					// Not supported yet
+					this.paint();									
 				}
 			},
 
@@ -6094,7 +6082,7 @@ var Hiro = {
 					if (callback) callback();
 					// Set classname
 					Hiro.folio.el_root.className = (direction > 0) ? 'open' : 'closed';
-					// Reset mini ui
+					// Reset ui (this would only be necessary in mini, but user might have changed orientation)mini ui
 					if (mini && direction === -1) {
 						// Display the apps again
 						Hiro.apps.el_root.style.display = 'block';	
