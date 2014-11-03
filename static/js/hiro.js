@@ -1011,15 +1011,12 @@ var Hiro = {
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
 			patch: function(delta) {
-				var actions = delta.split('	'), globaloffset, localoffset, suffix, target, node, offset, 
-				val, addition, i, l, changelength, 
-				links, that = this;
+				var actions = delta.split('	'), globaloffset, localoffset, suffix, target, node, repaint,
+				val, addition, i, l, changelength, links, that = this;
 
 				// Create trimmings
 				globaloffset = (actions[0].charAt(0) == '=') ? parseInt(actions.shift().slice(1)) : 0;
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
-
-				console.log(actions);
 
 				// Wrap in render for performance
 				Hiro.ui.render(function(){
@@ -1027,8 +1024,6 @@ var Hiro = {
 					for (i = 0, l = actions.length; i < l; i++ ) {
 						// First, get the right node 
 						target = that.getnode(globaloffset,suffix);
-
-						console.log('executing at' + globaloffset, actions[i])
 
 						// We couldn't identify the node, let's fully repaint
 						if (!target) {
@@ -1056,7 +1051,7 @@ var Hiro = {
 							// Build new string
 							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);		
 							// Check if we deleted beyond node bounds or should remove a link
-							if (val.length < parseInt(actions[i]) * -1 || node.nodeName == 'A' && !Hiro.context.extractlinks(val)) that.paint();
+							if (val.length < parseInt(actions[i]) * -1 || node.nodeName == 'A' && !Hiro.context.extractlinks(val)) repaint = true;
 						// Add a character
 						} else if (actions[i].charAt(0) == '+') {
 							addition = decodeURI(actions[i].substring(1))
@@ -1067,10 +1062,18 @@ var Hiro = {
 							// See if it might be a link if we input a whitespace or pasted something longer							
 							if (node.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
 							// Check if it's still a proper link
-							else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) that.paint();
+							else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) repaint = true;
 							// Also shift the globaloffset							
 							globaloffset += changelength;
 						} 
+
+						// Abort if we need a repaint
+						if (repaint) {
+							// Kick off repaint
+							that.paint();
+							// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
+							return;
+						}
 
 						// If something changed in our node
 						if (changelength) {
@@ -1083,7 +1086,7 @@ var Hiro = {
 						}				
 
 						// Process links AFTER we reset the lengths above
-						if (links) that.decorate(val,globaloffset - target[2],links,'a');							
+						if (links) that.decorate(val,globaloffset - target[2] - 1,links,'a');							
 					}					
 
 					// Resize (also in next rAF)
@@ -1201,16 +1204,18 @@ var Hiro = {
 
 			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
 			splice: function(node,offset,length) {
-				var target = this.getnode(offset), fragment = document.createDocumentFragment(), before, after, val, cache;
+				var target = this.getnode(offset),
+				fragment = document.createDocumentFragment(), 
+				placeholder, before, after, val, cache;
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
 				if (!target) return;
 
-				// Set proper values
+				// Set proper values, using innertext here as nodevalue only works for pure textnodes
 				val = target[0].nodeValue || '';	
 
 				// Make offset relative
-				offset = target[2];
+				offset = target[2];			
 
 				// Create new split textnodes
 				before = document.createTextNode(val.substring(0,offset));
@@ -1315,20 +1320,46 @@ var Hiro = {
 				// Abort if we havent't found anything
 				if (subnode === undefined) return false;
 
-				// Fetch all overlay childnodes
-				domnodes = this.el_root.childNodes;
+				// Helper that extracts textnodes from a provided nodelist
+				function extract(nodelist) {
+					var i, l, results = [], children, node, deep;
 
-				// Iterate through them
-				for (i = 0, l = domnodes.length; i < l; i++ ) {
-					// Only work with textnodes
-					if (domnodes[i].nodeType == 3 || domnodes[i].nodeName == 'A') {
-						// If we found the proper node, return it
-						if (nodecount == subnode) return [domnodes[i],subnode,subnodeoffset];
-						// Iterate counter
-						nodecount++;
-					}	
+					// Start loop
+					for ( i = 0, l = nodelist.length; i < l; i++ ) {
+						// Quick reference
+						node = nodelist[i];
+						// If it's a textnode
+						if (node.nodeType == 3) {
+							// Add it right away
+							results.push(node);
+						// If it's an anchor tag	
+						} else if (node.nodeName == 'A') {
+							// Set quick reference
+							children = node.childNodes;
+							// If it got only a single child, that must be a textnode, add it right away
+							if (children.length == 1 && children[0].nodeType == 3) results.push(node.firstChild);
+							// Otherwise call this recursively
+							else if (children.length == 3) {
+								// Set results to new merged array
+								results = results.concat(extract(children));
+							}			
+						}
+					}
+
+					// Return results
+					return results;
 				}
+
+				// Fetch all overlay childnodes and convert them to normal array
+				domnodes = extract(this.el_root.childNodes);
+		
+				// Return subnode
+				return [domnodes[subnode],subnode,subnodeoffset];
+
+				// No node found
+				return false;
 			},
+
 
 			// Check if we clicked anything in the node
 			getclicked: function(event) {
