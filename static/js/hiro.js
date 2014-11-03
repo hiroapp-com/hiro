@@ -1026,7 +1026,7 @@ var Hiro = {
 						target = that.getnode(globaloffset,suffix);
 
 						// We couldn't identify the node, let's fully repaint
-						if (!target) {
+						if (!target[0]) {
 							// Paint from scratch
 							that.paint();
 							// Stop here
@@ -1214,7 +1214,7 @@ var Hiro = {
 				placeholder, before, after, val, cache;
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
-				if (!target) return;
+				if (!target[0]) return;
 
 				// Set proper values, using innertext here as nodevalue only works for pure textnodes
 				val = target[0].nodeValue || '';	
