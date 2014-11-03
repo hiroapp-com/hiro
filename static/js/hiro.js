@@ -961,10 +961,17 @@ var Hiro = {
 
 			// Flags
 			scrolling: false,
+			painting: false,
 
 			// Generate new overlay
 			paint: function() {
 				var el = this.el_root, fadedirection, string = Hiro.canvas.cache.content, links, l = string.length, peers, i, l, that = this;
+
+				// Do not overwhelm system with repaints
+				if (this.painting) return;
+
+				// Set flag
+				this.painting = true;
 
 				// Reset nodes cache and fill it with initial string length
 				this.textnodes.length = 0;
@@ -1004,8 +1011,11 @@ var Hiro = {
 						Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
 					}
 
+					// Release lock
+					that.painting = false;
+
 					// Log
-					Hiro.sys.log('Overlay repainted from scratch.') 						
+					Hiro.sys.log('Overlay repainted from scratch.') 											
 				});
 			},
 
@@ -1067,14 +1077,6 @@ var Hiro = {
 							globaloffset += changelength;
 						} 
 
-						// Abort if we need a repaint
-						if (repaint) {
-							// Kick off repaint
-							that.paint();
-							// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
-							return;
-						}
-
 						// If something changed in our node
 						if (changelength) {
 							// Set new value
@@ -1085,16 +1087,20 @@ var Hiro = {
 							that.textnodes[target[1]] += changelength;	
 						}				
 
+						// Repaint & snity check  || that.textlength != Hiro.canvas.cache.content.length
+						if (repaint) {
+							// Fire repaint
+							that.paint();
+							// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
+							return;							
+						}	
+
 						// Process links AFTER we reset the lengths above
-						if (links) that.decorate(val,globaloffset - localoffset - changelength,links,'a');							
+						if (links) that.decorate(val,globaloffset - localoffset - changelength,links,'a');													
 					}					
 
 					// Resize (also in next rAF)
-					Hiro.canvas.resize();
-
-
-					// Sanity check	(disabled while debugging)
-					// if (that.textlength != Hiro.canvas.cache.content.length) that.paint();																
+					Hiro.canvas.resize();																
 				})							
 			},
 
