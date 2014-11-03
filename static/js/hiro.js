@@ -5990,8 +5990,13 @@ var Hiro = {
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
 
-			// Hide the apps on minis
-			if (mini && direction === 1) Hiro.apps.el_root.style.display = 'none';
+			// Apecial mini handling
+			if (mini && direction === 1) {
+				// Hide the apps
+				Hiro.apps.el_root.style.display = 'none';
+				// Set canvas to fixed with
+				Hiro.canvas.el_root.style.width = (document.documentElement.clientWidth || window.innerWidth) + 'px';
+			}	
 
 			// Easing function (quad), see 
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
@@ -6017,10 +6022,17 @@ var Hiro = {
 				} 
 
 				// Change DOM CSS values = Hiro.context.el_root.style.right
-				Hiro.canvas.el_root.style.left = v + 'px';
-				// Also move apps on non mini devices
-				if (!mini) Hiro.apps.el_root.style.right = (v*-1)+'px'
+				Hiro.canvas.el_rails.style.left = v + 'px';
 
+				// Cross browser mini handling
+				if (mini) {
+					// document.documentElement.clientHeight || window.innerHeight;
+					Hiro.apps.el_root.style.right = (v*-1)+'px'
+				} else {
+					// Change DOM CSS values = Hiro.context.el_root.style.right
+					Hiro.canvas.el_rails.style.right = ( v * - 1 ) + 'px'					
+				}
+					
 				// On minis we have to 
 						
 				// If we still have time we step on each possible frame in modern browser or fall back in others											
@@ -6033,8 +6045,13 @@ var Hiro = {
 					if (callback) callback();
 					// Set classname
 					Hiro.folio.el_root.className = (direction > 0) ? 'open' : 'closed';
-					// Display the apps again
-					if (mini && direction === -1) Hiro.apps.el_root.style.display = 'block';					
+					// Reset mini ui
+					if (mini && direction === -1) {
+						// Display the apps again
+						Hiro.apps.el_root.style.display = 'block';	
+						// Reset with to relative one
+						Hiro.canvas.el_root.style.width = '100%';
+					}					
 				} else {
 					_this.slidetimer = requestAnimationFrame(step);
 				}	
