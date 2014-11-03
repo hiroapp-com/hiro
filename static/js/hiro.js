@@ -1041,7 +1041,7 @@ var Hiro = {
 						// If we only have to move the offset
 						if (actions[i].charAt(0) == '=') {
 							// Forward!
-							globaloffset += parseInt(actions[i].substring(1));				
+							globaloffset += changelength = parseInt(actions[i].substring(1));											
 						}
 
 						// Remove something
