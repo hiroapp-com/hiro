@@ -6869,11 +6869,11 @@ var Hiro = {
 				// Render message
 				messageholder.innerHTML = '<em>' + obj.title + '</em>' + obj.msg;
 
-				// Set internal value
-				this.currentmessage = message;
-
 				// Show dialog
 				this.show('d_msg', undefined, undefined, true, true)
+
+				// Prevent subsequent messages from showing
+				this.currentmessage = message;				
 			},
 
 			// Fill data into settings dialog & and other preparations
