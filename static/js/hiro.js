@@ -990,7 +990,7 @@ var Hiro = {
 					links = Hiro.context.extractlinks(string);
 
 					// Yay, render them
-					if (links) that.decorate(string,0,links,'a');											
+					if (links) that.decorate(links,'a',0);											
 
 					// Iterate through peers to set flags
 					for ( i = 0, l = peers.length; i < l; i++ ) {
@@ -1041,121 +1041,88 @@ var Hiro = {
 				globaloffset = (actions[0].charAt(0) == '=') ? parseInt(actions.shift().slice(1)) : 0;
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
-				// Wrap in render for performance
-				// Hiro.ui.render(function(){
-					// Iterate through actions
-					for (i = 0, l = actions.length; i < l; i++ ) {
-						// First, get the right node 
-						target = that.getnode(globaloffset,suffix);
+				// Iterate through actions
+				for (i = 0, l = actions.length; i < l; i++ ) {
+					// First, get the right node 
+					target = that.getnode(globaloffset,suffix);
 
-						// We couldn't identify the node, let's fully repaint
-						if (!target[0]) {
-							// Paint from scratch
-							that.paint();
-							// Stop here
-							return;	
-						}	
+					// We couldn't identify the node, let's fully repaint
+					if (!target[0]) {
+						// Paint from scratch
+						that.paint();
+						// Stop here
+						return;	
+					}	
 
-						// Set initial values
-						node = target[0];
-						localoffset = target[2];				
-						val = node.nodeValue || '';	
+					// Set initial values
+					node = target[0];
+					localoffset = target[2];				
+					val = node.nodeValue || '';	
 
-						// If we only have to move the offset
-						if (actions[i].charAt(0) == '=') {
-							// Forward!
-							globaloffset += changelength = parseInt(actions[i].substring(1));											
-						}
+					// If we only have to move the offset
+					if (actions[i].charAt(0) == '=') {
+						// Forward!
+						globaloffset += changelength = parseInt(actions[i].substring(1));											
+					}
 
-						// Remove something
-						if (actions[i].charAt(0) == '-') {
-							// Parse change length
-							changelength = parseInt(actions[i]);
-							// Build new string
-							val = val.substring(0,localoffset) + val.substring(localoffset - changelength);		
-							// Check if we deleted beyond node bounds or should remove a link
-							if (val.length < parseInt(actions[i]) * -1 || node.nodeName == 'A' && !Hiro.context.extractlinks(val)) repaint = true;
-						// Add a character
-						} else if (actions[i].charAt(0) == '+') {
-							addition = decodeURI(actions[i].substring(1))
-							// Length of addition
-							changelength = addition.length;
-							// Build string
-							val = val.substring(0,localoffset) + addition + val.substring(localoffset);
-							// See if it might be a link if we input a whitespace or pasted something longer							
-							if (node.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
-							// Check if it's still a proper link
-							else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) repaint = true;
-							// Also shift the globaloffset							
-							globaloffset += changelength;
-						} 
+					// Remove something
+					if (actions[i].charAt(0) == '-') {
+						// Parse change length
+						changelength = parseInt(actions[i]);
+						// Build new string
+						val = val.substring(0,localoffset) + val.substring(localoffset - changelength);		
+						// Check if we deleted beyond node bounds or should remove a link
+						if (val.length < parseInt(actions[i]) * -1 || node.nodeName == 'A' && !Hiro.context.extractlinks(val)) repaint = true;
+					// Add a character
+					} else if (actions[i].charAt(0) == '+') {
+						addition = decodeURI(actions[i].substring(1))
+						// Length of addition
+						changelength = addition.length;
+						// Build string
+						val = val.substring(0,localoffset) + addition + val.substring(localoffset);
+						// See if it might be a link if we input a whitespace or pasted something longer							
+						if (node.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
+						// Check if it's still a proper link
+						else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) repaint = true;
+						// Also shift the globaloffset							
+						globaloffset += changelength;
+					} 
 
-						// If something changed in our node
-						if (changelength) {
-							// Set new value
-							node.textContent = val;						
+					// If something changed in our node
+					if (changelength) {
+						// Set new value
+						node.textContent = val;						
 
-							// Change textlength and node length
-							that.textlength += changelength;
-							that.textnodes[target[1]] += changelength;	
-						}				
+						// Change textlength and node length
+						that.textlength += changelength;
+						that.textnodes[target[1]] += changelength;	
+					}				
 
-						// Repaint & snity check  || that.textlength != Hiro.canvas.cache.content.length
-						if (repaint) {
-							// Fire repaint
-							that.paint();
-							// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
-							return;							
-						}	
+					// Repaint & snity check  || that.textlength != Hiro.canvas.cache.content.length
+					if (repaint) {
+						// Fire repaint
+						that.paint();
+						// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
+						return;							
+					}	
 
-						// Process links AFTER we reset the lengths above
-						if (links) that.decorate(val,globaloffset - localoffset - changelength,links,'a');													
-					}					
+					// Process links AFTER we reset the lengths above
+					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);													
+				}					
 
-					// Resize (also in next rAF)
-					Hiro.canvas.resize();																
-				// })							
+				// Resize (also in next rAF)
+				Hiro.canvas.resize();																						
 			},
 
-			// Takes a string, the global and local offsets, an array of strings to be decorated and wraps them all
-			decorate: function(string,stringstartoffset,patterns,tag) {
-				var occurence, nextpattern, position, removed = 0, i, l;
+			// Takes an array of [pos,string] string tuples, the tag to have them wrapped in and a startingoffset in relationt o the global 0
+			decorate: function(strings,tag,stringstartoffset) {
+				var i, l;
 
-				// We keep nabbing at the string
-				while (string) {
-					// Reset to 0
-					nextpattern = 0;
-					occurence = undefined;
-
-					// Find out if there is a patterns that occures before the first one
-					for (i = 0, l = patterns.length; i < l; i++ ) {
-						// Save position
-						position = string.indexOf(patterns[i]);
-						// If the pattern doesn't occur at all anymore, ignore it
-						if (position == -1) continue;
-						// Set if we have no occurence yet
-						if (occurence === undefined) occurence = position;
-						// Note if it's the next occurence
-						if (position <= occurence) nextpattern = i;
-						// Abort if it's not possible the have any earlier occurence
-						if (position < patterns[i].length) break;
-					}					
-
-					// Find the position in the full string
-					position = string.indexOf(patterns[nextpattern]);	
-
-					// Abort if we do not have any occurences anymore
-					if (position == -1) break;
-
+				// Go through all links
+				for ( i = 0, l = strings.length; i < l; i++ ) {
 					// Send off to wrapping			
-					this.wrap('a',undefined,stringstartoffset + removed + position,patterns[nextpattern].length);					
-
-					// Add to removed
-					removed += (position + patterns[nextpattern].length);
-
-					// Truncate string
-					string = string.substring(position + patterns[nextpattern].length);
-				}	
+					this.wrap('a',undefined, stringstartoffset + strings[i][0],strings[i][1].length);	
+				}
 			},
 
 			// Align the under & overlays with the textarea if it's being scrolled
@@ -1451,10 +1418,22 @@ var Hiro = {
 
 		// Returns array of links found in given string
 		extractlinks: function(string) {
-			var regex = /((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/g;
+			var regex = /((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/g,
+				temparray, results = [];
+
+			// Go through the string incrementaly (automatically done by exec, as it considers lastIndex of previous loop)
+			// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec (bow) @ Flo
+			while ((temparray = regex.exec(string)) !== null)
+			{
+				// Add to results
+				results.push([temparray.index,temparray[0]])
+			}			
 			
 			// See if we have a match
-			if (regex.test(string)) return string.match(regex);		
+			if (results.length) return results;
+
+			// Otehrwise return a clear false
+			return false;		
 		}
 	},	
 
