@@ -540,8 +540,8 @@ var Hiro = {
 
 			// Check cache if values changed
 			if (cache[id] != t.value) {
-				// Get old value for diff
-				old = cache[id];
+				// Do overlay diff, process it first and then stash in rAF
+				if (id == 'content') Hiro.canvas.overlay.diff(t.value);
 
 				// (Re)set cache values
 				cache[id] = t.value;
@@ -549,16 +549,7 @@ var Hiro = {
 				cache._id = Hiro.canvas.currentnote;
 
 				// Reset document title
-				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );
-
-				// Update overlay if it's a textarea update
-				// TODO Bruno: Move this slightly delayed block below if it degrades writing performance
-				if (id == 'content') {
-					// If we have a change to existing contents apply it at next animation frame
-					if (old && cache[id]) Hiro.canvas.overlay.patch(Hiro.sync.diff.delta(old,cache[id]));
-					// Otherwise paint so we properly clean up workspace
-					else Hiro.canvas.overlay.paint();
-				}; 							
+				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );					
 
 				// Kick off write if it't isn't locked
 				if (!lock) {
@@ -1017,6 +1008,24 @@ var Hiro = {
 					// Log
 					Hiro.sys.log('Overlay repainted from scratch.') 											
 				});
+			},
+
+			// Diff cache, create delta and apply patch below
+			diff: function(newvalue) {
+				var currentvalue = Hiro.canvas.cache.content;
+
+				// Abort if nothing change
+				if (newvalue == currentvalue) return;
+
+				// If we have go to or come from an empty value
+				if (!currentvalue || !newvalue) {
+					// Do a full repaint
+					this.paint();
+				// If we have a change	
+				} else {
+					// Create delta & patch it onto the overlay
+					this.patch(Hiro.sync.diff.delta(currentvalue,newvalue))
+				}	
 			},
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
@@ -5401,17 +5410,8 @@ var Hiro = {
 
 			// Compare two strings and return standard delta format
 			delta: function(o,n) {
-				// Cleanup settings
-				this.dmp.Diff_Timeout = 1;
-				this.dmp.Diff_EditCost = 4;
-
-				// Basic diff, cleanup and return standard delta string format
-				var d = this.dmp.diff_main(o, n);
-				if (d.length > 2) {
-					// Cleanup semantics makes it more human readable
-				    // this.dmp.diff_cleanupSemantic(d);
-					this.dmp.diff_cleanupEfficiency(d);				    
-				}				
+				// Basic diff and cleanup
+				var d = this.dmp.diff_main(o, n);				
 
 				// Return patch and simple string format
 				return this.dmp.diff_toDelta(d);
@@ -5419,7 +5419,7 @@ var Hiro = {
 
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
-				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor;
+				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor, newclientversion;
 
 				// Time start
 				start = Date.now();
@@ -5445,15 +5445,17 @@ var Hiro = {
                     if (id == Hiro.canvas.currentnote) {
                     	// Get current cursor position
                     	cursor = Hiro.canvas.getcursor();
-                    	// Apply patch to cache and set current version to cache
-                    	Hiro.canvas.el_text.value = Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
+                    	// Set the new client version
+                    	newclientversion = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
+                    	// See if we need to update the overlay as well
+                    	Hiro.canvas.overlay.diff(newclientversion); 
+                    	// Apply patch to textarea, cache and set current version to cache
+                    	Hiro.canvas.el_text.value = Hiro.canvas.cache.content = n.c.text = newclientversion;
                     	// Recalculate cursor
-                    	this.resetcursor(diffs,cursor);
-                    	// Update the overlay
-                    	Hiro.canvas.overlay.patch(delta);                    	
+                    	this.resetcursor(diffs,cursor);                    	                   	
                     // Apply the changes to the current version	
                     } else {
-		                // Apply to 
+		                // Apply to text only
 	                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];                    	
                     }
 
