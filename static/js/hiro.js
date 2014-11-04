@@ -955,8 +955,8 @@ var Hiro = {
 			painting: false,
 
 			// Generate new overlay
-			paint: function() {
-				var el = this.el_root, fadedirection, string = Hiro.canvas.cache.content, links, l = string.length, peers, i, l, that = this;
+			paint: function(string) {
+				var el = this.el_root, fadedirection, links, peers, i, l, that = this;
 
 				// Do not overwhelm system with repaints
 				if (this.painting) return;
@@ -964,12 +964,15 @@ var Hiro = {
 				// Set flag
 				this.painting = true;
 
+				// Fallback on cache if no strng was provided
+				if (string === undefined) string =  Hiro.canvas.cache.content || '';
+
 				// Reset nodes cache and fill it with initial string length
 				this.textnodes.length = 0;
-				this.textnodes.push(l);
+				this.textnodes.push(string.length);
 
 				// Save initial length
-				this.textlength = l;
+				this.textlength = string.length;
 
 				// Get local peers
 				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers');
@@ -1017,10 +1020,12 @@ var Hiro = {
 				// Abort if nothing change
 				if (newvalue == currentvalue) return;
 
+				console.log('diiiiiiiiiiiiiiiiiiif',currentvalue,newvalue);
+
 				// If we have go to or come from an empty value
 				if (!currentvalue || !newvalue) {
 					// Do a full repaint
-					this.paint();
+					this.paint(newvalue);
 				// If we have a change	
 				} else {
 					// Create delta & patch it onto the overlay
