@@ -1042,7 +1042,7 @@ var Hiro = {
 				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
 
 				// Wrap in render for performance
-				Hiro.ui.render(function(){
+				// Hiro.ui.render(function(){
 					// Iterate through actions
 					for (i = 0, l = actions.length; i < l; i++ ) {
 						// First, get the right node 
@@ -1114,7 +1114,7 @@ var Hiro = {
 
 					// Resize (also in next rAF)
 					Hiro.canvas.resize();																
-				})							
+				// })							
 			},
 
 			// Takes a string, the global and local offsets, an array of strings to be decorated and wraps them all
