@@ -530,7 +530,7 @@ var Hiro = {
 
 		// Poor man FRP stream
 		keystream: function(event) {
-			var t = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = t.id, old;			
+			var t = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = t.id, oldcache;			
 
 			// Only listen to title & content
 			if (id != 'title' && id != 'content') return;
@@ -540,13 +540,16 @@ var Hiro = {
 
 			// Check cache if values changed
 			if (cache[id] != t.value) {
-				// Do overlay diff, process it first and then stash in rAF
-				if (id == 'content') Hiro.canvas.overlay.diff(t.value);
+				// Copy old cache
+				oldcache = cache[id];
 
 				// (Re)set cache values
 				cache[id] = t.value;
 				cache._changed = true;
 				cache._id = Hiro.canvas.currentnote;
+
+				// Do overlay diff, process it first and then stash in rAF
+				if (id == 'content') Hiro.canvas.overlay.diff(oldcache,t.value);				
 
 				// Reset document title
 				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );					
@@ -964,15 +967,16 @@ var Hiro = {
 				// Set flag
 				this.painting = true;
 
-				// Fallback on cache if no strng was provided
+
+				// Fallback on cache if no string was provided
 				if (string === undefined) string =  Hiro.canvas.cache.content || '';
 
 				// Reset nodes cache and fill it with initial string length
-				this.textnodes.length = 0;
-				this.textnodes.push(string.length);
+				that.textnodes.length = 0;
+				that.textnodes.push(string.length);
 
 				// Save initial length
-				this.textlength = string.length;
+				that.textlength = string.length;
 
 				// Get local peers
 				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers');
@@ -980,7 +984,6 @@ var Hiro = {
 				// Paint overlay
 				Hiro.ui.render(function(){
 					// Set text contents, 
-					// TODO Bruno: Re-append empty space at end for proper Safari linebreak handling
 					el.textContent = string;
 
 					// See if we have any links
@@ -1014,22 +1017,18 @@ var Hiro = {
 			},
 
 			// Diff cache, create delta and apply patch below
-			diff: function(newvalue) {
-				var currentvalue = Hiro.canvas.cache.content;
-
+			diff: function(oldvalue,newvalue) {
 				// Abort if nothing change
-				if (newvalue == currentvalue) return;
-
-				console.log('diiiiiiiiiiiiiiiiiiif',currentvalue,newvalue);
+				if (newvalue == oldvalue) return;
 
 				// If we have go to or come from an empty value
-				if (!currentvalue || !newvalue) {
+				if (!oldvalue || !newvalue) {
 					// Do a full repaint
-					this.paint(newvalue);
+					this.paint();
 				// If we have a change	
 				} else {
 					// Create delta & patch it onto the overlay
-					this.patch(Hiro.sync.diff.delta(currentvalue,newvalue))
+					this.patch(Hiro.sync.diff.delta(oldvalue,newvalue))
 				}	
 			},
 
@@ -5424,7 +5423,7 @@ var Hiro = {
 
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
-				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor, newclientversion;
+				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor, oldcache;
 
 				// Time start
 				start = Date.now();
@@ -5450,12 +5449,12 @@ var Hiro = {
                     if (id == Hiro.canvas.currentnote) {
                     	// Get current cursor position
                     	cursor = Hiro.canvas.getcursor();
-                    	// Set the new client version
-                    	newclientversion = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
-                    	// See if we need to update the overlay as well
-                    	Hiro.canvas.overlay.diff(newclientversion); 
+                    	// Get the current cache version
+                    	oldcache = Hiro.canvas.cache.content;
                     	// Apply patch to textarea, cache and set current version to cache
-                    	Hiro.canvas.el_text.value = Hiro.canvas.cache.content = n.c.text = newclientversion;
+                    	Hiro.canvas.el_text.value = Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
+                    	// Update the overlay
+                    	Hiro.canvas.overlay.diff(oldcache,Hiro.canvas.cache.content);                     	
                     	// Recalculate cursor
                     	this.resetcursor(diffs,cursor);                    	                   	
                     // Apply the changes to the current version	
