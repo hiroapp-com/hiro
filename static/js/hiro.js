@@ -1112,17 +1112,17 @@ var Hiro = {
 						// Change textlength and node length
 						that.textlength += changelength;
 						that.textnodes[target[1]] += changelength;
-
-						// Resize (also in next rAF)
-						Hiro.canvas.resize();							
-
-						// Kick off cursor scroll, also in rAF
-						this.aligncursor();
 					}					
 
 					// Process links AFTER we reset the lengths above
 					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);																		
-				}																											
+				}
+
+				// Resize (also in next rAF)
+				Hiro.canvas.resize();							
+
+				// Kick off cursor scroll, also in rAF
+				this.aligncursor();																															
 			},
 
 			// Takes an array of [pos,string] string tuples, the tag to have them wrapped in and a startingoffset in relationt o the global 0
