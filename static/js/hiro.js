@@ -857,7 +857,7 @@ var Hiro = {
 				viewport = (document.documentElement.clientHeight || window.innerHeight ) - 6;	
 
 				// Find biggest or overlay,viewport or textarea scroll			
-				newheight = Math.max(Hiro.canvas.el_text.scrollHeight,Hiro.canvas.overlay.el_root.offsetHeight,viewport)				
+				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewport)				
 
 				// Spare us the paint if nothing changed
 				if (newheight == Hiro.canvas.cache._height) return;
@@ -954,9 +954,9 @@ var Hiro = {
 			// Cache
 			textnodes: [],
 			textlength: 0,
+			cursortop: 0,
 
 			// Flags
-			scrolling: false,
 			painting: false,
 
 			// Generate new overlay
@@ -1093,14 +1093,16 @@ var Hiro = {
 					// If something changed in our node
 					if (changelength) {
 						// Set new value
-						node.textContent = val;						
+						node.textContent = val;											
 
 						// Change textlength and node length
 						that.textlength += changelength;
 						that.textnodes[target[1]] += changelength;	
+
+						// Kick off cursor scroll
 					}				
 
-					// Repaint & snity check  || that.textlength != Hiro.canvas.cache.content.length
+					// Repaint & sanity check
 					if (repaint) {
 						// Fire repaint
 						that.paint();
@@ -1109,7 +1111,7 @@ var Hiro = {
 					}	
 
 					// Process links AFTER we reset the lengths above
-					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);													
+					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);																		
 				}					
 
 				// Resize (also in next rAF)
@@ -1125,24 +1127,6 @@ var Hiro = {
 					// Send off to wrapping			
 					this.wrap('a',undefined, stringstartoffset + strings[i][0],strings[i][1].length);	
 				}
-			},
-
-			// Align the under & overlays with the textarea if it's being scrolled
-			scroll: function(event) {
-				var that = this;
-
-				// Check if we already queued an event
-				if (this.scrolling) return;
-
-				// Set falg
-				this.scrolling = true;
-
-				// Wrap in rAF
-				Hiro.ui.render(function(){
-					var target = event.target || event.srcElement;
-
-					that.scrolling = false;
-				})
 			},
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
@@ -1267,6 +1251,38 @@ var Hiro = {
 
 				// Append it	
 				this.splice(el,cursor);
+			},
+
+			// Return the current cursor x & y position
+			// We fetch all data afresh as we want to run this async
+			getxy: function() {
+				var cursorposition, freshnodevalues, node, nodestartoffset, range;
+
+				// Get current cursor position
+				cursorposition = Hiro.canvas.getcursor()[1];
+
+				// Fetch node
+				freshnodevalues = this.getnode(cursorposition);
+
+				// If we have no node, abort
+				if (!freshnodevalues || !freshnodevalues[0]) return false;	
+
+				// Set node
+				node = freshnodevalues[0];
+
+				// And offset
+				nodestartoffset = freshnodevalues[2];										
+
+				// Create new range
+				// TODO Bruno: Make this cross browser
+				range = new Range();
+
+				// Set start & end point
+				range.setStart(node,nodestartoffset);
+				range.setEnd(node,nodestartoffset + 1)
+
+				// Get x coordinates
+				return range.getClientRects()[0].top;
 			},
 
 			// Fetch a textnode given an offset from the start and/or end of the full text
@@ -5757,8 +5773,8 @@ var Hiro = {
 			if (Hiro.ui.touch) {
 				// Make sure the viewport is exactly the height of the browserheight to avoid scrolling issues
 				// TODO Bruno: Find reliable way to use fullscreen in all mobile browsers, eg  minimal-ui plus scrollto fallback
-				measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
-				document.getElementById('viewport').setAttribute('content', measure);
+				// measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+				// document.getElementById('viewport').setAttribute('content', measure);
 
 				// Attach swipe event listener (this also kills all touchmove events)
 				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);		
@@ -5802,10 +5818,7 @@ var Hiro = {
 			this.landing.el_root.src = this.landing.url; 
 
 			// Always load settings from server to determine contents and webserver availability
-			this.dialog.load();		
-
-			// Attach scroll handler to textarea
-			// Hiro.util.registerEvent(window,'scroll',function(e) { if (Hiro.ui.touch) Hiro.canvas.overlay.scroll(e); });				
+			this.dialog.load();					
 		},
 
 		// Render changes via rAF or, if window is not focused, right away
@@ -5879,8 +5892,8 @@ var Hiro = {
 				// This should also happen on orientationchange
 				if (Hiro.ui.touch) {
 					// Reset viewport tag
-					measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
-					document.getElementById('viewport').setAttribute('content', measure);	
+					// measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
+					// document.getElementById('viewport').setAttribute('content', measure);	
 				}
 
 				// Reset flag

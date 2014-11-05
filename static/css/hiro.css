@@ -550,7 +550,7 @@ html.touch body #rails #canvas {
   color: rgba(0,0,0,0.4); 
   padding: 147px 395px 30px 96px;   
   background-color: transparent; 
-  overflow-y: auto;
+  overflow-y: hidden;
   resize: none; 
   z-index: 2010;  
 }
@@ -1164,7 +1164,7 @@ html.ios body #rails #canvas textarea {
   position: absolute;
   width: 750px;
   height: 480px;
-  border: 1px rgba(0,0,0,0.9) solid;
+  border: 1px rgba(0,0,0,0.8) solid;
   color: rgba(0,0,0,0.8) !important;
   box-shadow: 0 4px 15px rgba(0,0,0,0.5);
   -webkit-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
