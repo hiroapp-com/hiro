@@ -550,7 +550,8 @@ html.touch body #rails #canvas {
   color: rgba(0,0,0,0.4); 
   padding: 147px 395px 30px 96px;   
   background-color: transparent; 
-  overflow-y: hidden;
+  /* Needed for desktop browser pageup / pagedown cursor setting */
+  overflow-y: visible;
   resize: none; 
   z-index: 2010;  
 }

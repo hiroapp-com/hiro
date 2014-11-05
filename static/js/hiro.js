@@ -1100,6 +1100,7 @@ var Hiro = {
 						that.textnodes[target[1]] += changelength;	
 
 						// Kick off cursor scroll
+						this.aligncursor();
 					}				
 
 					// Repaint & sanity check
@@ -1253,6 +1254,46 @@ var Hiro = {
 				this.splice(el,cursor);
 			},
 
+			// Scroll body / canvas so that cursor is well aligned
+			// TODO Bruno: This can be optimized by combining it with the resize & scroll handlers, 
+			// thus only realigning if those values changed
+			aligncursor: function() {
+				var currentposition = this.getxy(), scroller, scrolltop, viewportheight, bounds, lineheight;
+
+				// If the cursor is the same, do nothing
+				if (currentposition == this.cursortop) return;
+
+				// Get current viewport height
+				viewportheight = document.documentElement.clientHeight || window.innerHeight;
+				bounds = parseInt(viewportheight / 10);
+
+				// Get current line height
+				lineheight = (Hiro.ui.mini()) ? 28 : 30;
+
+				// Select scroller
+				scroller = (Hiro.ui.touch) ? Hiro.canvas.el_rails : document.body;
+
+				// Get current DOM values
+				scrolltop = scroller.scrollTop;				
+				
+				// If we are oustide of upper bounds
+				if (currentposition < bounds) {		
+					// Scroll up one lineheight
+					scroller.scrollTop -= (bounds - currentposition);
+				// Out of lower bounds	
+				} else if (currentposition > viewportheight - bounds) {
+					console.log('looooowaaaa', ((currentposition + lineheight) - (viewportheight - bounds)));
+					// Scroll down one line height
+					scroller.scrollTop += (currentposition - (viewportheight - bounds)); 
+				}			
+
+				console.log('Bounds are ' + bounds + ' current position is ' + currentposition + ' viewport is ' + viewportheight)
+
+				// Save internal value
+				this.cursortop = currentposition;
+
+			},
+
 			// Return the current cursor x & y position
 			// We fetch all data afresh as we want to run this async
 			getxy: function() {
@@ -1279,7 +1320,7 @@ var Hiro = {
 
 				// Set start & end point
 				range.setStart(node,nodestartoffset);
-				range.setEnd(node,nodestartoffset + 1)
+				range.setEnd(node,nodestartoffset)
 
 				// Get x coordinates
 				return range.getClientRects()[0].top;
