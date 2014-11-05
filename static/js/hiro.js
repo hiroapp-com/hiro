@@ -1003,9 +1003,6 @@ var Hiro = {
 						that.pc(peers[i]);
 					}
 
-					// Resize
-					Hiro.canvas.resize();
-
 					// Switch quote on/off based on user actions
 					if ((string.length > 0 && Hiro.canvas.quoteshown) || (string.length == 0 && !Hiro.canvas.quoteshown)) {
 						fadedirection = (Hiro.canvas.quoteshown) ? -1 : 1;
@@ -1019,6 +1016,9 @@ var Hiro = {
 					// Log
 					Hiro.sys.log('Overlay repainted from scratch.') 											
 				});
+
+				// Resize (seperate rAF)
+				Hiro.canvas.resize();				
 			},
 
 			// Diff cache, create delta and apply patch below
@@ -1093,16 +1093,19 @@ var Hiro = {
 						globaloffset += changelength;
 					} 
 
-					// If something changed in our node
-					if (changelength) {
-						// Set new value
-						node.textContent = val;											
+					// Set new value (we don't do this below as (== 3 || +3) and -3 chars give changelength 0)
+					node.textContent = val;					
 
+					// If something changed in our node
+					if (changelength) {										
 						// Change textlength and node length
 						that.textlength += changelength;
-						that.textnodes[target[1]] += changelength;	
+						that.textnodes[target[1]] += changelength;
 
-						// Kick off cursor scroll
+						// Resize (also in next rAF)
+						Hiro.canvas.resize();							
+
+						// Kick off cursor scroll, also in rAF
 						this.aligncursor();
 					}				
 
@@ -1116,10 +1119,7 @@ var Hiro = {
 
 					// Process links AFTER we reset the lengths above
 					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);																		
-				}					
-
-				// Resize (also in next rAF)
-				Hiro.canvas.resize();																						
+				}																											
 			},
 
 			// Takes an array of [pos,string] string tuples, the tag to have them wrapped in and a startingoffset in relationt o the global 0
@@ -1261,7 +1261,7 @@ var Hiro = {
 			// TODO Bruno: This can be optimized by combining it with the resize & scroll handlers, 
 			// thus only realigning if those values changed
 			aligncursor: function() {
-				var currentposition = this.getxy(), scroller, scrolltop, viewportheight, bounds, lineheight;
+				var currentposition = this.getxy(), scroller, scrolltop, change, viewportheight, totalheight, bounds, lineheight;
 
 				// If the cursor is the same, do nothing
 				if (currentposition == this.cursortop) return;
@@ -1271,7 +1271,7 @@ var Hiro = {
 				bounds = parseInt(viewportheight / 10);
 
 				// On touch devices, we half the viewportheight to stay above keyboards
-				if (Hiro.ui.mini()) viewportheight = viewportheight / 2;
+				if (Hiro.ui.touch) viewportheight = parseInt( viewportheight / ((Hiro.ui.mini()) ? 2.5 : 2));
 
 				// Get current line height
 				lineheight = (Hiro.ui.mini()) ? 28 : 30;
@@ -1282,22 +1282,40 @@ var Hiro = {
 				// Get current DOM values
 				scrolltop = scroller.scrollTop;				
 				
-				// If we are oustide of upper bounds
+				// If we are outside of upper bounds
 				if (currentposition < bounds) {		
-					// Scroll up one lineheight
-					scroller.scrollTop -= (bounds - currentposition);
+					// If we are within the bounds of the upper end of the note
+					if (scrolltop - currentposition < bounds) {
+						// Scroll all the way back to the top
+						change = scrolltop * -1;
+					// If we're somewhere in the note,						
+					} else {
+						// scroll relatively
+						change = (bounds - currentposition) * -1;	
+					} 
 				// Out of lower bounds	
 				} else if (currentposition > viewportheight - bounds) {
-					console.log('looooowaaaa', ((currentposition + lineheight) - (viewportheight - bounds)));
-					// Scroll down one line height
-					scroller.scrollTop += (currentposition - (viewportheight - bounds)); 
-				}			
+					// Get the totalheight first
+					if (Hiro.canvas.cache._height - (scrolltop + viewportheight) < bounds) {
+						change = 100;
+					// Otherwise
+					} else {
+						// Scroll down one line height
+						change = (currentposition - (viewportheight - bounds)); 
+					}
+				}
 
-				console.log('Bounds are ' + bounds + ' current position is ' + currentposition + ' viewport is ' + viewportheight)
+				// Do it!
+				if (change) {
+					// Wrap
+					Hiro.ui.render(function(){
+						// Set new value
+						scroller.scrollTop += change;
+					});
 
-				// Save internal value
-				this.cursortop = currentposition;
-
+					// Save internal value
+					this.cursortop = currentposition;					
+				}
 			},
 
 			// Return the current cursor x & y position
