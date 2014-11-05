@@ -6361,10 +6361,10 @@ var Hiro = {
 				this.visible = true;
 
 				// Fade in page contents
-				Hiro.ui.fade(this.page.document.body,1)		
+				Hiro.ui.fade(this.page.document.body,1);
 
 				// Attach fastbuttons to landing page
-				Hiro.ui.fastbutton.attach(this.page,Hiro.ui.landing.click);						
+				Hiro.ui.fastbutton.attach(this.page.document.documentElement,Hiro.ui.landing.click);						
 			},
 
 			// Remove it completely
