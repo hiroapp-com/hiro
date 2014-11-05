@@ -516,6 +516,7 @@ var Hiro = {
 			Hiro.util.registerEvent(this.el_root,'keyup',Hiro.canvas.keystream);
 			Hiro.util.registerEvent(this.el_root,'keydown',Hiro.canvas.keystream);		
 			Hiro.util.registerEvent(this.el_root,'keypress',Hiro.canvas.keystream);	
+			Hiro.util.registerEvent(this.el_root,'change',Hiro.canvas.keystream);				
 			Hiro.util.registerEvent(this.el_root,'input',Hiro.canvas.keystream);		
 			Hiro.util.registerEvent(this.el_root,'cut',Hiro.canvas.keystream);		
 			Hiro.util.registerEvent(this.el_root,'paste',Hiro.canvas.keystream);									
@@ -530,26 +531,26 @@ var Hiro = {
 
 		// Poor man FRP stream
 		keystream: function(event) {
-			var t = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = t.id, oldcache;			
+			var source = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = source.id, oldcache;			
 
 			// Only listen to title & content
 			if (id != 'title' && id != 'content') return;
 
 			// Route specific keyhandlers
-			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,t);			
+			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);			
 
 			// Check cache if values changed
-			if (cache[id] != t.value) {
+			if (cache[id] != source.value) {
 				// Copy old cache
 				oldcache = cache[id];
 
 				// (Re)set cache values
-				cache[id] = t.value;
+				cache[id] = source.value;
 				cache._changed = true;
 				cache._id = Hiro.canvas.currentnote;
 
 				// Do overlay diff, process it first and then stash in rAF
-				if (id == 'content') Hiro.canvas.overlay.diff(oldcache,t.value);				
+				if (id == 'content') Hiro.canvas.overlay.diff(oldcache,source.value);				
 
 				// Reset document title
 				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );					
@@ -1311,11 +1312,11 @@ var Hiro = {
 					Hiro.ui.render(function(){
 						// Set new value
 						scroller.scrollTop += change;
-					});
-
-					// Save internal value
-					this.cursortop = currentposition;					
+					});				
 				}
+
+				// Always save internal value
+				this.cursortop = currentposition;					
 			},
 
 			// Return the current cursor x & y position
