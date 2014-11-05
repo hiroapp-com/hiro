@@ -849,7 +849,7 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
-			var viewport, newheight;
+			var viewport, newheight, bars;
 
 			// With the next available frame
 			Hiro.ui.render(function(){						
@@ -862,8 +862,11 @@ var Hiro = {
 				// Spare us the paint if nothing changed
 				if (newheight == Hiro.canvas.cache._height) return;
 
-				// Set height to overlay window
-				Hiro.canvas.cache._height = newheight;
+				// Check for a scrollbar in the textarea
+				bars = (Hiro.canvas.el_text.clientWidth != Hiro.canvas.el_text.offsetWidth);
+
+				// Set height
+				Hiro.canvas.cache._height = (bars) ? Math.max(newheight,Hiro.canvas.el_text.scrollHeight) : newheight;
 
 				// Resize textarea to value
 				Hiro.canvas.el_text.style.height = Hiro.canvas.cache._height + 'px';
@@ -1266,6 +1269,9 @@ var Hiro = {
 				// Get current viewport height
 				viewportheight = document.documentElement.clientHeight || window.innerHeight;
 				bounds = parseInt(viewportheight / 10);
+
+				// On touch devices, we half the viewportheight to stay above keyboards
+				if (Hiro.ui.mini()) viewportheight = viewportheight / 2;
 
 				// Get current line height
 				lineheight = (Hiro.ui.mini()) ? 28 : 30;
