@@ -1077,7 +1077,7 @@ var Hiro = {
 						// Build new string
 						val = val.substring(0,localoffset) + val.substring(localoffset - changelength);		
 						// Check if we deleted beyond node bounds or should remove a link
-						if (val.length < parseInt(actions[i]) * -1 || node.nodeName == 'A' && !Hiro.context.extractlinks(val)) repaint = true;
+						if (val.length < parseInt(actions[i]) * -1 || node.parentNode.nodeName == 'A' && !Hiro.context.extractlinks(val)) repaint = true;
 					// Add a character
 					} else if (actions[i].charAt(0) == '+') {
 						addition = decodeURI(actions[i].substring(1))
@@ -1086,12 +1086,20 @@ var Hiro = {
 						// Build string
 						val = val.substring(0,localoffset) + addition + val.substring(localoffset);
 						// See if it might be a link if we input a whitespace or pasted something longer							
-						if (node.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
+						if (node.parentNode.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
 						// Check if it's still a proper link
-						else if (node.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) repaint = true;
+						else if (node.parentNode.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) repaint = true;
 						// Also shift the globaloffset							
 						globaloffset += changelength;
 					} 
+
+					// Repaint & sanity check
+					if (repaint) {
+						// Fire repaint
+						that.paint();
+						// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
+						return;							
+					}					
 
 					// Set new value (we don't do this below as (== 3 || +3) and -3 chars give changelength 0)
 					node.textContent = val;					
@@ -1107,15 +1115,7 @@ var Hiro = {
 
 						// Kick off cursor scroll, also in rAF
 						this.aligncursor();
-					}				
-
-					// Repaint & sanity check
-					if (repaint) {
-						// Fire repaint
-						that.paint();
-						// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
-						return;							
-					}	
+					}					
 
 					// Process links AFTER we reset the lengths above
 					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);																		
