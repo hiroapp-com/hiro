@@ -850,15 +850,17 @@ var Hiro = {
 
 		// Resize textarea to proper height
 		resize: function() {
-			var viewport, newheight, bars;
+			var viewportheight, newheight, bars;			
 
 			// With the next available frame
 			Hiro.ui.render(function(){						
-				// Get basic values, subtract canvas border from viewport sized min height
-				viewport = (document.documentElement.clientHeight || window.innerHeight ) - 6;	
+				// Get basic values, subtract canvas borderradius from viewport size and 50px top bar from non mini designs
+				viewportheight = (document.documentElement.clientHeight || window.innerHeight ) - 6 - ((Hiro.ui.mini()) ? 0 : 50);
+
+				console.log(viewportheight)	
 
 				// Find biggest or overlay,viewport or textarea scroll			
-				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewport)				
+				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewportheight)				
 
 				// Spare us the paint if nothing changed
 				if (newheight == Hiro.canvas.cache._height) return;

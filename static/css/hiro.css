@@ -1,7 +1,6 @@
 html,
 body {
   margin: 0;
-  min-height: 100%;
 }
 
 
@@ -501,15 +500,12 @@ input.error:focus {
   border-top: 1px solid #222;  
   border-top-left-radius: 3px;  
   box-shadow: 3px 3px 8px black;  
-  min-height: 100%;
   width: 100%;
-  margin-bottom: -50px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 html.touch body #rails #canvas {
-  margin-bottom: 0;
   border-bottom: 1px solid #222;  
   border-bottom-left-radius: 3px;  
   overflow: visible;
@@ -537,7 +533,7 @@ html.touch body #rails #canvas {
 #canvas textarea, #overlay {   
   margin: 0;
   font-family: "ff-meta-serif-web-pro",serif;
-  font-weight: 500;
+  font-weight: 400;
   font-size: 17px;
   line-height: 32px;
   border: 0;
@@ -672,7 +668,7 @@ html.ios body #rails #canvas textarea {
 
 #nicequote {
   z-index: 2030;
-  bottom: 104px; 
+  bottom: 54px; 
   display: none; 
   position: absolute;     
   width: 100%;
@@ -774,7 +770,7 @@ html.ios body #rails #canvas textarea {
   }      
 
   #nicequote {
-    bottom: 100px;
+    bottom: 50px;
     padding: 0 70px 0 70px;    
   }  
 }
