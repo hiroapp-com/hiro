@@ -1135,17 +1135,16 @@ var Hiro = {
 
 			// Wrap a Range in a DOM element, for now this only works within a single text node
 			wrap: function(tag,action,offset,length) {
-				var range, startnode, endnode, el, initallength, val;
+				var range, node, el, initallength, val;
 
 				// Get nodes
-				startnode = this.getnode(offset);
-				endnode = this.getnode(offset + length);				
+				node = this.getnode(offset);								
 
-				// Build element
-				el = document.createElement(tag);					
-
-				// Same node?
-				if (startnode[0] && startnode[0] == endnode[0]) {
+				// Are we withn the bounds of the same node node?
+				if (node[0].length >= node[2] + length) {
+					// Build element
+					el = document.createElement(tag);		
+									
 					// Copy node value
 					val = startnode[0].nodeValue;
 
@@ -1192,7 +1191,7 @@ var Hiro = {
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
 				if (!target[0]) return;
 
-				// Set proper values, using innertext here as nodevalue only works for pure textnodes
+				// Set proper values,using nodeValue as getnode should always return proper textnodes
 				val = target[0].nodeValue || '';	
 
 				// Make offset relative
@@ -1361,15 +1360,12 @@ var Hiro = {
 
 			// Fetch a textnode given an offset from the start and/or end of the full text
 			// Returns an array with the node and it's relative offset
-			getnode: function(offset,suffix) {
+			getnode: function(offset) {
 				var	subnodeoffset, nodes = this.textnodes, subnode, i, l, domnodes, nodecount = 0;
-
-				// Fallback
-				suffix = suffix || this.textlength - offset || 0;
 
 				// Find subnode(s) to operate on
 				// Lucky us, change is within the first node
-				if (this.textlength - suffix <= nodes[0]) {
+				if (this.textlength <= nodes[0]) {
 					// Set node to first
 					subnode = 0;	
 					// Offset stays same
@@ -1378,7 +1374,7 @@ var Hiro = {
 				} else if (offset >= this.textlength - nodes[nodes.length - 1]) {
 					// Choose last text node from array
 					subnode = nodes.length - 1;
-					// Offset is n chars away from end of 
+					// Offset is n chars away from end of last node
 					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - offset);					
 				} else {
 					// Set initial counter
@@ -1387,7 +1383,7 @@ var Hiro = {
 					// Start with the second node
 					for (i = 1, l = nodes.length; i < l; i++ ) {					
 						// Jackpot, we found the right one
-						if (offset >= subnodeoffset && offset <= (subnodeoffset + nodes[i]) && (this.textlength - suffix) <= (subnodeoffset + nodes[i]) ) {
+						if (offset >= subnodeoffset && offset <= (subnodeoffset + nodes[i])) {
 							// Set right subnode
 							subnode = i;
 							// Set the right offset
@@ -1404,6 +1400,7 @@ var Hiro = {
 				if (subnode === undefined) return false;
 
 				// Helper that extracts textnodes from a provided nodelist
+				// TODO Bruno: Use binary search or similar for better search, do not return full array				
 				function extract(nodelist,wanted) {
 					var i, l, results = [], children, node, deep;
 
