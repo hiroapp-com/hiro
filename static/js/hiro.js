@@ -1105,7 +1105,7 @@ var Hiro = {
 					// Repaint & sanity check
 					if (repaint) {
 						// Fire repaint
-						that.paint();
+						that.build();
 						// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
 						return;							
 					}					
