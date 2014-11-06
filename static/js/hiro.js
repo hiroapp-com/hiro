@@ -252,10 +252,11 @@ var Hiro = {
 			if (!Hiro.data.stores.folio) return;
 
 			// Render active and archived document link
-			var d = document.createElement('div'),
+			var fragment = document.createDocumentFragment(),
+				d = document.createElement('div'),
 				id = folioentry.nid,
 				note = Hiro.data.get('note_' + id),
-				link, t, stats, a, time, tooltip, s, sn, title, user;
+				link, t, stats, a, time, tooltip, s, sn, title, user, peercount;				
 
 			// Abort if we try to render a link for which we don't have any data
 			if (!note) {
@@ -267,7 +268,12 @@ var Hiro = {
 				return;
 			}
 
-			title = note.c.title || note.c.text.trim().replace(/[\t\n]/g,' ').substring(0,50) || 'Untitled';			
+			// Attach main div to frgament
+			fragment.appendChild(d);
+
+			// Find prooper link
+			title = note.c.title || note.c.text.trim().replace(/[\t\n]/g,' ').substring(0,50) || 'Untitled';	
+
 
 			// Set note root node properties	
 			d.className = 'note';
@@ -311,10 +317,13 @@ var Hiro = {
 
 			// Attach elements to root node
 			link.appendChild(t);
-			link.appendChild(stats);			
+			link.appendChild(stats);
+
+			// Get proper number of peers
+			peercount = (id.length == 4) ? note.c.peers.length : note.c.peers.length - 1;						
 
 			// If we have two users or more, or if the only user has no uid now (meaning we are absent from peers & everything happened offline)
-			if (note.c.peers.length > 1 || (note.c.peers.length == 1 && !note.c.peers[0].user.uid)) {
+			if (peercount > 0) {
 				// Check if we are the owner
 				if (note._owner == Hiro.data.get('profile','c.uid')) this.owncount++;
 
@@ -324,8 +333,8 @@ var Hiro = {
 
 				// Add sharing hover tooltip
 				// TODO Bruno: This doesn'T count properly between offline (no own peer) and online created notes, pls fix
-				tooltip = 'Shared with ' + (note.c.peers.length - 1 || 1) + ' other';	
-				if (note.c.peers.length > 2) tooltip = tooltip + 's';
+				tooltip = 'Shared with ' + peercount + ' other';	
+				if (peercount > 1) tooltip = tooltip + 's';
 				s.setAttribute('title',tooltip);	
 				link.appendChild(s);		
 				
@@ -367,7 +376,7 @@ var Hiro = {
 			d.appendChild(link);				
 			if (a) d.appendChild(a);			
 
-			return d;			
+			return fragment;			
 		},
 
 		// Move folio entry to top and resort rest of folio for both, local client and server versions
