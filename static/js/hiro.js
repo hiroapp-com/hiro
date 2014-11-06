@@ -117,7 +117,7 @@ var Hiro = {
 					case 'notelist':
 					case 'archivelist':
 						// Close folio in all these cases
-						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
+						if (Hiro.folio.open && Hiro.ui.touch) Hiro.ui.slidefolio(-1,100);	
 						break;					
 					case 'showmenu':	
 						// Switch folio
@@ -229,7 +229,7 @@ var Hiro = {
 				// Update bubble
 				that.el_showmenu.firstChild.innerHTML = that.unseencount;
 				that.el_showmenu.firstChild.style.display = (that.unseencount) ? 'block' : 'none';
-				
+
 				// Empty lists
 				while (that.el_notelist.firstChild) {
 				    that.el_notelist.removeChild(that.el_notelist.firstChild);
@@ -372,9 +372,7 @@ var Hiro = {
 
 		// Move folio entry to top and resort rest of folio for both, local client and server versions
 		sort: function() {
-			var fc = Hiro.data.get('folio','c'), i, l, as, bs;
-
-			console.log('Sortin');			
+			var fc = Hiro.data.get('folio','c'), i, l, as, bs;			
 
 			// Sort array by last edit
 			fc.sort( function(a,b) { 
@@ -556,8 +554,8 @@ var Hiro = {
 				cache._changed = true;
 				cache._id = Hiro.canvas.currentnote;
 
-				// Do overlay diff, process it first and then stash in rAF
-				if (id == 'content') Hiro.canvas.overlay.update();				
+				// Update the overlay without repainting it but realign the cursor
+				if (id == 'content') Hiro.canvas.overlay.update(false,true);				
 
 				// Reset document title
 				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );					
@@ -1017,7 +1015,7 @@ var Hiro = {
 			},
 
 			// Diff cache, create delta and apply patch below
-			update: function(forcerepaint) {
+			update: function(forcerepaint,aligncursor) {
 				var that = this;
 
 				// Wrap it in it's own animationframe
@@ -1033,7 +1031,9 @@ var Hiro = {
 					// If we have a change	
 					} else {
 						// Create delta & patch it onto the overlay
-						Hiro.canvas.overlay.patch(Hiro.sync.diff.delta(that.text,Hiro.canvas.cache.content));
+						that.patch(Hiro.sync.diff.delta(that.text,Hiro.canvas.cache.content));
+						// Kick off cursor scroll, also in rAF
+						if (aligncursor) that.aligncursor();							
 					}
 				});	
 
@@ -1123,10 +1123,7 @@ var Hiro = {
 				}
 
 				// Reset our internal cache once we're done
-				this.text = Hiro.canvas.cache.content;											
-
-				// Kick off cursor scroll, also in rAF
-				this.aligncursor();																															
+				this.text = Hiro.canvas.cache.content;																																									
 			},
 
 			// Takes an array of [pos,string] string tuples, the tag to have them wrapped in and a startingoffset in relationt o the global 0
@@ -2772,7 +2769,7 @@ var Hiro = {
 				// Abort if we have no peers array (yet) 	
 				if (typeof peers == 'undefined') return;		
 
-				// Repaint the overlay as well
+				// Repaint the overlay as well as the peers (and thus flags) changed
 				if (repaintoverlay) Hiro.canvas.overlay.update(true);
 
 				// Populate!
