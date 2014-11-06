@@ -1102,7 +1102,7 @@ var Hiro = {
 						return;							
 					}					
 
-					// Set new value (we don't do this below as (== 3 || +3) and -3 chars give changelength 0)
+					// Set new value (we don't do this below as (= 3 || +3) and -3 chars give changelength 0)
 					node.textContent = val;					
 
 					// If something changed in our node
@@ -1341,7 +1341,6 @@ var Hiro = {
 
 				// debug
 				if (nodestartoffset > node.length) {
-					console.log('ERROR with getnode: Requested node at cursor position ' + cursorposition + ', got:',freshnodevalues);
 					// Reset
 					nodestartoffset = node.length;
 				}													
@@ -1646,7 +1645,7 @@ var Hiro = {
 		fbauth: function(target,login) {
 			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register, 	
 				button = branch.getElementsByClassName('fb')[0],						
-				e = branch.getElementsByClassName('mainerror')[0], fbtokens, reason;
+				e = branch.getElementsByClassName('mainerror')[0], reason;
 
 			// Only do one at a time
 			if (this.authinprogress) return;
@@ -1662,35 +1661,15 @@ var Hiro = {
 			// TODO Bruno: See if new all.js supports mobiles better or if we still have to redirect to window.location = '/connect/facebook?next=/';
 			Hiro.lib.facebook.pipe({
 				todo: function(obj) {
-					// First try to get status
-					FB.getLoginStatus(function(response) {
-						// Logged into FB & Hiro authed
-						if (response.status === 'connected') {
-							// Create ref
-							fbtokens = response.authResponse;
-						// Not logged into FB or Hiro not authed	
-						} else { 
-							// Set reason for prompting login
-							reason = (response.status === 'not_authorized') ? 'auth' : 'login';
-
-							// Ask user to login and or auth Hiro on FB
-							FB.login(function(response) {
-								// Yay, user granted perms
-								if (response.authResponse) {
-									// Create ref
-									fbtokens = response.authResponse;
-								} 
-							// Add scope here
-							},{scope: 'email'});
-						}
-
+					// Processing for the various async calls above
+					var posttokens = function(tokens,reason) {
 						// If we have got tokens
-						if (fbtokens) {
+						if (tokens) {
 							// Request token from backend
 							Hiro.sync.ajax.send({
 								url: "/_cb/facebook",
 				                type: "POST",
-				                payload: fbtokens,
+				                payload: tokens,
 								success: function(req,data) {
 									obj.success(data);
 								},
@@ -1701,6 +1680,26 @@ var Hiro = {
 						} else {
 							// FB login or hiro auth process aborted by user
 							if (obj && obj.error) obj.error('abort' + reason)
+						}
+					}					
+
+					// First try to get status
+					FB.getLoginStatus(function(response) {
+						// Logged into FB & Hiro authed
+						if (response.status === 'connected') {
+							// Post tokens
+							posttokens(response.authResponse);
+						// Not logged into FB or Hiro not authed	
+						} else { 
+							// Set reason for prompting login
+							reason = (response.status === 'not_authorized') ? 'auth' : 'login';
+
+							// Ask user to login and or auth Hiro on FB
+							FB.login(function(response) {
+								// Post tokens, or false if login didn't return any
+								posttokens(response.authResponse, reason);
+							// Add scope here
+							},{scope: 'email'});
 						}
 					});	
 				},
@@ -1726,16 +1725,17 @@ var Hiro = {
 					// We screwed up
 					if (reason == 'backend') {
 						e.textContent = 'Hiro not available, please try again later.';	
-						button.textContent = 'Try again';	
 						Hiro.sys.error('Facebook login failed on our side',data);
-					// FB not available or user offline										
+					// FB not available (the script fetching of Hiro.lig failed) or user offline										
 					} else if (reason == 'sourceoffline') {
-						e.textContent = 'Facebook not available, please try later.';	
-						button.textContent = 'Try again';	
+						e.textContent = 'Facebook not available, please try later.';		
 					// User aborted											
 					} else {
-						button.innerHTML = ((login) ? 'Log-In' : 'Sign-Up') + ' with <b>Facebook</b>';	
+						e.textContent = 'Something went wrong, please try later.';
 					}
+
+					// Reset button
+					button.textContent = 'Try again';					
 
 					// End loading bar in error
 					Hiro.ui.hprogress.done(true)
