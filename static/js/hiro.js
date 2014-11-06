@@ -1337,7 +1337,14 @@ var Hiro = {
 				node = freshnodevalues[0];
 
 				// And offset
-				nodestartoffset = freshnodevalues[2];										
+				nodestartoffset = freshnodevalues[2];	
+
+				// debug
+				if (nodestartoffset > node.length) {
+					console.log('ERROR with getnode: Requested node at cursor position ' + cursorposition + ', got:',freshnodevalues);
+					// Reset
+					nodestartoffset = node.length;
+				}													
 
 				// Create new range
 				// TODO Bruno: Make this cross browser
