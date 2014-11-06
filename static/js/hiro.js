@@ -332,7 +332,6 @@ var Hiro = {
 				s.className = 'sharing';
 
 				// Add sharing hover tooltip
-				// TODO Bruno: This doesn'T count properly between offline (no own peer) and online created notes, pls fix
 				tooltip = 'Shared with ' + peercount + ' other';	
 				if (peercount > 1) tooltip = tooltip + 's';
 				s.setAttribute('title',tooltip);	
@@ -2786,7 +2785,7 @@ var Hiro = {
 					// Insert URL into sharing part
 					if (token) {
 						// Set new value
-						el_url[el_url.length - 1].value = 'https://' + location.host + '/note/' + Hiro.canvas.currentnote + '#' + token;
+						el_url[el_url.length - 1].value = location.protocol + '//' + location.host + '/note/' + Hiro.canvas.currentnote + '#' + token;
 						// Remember if token was missing
 						focus = that.notoken;
 						// Render active & reset flag
@@ -7524,6 +7523,9 @@ var Hiro = {
 
 				// Extend URL with token if we have one
 				if (token) url = url + '#' + token;	
+
+				// Do not change url on touch to devices (screws appcache homescreen apps)
+				if (Hiro.ui.touch) url = undefined;
 
 				// On the first call we only change the state insteading of adding a new one
 				if ((this.first || replaceonly) && history && 'replaceState' in history) {
