@@ -800,7 +800,7 @@ var Hiro = {
 			this.paint(true);	
 
 			// Paint the overlay
-			this.overlay.update();
+			this.overlay.update(true);
 
 			// Repaint the folio to update active note CSS & visually remove
 			Hiro.folio.paint(true);				
@@ -964,12 +964,6 @@ var Hiro = {
 			// Generate new overlay from cache
 			build: function() {
 				var el = this.el_root, fadedirection, links, peers, i, l, string, newnode;
-
-				// Do not overwhelm system with repaints
-				if (this.painting) return;
-
-				// Set flag
-				this.painting = true;
 		
 				// Fallback on cache if no string was provided, always insert at least one char so we can lookup a textnode
 				string = this.text = Hiro.canvas.cache.content || '';
@@ -1014,9 +1008,6 @@ var Hiro = {
 					Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
 				}
 
-				// Release lock
-				this.painting = false;
-
 				// Log
 				Hiro.sys.log('Overlay repainted from scratch.') 														
 			},
@@ -1028,7 +1019,7 @@ var Hiro = {
 				// Wrap it in it's own animationframe
 				Hiro.ui.render(function(){				
 					// Abort if nothing changed or we are currently painting
-					if (that.painting || that.text == Hiro.canvas.cache.content) return;
+					if (that.text == Hiro.canvas.cache.content) return;
 
 					// If we have go to or come from an empty value
 					if (forcerepaint || !that.text || !Hiro.canvas.cache.content) {
