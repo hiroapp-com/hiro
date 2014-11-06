@@ -1053,6 +1053,14 @@ var Hiro = {
 
 				// Iterate through actions
 				for (i = 0, l = actions.length; i < l; i++ ) {
+					// If we only have to move
+					if (actions[i].charAt(0) == '=') {
+						// Move the offset
+						globaloffset += parseInt(actions[i].substring(1));	
+						// Next l00p
+						continue;
+					}
+											
 					// First, get the right node 
 					// TODO Bruno: Reuse previous node if this change is within the same one
 					target = that.getnode(globaloffset);
@@ -1068,10 +1076,7 @@ var Hiro = {
 					// Set initial values
 					node = target[0];
 					localoffset = target[2];				
-					val = node.nodeValue || '';	
-
-					// If we only have to move the offset
-					if (actions[i].charAt(0) == '=') globaloffset += parseInt(actions[i].substring(1));											
+					val = node.nodeValue || '';																
 
 					// Remove something
 					if (actions[i].charAt(0) == '-') {
@@ -1085,7 +1090,7 @@ var Hiro = {
 					} else if (actions[i].charAt(0) == '+') {
 						addition = decodeURI(actions[i].substring(1))
 						// Length of addition
-						changelength = addition.length;
+						globaloffset += changelength = addition.length;
 						// Build string
 						val = val.substring(0,localoffset) + addition + val.substring(localoffset);
 						// See if it might be a link if we input a whitespace or pasted something longer							
@@ -1105,15 +1110,9 @@ var Hiro = {
 					// Set new value (we don't do this below as (= 3 || +3) and -3 chars give changelength 0)
 					node.textContent = val;					
 
-					// If something changed in our nodelength
-					if (changelength) {		
-						// Also shift the globaloffset							
-						globaloffset += changelength;	
-
-						// Change textlength and node length
-						that.textlength += changelength;
-						that.textnodes[target[1]] += changelength;
-					}					
+					// Change textlength and node length
+					that.textlength += changelength;
+					that.textnodes[target[1]] += changelength;					
 
 					// Process links AFTER we reset the lengths above
 					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);																		
