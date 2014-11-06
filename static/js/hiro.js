@@ -184,7 +184,7 @@ var Hiro = {
 
 			// that scope because it's called by timeout as well
 			var that = Hiro.folio, i, l, data, 
-				f0 = document.createElement('div'), f1, link;
+				f0 = document.createDocumentFragment(), f1, link;
 
 			// Kick off regular updates, only once
 			if (!that.updatetimeout) that.updatetimeout = setInterval( function(){ 
@@ -200,7 +200,10 @@ var Hiro = {
 			that.archivecount = that.unseencount = that.owncount = 0;
 
 			// Empty lookup
-			that.lookup = {};
+			that.lookup = {};	
+
+			// Sort the fucker
+			that.sort();			
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
@@ -210,7 +213,7 @@ var Hiro = {
 					if (link) f0.appendChild(link);
 				// If we didn't have an archived Note yet create the fragment	
 				} else if (data[i].status == 'archived') {
-					if (!f1) f1 = document.createElement('div');
+					if (!f1) f1 = document.createDocumentFragment();
 					link = that.renderlink(data[i]);
 					if (link) f1.appendChild(link);
 				} else {
@@ -226,10 +229,11 @@ var Hiro = {
 				// Update bubble
 				that.el_showmenu.firstChild.innerHTML = that.unseencount;
 				that.el_showmenu.firstChild.style.display = (that.unseencount) ? 'block' : 'none';
+				console.log(f0.children);
 
 				// Copy innerHTML
-				that.el_notelist.innerHTML = (f0) ? f0.innerHTML : '';
-				that.el_archivelist.innerHTML = (f1) ? f1.innerHTML : '';
+				that.el_notelist.innerHTML = (f0) ? f0.children : '';
+				that.el_archivelist.innerHTML = (f1) ? f1.children : '';
 
 				// Update text contents of archivelink
 				if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
@@ -363,6 +367,8 @@ var Hiro = {
 		sort: function() {
 			var fc = Hiro.data.get('folio','c'), i, l, as, bs;
 
+			console.log('Sortin');			
+
 			// Sort array by last edit
 			fc.sort( function(a,b) { 
 				// Create shorthands
@@ -372,9 +378,6 @@ var Hiro = {
 				// Comparison function
 				return bs._ownedit - as._ownedit;
 			});		
-
-			// Save changes and trigger repaint		
-			Hiro.data.set('folio','c',fc);
 		},
 
 		// Add a new note to folio and notes array, then open it 
@@ -594,10 +597,7 @@ var Hiro = {
 
 				// Set text & title
 				if (that.cache.content != note.c.text) Hiro.data.set(id,'c.text', ( that.cache.content || '') );
-				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));
-
-				// Check if we're the latest in the folio
-				if (Hiro.data.get('folio','c')[0].nid != Hiro.canvas.currentnote) Hiro.folio.sort();			
+				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));			
 
 				// Reset changed flag
 				that.cache._changed = false;		
@@ -607,8 +607,6 @@ var Hiro = {
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
 		contentkeydown: function(event,el) {	
 			var cursor;
-
-			console.log(event.keyCode)
 
 			// The dreaded tab key (makes think jump jump to next field) and return (is painted )
 			if (event.keyCode == 9) {
@@ -763,10 +761,7 @@ var Hiro = {
 				note = Hiro.data.get('note_' + id);
 				// Log if we still fucked up
 				if (!note) Hiro.sys.error('FATAL: Could not load any note.',[id,folio]);				
-			}
-
-			// Sort	folio
-			Hiro.folio.sort(id);			
+			}		
 
 			// Check if we have an unseen flag and remove if so
 			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);			
@@ -4220,17 +4215,8 @@ var Hiro = {
 
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
-				// Check if the old note is still around
-				if (Hiro.folio.lookup[Hiro.canvas.currentnote]) keeper = Hiro.canvas.currentnote;
-
-				// Properly sort notes first
-				Hiro.folio.sort(keeper);
-
 				// Load doc onto canvas
-				Hiro.canvas.load();	
-
-				// End hrpogress if we kept note (otherwise the load above aborted before that)
-				if (keeper) Hiro.ui.hprogress.done();				
+				Hiro.canvas.load();					
 			// If the folio is still empty, we create a new note				
 			} else {
 				// Log
