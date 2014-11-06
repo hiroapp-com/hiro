@@ -1018,11 +1018,12 @@ var Hiro = {
 
 				// Wrap it in it's own animationframe
 				Hiro.ui.render(function(){				
-					// Abort if nothing changed or we are currently painting
-					if (that.text == Hiro.canvas.cache.content) return;
-
+					// Abort if nothing changed 
+					if (!forcerepaint && that.text == Hiro.canvas.cache.content) {
+						// Stop
+						return;
 					// If we have go to or come from an empty value
-					if (forcerepaint || !that.text || !Hiro.canvas.cache.content) {
+					} else if (forcerepaint || !that.text || !Hiro.canvas.cache.content) {
 						// Do a full repaint
 						that.build();
 					// If we have a change	
@@ -1360,7 +1361,7 @@ var Hiro = {
 
 				// Find subnode(s) to operate on
 				// Lucky us, change is within the first node
-				if (this.textlength <= nodes[0]) {
+				if (offset <= nodes[0]) {
 					// Set node to first
 					subnode = 0;	
 					// Offset stays same
