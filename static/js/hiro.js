@@ -857,8 +857,6 @@ var Hiro = {
 				// Get basic values, subtract canvas borderradius from viewport size and 50px top bar from non mini designs
 				viewportheight = (document.documentElement.clientHeight || window.innerHeight ) - 6 - ((Hiro.ui.mini()) ? 0 : 50);
 
-				console.log(viewportheight)	
-
 				// Find biggest or overlay,viewport or textarea scroll			
 				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewportheight)				
 
@@ -1267,7 +1265,7 @@ var Hiro = {
 				var currentposition = this.getxy(), scroller, scrolltop, change, viewportheight, totalheight, bounds, lineheight;
 
 				// If the cursor is the same, do nothing
-				if (currentposition == this.cursortop) return;
+				if (currentposition == undefined || currentposition == this.cursortop) return;
 
 				// Get current viewport height
 				viewportheight = document.documentElement.clientHeight || window.innerHeight;
@@ -1350,7 +1348,7 @@ var Hiro = {
 				range.setEnd(node,nodestartoffset)
 
 				// Get x coordinates
-				return range.getClientRects()[0].top;
+				return range.getBoundingClientRect().top;
 			},
 
 			// Fetch a textnode given an offset from the start and/or end of the full text
