@@ -606,7 +606,9 @@ var Hiro = {
 
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
 		contentkeydown: function(event,el) {	
-			var c;
+			var cursor;
+
+			console.log(event.keyCode)
 
 			// The dreaded tab key (makes think jump jump to next field) and return (is painted )
 			if (event.keyCode == 9) {
@@ -614,18 +616,18 @@ var Hiro = {
 				if (event.type == 'keydown') Hiro.util.stopEvent(event);
 
 				// Determine current cursor position & proper char
-				c = Hiro.canvas.getcursor();
+				ccursor = Hiro.canvas.getcursor();
 
 				// Set internal data and display
-				el.value = el.value.substr(0, c[0]) + '\t' + el.value.substr(c[1]);
+				el.value = el.value.substr(0, cursor[0]) + '\t' + el.value.substr(c[1]);
 
 				// Reposition cursor
 				Hiro.canvas.setcursor(c[1] + 1);
 				
 			// If the user presses Arrowup or Pageup at position 0				
-			} else if (event.keyCode == 38 || event.keyCode == 33) {
-				c = Hiro.canvas.getcursor();
-				if (c[0] == c[1] && c[0] == 0) {
+			} else if (event.keyCode == 38 || event.keyCode == 33 || event.keyCode == 8) {
+				cursor = Hiro.canvas.getcursor();
+				if (cursor[0] == cursor[1] && cursor[0] == 0) {
 					// Focus Title
 					Hiro.canvas.el_title.focus();
 					// If we're running the mini UI, also scroll the textarea to the top
