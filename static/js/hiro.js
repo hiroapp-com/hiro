@@ -531,7 +531,7 @@ var Hiro = {
 
 		// Poor man FRP stream
 		keystream: function(event) {
-			var source = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = source.id, oldcache;			
+			var source = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = source.id;			
 
 			// Only listen to title & content
 			if (id != 'title' && id != 'content') return;
@@ -541,16 +541,13 @@ var Hiro = {
 
 			// Check cache if values changed
 			if (cache[id] != source.value) {
-				// Copy old cache
-				oldcache = cache[id];
-
 				// (Re)set cache values
 				cache[id] = source.value;
 				cache._changed = true;
 				cache._id = Hiro.canvas.currentnote;
 
 				// Do overlay diff, process it first and then stash in rAF
-				if (id == 'content') Hiro.canvas.overlay.diff(oldcache,source.value);				
+				if (id == 'content') Hiro.canvas.overlay.update();				
 
 				// Reset document title
 				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );					
@@ -799,8 +796,11 @@ var Hiro = {
 			// Mount me reference
 			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
-			// Repaint canvas
+			// Repaint canvas and set cursor
 			this.paint(true);	
+
+			// Paint the overlay
+			this.overlay.update();
 
 			// Repaint the folio to update active note CSS & visually remove
 			Hiro.folio.paint(true);				
@@ -839,9 +839,6 @@ var Hiro = {
 						
 				// Set text		
 				if (Hiro.canvas.el_text.value != c.content) Hiro.canvas.el_text.value = c.content;	
-
-				// Render overlay
-				Hiro.canvas.overlay.paint();
 
 				// Set cursor (this should not fire on mobiles as it's called from a new requestanimationframe stack)
 				if (setcursor) Hiro.canvas.setcursor();																		
@@ -956,6 +953,7 @@ var Hiro = {
 			el_root: document.getElementById('overlay'),	
 
 			// Cache
+			text: undefined,
 			textnodes: [],
 			textlength: 0,
 			cursortop: 0,
@@ -963,89 +961,103 @@ var Hiro = {
 			// Flags
 			painting: false,
 
-			// Generate new overlay
-			paint: function(string) {
-				var el = this.el_root, fadedirection, links, peers, i, l, that = this;
+			// Generate new overlay from cache
+			build: function() {
+				var el = this.el_root, fadedirection, links, peers, i, l, string, newnode;
 
 				// Do not overwhelm system with repaints
 				if (this.painting) return;
 
 				// Set flag
 				this.painting = true;
-
-
-				// Fallback on cache if no string was provided
-				if (string === undefined) string =  Hiro.canvas.cache.content || '';
+		
+				// Fallback on cache if no string was provided, always insert at least one char so we can lookup a textnode
+				string = this.text = Hiro.canvas.cache.content || '';
 
 				// Reset nodes cache and fill it with initial string length
-				that.textnodes.length = 0;
-				that.textnodes.push(string.length);
+				this.textnodes.length = 0;
+				this.textnodes.push(string.length);
 
 				// Save initial length
-				that.textlength = string.length;
+				this.textlength = string.length;
 
 				// Get local peers
 				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers');
 
-				// Paint overlay
-				Hiro.ui.render(function(){
-					// Set text contents, 
-					el.textContent = string;
+				// Remove all nodes
+				while (el.firstChild) {
+					el.removeChild(el.firstChild);
+				}				
 
-					// See if we have any links
-					links = Hiro.context.extractlinks(string);
+				// Create a new node
+				newnode = document.createTextNode(string);
 
-					// Yay, render them
-					if (links) that.decorate(links,'a',0);											
+				// Set text contents
+				el.appendChild(newnode);
 
-					// Iterate through peers to set flags
-					for ( i = 0, l = peers.length; i < l; i++ ) {
-						// Render peer
-						that.pc(peers[i]);
-					}
+				// See if we have any links
+				links = Hiro.context.extractlinks(string);
 
-					// Switch quote on/off based on user actions
-					if ((string.length > 0 && Hiro.canvas.quoteshown) || (string.length == 0 && !Hiro.canvas.quoteshown)) {
-						fadedirection = (Hiro.canvas.quoteshown) ? -1 : 1;
-						Hiro.ui.fade(Hiro.canvas.el_quote,fadedirection,450);
-						Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
-					}
+				// Yay, render them
+				if (links) this.decorate(links,'a',0);											
 
-					// Release lock
-					that.painting = false;
+				// Iterate through peers to set flags
+				for ( i = 0, l = peers.length; i < l; i++ ) {
+					// Render peer
+					this.pc(peers[i]);
+				}
 
-					// Log
-					Hiro.sys.log('Overlay repainted from scratch.') 											
-				});
+				// Switch quote on/off based on user actions
+				if ((string.length > 0 && Hiro.canvas.quoteshown) || (string.length == 0 && !Hiro.canvas.quoteshown)) {
+					fadedirection = (Hiro.canvas.quoteshown) ? -1 : 1;
+					Hiro.ui.fade(Hiro.canvas.el_quote,fadedirection,450);
+					Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
+				}
 
-				// Resize (seperate rAF)
-				Hiro.canvas.resize();				
+				// Release lock
+				this.painting = false;
+
+				// Log
+				Hiro.sys.log('Overlay repainted from scratch.') 														
 			},
 
 			// Diff cache, create delta and apply patch below
-			diff: function(oldvalue,newvalue) {
-				// Abort if nothing change
-				if (newvalue == oldvalue) return;
+			update: function(forcerepaint) {
+				var that = this;
 
-				// If we have go to or come from an empty value
-				if (!oldvalue || !newvalue) {
-					// Do a full repaint
-					this.paint();
-				// If we have a change	
-				} else {
-					// Create delta & patch it onto the overlay
-					this.patch(Hiro.sync.diff.delta(oldvalue,newvalue))
-				}	
+				// Wrap it in it's own animationframe
+				Hiro.ui.render(function(){				
+					// Abort if nothing changed or we are currently painting
+					if (that.painting || that.text == Hiro.canvas.cache.content) return;
+
+					// If we have go to or come from an empty value
+					if (forcerepaint || !that.text || !Hiro.canvas.cache.content) {
+						// Do a full repaint
+						that.build();
+					// If we have a change	
+					} else {
+						// Create delta & patch it onto the overlay
+						Hiro.canvas.overlay.patch(Hiro.sync.diff.delta(that.text,Hiro.canvas.cache.content));
+					}
+				});	
+
+				// Resize (also in next rAF)
+				Hiro.canvas.resize();								
 			},
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
 			patch: function(delta) {
-				var actions = delta.split('	'), globaloffset, localoffset, suffix, target, node, repaint,
+				var actions = delta.split('	'), globaloffset, localoffset, target, node, repaint,
 				val, addition, i, l, changelength, links, that = this;
 
-				// Create trimmings
+				// Create offset from first action
 				globaloffset = (actions[0].charAt(0) == '=') ? parseInt(actions.shift().slice(1)) : 0;
-				if (actions[actions.length - 1].charAt(0) == '=') suffix = parseInt(actions.pop().slice(1));
+
+				// Abort if we have no more actions left (patch was "=n" only)
+				if (!actions.length) return;
+
+				// Ignore suffix
+				if (actions[actions.length - 1].charAt(0) == '=') parseInt(actions.pop().slice(1));
 
 				// Iterate through actions
 				for (i = 0, l = actions.length; i < l; i++ ) {
@@ -1053,10 +1065,12 @@ var Hiro = {
 					// TODO Bruno: Reuse previous node if this change is within the same one
 					target = that.getnode(globaloffset);
 
+					console.log('patching to ',actions,target)
+
 					// We couldn't identify the node, let's fully repaint
 					if (!target[0]) {
 						// Paint from scratch
-						that.paint();
+						that.build();
 						// Stop here
 						return;	
 					}	
@@ -1115,8 +1129,8 @@ var Hiro = {
 					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);																		
 				}
 
-				// Resize (also in next rAF)
-				Hiro.canvas.resize();							
+				// Reset our internal cache once we're done
+				this.text = Hiro.canvas.cache.content;											
 
 				// Kick off cursor scroll, also in rAF
 				this.aligncursor();																															
@@ -1133,14 +1147,14 @@ var Hiro = {
 				}
 			},
 
-			// Wrap soe text in a DOM element, for now this only works within a single text node
+			// Wrap some text in a DOM element, for now this only works within a single text node
 			wrap: function(tag,action,offset,length) {
 				var range, node, element, initallength, val;
 
 				// Get nodes
 				node = this.getnode(offset);								
 
-				// Are we withn the bounds of the same node node?
+				// Are we within the bounds of the same node?
 				if (node[0].length >= node[2] + length) {
 					// Build element
 					element = document.createElement(tag);		
@@ -1155,11 +1169,11 @@ var Hiro = {
 					node[0].textContent = val.substring(0,node[2]) + val.substring(node[2] + length);
 
 					// Splice it in!
-					this.splice(node,element,node[2],length);
+					this.splice(node,element,length);
 				// Spanning multiple nodes						
 				} else {	
-					// Paint for now because...
-					this.paint();
+					// Paint for now because we don't support paints spanning multiple nodes yet
+					this.build();
 
 					// it's not supported yet
 					return;									
@@ -1167,24 +1181,27 @@ var Hiro = {
 			},
 
 			// Insert a given (!) HTML element in a given (!) node, splitting the existing textnode into up to two new ones
-			splice: function(node,element,offset,length) {
+			splice: function(node,element,length) {
 				var fragment = document.createDocumentFragment(), 
-					placeholder, before, after, val, cache, newvalues = [];
+					val, localoffset, before, after, newvalues = [];
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
 				if (!node || !element) return;
 
-				// Cache the current node content
-				val = node[0].nodeValue || '';			
+				// Get node contents
+				val = node[0].nodeValue;	
+
+				// Set shortcut
+				localoffset = node[2];
 
 				// See if we need to split off text before the element in a seperate node
-				if (offset) {
+				if (localoffset) {
 					// Create a new textnode with contents before
-					before = document.createTextNode(val.substring(0,offset));
+					before = document.createTextNode(val.substring(0,localoffset));
 					// Append it to the fragment
 					fragment.appendChild(before);
 					// Add value for array
-					newvalues.push(offset)
+					newvalues.push(localoffset)
 				}	
 
 				// Add the new DOM node
@@ -1194,28 +1211,28 @@ var Hiro = {
 				if (length) newvalues.push(length);			
 
 				// See if we have text after the element
-				if (offset < val.length) {
+				if (localoffset < val.length) {
 					// Build textnode
-					after = document.createTextNode(val.substring(offset));
+					after = document.createTextNode(val.substring(localoffset));
 					// Add it
 					fragment.appendChild(after);	
 					// And value to internal array
-					newvalues.push(val.length - offset);					
+					newvalues.push(val.length - localoffset);					
 				}			
 
 				// Replace old textnode with new fragment
 				node[0].parentNode.replaceChild(fragment,node[0])
 
 				// Splice stuff into internal array
-				if (val.length != length) this.textnodes = this.textnodes.slice(0, node[1]).concat(newvalues).concat(this.textnodes[node[1] + 1])
+				if (val.length != length) this.textnodes = this.textnodes.slice(0, node[1]).concat(newvalues).concat(this.textnodes[node[1] + 1] || [])
 			},
 
 			// Paint the caret of a certain peer at a certain point
 			pc: function(peer) {
-				var cursor = peer.cursor_pos, contact, element, el_name, name, age;				
+				var cursor = peer.cursor_pos, contact, element, el_name, name, age, node;				
 
 				// Abort if user has no known cursor position
-				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;
+				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;			
 
 				// Try fetching contact
 				contact = Hiro.user.contacts.lookup[peer.user.uid];
@@ -1244,8 +1261,11 @@ var Hiro = {
 				// Reduce cursor if it's too far out
 				if (this.textlength < cursor) cursor = this.textlength;
 
+				// Get the proper node
+				node = this.getnode(cursor);
+
 				// Append it	
-				this.splice(this.getnode(cursor),element,cursor,0);
+				this.splice(node,element,0);
 			},
 
 			// Scroll body / canvas so that cursor is well aligned
@@ -1297,13 +1317,7 @@ var Hiro = {
 				}
 
 				// Do it!
-				if (change) {
-					// Wrap
-					Hiro.ui.render(function(){
-						// Set new value
-						scroller.scrollTop += change;
-					});				
-				}
+				if (change)	scroller.scrollTop += change;
 
 				// Always save internal value
 				this.cursortop = currentposition;					
@@ -1425,7 +1439,7 @@ var Hiro = {
 				}
 
 				// Fetch all overlay childnodes and convert them to normal array
-				domnodes = extract(this.el_root.childNodes,subnode);
+				domnodes = extract(this.el_root.childNodes,subnode);			
 		
 				// Return subnode
 				return [domnodes[subnode],subnode,subnodeoffset];
@@ -2766,7 +2780,7 @@ var Hiro = {
 				if (typeof peers == 'undefined') return;		
 
 				// Repaint the overlay as well
-				if (repaintoverlay) Hiro.canvas.overlay.paint();
+				if (repaintoverlay) Hiro.canvas.overlay.update(true);
 
 				// Populate!
 				Hiro.ui.render(function(){
@@ -4389,7 +4403,7 @@ var Hiro = {
 								// Also set shortcut value if it's us
 								if (ops[j].path.split(':')[1] == Hiro.data.get('profile','c.uid')) store._cursor = ops[j].value;
 								// Repaint overlay
-								Hiro.canvas.overlay.paint();
+								Hiro.canvas.overlay.update(true);
 							// Call swap user
 							} else if (ops[j].op == 'swap-user') {
 								Hiro.apps.sharing.swappeer(obj,store.id,ops[j].value,true);	
@@ -5510,12 +5524,10 @@ var Hiro = {
                     if (id == Hiro.canvas.currentnote) {
                     	// Get current cursor position
                     	cursor = Hiro.canvas.getcursor();
-                    	// Get the current cache version
-                    	oldcache = Hiro.canvas.cache.content;
                     	// Apply patch to textarea, cache and set current version to cache
                     	Hiro.canvas.el_text.value = Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
                     	// Update the overlay
-                    	Hiro.canvas.overlay.diff(oldcache,Hiro.canvas.cache.content);                     	
+                    	Hiro.canvas.overlay.update();                     	
                     	// Recalculate cursor
                     	this.resetcursor(diffs,cursor);                    	                   	
                     // Apply the changes to the current version	
