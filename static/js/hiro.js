@@ -229,11 +229,18 @@ var Hiro = {
 				// Update bubble
 				that.el_showmenu.firstChild.innerHTML = that.unseencount;
 				that.el_showmenu.firstChild.style.display = (that.unseencount) ? 'block' : 'none';
-				console.log(f0.children);
+				
+				// Empty lists
+				while (that.el_notelist.firstChild) {
+				    that.el_notelist.removeChild(that.el_notelist.firstChild);
+				}	
+				while (that.el_archivelist.firstChild) {
+				    that.el_archivelist.removeChild(that.el_archivelist.firstChild);
+				}											
 
-				// Copy innerHTML
-				that.el_notelist.innerHTML = (f0) ? f0.children : '';
-				that.el_archivelist.innerHTML = (f1) ? f1.children : '';
+				// Insert new list
+				that.el_notelist.appendChild(f0);
+				if (f1) that.el_archivelist.appendChild(f1);
 
 				// Update text contents of archivelink
 				if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
