@@ -1065,8 +1065,6 @@ var Hiro = {
 					// TODO Bruno: Reuse previous node if this change is within the same one
 					target = that.getnode(globaloffset);
 
-					console.log('patching to ',actions,target)
-
 					// We couldn't identify the node, let's fully repaint
 					if (!target[0]) {
 						// Paint from scratch
