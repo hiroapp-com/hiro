@@ -782,10 +782,7 @@ var Hiro = {
 			Hiro.ui.hprogress.begin();	
 
 			// Set internal values
-			this.currentnote = id;	
-
-			// Scroll to top of note
-			Hiro.canvas.totop();			
+			this.currentnote = id;				
 
 			// Reset cache
 			this.cache = {
@@ -799,11 +796,14 @@ var Hiro = {
 			// Repaint canvas and set cursor
 			this.paint(true);	
 
+			// Scroll to top of note
+			Hiro.canvas.totop();			
+
 			// Paint the overlay
 			this.overlay.update(true);
 
 			// Repaint the folio to update active note CSS & visually remove
-			Hiro.folio.paint(true);				
+			Hiro.folio.paint(true);							
 
 			// Close apps if they should be open
 			if (Hiro.apps.open.length > 0) Hiro.apps.close();						
