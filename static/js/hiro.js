@@ -1133,9 +1133,9 @@ var Hiro = {
 				}
 			},
 
-			// Wrap a Range in a DOM element, for now this only works within a single text node
+			// Wrap soe text in a DOM element, for now this only works within a single text node
 			wrap: function(tag,action,offset,length) {
-				var range, node, el, initallength, val;
+				var range, node, element, initallength, val;
 
 				// Get nodes
 				node = this.getnode(offset);								
@@ -1143,84 +1143,76 @@ var Hiro = {
 				// Are we withn the bounds of the same node node?
 				if (node[0].length >= node[2] + length) {
 					// Build element
-					el = document.createElement(tag);		
+					element = document.createElement(tag);		
 									
 					// Copy node value
-					val = startnode[0].nodeValue;
+					val = node[0].nodeValue;
 
 					// Fill el with extracted string part
-					el.textContent = val.substring(startnode[2],startnode[2] + length);
+					element.textContent = val.substring(node[2],node[2] + length);
 
-					// Remove link from node contents, but add 
-					startnode[0].textContent = val.substring(0,startnode[2]) + val.substring(startnode[2] + length);
+					// Remove existing value from textcontent 
+					node[0].textContent = val.substring(0,node[2]) + val.substring(node[2] + length);
 
 					// Splice it in!
-					this.splice(el,offset,length);
+					this.splice(node,element,node[2],length);
 				// Spanning multiple nodes						
 				} else {	
 					// Paint for now because...
 					this.paint();
 
 					// it's not supported yet
-					return;
-
-					// Log
-					Hiro.sys.error('Tried to wrap overlay Range spanning multiple nodes');
-
-					// Copy values
-					initallength = startnode[0].nodeValue.length;
-
-					// Set range
-					range.setStart(startnode[0],startnode[2]);
-					range.setEnd(endnode[0],endnode[2]);
-
-					// Simply use surroundcontent
-					range.surroundContents(el);	
-
-					// Update internal values by splitting into three right away
-					this.textnodes.splice(startnode[1],1,startnode[2],length,initallength - endnode[2]);									
+					return;									
 				}
 			},
 
-			// Insert a given (!) HTML node at a given position, splitting the existing textnode into up to two new ones
-			splice: function(node,offset,length) {
-				var target = this.getnode(offset),
-				fragment = document.createDocumentFragment(), 
-				placeholder, before, after, val, cache;
+			// Insert a given (!) HTML element in a given (!) node, splitting the existing textnode into up to two new ones
+			splice: function(node,element,offset,length) {
+				var fragment = document.createDocumentFragment(), 
+					placeholder, before, after, val, cache, newvalues = [];
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
-				if (!target[0]) return;
+				if (!node || !element) return;
 
-				// Set proper values,using nodeValue as getnode should always return proper textnodes
-				val = target[0].nodeValue || '';	
+				// Cache the current node content
+				val = node[0].nodeValue || '';			
 
-				// Make offset relative
-				offset = target[2];			
+				// See if we need to split off text before the element in a seperate node
+				if (offset) {
+					// Create a new textnode with contents before
+					before = document.createTextNode(val.substring(0,offset));
+					// Append it to the fragment
+					fragment.appendChild(before);
+					// Add value for array
+					newvalues.push(offset)
+				}	
 
-				// Create new split textnodes
-				before = document.createTextNode(val.substring(0,offset));
-				after = document.createTextNode(val.substring(offset));
+				// Add the new DOM node
+				fragment.appendChild(element);		
 
-				// Append elements
-				fragment.appendChild(before);
-				fragment.appendChild(node);				
-				fragment.appendChild(after);	
+				// Add to element length to internal array
+				if (length) newvalues.push(length);			
+
+				// See if we have text after the element
+				if (offset < val.length) {
+					// Build textnode
+					after = document.createTextNode(val.substring(offset));
+					// Add it
+					fragment.appendChild(after);	
+					// And value to internal array
+					newvalues.push(val.length - offset);					
+				}			
 
 				// Replace old textnode with new fragment
-				target[0].parentNode.replaceChild(fragment,target[0])
+				node[0].parentNode.replaceChild(fragment,node[0])
 
-				// Replace internal array with three new values
-				if (length) {
-					this.textnodes.splice(target[1],1,offset,length,val.length - offset);
-				// Replace one internal value with two new ones
-				} else {
-					this.textnodes.splice(target[1],1,offset,val.length - offset);
-				}
+				// Splice stuff into internal array
+				if (val.length != length) this.textnodes = this.textnodes.slice(0, node[1]).concat(newvalues).concat(this.textnodes[node[1] + 1])
 			},
 
 			// Paint the caret of a certain peer at a certain point
 			pc: function(peer) {
-				var cursor = peer.cursor_pos, contact, el, el_name, name, age;				
+				var cursor = peer.cursor_pos, contact, element, el_name, name, age;				
 
 				// Abort if user has no known cursor position
 				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;
@@ -1232,12 +1224,12 @@ var Hiro = {
 				age = parseInt((Hiro.util.now() - peer.last_edit) / 60000);
 
 				// Create basic div
-				el = document.createElement('div');
-				el.className = 'flag';
+				element = document.createElement('div');
+				element.className = 'flag';
 
 				// Append classname based on age
-				if (age < 10) el.className += ' active';
-				if (age > 1440) el.className += ' old';
+				if (age < 10) element.className += ' active';
+				if (age > 1440) element.className += ' old';
 
 				// Fetch proper name
 				name = ((contact) ? contact.name || contact.email || contact.phone : '') || 'Anonymous';
@@ -1247,13 +1239,13 @@ var Hiro = {
 				el_name = document.createElement('div');
 				el_name.className = (Hiro.ui.mini()) ? 'name left' : 'name';
 				el_name.textContent = name;
-				el.appendChild(el_name);
+				element.appendChild(el_name);
 
 				// Reduce cursor if it's too far out
 				if (this.textlength < cursor) cursor = this.textlength;
 
 				// Append it	
-				this.splice(el,cursor);
+				this.splice(this.getnode(cursor),element,cursor,0);
 			},
 
 			// Scroll body / canvas so that cursor is well aligned
