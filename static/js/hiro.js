@@ -1197,7 +1197,7 @@ var Hiro = {
 				fragment.appendChild(element);		
 
 				// Add to element length to internal array
-				if (length) newvalues.push(length);			
+				if (length) newvalues.push(length);	
 
 				// See if we have text after the element
 				if (localoffset < val.length) {
@@ -1213,7 +1213,7 @@ var Hiro = {
 				node[0].parentNode.replaceChild(fragment,node[0])
 
 				// Splice stuff into internal array
-				if (val.length != length) this.textnodes = this.textnodes.slice(0, node[1]).concat(newvalues).concat(this.textnodes[node[1] + 1] || [])
+				if (val.length != length) this.textnodes = this.textnodes.slice(0, node[1]).concat(newvalues).concat(this.textnodes.slice(node[1] + 1));
 			},
 
 			// Paint the caret of a certain peer at a certain point
