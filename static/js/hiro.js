@@ -1265,7 +1265,7 @@ var Hiro = {
 				var currentposition = this.getxy(), scroller, scrolltop, change, viewportheight, totalheight, bounds, lineheight;
 
 				// If the cursor is the same, do nothing
-				if (currentposition == undefined || currentposition == this.cursortop) return;
+				if (currentposition == false || currentposition == this.cursortop) return;
 
 				// Get current viewport height
 				viewportheight = document.documentElement.clientHeight || window.innerHeight;
@@ -1322,7 +1322,7 @@ var Hiro = {
 			// Return the current cursor x & y position
 			// We fetch all data afresh as we want to run this async
 			getxy: function() {
-				var cursorposition, freshnodevalues, node, nodestartoffset, range;
+				var cursorposition, freshnodevalues, node, nodestartoffset, range, boxes;
 
 				// Get current cursor position
 				cursorposition = Hiro.canvas.getcursor()[1];
@@ -1347,8 +1347,11 @@ var Hiro = {
 				range.setStart(node,nodestartoffset);
 				range.setEnd(node,nodestartoffset)
 
+				// Fetch rects (getboundingrects unfortunately doesn't work as we atm use ranges with 0 length)
+				boxes = range.getClientRects();
+
 				// Get x coordinates
-				return range.getBoundingClientRect().top;
+				return (boxes[boxes.length - 1]) ? boxes[boxes.length - 1].top : false;
 			},
 
 			// Fetch a textnode given an offset from the start and/or end of the full text
