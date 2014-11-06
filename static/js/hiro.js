@@ -1050,7 +1050,8 @@ var Hiro = {
 				// Iterate through actions
 				for (i = 0, l = actions.length; i < l; i++ ) {
 					// First, get the right node 
-					target = that.getnode(globaloffset,suffix);
+					// TODO Bruno: Reuse previous node if this change is within the same one
+					target = that.getnode(globaloffset);
 
 					// We couldn't identify the node, let's fully repaint
 					if (!target[0]) {
@@ -1066,10 +1067,7 @@ var Hiro = {
 					val = node.nodeValue || '';	
 
 					// If we only have to move the offset
-					if (actions[i].charAt(0) == '=') {
-						// Forward!
-						globaloffset += changelength = parseInt(actions[i].substring(1));											
-					}
+					if (actions[i].charAt(0) == '=') globaloffset += parseInt(actions[i].substring(1));											
 
 					// Remove something
 					if (actions[i].charAt(0) == '-') {
@@ -1090,8 +1088,6 @@ var Hiro = {
 						if (node.parentNode.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
 						// Check if it's still a proper link
 						else if (node.parentNode.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) repaint = true;
-						// Also shift the globaloffset							
-						globaloffset += changelength;
 					} 
 
 					// Repaint & sanity check
@@ -1105,8 +1101,11 @@ var Hiro = {
 					// Set new value (we don't do this below as (= 3 || +3) and -3 chars give changelength 0)
 					node.textContent = val;					
 
-					// If something changed in our node
-					if (changelength) {										
+					// If something changed in our nodelength
+					if (changelength) {		
+						// Also shift the globaloffset							
+						globaloffset += changelength;	
+
 						// Change textlength and node length
 						that.textlength += changelength;
 						that.textnodes[target[1]] += changelength;
