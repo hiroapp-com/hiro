@@ -5966,12 +5966,8 @@ var Hiro = {
 				// Reset dialog position
 				if (Hiro.ui.dialog.open) Hiro.ui.dialog.center();
 
-				// This should also happen on orientationchange
-				if (Hiro.ui.touch) {
-					// Reset viewport tag
-					// measure = 'height=' + window.innerHeight + ',width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no';
-					// document.getElementById('viewport').setAttribute('content', measure);	
-				}
+				// Reset canvas width if folio is open
+				if (Hiro.folio.open) Hiro.canvas.el_root.style.width = Hiro.canvas.width() + 'px';
 
 				// Reset flag
 				Hiro.ui.resizing = false;				
