@@ -293,25 +293,22 @@ var Hiro = {
 
 			stats = document.createElement('small');	
 
-			// If we have a signed up user
-			if (Hiro.data.get('profile','c.tier') > 0) {
-				// Build archive link
-				a = document.createElement('div');
-				a.className = 'archive';
+			// Build archive link
+			a = document.createElement('div');
+			a.className = 'archive';
 
-				// Prepare archive link and iterate counter
-				if (folioentry.status == 'active') {
-					// Add tooltip
-					a.setAttribute('title','Move to archive...')
-				} else if (folioentry.status == 'archived') {
-					// Add tooltip
-					a.setAttribute('title','Move back to current notes...')				
-					// Iterate counter
-					this.archivecount++;
-				} else {
-					Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
-				}					
-			}
+			// Prepare archive link and iterate counter
+			if (folioentry.status == 'active') {
+				// Add tooltip
+				a.setAttribute('title','Move to archive...')
+			} else if (folioentry.status == 'archived') {
+				// Add tooltip
+				a.setAttribute('title','Move back to current notes...')				
+				// Iterate counter
+				this.archivecount++;
+			} else {
+				Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
+			}					
 
 			// Get basic time string
 			time = (note._lastedit) ? Hiro.util.humantime(note._lastedit) + ' ago': 'Not saved yet';
@@ -1515,7 +1512,7 @@ var Hiro = {
 
 		// Returns array of links found in given string
 		extractlinks: function(string) {
-			var regex = /((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/g,
+			var regex = /\b([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+){2,})|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+){1,}\/([\/!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})+)|(http(s)?:\/\/[a-zA-Z0-9-\.]+(\/([\/!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})*)*)\b/g ,
 				temparray, results = [];
 
 			// Go through the string incrementaly (automatically done by exec, as it considers lastIndex of previous loop)
