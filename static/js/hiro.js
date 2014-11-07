@@ -293,21 +293,23 @@ var Hiro = {
 
 			stats = document.createElement('small');	
 
-			// Build archive link
-			a = document.createElement('div');
-			a.className = 'archive';
+ 			if (Hiro.data.get('profile','c.tier') > 0) {
+				// Build archive link
+				a = document.createElement('div');
+				a.className = 'archive';
 
-			// Prepare archive link and iterate counter
-			if (folioentry.status == 'active') {
-				// Add tooltip
-				a.setAttribute('title','Move to archive...')
-			} else if (folioentry.status == 'archived') {
-				// Add tooltip
-				a.setAttribute('title','Move back to current notes...')				
-				// Iterate counter
-				this.archivecount++;
-			} else {
-				Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
+				// Prepare archive link and iterate counter
+				if (folioentry.status == 'active') {
+					// Add tooltip
+					a.setAttribute('title','Move to archive...')
+				} else if (folioentry.status == 'archived') {
+					// Add tooltip
+					a.setAttribute('title','Move back to current notes...')				
+					// Iterate counter
+					this.archivecount++;
+				} else {
+					Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
+				}	
 			}					
 
 			// Get basic time string
@@ -409,7 +411,7 @@ var Hiro = {
 				};	
 
 			// If the user itself created the note but doesn't have the necessary tier yet
-			if (f.c.length >= 10 && (!user.c || !user.c.tier || user.c.tier< 2)) {
+			if (Hiro.folio.owncount > 10 && user.c.tier < 2)) {
 				Hiro.ui.dialog.suggestupgrade('<em>Upgrade now for </em><b>unlimited notes</b><em> &amp; more</em>');
 				return;
 			}	
