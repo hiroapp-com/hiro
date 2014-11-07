@@ -688,7 +688,7 @@ var Hiro = {
 						// Check for links
 						url = Hiro.canvas.overlay.getclicked(event);
 						// Open them in new tab
-						if (url) Hiro.ui.openlink(url.innerText);							
+						if (url) Hiro.ui.openlink(url.innerText,event);							
 						// Do not pull up keyboard on touch devices
 						if (Hiro.ui.touch && Hiro.folio.open) return;						
 						// Stick to default beaviour if we have a value
@@ -6311,11 +6311,23 @@ var Hiro = {
 		},	
 
 		// Open link in new tab/window
-		openlink: function(url) {
+		openlink: function(url,event) {
+			var anchorelement, syntheticevent;
 			// Check if URL has http, otherwise append
 			if (!/^https?:\/\//g.test(url)) url = 'http://' + url;
-			// Open it!
-			window.open(url,'_blank');
+
+			// Kill our original event
+			if (event) event.preventDefault();
+
+			// iOS hack from http://stackoverflow.com/questions/7930001/force-link-to-open-in-mobile-safari-from-a-web-app-with-javascript
+		    anchorelement = document.createElement('a');
+		    anchorelement.setAttribute("href", url);
+		    anchorelement.setAttribute("data-href", url);			    
+		    anchorelement.setAttribute("target", "_blank");
+
+		    syntheticevent = document.createEvent("HTMLEvents");
+		    syntheticevent.initEvent("click", true, true);
+		    anchorelement.dispatchEvent(syntheticevent);			
 		},
 
 		// Landing page specific stuff
@@ -7587,15 +7599,8 @@ var Hiro = {
 
 				// Open twitter window or redirect to twitter
 				if (Hiro.ui.mobileapp || Hiro.ui.touch) {
-					// iOS hack from http://stackoverflow.com/questions/7930001/force-link-to-open-in-mobile-safari-from-a-web-app-with-javascript
-				    anchorelement = document.createElement('a');
-				    anchorelement.setAttribute("href", url);
-				    anchorelement.setAttribute("data-href", url);			    
-				    anchorelement.setAttribute("target", "_blank");
-
-				    syntheticevent = document.createEvent("HTMLEvents");
-				    syntheticevent.initEvent("click", true, true);
-				    a.dispatchEvent(syntheticevent);
+					// Open with URL handler
+					Hiro.util.openlink(url);
 				// Normal modal  
 				} else {
 					// Crappy popup similar to https://dev.twitter.com/web/intents#tweet-intent
