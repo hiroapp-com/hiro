@@ -124,6 +124,7 @@ var Hiro = {
 						direction = (Hiro.folio.open) ? -1 : 1;
 						// Do it
 						Hiro.ui.slidefolio(direction,100);
+						break;
 
 				}
 			} else if (type == 'full') {
@@ -6178,7 +6179,10 @@ var Hiro = {
 						Hiro.apps.el_root.style.display = 'block';	
 						// Reset with to relative one
 						Hiro.canvas.el_root.style.width = '100%';
-					}					
+					}	
+
+					// Set position to fixed to avoid browser forced body sideways scrolling (browser tries to reveal cursorpos)
+					Hiro.canvas.el_rails.style.position = (direction == 1) ? 'fixed' : 'absolute';									
 				} else {
 					_this.slidetimer = requestAnimationFrame(step);
 				}	
