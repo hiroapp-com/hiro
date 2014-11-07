@@ -631,10 +631,10 @@ var Hiro = {
 				cursor = Hiro.canvas.getcursor();
 
 				// Set internal data and display
-				el.value = el.value.substr(0, cursor[0]) + '\t' + el.value.substr(c[1]);
+				el.value = el.value.substr(0, cursor[0]) + '\t' + el.value.substr(cursor[1]);
 
 				// Reposition cursor
-				Hiro.canvas.setcursor(c[1] + 1);
+				Hiro.canvas.setcursor(cursor[1] + 1);
 				
 			// If the user presses Arrowup or Pageup at position 0				
 			} else if (event.keyCode == 38 || event.keyCode == 33 || event.keyCode == 8) {
