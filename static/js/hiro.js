@@ -411,7 +411,7 @@ var Hiro = {
 				};	
 
 			// If the user itself created the note but doesn't have the necessary tier yet
-			if (Hiro.folio.owncount > 10 && user.c.tier < 2)) {
+			if (Hiro.folio.owncount > 10 && user.c.tier < 2) {
 				Hiro.ui.dialog.suggestupgrade('<em>Upgrade now for </em><b>unlimited notes</b><em> &amp; more</em>');
 				return;
 			}	
