@@ -1036,7 +1036,12 @@ html.ios body #rails #canvas textarea {
   #apps .app .icon .counter {
     top: 8px;
     right: 8px;
+    background-color: rgba(128, 128, 128, 0.5);
   }  
+
+  #apps .app:hover .icon .counter {
+    background-color: rgba(51, 51, 51, 0.5);;
+  }    
 
   #apps .app .icon .symbol {    
     background-size: 170px auto;
