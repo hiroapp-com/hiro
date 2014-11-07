@@ -1316,7 +1316,18 @@ var Hiro = {
 				}
 
 				// Do it!
-				if (change)	scroller.scrollTop += change;
+				if (change)	{
+					// Close folio if it's open
+					if (Hiro.folio.open) {
+						Hiro.ui.slidefolio(-1,10,function() {
+							// Scroll right away
+							scroller.scrollTop += change;
+						});
+					} else {
+						// Scroll right away
+						scroller.scrollTop += change;
+					}	
+				}					
 
 				// Always save internal value
 				this.cursortop = currentposition;					
@@ -1430,7 +1441,7 @@ var Hiro = {
 							}			
 						}
 						// Stop once we reached the desired node
-						if (i > wanted) break;						
+						if (results.length > wanted) break;												
 					}
 
 					// Return results
@@ -1438,10 +1449,10 @@ var Hiro = {
 				}
 
 				// Fetch all overlay childnodes and convert them to normal array
-				domnodes = extract(this.el_root.childNodes,subnode);			
+				domnodes = extract(this.el_root.childNodes,subnode);								
 		
 				// Return subnode
-				return [domnodes[subnode],subnode,subnodeoffset];
+				return [domnodes[subnode],subnode,subnodeoffset];			
 
 				// No node found
 				return false;

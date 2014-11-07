@@ -480,7 +480,7 @@ input.error:focus {
 /* ------ Editor ------*/
 
 #rails {
-  position: fixed;
+  position: absolute;
   margin-left: 50px;
   z-index: 1001;
   box-sizing: border-box; 
