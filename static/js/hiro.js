@@ -6123,13 +6123,17 @@ var Hiro = {
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
 
-			// Apecial mini handling
+			// Special mini handling
 			if (mini && direction === 1) {
 				// Hide the apps
 				Hiro.apps.el_root.style.display = 'none';
 				// Set canvas to fixed with
 				Hiro.canvas.el_root.style.width = (document.documentElement.clientWidth || window.innerWidth) + 'px';
-			}	
+			// When starting to close on non-mini devices	
+			} else if (!mini && direction === -1) {
+				// Show apps again
+				Hiro.apps.el_root.style.display = 'block';						
+			}
 
 			// Easing function (quad), see 
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
@@ -6182,7 +6186,11 @@ var Hiro = {
 						Hiro.apps.el_root.style.display = 'block';	
 						// Reset with to relative one
 						Hiro.canvas.el_root.style.width = '100%';
-					}	
+					// When done opening on non mini devices	
+					} else if (!mini && direction === 1) {
+						// Hide apps
+						Hiro.apps.el_root.style.display = 'none';						
+					}
 
 					// Set position to fixed to avoid browser forced body sideways scrolling (browser tries to reveal cursorpos)
 					Hiro.canvas.el_rails.style.position = (direction == 1) ? 'fixed' : 'absolute';									
@@ -6855,13 +6863,19 @@ var Hiro = {
 
 				// Fade in dialog
 				if (!this.open) Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
-					// Blurring is slooow on small mobile browsers, so don't do it
+					// Blurring is not seen on small browsers, so don't do it
 					if (Hiro.ui.mini()) return;
 
 					// Blur background
 					Hiro.ui.render(function(){
+						// Get browser specific property
 						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
-						Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(2px)';
+						// Filter last layer 3px
+						Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(3px)';
+						// Filter canvas 2 px
+						Hiro.canvas.el_root.style[filter] = Hiro.apps.el_root.style[filter]	= 'blur(2px)';
+						// Filter sidebar 1 px
+						Hiro.context.el_root.style[filter] = 'blur(1px)';										
 					});
 				});
 
@@ -6986,7 +7000,7 @@ var Hiro = {
 
 				Hiro.ui.render(function(){
 					// Reset filter CSS
-					if (Hiro.canvas.el_root.style[filter]) Hiro.canvas.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
+					if (Hiro.canvas.el_root.style[filter]) Hiro.canvas.el_root.style[filter] = Hiro.apps.el_root.style[filter] = Hiro.context.el_root.style[filter] =Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
 				})	
 
 				// Change visibility etc
