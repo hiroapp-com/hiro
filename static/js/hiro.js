@@ -518,6 +518,9 @@ var Hiro = {
 		el_text: document.getElementById('content'),	
 		el_quote: document.getElementById('nicequote'),
 
+		// DOM properties
+		width: function() { return Hiro.ui.width() - ((Hiro.ui.mini()) ? 0 : 50) },
+
 		// Key maps
 		keys_noset: [16,17,18,20,33,34,35,36,37,38,39,40],
 
@@ -5764,7 +5767,10 @@ var Hiro = {
 
 		// This values might change over time, thus we wrap it in anon functions
 		mini: function() { return (document.body.offsetWidth < 481) },
-		midi: function() { return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },			
+		midi: function() { return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },	
+
+		// MEasurements
+		width: function() { return document.documentElement.clientWidth || window.innerWidth },	
 
 		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
 		el_wastebin: document.getElementById('wastebin'),
@@ -6103,8 +6109,10 @@ var Hiro = {
 			if (direction == 1) Hiro.folio.paint(true);		
 
 			// Local vars
-			var // Make sure we always have 50px on the right, even on narrow devices
+			var mini = Hiro.ui.mini(),
+				// Make sure we always have 50px on the right, even on narrow devices
 				maxwidth = (document.body.offsetWidth - 50),
+				canvaswidth = Hiro.canvas.width();
 				distance = (maxwidth < this.slidewidth) ? maxwidth : this.slidewidth,
 				// Start value
 				x0 = this.slidepos,	
@@ -6116,7 +6124,6 @@ var Hiro = {
 				sd = slideduration || this.slideduration,
 				duration = sd / distance * Math.abs(dx),
 				start = Hiro.util.now(),
-				mini = Hiro.ui.mini(),
 				_this = this;	
 
 			// Set direction
@@ -6125,16 +6132,16 @@ var Hiro = {
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
 
-			// Special mini handling
-			if (mini && direction === 1) {
-				// Hide the apps
-				Hiro.apps.el_root.style.display = 'none';
+			// At the beginning of opening it
+			if (direction === 1) {
+				// Hide the apps on mini
+				if (mini) Hiro.apps.el_root.style.display = 'none';
 				// Set canvas to fixed with
-				Hiro.canvas.el_root.style.width = (document.documentElement.clientWidth || window.innerWidth) + 'px';
+				Hiro.canvas.el_root.style.width = canvaswidth + 'px';
 			// When starting to close on non-mini devices	
-			} else if (!mini && direction === -1) {
+			} else if (direction === -1) {
 				// Show apps again
-				Hiro.apps.el_root.style.display = 'block';						
+				if (!mini) Hiro.apps.el_root.style.display = 'block';						
 			}
 
 			// Easing function (quad), see 
@@ -6161,14 +6168,12 @@ var Hiro = {
 				} 
 
 				// Change DOM CSS values = Hiro.context.el_root.style.right
-				Hiro.canvas.el_rails.style.left = v + 'px';
+				Hiro.canvas.el_rails.style.left = v + 'px';		
 
 				// Cross browser non-mini
 				if (!mini) {
 					// document.documentElement.clientHeight || window.innerHeight;
-					Hiro.apps.el_root.style.right = (v*-1)+'px'					
-					// Change DOM CSS values = Hiro.context.el_root.style.right
-					Hiro.canvas.el_rails.style.right = ( v * - 1 ) + 'px'					
+					Hiro.apps.el_root.style.right = (v*-1)+'px'										
 				}
 					
 
@@ -6183,19 +6188,16 @@ var Hiro = {
 					// Set classname
 					Hiro.folio.el_root.className = (direction > 0) ? 'open' : 'closed';
 					// Reset ui (this would only be necessary in mini, but user might have changed orientation)mini ui
-					if (mini && direction === -1) {
-						// Display the apps again
-						Hiro.apps.el_root.style.display = 'block';	
+					if (direction === -1) {
 						// Reset with to relative one
-						Hiro.canvas.el_root.style.width = '100%';
+						Hiro.canvas.el_root.style.width = '100%';						
+						// Display the apps again
+						if (mini) Hiro.apps.el_root.style.display = 'block';	
 					// When done opening on non mini devices	
 					} else if (!mini && direction === 1) {
 						// Hide apps
 						Hiro.apps.el_root.style.display = 'none';						
-					}
-
-					// Set position to fixed to avoid browser forced body sideways scrolling (browser tries to reveal cursorpos)
-					Hiro.canvas.el_rails.style.position = (direction == 1) ? 'fixed' : 'absolute';									
+					}														
 				} else {
 					_this.slidetimer = requestAnimationFrame(step);
 				}	
