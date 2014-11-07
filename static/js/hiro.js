@@ -628,7 +628,7 @@ var Hiro = {
 				if (event.type == 'keydown') Hiro.util.stopEvent(event);
 
 				// Determine current cursor position & proper char
-				ccursor = Hiro.canvas.getcursor();
+				cursor = Hiro.canvas.getcursor();
 
 				// Set internal data and display
 				el.value = el.value.substr(0, cursor[0]) + '\t' + el.value.substr(c[1]);
@@ -678,7 +678,7 @@ var Hiro = {
 				if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
 
 				// Close menu on mini touches
-				if (Hiro.ui.touch && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
+				if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 
 			} else {
 
@@ -1317,16 +1317,8 @@ var Hiro = {
 
 				// Do it!
 				if (change)	{
-					// Close folio if it's open
-					if (Hiro.folio.open) {
-						Hiro.ui.slidefolio(-1,10,function() {
-							// Scroll right away
-							scroller.scrollTop += change;
-						});
-					} else {
-						// Scroll right away
-						scroller.scrollTop += change;
-					}	
+					// Scroll right away
+					scroller.scrollTop += change;						
 				}					
 
 				// Always save internal value
