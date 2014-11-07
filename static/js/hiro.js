@@ -435,7 +435,7 @@ var Hiro = {
 				source = 's';
 			// Set default values for user inited stuff	
 			} else {
-				note._lasteditor = user.c.uid;
+				note._lasteditor = note._owner = user.c.uid;
 				note._lastedit = Hiro.util.now();							
 			}				
 
@@ -3026,6 +3026,9 @@ var Hiro = {
 						note._lastedit = peer.last_edit;
 						note._lasteditor = peer.user.uid;
 					}
+
+					// Add owner
+					if (peer.role == 'owner') note._owner = peer.user.uid;
 				}	
 
 				// Save peer changes
