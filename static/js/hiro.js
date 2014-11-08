@@ -946,7 +946,10 @@ var Hiro = {
         		range.select();
     		} else {
     			el.focus();
-    		}	
+    		}
+
+    		// Disable force scroll Chrome does to make cursor visible
+    		if (Hiro.folio.open && Hiro.canvas.el_rails.scrollLeft)	Hiro.canvas.el_rails.scrollLeft = 0;
 		},
 
 		// Scroll note as far up as possible

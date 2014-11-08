@@ -486,12 +486,12 @@ input.error:focus {
   box-sizing: border-box; 
   left: 0;
   right: 0; 
-  top: 50px;
-  bottom: 0;  
+  top: 50px;  
+  overflow: hidden;
 }
 
 #canvas {
-  position: absolute;
+  position: relative;
   z-index: 2000;
   background: #fff;
   border-left: 1px solid #222; 
@@ -500,13 +500,11 @@ input.error:focus {
   box-shadow: 3px 3px 8px black;  
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 html.touch body #rails #canvas {
   border-bottom: 1px solid #222;  
   border-bottom-left-radius: 3px;  
-  overflow: visible;
 }
 
 #canvas input.title {  
