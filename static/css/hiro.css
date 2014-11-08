@@ -562,6 +562,8 @@ html.touch body #rails #canvas {
 html.ios body #rails #canvas textarea {
   margin-left: -3px;
   padding-right: 389px;
+  /* Needed for desktop browser pageup / pagedown cursor setting */
+  overflow: hidden;
 }
 
 
@@ -710,23 +712,18 @@ html.ios body #rails #canvas textarea {
   #rails {
     top: 0;
     margin-left: 0;
-  }
-
-  html.touch #rails {
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;     
-  }  
+  } 
 
   #canvas {
     border: none;       
   } 
 
   #canvas input.title {
-    padding: 9px 0 5px 95px;
+    padding: 9px 0 5px 47px;
     border: 0;
     font-size: 27px;
     background-color: transparent;
-    margin-left: -48px;
+    margin-right: 48px;
   } 
 
   #canvas textarea {
