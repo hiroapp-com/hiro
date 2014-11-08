@@ -43,7 +43,7 @@ def version():
 
 
 def home():
-    return render_template('hync_home.html', version=version())
+    return render_template('hync_home.html', version=version(), want_manifest=(not current_app.config['DEBUG']) )
 
 def crash():
     raise Exception("intended crash")
@@ -189,7 +189,7 @@ def change_plan():
 
 # Direct Templates
 def landing():
-    return render_template('hync_landing.html', want_manifest=(not current_app.config['DEBUG']), )  
+    return render_template('hync_landing.html')  
 
 def settings():
     return render_template('hync_settings.html')       

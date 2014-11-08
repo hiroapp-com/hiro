@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html {% if want_manifest %}manifest="/static/hiro.appcache"{%endif%}>
 	<head>
 		<meta charset="utf-8">
 	    <title>Hiro. Notes with Friends.</title>
@@ -48,7 +48,7 @@
 		<div id="rails">
 			<div id="canvas">	
 				<input class="title" id="title" value="">				
-				<textarea placeholder="Just write or paste things for later..." id="content"></textarea>
+				<textarea placeholder="Just write or paste things for later..." id="content" spellcheck="true"></textarea>
 				<div id="overlay"></div>			
 				<div id="nicequote">
 					<span class="quote">“One day I will find the right words, and they will be simple.”</span>
@@ -106,8 +106,8 @@
 					<div id="s_signup">
 						<a class="fb hirobutton" data-hiro-action="fbsignup">Sign-Up with{{ " " }}<b>Facebook</b></a>
 						<div class="divider"><span class="or">or</span></div>
-						<form action="javascript:void(0);">
-							<input type="email" placeholder="E-Mail or Phone" id="signup_mail"></input><div class="inputerror error"></div>				
+						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off">
+							<input type="email" placeholder="E-Mail or Phone" id="signup_mail" autocorrect="off"></input><div class="inputerror error"></div>				
 							<input type="password" placeholder="Choose a password"></input><div class="inputerror error"></div>	
 							<input type="submit" value="foo" onclick="Hiro.user.logio(event);" class="pseudobutton"></input>
 						</form>		
@@ -118,7 +118,7 @@
 					<div id="s_signin">
 						<a class="fb hirobutton" data-hiro-action="fblogin">Log-In with{{ " " }}<b>Facebook</b></a>
 						<div class="divider"><span class="or">or</span></div>
-						<form action="javascript:void(0);">
+						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off">
 							<input type="email" placeholder="E-Mail or Phone" id="signin_mail"></input><div class="inputerror error"></div>
 							<input type="password" placeholder="Password"></input><div class="inputerror error"></div>
 							<input type="submit" value="foo" onclick="Hiro.user.logio(event,true);" class="pseudobutton"></input>
@@ -128,7 +128,7 @@
 						<a class="small" data-hiro-action="requestpwdreset">Reset password</a><a class="small" data-hiro-action="switch_s_signup">Create an account</a>
 					</div>	
 					<div id="s_reset">
-						<form action="javascript:void(0);">
+						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off">
 							<input type="password" placeholder="New password" id="new_password"></input><div class="inputerror error"></div>
 							<input type="password" placeholder="Repeat password"></input><div class="error"></div>
 							<input type="submit" value="foo" onclick="Hiro.user.resetpwd();" class="pseudobutton"></input>

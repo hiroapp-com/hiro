@@ -935,8 +935,7 @@ var Hiro = {
 			if (typeof pos == 'number') pos = [pos,pos];
 
     		// Set the position    		
-    		if (el.setSelectionRange) {
-				el.focus();													
+    		if (el.setSelectionRange) {											
 				el.setSelectionRange(pos[0],pos[1]);																																		   									
     		} else if (el.createTextRange) {
         		var range = el.createTextRange();
@@ -1282,7 +1281,7 @@ var Hiro = {
 				if (currentposition == false || currentposition == this.cursortop) return;
 
 				// Get current viewport height
-				viewportheight = document.documentElement.clientHeight || window.innerHeight;			
+				viewportheight = Hiro.ui.height();			
 
 				// On touch devices, we half the viewportheight to stay above keyboards
 				if (Hiro.ui.touch) viewportheight = parseInt( viewportheight / 2);
@@ -5777,6 +5776,7 @@ var Hiro = {
 
 		// MEasurements
 		width: function() { return document.documentElement.clientWidth || window.innerWidth },	
+		height: function() { return document.documentElement.clientHeight || window.innerHeight },
 
 		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
 		el_wastebin: document.getElementById('wastebin'),
@@ -5895,10 +5895,7 @@ var Hiro = {
 				window.onpopstate = function(e) { Hiro.ui.history.goback(e) };			
 			} else {
 				Hiro.util.registerEvent(window,'popstate', function(e) { Hiro.ui.history.goback(e) });			
-			}
-
-			// Load landing page
-			this.landing.el_root.src = this.landing.url; 
+			}		 		
 
 			// Always load settings from server to determine contents and webserver availability
 			this.dialog.load();					
@@ -6381,6 +6378,9 @@ var Hiro = {
 			// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
 			// Whatever comes first to make sure it's bootstrapped properly
 			show: function() {
+				// Load landing page on first call
+				if (!this.inited) this.el_root.src = this.url;
+
 				// Make sure to set the show on init flag if the landing page is not loaded yet
 				this.showoninit = true;
 

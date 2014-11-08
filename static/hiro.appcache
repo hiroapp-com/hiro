@@ -13,7 +13,7 @@ CACHE:{{ "\n" }}
 /favicon.ico{{ "\n" }}
 /apple-touch-icon-precomposed.png{{ "\n" }}
 /og.png{{ "\n" }}
-/{{ "\n" }}
+/component/landing/{{ "\n" }}
 
 FALLBACK:{{ "\n" }}
 /note/ /offline/app.html{{ "\n" }}
@@ -21,9 +21,10 @@ FALLBACK:{{ "\n" }}
 NETWORK:{{ "\n" }}
 /component/settings/{{ "\n" }}
 /tokens/{{ "\n" }}
+/connect/facebook{{ "\n" }}
 /_cb/facebook{{ "\n" }}
 /settings/{{ "\n" }}
-/connect/facebook{{ "\n" }}
+/version{{ "\n" }}
 *{{ "\n" }}
 http://*{{ "\n" }}
 https://*
