@@ -1522,7 +1522,7 @@ var Hiro = {
 
 		// Returns array of links found in given string
 		extractlinks: function(string) {
-			var regex = /\b([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+){2,})|([a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+){1,}\/([\/!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})+)|(http(s)?:\/\/[a-zA-Z0-9-\.]+(\/([\/!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})*)*)\b/g ,
+			var regex = /(\bhttp(s)?:\/\/[a-zA-Z0-9-\.]+(\/([\/!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})*)*\b)|(\b[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+){1,}\/([\/!#$&-;=?-\[\]_a-z~]|%[0-9a-fA-F]{2})+\b)|(\b[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+){2,}\b)/g,
 				temparray, results = [];
 
 			// Go through the string incrementaly (automatically done by exec, as it considers lastIndex of previous loop)
