@@ -3263,7 +3263,22 @@ var Hiro = {
 			}
 
 			// Attach localstore change listener
-			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);			
+			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);	
+
+			// Attach application cache update events			
+			if (window.applicationCache) {
+				// Set shortcut to cache
+				Hiro.data.appcache.cache = window.applicationCache;
+
+				// Attaché!
+				Hiro.util.registerEvent(page.applicationCache,'updateready',Hiro.data.appcache.handler);
+				Hiro.util.registerEvent(page.applicationCache,'noupdate',Hiro.data.appcache.handler);	
+				Hiro.util.registerEvent(page.applicationCache,'cached',Hiro.data.appcache.handler);
+				Hiro.util.registerEvent(page.applicationCache,'error',Hiro.data.appcache.handler);											
+			// Release the cachelock	
+			} else {
+				Hiro.sync.cachelock = false;
+			}						
 		},		
 
 		// Load minimal data necessary for session if we didn't get one from the server
@@ -4932,7 +4947,7 @@ var Hiro = {
 				// Close handler
 				this.socket.onclose = function(e) {
 					// Log				
-					Hiro.sys.log('WebSocket closed with code ' + e.code + ' and ' + (e.reason || 'no reason given.'),[e,this.socket]);	
+					Hiro.sys.log('WebSocket closed with code ' + e.code + ' and ' + (e.reason || 'no reason given.'),[e,Hiro.sync.ws.socket]);	
 
 					// Switch to offline
 					Hiro.sync.goneoffline('sync');	
@@ -5863,7 +5878,8 @@ var Hiro = {
 				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);		
 
 				// Prevent scrolling from leaking
-				Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { event.stopPropagation(); });			
+				Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });			
+				Hiro.util.registerEvent(Hiro.canvas.el_rails,'scroll',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });			
 
 				// Set <html> classnames
 				Hiro.ui.render(function(){
@@ -6352,21 +6368,6 @@ var Hiro = {
 
 				// Set shortcut to landingpage
 				this.page = page;			
-
-				// Attach application cache update events			
-				if (window.applicationCache) {
-					// Set shortcut to cache
-					Hiro.data.appcache.cache = page.applicationCache;
-
-					// Attaché!
-					Hiro.util.registerEvent(page.applicationCache,'updateready',Hiro.data.appcache.handler);
-					Hiro.util.registerEvent(page.applicationCache,'noupdate',Hiro.data.appcache.handler);	
-					Hiro.util.registerEvent(page.applicationCache,'cached',Hiro.data.appcache.handler);
-					Hiro.util.registerEvent(page.applicationCache,'error',Hiro.data.appcache.handler);											
-				// Release the cachelock	
-				} else {
-					Hiro.sync.cachelock = false;
-				}	
 
 				// Set flag
 				this.inited = true;		
