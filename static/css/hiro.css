@@ -358,6 +358,14 @@ input.error:focus {
   cursor: default;
 }
 
+#folio .notes .note.active .archive {
+  display: block;
+}
+
+#folio .notes .note.active a .sharing {
+  opacity: 1;
+}
+
 #folio .notes .note a .notetitle {
   display: block;
   white-space: nowrap;

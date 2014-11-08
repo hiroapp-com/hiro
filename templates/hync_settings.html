@@ -84,7 +84,7 @@
 	<div class="checkoutdetails">	
 		<form action="javascript:void(0);">
 			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a data-hiro-action="changeplan">Change</a></div>
-			<input type="text" maxlength="22" placeholder="Credit Card Number" data-stripe="number"></input><div class="ioption"></div>
+			<input type="text"  pattern="[0-9]*" maxlength="22" placeholder="Credit Card Number" data-stripe="number"></input><div class="ioption"></div>
 			<input type="text" pattern="[0-9]*" placeholder="Month" class="small" title="Expiration Month" data-stripe="exp-month"></input> /
 			<input type="text" pattern="[0-9]*" placeholder="Year" class="small" title="Expiration Year" data-stripe="exp-year"></input>	
 			<input type="text" pattern="[0-9]*" placeholder="CVC" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc"></input>	
