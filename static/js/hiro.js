@@ -1294,7 +1294,7 @@ var Hiro = {
 				lowerbounds = lineheight * 3;				
 
 				// Select scroller
-				scroller = (Hiro.ui.touch) ? Hiro.canvas.el_rails : document.body;
+				scroller = (Hiro.ui.mini()) ? Hiro.canvas.el_rails : document.body;
 
 				// Get current DOM values
 				scrolltop = scroller.scrollTop;								

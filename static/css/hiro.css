@@ -494,13 +494,6 @@ input.error:focus {
   overflow: hidden;
 }
 
-html.touch body #rails {
-  bottom: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; 
-}
-
 #canvas {
   position: relative;
   z-index: 2000;
@@ -510,12 +503,12 @@ html.touch body #rails {
   border-top-left-radius: 3px;  
   box-shadow: 3px 3px 8px black;  
   width: 100%;
-  box-sizing: border-box;
+  box-sizing: border-box;  
 }
 
 html.touch body #rails #canvas {
   border-bottom: 1px solid #222;  
-  border-bottom-left-radius: 3px;  
+  border-bottom-left-radius: 3px;     
 }
 
 #canvas input.title {  
@@ -562,8 +555,8 @@ html.touch body #rails #canvas {
 html.ios body #rails #canvas textarea {
   margin-left: -3px;
   padding-right: 389px;
-  /* Needed for desktop browser pageup / pagedown cursor setting */
-  overflow: hidden;
+  /* Needed for touch devices left/right scroll quirk on very long textareas */
+  overflow: hidden;  
 }
 
 
@@ -714,7 +707,18 @@ html.ios body #rails #canvas textarea {
     margin-left: 0;
   } 
 
+  html.touch body #rails {
+    border: none;
+    border-radius: 3px;
+    bottom: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; 
+    background-color: #fff;    
+  }  
+
   #canvas {
+    background-color: none;
     border: none;       
   } 
 
