@@ -5863,7 +5863,7 @@ var Hiro = {
 				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);		
 
 				// Prevent scrolling from leaking
-				Hiro.util.registerEvent(Hiro.canvas.el_rails,'scroll',function(event) { event.stopPropagation(); });			
+				Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { event.stopPropagation(); });			
 
 				// Set <html> classnames
 				Hiro.ui.render(function(){
