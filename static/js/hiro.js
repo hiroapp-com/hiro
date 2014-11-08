@@ -1276,47 +1276,50 @@ var Hiro = {
 			// TODO Bruno: This can be optimized by combining it with the resize & scroll handlers, 
 			// thus only realigning if those values changed
 			aligncursor: function() {
-				var currentposition = this.getxy(), scroller, scrolltop, change, viewportheight, totalheight, bounds, lineheight;
+				var currentposition = this.getxy(), scroller, scrolltop, change, viewportheight, totalheight, upperbounds, lowerbounds, lineheight;
 
 				// If the cursor is the same, do nothing
 				if (currentposition == false || currentposition == this.cursortop) return;
 
 				// Get current viewport height
-				viewportheight = document.documentElement.clientHeight || window.innerHeight;
-				bounds = parseInt(viewportheight / 10);
+				viewportheight = document.documentElement.clientHeight || window.innerHeight;			
 
 				// On touch devices, we half the viewportheight to stay above keyboards
-				if (Hiro.ui.touch) viewportheight = parseInt( viewportheight / ((Hiro.ui.mini()) ? 2.5 : 2));
+				if (Hiro.ui.touch) viewportheight = parseInt( viewportheight / 2);
 
 				// Get current line height
 				lineheight = (Hiro.ui.mini()) ? 28 : 30;
 
+				// Assign the bounds to two lines
+				upperbounds = lineheight * 2;				
+				lowerbounds = lineheight * 3;				
+
 				// Select scroller
-				scroller = (Hiro.ui.touch) ? Hiro.canvas.el_rails : document.body;
+				scroller = document.body;
 
 				// Get current DOM values
-				scrolltop = scroller.scrollTop;				
-				
-				// If we are outside of upper bounds
-				if (currentposition < bounds) {		
+				scrolltop = scroller.scrollTop;								
+
+				// If we are outside of upper e
+				if (currentposition < upperbounds) {		
 					// If we are within the bounds of the upper end of the note
-					if (scrolltop - currentposition < bounds) {
+					if (scrolltop - currentposition < upperbounds) {
 						// Scroll all the way back to the top
 						change = scrolltop * -1;
 					// If we're somewhere in the note,						
 					} else {
 						// scroll relatively
-						change = (bounds - currentposition) * -1;	
+						change = (upperbounds - currentposition) * -1;	
 					} 
 				// Out of lower bounds	
-				} else if (currentposition > viewportheight - bounds) {
+				} else if (currentposition > viewportheight - lowerbounds) {
 					// Get the totalheight first
-					if (Hiro.canvas.cache._height - (scrolltop + viewportheight) < bounds) {
+					if (Hiro.canvas.cache._height - (scrolltop + viewportheight) < lowerbounds) {
 						change = 100;
 					// Otherwise
 					} else {
 						// Scroll down one line height
-						change = (currentposition - (viewportheight - bounds)); 
+						change = (currentposition - (viewportheight - lowerbounds)); 
 					}
 				}
 
