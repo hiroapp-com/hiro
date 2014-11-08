@@ -338,7 +338,7 @@ var Hiro = {
 				link.appendChild(s);		
 				
 				// Change classname
-				d.className = 'note shared';	
+				d.className += ' shared';	
 
 				// Append time indicator if someone else did the last update
 				if (note._lasteditor && note._lasteditor != Hiro.data.get('profile','c.uid')) {
