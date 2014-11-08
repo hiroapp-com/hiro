@@ -3271,10 +3271,10 @@ var Hiro = {
 				Hiro.data.appcache.cache = window.applicationCache;
 
 				// Attaché!
-				Hiro.util.registerEvent(page.applicationCache,'updateready',Hiro.data.appcache.handler);
-				Hiro.util.registerEvent(page.applicationCache,'noupdate',Hiro.data.appcache.handler);	
-				Hiro.util.registerEvent(page.applicationCache,'cached',Hiro.data.appcache.handler);
-				Hiro.util.registerEvent(page.applicationCache,'error',Hiro.data.appcache.handler);											
+				Hiro.util.registerEvent(window.applicationCache,'updateready',Hiro.data.appcache.handler);
+				Hiro.util.registerEvent(window.applicationCache,'noupdate',Hiro.data.appcache.handler);	
+				Hiro.util.registerEvent(window.applicationCache,'cached',Hiro.data.appcache.handler);
+				Hiro.util.registerEvent(window.applicationCache,'error',Hiro.data.appcache.handler);											
 			// Release the cachelock	
 			} else {
 				Hiro.sync.cachelock = false;
