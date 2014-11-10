@@ -4258,8 +4258,8 @@ var Hiro = {
 
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
-				// Load doc onto canvas
-				Hiro.canvas.load();					
+				// Load doc onto canvas, try current note per default so logins / session resets don't change notes
+				Hiro.canvas.load(Hiro.canvas.currentnote);					
 			// If the folio is still empty, we create a new note				
 			} else {
 				// Log
