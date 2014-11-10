@@ -268,6 +268,7 @@ input.error:focus {
   height: 50px;
   width: 50px; 
   z-index: 2200;  
+  cursor: pointer;
 }
 
 #showmenu .bubble {
@@ -279,7 +280,8 @@ input.error:focus {
 #newnote {
   display: inline-block;
   margin: 10px 0 0 50px;
-  padding: 6px 50px 6px 0;
+  padding: 6px 0 6px 0;
+  width: 290px;
 }
 
 #archivelist {
@@ -458,6 +460,10 @@ input.error:focus {
 }
 
 @media (max-width: 480px) {
+  #newnote {
+    width: 100%;
+  }
+
   #folio .notes {
     max-width: 295px;
     right: 57px;
