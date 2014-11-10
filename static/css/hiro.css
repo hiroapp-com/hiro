@@ -491,7 +491,16 @@ input.error:focus {
   left: 0;
   right: 0; 
   top: 50px;  
-  overflow: hidden;
+}
+
+
+
+#rails .shade {
+  position: absolute;
+  height: 50px;
+  top: -50px;
+  left: 290px;
+  right: 0;
 }
 
 #canvas {
@@ -711,11 +720,13 @@ html.ios body #rails #canvas textarea {
     border: none;
     border-radius: 3px;
     bottom: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
     -webkit-overflow-scrolling: touch; 
     background-color: #fff;    
-  }  
+  } 
+
+   #rails .shade {
+    display: none;
+  }
 
   #canvas {
     background-color: none;

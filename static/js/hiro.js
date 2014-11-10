@@ -748,7 +748,7 @@ var Hiro = {
 		},
 
 		// Load a note onto the canvas
-		load: function(id,preventhistory) {		
+		load: function(id,preventhistory,forcedreload) {		
 			// If we call load without id we just pick the doc on top of the folio
 			var folio = Hiro.data.get('folio','c'), note; 
 
@@ -775,6 +775,8 @@ var Hiro = {
 				id = folio[0].nid;
 				// Reset note
 				note = Hiro.data.get('note_' + id);
+				// Also always add history then
+				preventhistory = false;
 				// Log if we still fucked up
 				if (!note) Hiro.sys.error('FATAL: Could not load any note.',[id,folio]);				
 			}		
@@ -786,7 +788,7 @@ var Hiro = {
 			if (Hiro.ui.mini() && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);			
 
 			// Abort if we try to load the same note again	
-			if (id == this.currentnote) return;		
+			if (!forcedreload && id == this.currentnote) return;		
 
 			// Check if cache of previous note was saved
 			if (this.cache._changed) this.save();			
@@ -4259,7 +4261,7 @@ var Hiro = {
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
 				// Load doc onto canvas, try current note per default so logins / session resets don't change notes
-				Hiro.canvas.load(Hiro.canvas.currentnote);					
+				Hiro.canvas.load(Hiro.canvas.currentnote,false,true);					
 			// If the folio is still empty, we create a new note				
 			} else {
 				// Log
