@@ -556,9 +556,7 @@ var Hiro = {
 			if (id != 'title' && id != 'content') return;
 
 			// Route specific keyhandlers
-			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);	
-
-			console.log(event);		
+			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);		
 
 			// Check cache if values changed
 			if (cache[id] != source.value) {
