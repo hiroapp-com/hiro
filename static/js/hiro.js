@@ -1296,10 +1296,10 @@ var Hiro = {
 				lowerbounds = lineheight * 3;				
 
 				// Select scroller
-				scroller = (Hiro.ui.mini()) ? Hiro.canvas.el_rails : document.body;
+				scroller = (Hiro.ui.touch && Hiro.ui.mini()) ? Hiro.canvas.el_rails : document.body;
 
 				// Get current DOM values
-				scrolltop = scroller.scrollTop;								
+				scrolltop = scroller.scrollTop;							
 
 				// If we are outside of upper e
 				if (currentposition < upperbounds) {		
@@ -5883,7 +5883,6 @@ var Hiro = {
 
 				// Prevent scrolling from leaking
 				Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });			
-				Hiro.util.registerEvent(Hiro.canvas.el_rails,'scroll',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });			
 
 				// Set <html> classnames
 				Hiro.ui.render(function(){
@@ -5892,7 +5891,15 @@ var Hiro = {
 					// iOS Specifics (textarea indent)
 					if (Hiro.ui.ios) document.documentElement.className += ' ios';	
 				});								
-			}			
+			}	
+
+			// Fix browser quirk that allows very long textareas to scroll sideways by resetting them once they scroll. Same for body.
+			Hiro.util.registerEvent(Hiro.canvas.el_text,'scroll',function(event) { 
+				// Right the textarea
+				if (this.scrollLeft != 0) this.scrollLeft = 0; 
+				// Check if the body moved as well
+				if (document.body.scrollLeft != 0) document.body.scrollLeft = 0;
+			});
 
 			// Start hprogress on init
 			this.hprogress.init();	

@@ -496,7 +496,7 @@ input.error:focus {
   box-sizing: border-box; 
   left: 0;
   right: 0; 
-  top: 50px;  
+  top: 50px; 
 }
 
 
@@ -727,8 +727,16 @@ html.ios body #rails #canvas textarea {
     border-radius: 3px;
     bottom: 0;
     -webkit-overflow-scrolling: touch; 
-    background-color: #fff;    
+    background-color: #fff;  
+    /* Otherwise on touch devices the content is clipped and thus will never scroll, no idea why though as rails should size with content */
+    overflow-x: hidden; 
+    overflow-y: scroll; 
   } 
+
+  /* We set the border on bigger devices with the full path, so we also have to remove it this way */
+  html.touch body #rails #canvas {
+    border-bottom: none;   
+  }  
 
    #rails .shade {
     display: none;
@@ -741,7 +749,7 @@ html.ios body #rails #canvas textarea {
 
   #canvas input.title {
     padding: 9px 48px 5px 47px;
-    border: 0;
+    border: none;
     font-size: 27px;
     background-color: transparent;
   } 
