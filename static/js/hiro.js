@@ -556,10 +556,13 @@ var Hiro = {
 			if (id != 'title' && id != 'content') return;
 
 			// Route specific keyhandlers
-			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);			
+			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);	
+
+			console.log(event);		
 
 			// Check cache if values changed
 			if (cache[id] != source.value) {
+
 				// (Re)set cache values
 				cache[id] = source.value;
 				cache._changed = true;
@@ -4293,7 +4296,7 @@ var Hiro = {
 			if (store) ack = (data.tag == store._tag);
 
 			// If we had a proper error
-			if (data.remark && this.error(data)) return;
+			if (data.remark && this.error(data) && !data.changes) return;
 				
 			// Log edge cases
  			if (!store) {
