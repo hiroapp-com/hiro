@@ -3944,7 +3944,9 @@ var Hiro = {
 						break;				
 					case 'updateready':
 						// See if we have breaking changes by checking the current tag
-						Hiro.sys.versioncheck();									
+						Hiro.sys.versioncheck();	
+						// Always swap
+						Hiro.data.appcache.cache.swapCache();							
 						break;				
 					case 'cached':
 					case 'noupdate':

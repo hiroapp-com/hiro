@@ -723,11 +723,10 @@ html.ios body #rails #canvas textarea {
   } 
 
   #canvas input.title {
-    padding: 9px 0 5px 47px;
+    padding: 9px 48px 5px 47px;
     border: 0;
     font-size: 27px;
     background-color: transparent;
-    margin-right: 48px;
   } 
 
   #canvas textarea {
