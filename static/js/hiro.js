@@ -7296,7 +7296,8 @@ var Hiro = {
 						}	
 					},
 					error: function(req) {
-						Hiro.sys.error('Unable to load settings',req);
+						// Log server error
+						if (req.status == 500) Hiro.sys.error('Unable to load settings',req);
 					}
 				});					
 			},
