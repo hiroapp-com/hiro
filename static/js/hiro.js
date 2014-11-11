@@ -3713,21 +3713,17 @@ var Hiro = {
 				// Standard cases
 				store = 'Hiro.' + store;
 
-				// Get data
-				try {
-					// Fetch data
-					data = localStorage.getItem(store);	
-					// If we only need the string format
-					if (stringonly) return data;
-					// Otherwise parse
-					data = JSON.parse(data);						
-				} catch (e) {
-					Hiro.sys.error('Error retrieving data from localstore',e);		
-				}
+				// Fetch data
+				data = localStorage.getItem(store);	
+
+				// If we only need the string format
+				if (stringonly) return data;
+
+				// Otherwise parse
+				data = JSON.parse(data);						
 
 				// Abort if no data was returned at all;
 				if (!data) return undefined;
-
 
 				// Fetch key or return complete object
 				if (key && key.split('.').length) { 					
@@ -3740,20 +3736,15 @@ var Hiro = {
 			},
 
 			// Generic localstore writer, room for browser quirks
-			todisk: function(key,value) {
+			todisk: function(key,value,storeasis) {
 				// Extend key with custom namespace
 				key = 'Hiro.' + key.toString();
 
-				// Make sure we store only strings
-				if (typeof value != 'string') value = JSON.stringify(value);
+				// Always stringify the value unless we're 100% sure we're passing valid JSON
+				if (!storeasis) value = JSON.stringify(value);
 
-				// Write and log potential errors
-				try {
-					// Always stringify values
-					localStorage.setItem(key,value);
-				} catch(e) {		
-					Hiro.sys.error('Datastore error',e);
-				}	
+				// Always stringify values & store them
+				localStorage.setItem(key,value);
 			},
 
 			// Delete some or all data set by our host
@@ -3791,7 +3782,7 @@ var Hiro = {
 				}
 
 				// Save backup
-				this.todisk(store + '.backup',stash);
+				this.todisk(store + '.backup',stash,true);
 
 				// Report success
 				return true;
@@ -3799,7 +3790,7 @@ var Hiro = {
 
 			// Drop a backup for a specific store
 			dropstash: function(store) {
-				var contents = this.fromdisk(stash + '.backup');
+				var stash = this.fromdisk(store + '.backup',undefined,true);
 
 				// Check for contents
 				if (!stash) return false;
