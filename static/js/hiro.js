@@ -5098,8 +5098,15 @@ var Hiro = {
 				}
 
 				// Send reponse
-				if (success && obj.success) obj.success(response,data);
-				else if (obj.error) obj.error(response,data);
+				if (success && obj.success) {
+					// Execute response
+					obj.success(response,data);
+				} else if (obj.error) {
+					// Error handler
+					obj.error(response,data);
+					// Logging
+					Hiro.sys.log('XHR Error:',response,'warn')
+				}	
 
 				// Set internal status if applicable
 				if (!Hiro.sync.webonline && (success || this.alivecodes.indexOf(response.status) > -1) ) {
