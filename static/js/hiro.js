@@ -1362,8 +1362,7 @@ var Hiro = {
 				}													
 
 				// Create new range
-				// TODO Bruno: Make this cross browser
-				range = new Range();
+				range = ('createRange' in document) ? document.createRange() : new Range();
 
 				// Set start & end point
 				range.setStart(node,nodestartoffset);
