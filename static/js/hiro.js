@@ -3613,7 +3613,32 @@ var Hiro = {
 			saving: false,
 			timeout: null,
 			maxinterval: 3000,
-			dynamicinterval: 100,			
+			dynamicinterval: 100,	
+
+			// Make sure we can use localstorage (eg Private sessions on mobile throw an error on setItem)
+			resolve: function() {
+				var teststring = 'Hiro'; 
+
+				// If we already resolve it				
+				if (this.enabled != undefined) return this.enabled;
+
+				// Other wise write & read once
+				try {
+					// Set
+					localStorage.setItem(teststring, teststring);
+					// Get and see if we got the right data, set flag
+					if (teststring == localStorage.getItem(teststring)) this.enabled = true;
+					// Delete item
+					localStorage.removeItem(teststring);
+					// Return
+					return true;
+				} catch(e) {
+					// Set flag
+					Hiro.data.local.enabled = false
+					// Return false
+					return false;
+				}
+			},	
 
 			// Add messages to queue
 			tabtx: function(cmd, flush) {
@@ -3697,6 +3722,9 @@ var Hiro = {
 			fromdisk: function(store,key,stringonly) {
 				var data;
 
+				// Abort if we have no localstorage
+				if (this.enabled != true && !this.resolve()) return;
+
 				// In case we want all notes
 				if (store == '_allnotes') {
 					var notes = [], i , l = localStorage.length, k;
@@ -3737,6 +3765,9 @@ var Hiro = {
 
 			// Generic localstore writer, room for browser quirks
 			todisk: function(key,value,storeasis) {
+				// Abort if we have no localstorage
+				if (this.enabled != true && !this.resolve()) return;
+
 				// Extend key with custom namespace
 				key = 'Hiro.' + key.toString();
 
@@ -3749,6 +3780,9 @@ var Hiro = {
 
 			// Delete some or all data set by our host
 			wipe: function(store) {
+				// Abort if we have no localstorage
+				if (this.enabled != true && !this.resolve()) return;
+
 				// No store, remove all
 				if (!store) {
 					// Iterate through all localstorage items for current domain
