@@ -4294,7 +4294,7 @@ var Hiro = {
 			if (store) ack = (data.tag == store._tag);
 
 			// If we had a proper error
-			if (data.remark && this.error(data) && !data.changes) return;
+			if ((data.remark && this.error(data)) || !data.changes) return;
 				
 			// Log edge cases
  			if (!store) {
@@ -5513,7 +5513,9 @@ var Hiro = {
 			// Compare two strings and return standard delta format
 			delta: function(o,n) {
 				// Basic diff and cleanup
-				var d = this.dmp.diff_main(o, n);				
+				var d = this.dmp.diff_main(o, n);	
+
+				console.log('diiiiiiiiiiiifffffff',d)			
 
 				// Return patch and simple string format
 				return this.dmp.diff_toDelta(d);
