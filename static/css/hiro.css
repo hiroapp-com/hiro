@@ -324,7 +324,7 @@ input.error:focus {
   display: none;
 }
 
-#folio .notes .note:hover .archive, html.touch body #folio.open .notes .note .archive {
+#folio .notes .note:hover .archive, html.touch body #folio.open .notes .note .archive, #folio.open .notes .note.active .archive {
   display: block;
 }
 
