@@ -5170,6 +5170,14 @@ var Hiro = {
 			// The dmp instance we're using, created as callback when dmp script is loaded
 			dmp: null,
 
+			// Regex for Unicode characters beyond the 16-bit Basic Multilingual plane
+			// From https://mathiasbynens.be/notes/javascript-unicode
+			// Careful: Iterating like we do below has quirky behaviour in different browsers
+			// http://stackoverflow.com/questions/3827456/what-is-wrong-with-my-date-regex/3827500#3827500			
+			astral: /[\uD800-\uDBFF][\uDC00-\uDFFF]/,
+			// Unfortunately js doesn't let us construct a new regex with different flags from the one above
+			astralglobal: /[\uD800-\uDBFF][\uDC00-\uDFFF]/g,						
+
 			// Run diff over a specified store, create and add edits to edits array, mark store as unsaved
 			makediff: function(store) {
 				// Define vars
@@ -5296,7 +5304,7 @@ var Hiro = {
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
 					// Fill with dmp delta
-					delta.push({op: "delta-text", path: "", value: this.delta(note.s.text,note.c.text)});
+					delta.push({op: "delta-text", path: "", value: this.delta(note.s.text,note.c.text,true)});
 					// Synchronize c/s text
 					note.s.text = note.c.text;
 					// Retrieve peer
@@ -5510,15 +5518,41 @@ var Hiro = {
 				return delta;
 			},
 
-			// Compare two strings and return standard delta format
-			delta: function(o,n) {
+			// Wrapper for dmp, compare two strings and return standard delta format
+			// Optionally convert javascript weirdo count to proper rune length
+			delta: function(oldstring,newstring,utf8count) {
 				// Basic diff and cleanup
-				var d = this.dmp.diff_main(o, n);	
+				var diffs = this.dmp.diff_main(oldstring, newstring), delta,
+					actions, i, l, counter;	
 
-				console.log('diiiiiiiiiiiifffffff',d)			
+				// Get delta
+				delta = this.dmp.diff_toDelta(diffs);
+
+				// Check if we have a relevant UTF16 char (eg Emoji) in old or new text
+				if (utf8count && this.astral.test(oldstring + newstring)) {
+					// Reopen delta
+					actions = delta.split('\t');
+
+					// Go through diffs
+					for ( i = 0, l = diffs.length; i < l; i++ ) {				
+						// Do not change addings ('+') at all 
+						if (diffs[i][0] == 1) continue;
+
+						// If it's a different type (DIFF EQUAL or DIFF DELETE) and contains an Emoji
+						if (this.astral.test(diffs[i][1])) {
+							// Count the occurences
+							counter = diffs[i][1].match(this.astralglobal).length;						
+							// Rewrite the respective action item by subtracting the respective rune count
+							actions[i] = actions[i].charAt(0) + ( parseInt(actions[i].substring(1)) - counter );
+						}	
+					}
+
+					// Put delta back together
+					delta = actions.join('\t');
+				}			
 
 				// Return patch and simple string format
-				return this.dmp.diff_toDelta(d);
+				return delta;
 			},
 
 			// Apply a patch to a specific note 
