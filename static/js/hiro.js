@@ -3607,7 +3607,9 @@ var Hiro = {
 			// Localstorage best messaging to other tabs, we want to make sure this only gets send 
 			// after the respective store changes, which might be delayed by the writer timeout
 			msgqueue: [],
+
 			// Internals
+			enabled: undefined,
 			saving: false,
 			timeout: null,
 			maxinterval: 3000,
@@ -3620,11 +3622,11 @@ var Hiro = {
 				this.msgqueue.push(cmd);
 
 				// persist sent flush command, all other ressources synced
-				if (flush && window.localStorage) {
+				if (flush) {
 					// Loop through message
 					while (this.msgqueue.length) {
 						// Send
-						localStorage.setItem('Hiro.notify', this.msgqueue[0]);
+						this.todisk('notify', this.msgqueue[0]);
 						// Remove element;
 						this.msgqueue.shift();
 					}	
@@ -3692,7 +3694,7 @@ var Hiro = {
 			},
 
 			// Request data from persistence layer
-			fromdisk: function(store,key) {
+			fromdisk: function(store,key,stringonly) {
 				var data;
 
 				// In case we want all notes
@@ -3713,7 +3715,11 @@ var Hiro = {
 
 				// Get data
 				try {
+					// Fetch data
 					data = localStorage.getItem(store);	
+					// If we only need the string format
+					if (stringonly) return data;
+					// Otherwise parse
 					data = JSON.parse(data);						
 				} catch (e) {
 					Hiro.sys.error('Error retrieving data from localstore',e);		
@@ -3724,7 +3730,7 @@ var Hiro = {
 
 
 				// Fetch key or return complete object
-				if (key && key.split('.').length > 0) { 
+				if (key && key.split('.').length) { 					
 					return Hiro.data.deepget(data,key);
 				} else if (key && data[key]) {
 					return data[key];
@@ -3738,10 +3744,13 @@ var Hiro = {
 				// Extend key with custom namespace
 				key = 'Hiro.' + key.toString();
 
+				// Make sure we store only strings
+				if (typeof value != 'string') value = JSON.stringify(value);
+
 				// Write and log potential errors
 				try {
 					// Always stringify values
-					localStorage.setItem(key,JSON.stringify(value));
+					localStorage.setItem(key,value);
 				} catch(e) {		
 					Hiro.sys.error('Datastore error',e);
 				}	
@@ -3770,19 +3779,19 @@ var Hiro = {
 			// Quickcopy a certain store
 			// TODO Bruno: Compare performance/storage tradeoffs between this and de-/serializing and only storing shadow & version numbers
 			stash: function(store) {
-				var s = localStorage.getItem('Hiro.' + store) || JSON.stringify(Hiro.data.stores[store]);
+				var stash = this.fromdisk(store,undefined,true) || Hiro.data.stores[store];
 
 				// Check for contents
-				if (!s) {
+				if (!stash) {
 					// Log
-					Hiro.sys.log('Unable to stash store',[store,s],'warn');
+					Hiro.sys.log('Unable to stash store',[store,stash],'warn');
 
 					// Abort
 					return false;
 				}
 
 				// Save backup
-				localStorage.setItem('Hiro.' + store + '.backup',s);
+				this.todisk(store + '.backup',stash);
 
 				// Report success
 				return true;
@@ -3790,13 +3799,13 @@ var Hiro = {
 
 			// Drop a backup for a specific store
 			dropstash: function(store) {
-				var s = localStorage.getItem('Hiro.' + store + '.backup');
+				var contents = this.fromdisk(stash + '.backup');
 
 				// Check for contents
-				if (!s) return false;
+				if (!stash) return false;
 
 				// Delete backup
-				localStorage.removeItem('Hiro.' + store + '.backup')
+				this.wipe(store + '.backup')
 
 				// Report success
 				return true;
