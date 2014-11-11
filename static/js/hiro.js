@@ -5522,37 +5522,41 @@ var Hiro = {
 			// Optionally convert javascript weirdo count to proper rune length
 			delta: function(oldstring,newstring,utf8count) {
 				// Basic diff and cleanup
-				var diffs = this.dmp.diff_main(oldstring, newstring), delta,
-					actions, i, l, counter;	
+				var diffs = this.dmp.diff_main(oldstring, newstring), delta;	
 
 				// Get delta
 				delta = this.dmp.diff_toDelta(diffs);
 
 				// Check if we have a relevant UTF16 char (eg Emoji) in old or new text
-				if (utf8count && this.astral.test(oldstring + newstring)) {
-					// Reopen delta
-					actions = delta.split('\t');
-
-					// Go through diffs
-					for ( i = 0, l = diffs.length; i < l; i++ ) {				
-						// Do not change addings ('+') at all 
-						if (diffs[i][0] == 1) continue;
-
-						// If it's a different type (DIFF EQUAL or DIFF DELETE) and contains an Emoji
-						if (this.astral.test(diffs[i][1])) {
-							// Count the occurences
-							counter = diffs[i][1].match(this.astralglobal).length;						
-							// Rewrite the respective action item by subtracting the respective rune count
-							actions[i] = actions[i].charAt(0) + ( parseInt(actions[i].substring(1)) - counter );
-						}	
-					}
-
-					// Put delta back together
-					delta = actions.join('\t');
-				}			
+				if (utf8count && this.astral.test(oldstring + newstring)) return this.normalizeutf(delta,diffs,-1);			
 
 				// Return patch and simple string format
 				return delta;
+			},
+
+			//  
+			normalizeutf: function(delta,diffs,change) {
+				var actions, i, l, counter;
+
+				// Reopen delta
+				actions = delta.split('\t');
+
+				// Go through diffs
+				for ( i = 0, l = diffs.length; i < l; i++ ) {				
+					// Do not change addings ('+') at all 
+					if (diffs[i][0] == 1) continue;
+
+					// If it's a different type (DIFF EQUAL or DIFF DELETE) and contains an Emoji
+					if (this.astral.test(diffs[i][1])) {
+						// Count the occurences
+						counter = diffs[i][1].match(this.astralglobal).length * change;						
+						// Rewrite the respective action item by subtracting the respective rune count
+						actions[i] = actions[i].charAt(0) + ( parseInt(actions[i].substring(1)) + counter );
+					}	
+				}
+
+				// Put delta back together
+				return actions.join('\t');
 			},
 
 			// Apply a patch to a specific note 
@@ -5569,7 +5573,7 @@ var Hiro = {
             	} 
             	catch(e) {
             		Hiro.sys.error('Something went wrong during patching:',e);
-            	}	         	       	
+            	}	        	       	
 
             	// Apply
                 if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
