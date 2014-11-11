@@ -6730,7 +6730,7 @@ var Hiro = {
 			},
 
 			// Abort current touchy session if we leave target DOM area
-			boundschecker: function() {
+			boundschecker: function(event) {
 				// Get the DOM element the cursor is moving to
 				var target = event.relatedTarget || event.toElement;
 				// If we mouseout to the same or a contained DOM node do nothing				
