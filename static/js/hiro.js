@@ -6738,8 +6738,8 @@ var Hiro = {
 				if ((event.type == 'mousedown' || event.type == 'mouseup') && (button != 1 || event.touches)) return;				
 
 				// Properly define x/y: screen (mouseup/down), event.touches[0] (tocuhstart) or last know touch pos (touchend)
-				x = (event.screenX >= 0) ? event.screenX : ((event.touches.length > 0) ? event.touches[0].screenX : that.touchx); 
-				y = (event.screenY >= 0) ? event.screenY : ((event.touches.length > 0) ? event.touches[0].screenY : that.touchy);																		
+				x = (event.screenX >= 0) ? event.screenX : ((event.changedTouches && event.changedTouches.length > 0) ? event.changedTouches[0].screenX : event.clientX); 
+				y = (event.screenY >= 0) ? event.screenY : ((event.changedTouches && event.changedTouches.length > 0) ? event.changedTouches[0].screenY : event.clientY);																		
 				
 				// Stop events from propagating beyond our scope
 				event.stopPropagation();
