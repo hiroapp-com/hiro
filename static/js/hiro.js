@@ -935,17 +935,24 @@ var Hiro = {
 			pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
 
 			// Create array if we only got a number
-			if (typeof pos == 'number') pos = [pos,pos];
+			if (typeof pos == 'number') pos = [pos,pos];		
 
+			// If we don't have any content yet
+			if (!el.value) {
+				// Just focus
+				el.focus();
     		// Set the position    		
-    		if (el.setSelectionRange) {											
+    		} else if (el.setSelectionRange) {		
+    			// Best method, if available
 				el.setSelectionRange(pos[0],pos[1]);																																		   									
     		} else if (el.createTextRange) {
+    			// Fallback on textrange
         		var range = el.createTextRange();
         		range.collapse(true);
         		range.moveEnd('character', pos[0]);
         		range.moveStart('character', pos[1]);
         		range.select();
+        	// Default fallback	
     		} else {
     			el.focus();
     		}
@@ -5665,7 +5672,6 @@ var Hiro = {
 				var newrange;
 
 				// Do not reset if it's not active
-				// TODO Bruno: But move our own old cursor position?
 				if (!document.activeElement || document.activeElement.id != 'content') return;
 
 				// Do not compute if changes occur after our position
