@@ -3492,43 +3492,49 @@ var Hiro = {
 
 		// Remove all synced data, this happens if we get new session data
 		cleanup: function(newfoliolength) {
-			var i, l, f = this.get('folio','c'), c = this.get('profile','c.contacts'), note;
+			var i, l, folio = this.get('folio'), notelist, contacts = this.get('profile','c.contacts'), note;
 
 			// Only cleanup if we got something to cleanup
-			if (!f) return;
+			if (!folio || !folio.c) return;
+
+			// Assign notelist reference
+			notelist = folio.c;
 
 			// Iterate through all folio docs
-			for (i = f.length - 1; i >= 0; i--) {
+			for (i = notelist.length - 1; i >= 0; i--) {
 				// Handle unsynced notes
-				if (f[i].nid.length == 4) {
+				if (notelist[i].nid.length == 4) {
 					// Fetch note
-					note = this.get('note_' + f[i].nid,'c');
+					note = this.get('note_' + notelist[i].nid,'c');
 
 					// Keep unsynced notes that have distinctive values, or if we'd remove the very last
-					if ((newfoliolength == 0 && f.length == 1) || (note.text || note.title || note.peers.length > 0))  continue;
+					if ((newfoliolength == 0 && notelist.length == 1) || (note.text || note.title || note.peers.length > 0))  continue;
 				}	
 
 				// Update state arrays
-				if (this.unsaved.indexOf('note_' + f[i].nid) > -1) this.unsaved.splice(this.unsaved.indexOf('note_' + f[i].nid),1);			
-				if (this.unsynced.indexOf('note_' + f[i].nid) > -1) this.unsynced.splice(this.unsynced.indexOf('note_' + f[i].nid),1);				
+				if (this.unsaved.indexOf('note_' + notelist[i].nid) > -1) this.unsaved.splice(this.unsaved.indexOf('note_' + notelist[i].nid),1);			
+				if (this.unsynced.indexOf('note_' + notelist[i].nid) > -1) this.unsynced.splice(this.unsynced.indexOf('note_' + notelist[i].nid),1);				
 
 				// Delete synced notes
-				this.destroy('note_' + f[i].nid);
+				this.destroy('note_' + notelist[i].nid);
 
 				// Remove this entry from folio
-				f.splice(i,1);
+				notelist.splice(i,1);
 			}
+
+			// Empty folio edit stack without saving it yet
+			if (folio.edits && folio.edits.length) folio.edits = [];
 
 			// Delete any local backup
 			this.local.wipe('folio.backup');			
 
 			// Remove contacts
-			for (i = c.length - 1; i >= 0; i--) {
+			for (i = contacts.length - 1; i >= 0; i--) {
 				// Do not cleanup unsynced contacts
-				if (!c[i].uid) continue;
+				if (!contacts[i].uid) continue;
 
 				// Remove this entry from contacts
-				c.splice(i,1);
+				contacts.splice(i,1);
 			}			
 		},
 
