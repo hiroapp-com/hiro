@@ -3492,50 +3492,54 @@ var Hiro = {
 
 		// Remove all synced data, this happens if we get new session data
 		cleanup: function(newfoliolength) {
-			var i, l, folio = this.get('folio'), notelist, contacts = this.get('profile','c.contacts'), note;
+			var i, l, folio = this.get('folio'), notelist = this.get('folio','c'), note,
+			profile = this.get('profile'), contacts = this.get('profile','c.contacts');
 
-			// Only cleanup if we got something to cleanup
-			if (!folio || !folio.c) return;
+			// Only cleanup if we got notes to cleanup
+			if (notelist) {
+				// Iterate through all folio docs
+				for (i = notelist.length - 1; i >= 0; i--) {
+					// Handle unsynced notes
+					if (notelist[i].nid.length == 4) {
+						// Fetch note
+						note = this.get('note_' + notelist[i].nid,'c');
 
-			// Assign notelist reference
-			notelist = folio.c;
+						// Keep unsynced notes that have distinctive values, or if we'd remove the very last
+						if ((newfoliolength == 0 && notelist.length == 1) || (note.text || note.title || note.peers.length > 0))  continue;
+					}	
 
-			// Iterate through all folio docs
-			for (i = notelist.length - 1; i >= 0; i--) {
-				// Handle unsynced notes
-				if (notelist[i].nid.length == 4) {
-					// Fetch note
-					note = this.get('note_' + notelist[i].nid,'c');
+					// Update state arrays
+					if (this.unsaved.indexOf('note_' + notelist[i].nid) > -1) this.unsaved.splice(this.unsaved.indexOf('note_' + notelist[i].nid),1);			
+					if (this.unsynced.indexOf('note_' + notelist[i].nid) > -1) this.unsynced.splice(this.unsynced.indexOf('note_' + notelist[i].nid),1);				
 
-					// Keep unsynced notes that have distinctive values, or if we'd remove the very last
-					if ((newfoliolength == 0 && notelist.length == 1) || (note.text || note.title || note.peers.length > 0))  continue;
-				}	
+					// Delete synced notes
+					this.destroy('note_' + notelist[i].nid);
 
-				// Update state arrays
-				if (this.unsaved.indexOf('note_' + notelist[i].nid) > -1) this.unsaved.splice(this.unsaved.indexOf('note_' + notelist[i].nid),1);			
-				if (this.unsynced.indexOf('note_' + notelist[i].nid) > -1) this.unsynced.splice(this.unsynced.indexOf('note_' + notelist[i].nid),1);				
-
-				// Delete synced notes
-				this.destroy('note_' + notelist[i].nid);
-
-				// Remove this entry from folio
-				notelist.splice(i,1);
+					// Remove this entry from folio
+					notelist.splice(i,1);
+				}				
 			}
 
 			// Empty folio edit stack without saving it yet
-			if (folio.edits && folio.edits.length) folio.edits = [];
+			if (folio && folio.edits && folio.edits.length) folio.edits = [];
 
 			// Delete any local backup
 			this.local.wipe('folio.backup');			
 
-			// Remove contacts
-			for (i = contacts.length - 1; i >= 0; i--) {
-				// Do not cleanup unsynced contacts
-				if (!contacts[i].uid) continue;
+			// If we have any contacts
+			if (contacts) {
+				// Remove contacts
+				for (i = contacts.length - 1; i >= 0; i--) {
+					// Do not cleanup unsynced contacts
+					if (!contacts[i].uid) continue;
 
-				// Remove this entry from contacts
-				contacts.splice(i,1);
-			}			
+					// Remove this entry from contacts
+					contacts.splice(i,1);
+				}	
+			}
+
+			// Empty folio edit stack without saving it yet
+			if (profile && profile.edits && profile.edits.length) profile.edits = [];					
 		},
 
 		// Remove Note from memory & localstorage
