@@ -3976,7 +3976,12 @@ var Hiro = {
 				// Switch 
 				switch (event.type) {
 					case 'error':
-						Hiro.sys.error('Appcache error: ' + event.message,event);
+						// Only log errors, the heavy stuff should be picked up by Rollbar
+						Hiro.sys.log('Appcache error: ' + event.message,event,'warn');
+						// Try again manually in 30 secs
+						setTimeout(function(){
+							Hiro.data.appcache.update();
+						},30000);
 						break;				
 					case 'updateready':
 						// See if we have breaking changes by checking the current tag
@@ -4842,7 +4847,7 @@ var Hiro = {
 					Hiro.sys.log('Received new login token ' + data.token);	
 
 					// Request new session via session handler
-					Hiro.data.tokens.add({ id: data.token, action: 'anon'})													                    
+					Hiro.data.tokens.add({ id: data.token, action: 'login'})													                    
 				},
 				error: function(req,data) {	
 		        	// Logging
