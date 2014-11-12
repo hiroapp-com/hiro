@@ -545,7 +545,7 @@ var Hiro = {
 			Hiro.ui.hover.attach(this.el_root,Hiro.canvas.canvastouch,55);	
 
 			// When a user touches the white canvas area
-			Hiro.ui.fastbutton.attach(this.el_root,Hiro.canvas.canvasclick);					
+			Hiro.ui.fastbutton.attach(this.el_root,Hiro.canvas.canvasclick);				
 		},
 
 		// Poor man FRP stream
@@ -3260,7 +3260,7 @@ var Hiro = {
 
 				// Connect to server
 				Hiro.sync.connect();
-			// Start without session & landing page
+			// Start without session & show landing page
 			} else {
 				// Show landing page contents
 				Hiro.ui.landing.show();
@@ -3268,6 +3268,9 @@ var Hiro = {
 				// End progress
 				Hiro.ui.hprogress.done();					
 			}
+
+			// Size canvas to 100% of viewport if we don't have a note yet
+			if (!Hiro.canvas.currentnote) Hiro.canvas.resize();
 
 			// Attach localstore change listener
 			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);							
@@ -3325,7 +3328,6 @@ var Hiro = {
 					// Delete message right away but in seperate stack. 
 					Hiro.data.local.wipe('notify');
 				}
-				console.log(event);
 			// Check that it'S not our initial testkey to determine localStorage availability
 			} else if (event.key != "Hiro") {
 				// Write changes
@@ -6040,7 +6042,7 @@ var Hiro = {
 				if (this.scrollLeft != 0) this.scrollLeft = 0; 
 				// Check if the body moved as well
 				if (document.body.scrollLeft != 0) document.body.scrollLeft = 0;
-			});
+			});				
 
 			// Start hprogress on init
 			this.hprogress.init();	
