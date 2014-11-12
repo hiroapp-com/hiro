@@ -166,7 +166,7 @@ var Hiro = {
 							return;
 						}	
 
-						// Move entry to top of list and load note
+						// Load note
 						Hiro.canvas.load(noteid);												
 				}				
 			}
@@ -810,7 +810,7 @@ var Hiro = {
 			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
 			// Build canvas with basic values 
-			this.build();	
+			this.paint();	
 
 			// And set the cursor
 			this.setcursor();
@@ -847,7 +847,7 @@ var Hiro = {
 		},
 
 		// Rebuild the canvas from cache
-		build: function() {	
+		paint: function() {	
 			// Set document title
 			if (!Hiro.ui.tabby.active) document.title = this.cache.title || this.cache.content.substring(0,30) || 'New Note';
 
@@ -3558,7 +3558,7 @@ var Hiro = {
 						Hiro.canvas.cache.title = n.c.title;
 						Hiro.canvas.cache.content = n.c.text;
 						// Always rebuild the canvas in this case
-						Hiro.canvas.build();
+						Hiro.canvas.paint();
 					}	
 					// Always repaint folio
 					Hiro.folio.paint();
@@ -4037,6 +4037,9 @@ var Hiro = {
 		committimeout: undefined,
 		latency: 100,
 
+		// Saved messages that made it all the way to send but couldn't be sent for technical reasons
+		buffer: [],
+
 		// Lock thats released by appcache noupdate event
 		cachelock: true,
 
@@ -4134,39 +4137,43 @@ var Hiro = {
 
 		// Send message to server
 		tx: function(data) {
-			var sid = Hiro.data.get('profile','c.sid');
+			var sid = Hiro.data.get('profile','c.sid'), i, l;
 
-			// If function was called erroneously 
-			if (!data) return;			
+			// See if we have any data
+			if (data) {
+				// If we got a single message, wrap in array
+				if (!(data instanceof Array)) data = [ data ];	
 
-			// Make sure we always send an array
-			if (!(data instanceof Array)) data = [ data ];			
-
-			for (var i=0,l=data.length;i<l;i++) {	
-				// Make sure no empty or null/undefined messages get sent
-				if (!data[i]) continue;
-
-				// Add timestamp
-				this.lastsend = Hiro.util.now();	
-
-				// Enrich data object with sid (if we have one) & tag
-				// if (!data[i].sid && sid) data[i].sid = sid;		
-
-				// Add tag fallback		
-				if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);	
-			}
+				// Inspect all messages in data payload
+				for (var i=0,l=data.length;i<l;i++) {	
+					// Add tag fallback		
+					if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);	
+				}	
+				
+				// Concat it to buffer
+				this.buffer = this.buffer.concat(data);			
+			}							
 
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
 				// Check socket integrity
-				if (this.ws.socket.readyState != 1) {
+				if (this.ws.socket.readyState == 1) {
+					// Send off
+					this.ws.socket.send(JSON.stringify(this.buffer));	
+					// Empty buffer
+					this.buffer = [];				
+					// Reset timestamp
+					this.lastsend = Hiro.util.now();					
+				// No 'all clear' received
+				} else {	
 					// Log 
-					Hiro.sys.error('Tried to send data over WebSocket while readyState was ' + this.ws.socket.readyState + 'aborting send',this.ws.socket)
-					// TODO Bruno: Check if this is a more common issue and if yes treat it better than lost packet
-					return;
+					Hiro.sys.log('Tried to send data over WebSocket while readyState was ' + this.ws.socket.readyState + ', buffering...',[this.ws.socket,this.buffer],'warn')
+					// Set retry
+					setTimeout(function(){
+						// Fire it in case we still have a buffer
+						if (Hiro.sync.buffer.length) Hiro.sync.tx();
+					},5000)				
 				}
-				// Send off
-				this.ws.socket.send(JSON.stringify(data));
 			} else if (this.protocol == 'lp') {
 				this.lp.send(JSON.stringify(data));				
 			} else {
@@ -4227,6 +4234,9 @@ var Hiro = {
 
 			// Remove all synced data
 			Hiro.data.cleanup(data.session.folio.val.length);
+
+			// Clear out buffer
+			this.buffer = [];
 
 			// Create new blank profile object
 			sp = data.session.profile; 
@@ -4748,10 +4758,10 @@ var Hiro = {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (this.resetting || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;								
+			if (this.resetting || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;		
 
-			// Start building commit
-			newcommit = [];				
+			// Create array
+			newcommit = [];									
 
 			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
 			for (i = u.length - 1; i > -1; i--) {
