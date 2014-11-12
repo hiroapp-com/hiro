@@ -3289,7 +3289,12 @@ var Hiro = {
 			Hiro.folio.newnote();			
 
 			// Make sure we send another setstage to other tabs
-			Hiro.ui.render(function(){Hiro.ui.setstage();}); 
+			Hiro.ui.render(function(){
+				Hiro.ui.setstage();
+			}); 
+
+			// And also load the first note in other tabs
+			Hiro.data.local.tabtx('Hiro.canvas.load();');			
 
 			// Log
 			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
@@ -3299,7 +3304,7 @@ var Hiro = {
 		// Detect changes to localstorage for all connected tabs
 		// All browser should fire this event if a different window/tab writes changes
 		localchange: function(event) {
-			var fn;
+			var fn, string;
 			// IE maps the event to window
 			event = event || window.event;
 
@@ -3307,23 +3312,25 @@ var Hiro = {
 			if (Hiro.ui.focus) return;
 
 			// Receive a message and execute it
-			if (event.key == 'Hiro.notify') {			
+			if (event.key == 'Hiro.notify') {
+				// Extract command string	
+				command = JSON.parse(event.newValue);	
 				// Eval
-				if (event.newValue) {				
+				if (command) {				
 					// Create anon function from string
-					fn = new Function(event.newValue);
+					fn = new Function(command);
 					// Execute						
-					fn();
-				}	
-				// Delete message right away but in seperate stack. 
-				// This is pretty bugg yon multiple browser, leave it out for now. Kerckhoffs ftw!
-				// Hiro.data.local.wipe('notify');
-				// Aborting to prevent erroneous write
-				return;
-			}
-
-			// Write changes
-			if (event.newValue) Hiro.data.set(event.key.split('.')[1],'',JSON.parse(event.newValue),'l',true);	
+					fn();					
+				} else {
+					// Delete message right away but in seperate stack. 
+					Hiro.data.local.wipe('notify');
+				}
+				console.log(event);
+			// Check that it'S not our initial testkey to determine localStorage availability
+			} else if (event.key != "Hiro") {
+				// Write changes
+				if (event.newValue) Hiro.data.set(event.key.split('.')[1],'',JSON.parse(event.newValue),'l',true);
+			}	
 		},
 
 		// Set local data
