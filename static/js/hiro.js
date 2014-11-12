@@ -809,8 +809,11 @@ var Hiro = {
 			// Mount me reference
 			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
 
-			// Repaint canvas and set cursor
-			this.paint(true);	
+			// Build canvas with basic values 
+			this.build();	
+
+			// And set the cursor
+			this.setcursor();
 
 			// Scroll to top of note
 			Hiro.canvas.totop();			
@@ -843,22 +846,16 @@ var Hiro = {
 			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);	
 		},
 
-		// Paint canvas from cache
-		paint: function(setcursor) {
-			// Make sure we have a current note
-			var c = this.cache, d;					
+		// Rebuild the canvas from cache
+		build: function() {	
+			// Set document title
+			if (!Hiro.ui.tabby.active) document.title = this.cache.title || this.cache.content.substring(0,30) || 'New Note';
 
-			Hiro.ui.render(function(){
-				// Set title & text
-				if (!Hiro.ui.tabby.active) document.title = c.title || c.content.substring(0,30) || 'New Note';
-				Hiro.canvas.el_title.value = c.title || 'Title';
-						
-				// Set text		
-				if (Hiro.canvas.el_text.value != c.content) Hiro.canvas.el_text.value = c.content;	
-
-				// Set cursor (this should not fire on mobiles as it's called from a new requestanimationframe stack)
-				if (setcursor) Hiro.canvas.setcursor();																		
-			});								
+			// Set canvas title
+			Hiro.canvas.el_title.value = this.cache.title || 'Title';
+					
+			// Set text		
+			if (Hiro.canvas.el_text.value != this.cache.content) Hiro.canvas.el_text.value = this.cache.content;																									
 		},
 
 		// Resize textarea to proper height
@@ -929,7 +926,8 @@ var Hiro = {
 			var el = this.el_text;
 
 			// Never set focus in moving or open folio on touch devices (pulls up keyboard)
-			if (!force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1)) return;			
+			// Also ignore setcursor as long was the landing page wasn't loaded (which removes cursor on most mobile platforms)
+			if (!force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1)) return;	
 
 			// Set default value
 			pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
@@ -944,7 +942,7 @@ var Hiro = {
     		// Set the position    		
     		} else if (el.setSelectionRange) {		
     			// Best method, if available
-				el.setSelectionRange(pos[0],pos[1]);																																		   									
+				el.setSelectionRange(pos[0],pos[1]);																																	   									
     		} else if (el.createTextRange) {
     			// Fallback on textrange
         		var range = el.createTextRange();
@@ -3272,22 +3270,7 @@ var Hiro = {
 			}
 
 			// Attach localstore change listener
-			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);	
-
-			// Attach application cache update events			
-			if (window.applicationCache) {
-				// Set shortcut to cache
-				Hiro.data.appcache.cache = window.applicationCache;
-
-				// Attaché!
-				Hiro.util.registerEvent(window.applicationCache,'updateready',Hiro.data.appcache.handler);
-				Hiro.util.registerEvent(window.applicationCache,'noupdate',Hiro.data.appcache.handler);	
-				Hiro.util.registerEvent(window.applicationCache,'cached',Hiro.data.appcache.handler);
-				Hiro.util.registerEvent(window.applicationCache,'error',Hiro.data.appcache.handler);											
-			// Release the cachelock	
-			} else {
-				Hiro.sync.cachelock = false;
-			}						
+			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);							
 		},		
 
 		// Load minimal data necessary for session if we didn't get one from the server
@@ -3574,8 +3557,8 @@ var Hiro = {
 						// Update cache
 						Hiro.canvas.cache.title = n.c.title;
 						Hiro.canvas.cache.content = n.c.text;
-						// Paint the canvas
-						Hiro.canvas.paint();
+						// Always rebuild the canvas in this case
+						Hiro.canvas.build();
 					}	
 					// Always repaint folio
 					Hiro.folio.paint();
@@ -3980,7 +3963,35 @@ var Hiro = {
 
 		// Appcache stuff
 		appcache: {
+			// Reference to cache
 			cache: undefined,
+
+			// Flags
+			inited: false,
+
+			// Setup
+			init: function(mountpoint) {
+				// Don't init twice
+				if (this.inited) return;
+
+				// Check if platform supports application cache
+				if (window.applicationCache) {
+					// Set shortcut to cache
+					this.cache = mountpoint.applicationCache;
+
+					// Attaché!
+					Hiro.util.registerEvent(this.cache,'updateready',Hiro.data.appcache.handler);
+					Hiro.util.registerEvent(this.cache,'noupdate',Hiro.data.appcache.handler);	
+					Hiro.util.registerEvent(this.cache,'cached',Hiro.data.appcache.handler);
+					Hiro.util.registerEvent(this.cache,'error',Hiro.data.appcache.handler);	
+				}
+															
+				// Release the cachelock	
+				Hiro.sync.cachelock = false;
+
+				// Finish
+				this.inited = true;
+			},		
 
 			// Check for new appcache
 			update: function() {
@@ -4552,7 +4563,7 @@ var Hiro = {
 							// Set values
 							store.s.title = store.c.title = Hiro.canvas.cache.title = ops[j].value;
 							// Repaint note if it's the current
-							if (store.id == Hiro.canvas.currentnote) Hiro.canvas.paint();							
+							if (store.id == Hiro.canvas.currentnote) Hiro.canvas.el_title.value = ops[j].value;							
 							update = true;
 							break;
 						// Update text if it's a text update							
@@ -6171,16 +6182,16 @@ var Hiro = {
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
-			var t = Hiro.data.get('profile','c.tier');
+			var currenttier = Hiro.data.get('profile','c.tier');
 
 			// If the stage setting was triggered by another tab
-			Hiro.ui.landing.hide();
+			if (this.landing.visible) this.landing.hide();
 
 			// if we want to set it to existing tier, abort
-			if (tier && tier == t) return;
+			if (tier && tier == currenttier) return;
 
 			// Set tier if none is provided 
-			tier = tier || t || 0; 			
+			tier = tier || currenttier || 0; 			
 
 			// Send tier setting to other tabs
 			Hiro.data.local.tabtx('Hiro.ui.setstage(' + tier + ',true);');
@@ -6189,7 +6200,7 @@ var Hiro = {
 			switch (tier) {
 				case 0:
 					// Set styles at bottom of folio
-					Hiro.ui.render(function(){
+					this.render(function(){
 						Hiro.ui.el_signin.style.display = 'block';
 						Hiro.ui.el_settings.style.display = Hiro.ui.el_archive.style.display = 'none';
 					})				
@@ -6197,7 +6208,7 @@ var Hiro = {
 				case 1:
 				case 2:	
 					// Set styles at bottom of folio				
-					Hiro.ui.render(function(){
+					this.render(function(){
 						Hiro.ui.el_signin.style.display = 'none';
 						Hiro.ui.el_settings.style.display = Hiro.ui.el_archive.style.display = 'block';
 					})									
@@ -6476,9 +6487,9 @@ var Hiro = {
 		// Landing page specific stuff
 		landing: {
 			// Internal flags
-			inited: false,
-			showoninit: false,
-			visible: false,			
+			inited: undefined,
+			showoninit: undefined,
+			visible: undefined,			
 			url: '/component/landing/',	
 
 			// DOM links
@@ -6491,7 +6502,10 @@ var Hiro = {
 				if (this.inited) return;
 
 				// Set shortcut to landingpage
-				this.page = page;			
+				this.page = page;	
+
+				// Send page object to appcache init
+				Hiro.data.appcache.init(page);		
 
 				// Set flag
 				this.inited = true;		
@@ -6503,8 +6517,9 @@ var Hiro = {
 			// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
 			// Whatever comes first to make sure it's bootstrapped properly
 			show: function() {
+				var frame;
 				// Load landing page on first call
-				if (!this.inited) this.el_root.src = this.url;
+				if (!this.inited) this.load();	
 
 				// Make sure to set the show on init flag if the landing page is not loaded yet
 				this.showoninit = true;
@@ -6522,19 +6537,34 @@ var Hiro = {
 				Hiro.ui.fastbutton.attach(this.page.document.documentElement,Hiro.ui.landing.click);						
 			},
 
+			// Fetch landing page from server
+			load: function() {
+				// Create a new frame object
+				frame = document.createElement('iframe');
+
+				// Set src
+				frame.src = this.url;
+
+				// Append to DOM
+				this.el_root.appendChild(frame);
+			},
+
 			// Remove it completely
 			hide: function() {
 				// Check if user did this while on landing page
 				if (this.visible) {
 					// Fade out landing page element
-					Hiro.ui.fade(this.el_root,-1,150);		
+					Hiro.ui.fade(this.el_root,-1,150);	
+				// Happened on init		
 				} else {
 					// Remove overlay instantly
-					this.el_root.style.display = 'none';	
-				}
+					this.el_root.style.display = 'none';
+					// Load it anyway for appcache, set the cursor on mobiles
+					this.load();	
+				}	
 
-				// Set the flag
-				this.visible = false;						
+				// Set the flag first (needed by the load beneath)
+				this.visible = false;									
 			},
 
 			// Handle clicks on landingpage
