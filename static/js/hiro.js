@@ -4011,6 +4011,9 @@ var Hiro = {
 		synconline: false,
 		webonline: false,
 
+		// Do not send & receive while we reset session
+		resetting: false,
+
 		// Init sync
 		init: function(ws_url) {
 			// Check if we got Websocket support, might need refinement
@@ -4303,7 +4306,10 @@ var Hiro = {
 
 				// Do
 				Hiro.folio.newnote();			
-			}				
+			}	
+
+			// If we were resetting, reenable sync
+			if (this.resetting) this.resetting = false;			
 
 			// Reset UI
 			Hiro.ui.setstage();		
@@ -4326,8 +4332,8 @@ var Hiro = {
 			// Set ack
 			if (store) ack = (data.tag == store._tag);
 
-			// If we had a proper error
-			if ((data.remark && this.error(data)) || !data.changes) return;
+			// If we had a proper error or are resetting atm
+			if (this.resetting || (data.remark && this.error(data)) || !data.changes) return;
 				
 			// Log edge cases
  			if (!store) {
@@ -4709,7 +4715,7 @@ var Hiro = {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (!this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;								
+			if (this.resetting || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;								
 
 			// Start building commit
 			newcommit = [];				
@@ -4820,11 +4826,14 @@ var Hiro = {
 		reset: function() {
 			var sid = Hiro.data.get('profile','c.sid');
 
+			// Disable further data processing
+			this.resetting = true;
+
         	// Logging
 			Hiro.sys.error('Local session fucked up beyond repair, requesting new login token to reset session ' + sid,Hiro.data.stores);		
 
 			// Send request to backend
-			Hiro.sync.ajax.send({
+			this.ajax.send({
 				url: '/tokens/login',
 				type: 'POST',
 				payload: { sid: sid },
@@ -4837,7 +4846,9 @@ var Hiro = {
 				},
 				error: function(req,data) {	
 		        	// Logging
-					Hiro.sys.error('Unable to fetch new login token',req);                 		                    						                    
+					Hiro.sys.error('Unable to fetch new login token',req); 
+					// Enable retriggering of reset
+					Hiro.sync.resetting = false;           		                    						                    
 				}										
 			});	
 		},
