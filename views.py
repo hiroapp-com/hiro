@@ -57,8 +57,8 @@ def login():
     sess = Session.load(sid) if sid else None
     if sess:
         # session-renew requested
-        # TODO check if SID is still valid/renewable
-        # TODO invalidate and shut down old session
+        # we ignore sess.status because a terminated session can be used to re-create a new login-token
+        sess.terminate()
         return jsonify(token=sess.user.token('login'))
 
     pwd, email, phone = request.json.get('password'), request.json.get('email'), request.json.get('phone')
@@ -136,7 +136,7 @@ def set_pwd():
         return jsonify_err(403, password='Missing data, cannot set password.')
 
     sess = Session.load(sid) if sid else None
-    if not sess:
+    if not sess or not sess.is_valid():
         return jsonify_err(403, password='Invalid Session')
     if not sess.user:
         return jsonify_err(403, password='User not found.')
@@ -179,7 +179,7 @@ def change_plan():
     if not all([sid, plan]):
         return jsonify_err(400, error='Something went wrong on our side, please try again later.')
     sess = Session.load(sid)
-    if not sess:
+    if not sess or not sess.is_valid():
         return jsonify_err(403, error=sid)    
     err = sess.user.change_plan(plan, token)
     if err:

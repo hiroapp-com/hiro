@@ -372,22 +372,39 @@ class User(object):
 
 
 class Session(object):
+    LIFETIME = datetime.timedelta(days=60)
     def __init__(self, sid):
         self.sid = sid
         self.user = None
+        self.status = None
 
     @classmethod
     def load(cls, sid):
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("select uid from sessions where sid = %s", (sid,))
+        cur.execute("select uid, status from sessions where sid = %s AND created_at > %s", (sid, datetime.datetime.now() - Session.LIFETIME))
         row = cur.fetchone()
         if not row:
             return None
         sess = cls(sid)
         sess.user = User.load(row[0])
+        sess.status = row[1]
         conn.close()
         return sess
+
+    def is_valid(self):
+        return self.status == 'active'
+
+    def terminate(self):
+        if not self.sid:
+            return
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("UPDATE sessions SET status = 'terminated' WHERE sid = %s", (self.sid, ))
+        cur.close()
+        conn.commit()
+        conn.close()
+
 
 def tokenhistory_add(token, uid):
     conn = get_db()
