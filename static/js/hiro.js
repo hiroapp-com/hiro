@@ -3995,10 +3995,10 @@ var Hiro = {
 					Hiro.util.registerEvent(this.cache,'noupdate',Hiro.data.appcache.handler);	
 					Hiro.util.registerEvent(this.cache,'cached',Hiro.data.appcache.handler);
 					Hiro.util.registerEvent(this.cache,'error',Hiro.data.appcache.handler);	
+				} else {
+					// Release the cachelock	
+					Hiro.sync.cachelock = false;
 				}
-															
-				// Release the cachelock	
-				Hiro.sync.cachelock = false;
 
 				// Finish
 				this.inited = true;
@@ -4023,6 +4023,8 @@ var Hiro = {
 						},30000);
 						break;				
 					case 'updateready':
+						// Engage cachelock (at least until we got confirmation from Flask that we still use the current version)
+						Hiro.sync.cachelock = true;					
 						// See if we have breaking changes by checking the current tag
 						Hiro.sys.versioncheck();	
 						// Always swap
@@ -5905,11 +5907,13 @@ var Hiro = {
 		versioncheck: function(version) {
 
 			// First version to be submitted will be stored in js for this browser session (most likely sys.init() will be first)
-			// Log this at the same time
-			if (!Hiro.version) Hiro.sys.log('Current version is ' + (Hiro.version = version))
-					
+			if (!Hiro.version) 
+				// Set it
+				Hiro.version = version;
+				// Log it
+				Hiro.sys.log('Current version is ' + version)
 			// If a version was provided and the versions match	
-			if (version && version.split('-')[0] && version.split('-')[0] == Hiro.version.split('-')[0]) {
+			} else if (version && version.split('-')[0] && version.split('-')[0] == Hiro.version.split('-')[0]) {
 				// Release the lock	immediately
 				Hiro.sync.cachelock = false;	
 			// Fetch a new one from server		
@@ -5919,17 +5923,17 @@ var Hiro = {
 					url: '/version',
 					success: function(req,data) {
 						// Compare & see if theres something to do
-						if (data.version.split('-')[0] == currentversion.split('-')[0]) {
+						if (data.version.split('-')[0] == Hiro.version.split('-')[0]) {							
 							// Release lock	
-							Hiro.sync.cachelock = false;	
+							Hiro.sync.cachelock = false;								
 						} else {
 							// Log
 							Hiro.sys.log('Update to ' + data.version + ' available.')
 							// Show modal
-							Hiro.ui.dialog.showmessage('update',true);
-							// Save
-							Hiro.data.local.todisk('version',data.version);								
-						}						
+							Hiro.ui.dialog.showmessage('update',true);														
+						}
+						// Always safe version for next browser session start
+						Hiro.data.local.todisk('version',data.version);																			
 					}
 				});
 			}
