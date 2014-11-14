@@ -3210,7 +3210,9 @@ var Hiro = {
 
 				// Load internal values
 				this.unsynced = this.local.fromdisk('unsynced');
-				Hiro.version = this.local.fromdisk('version');
+
+				// Check for updated version
+				Hiro.sys.versioncheck(this.local.fromdisk('version'));
 
 				// Add tokens via tokens.add();
 				if (t && t.length) {
@@ -5901,31 +5903,15 @@ var Hiro = {
 		// Takes a version nr and compares it to what we have. 
 		// If we have a new git tag, indicated by a change in the version string before first '-'
 		versioncheck: function(version) {
-			var currentversion = Hiro.data.get('version');
 
-			// Log
-			Hiro.sys.log('Current version is ' + (currentversion || ' not yet set'));			
-
-			// If we didn't have a version at all yet
-			if (!currentversion) {
-				// Set
-				Hiro.version = version;
-				// Save
-				Hiro.data.local.todisk('version',version);
-				// Release
-				Hiro.sync.cachelock = false;				
-			// If a version was provided	
-			} else if (version) {
-				// Compare & show modal
-				if (version.split('-')[0] && version.split('-')[0] != currentversion.split('-')[0]) {
-					// Force update
-					Hiro.ui.dialog.showmessage('update',true)
-					// Save
-					Hiro.data.local.todisk('version',version);					
-				} else {
-					// Release lock	
-					Hiro.sync.cachelock = false;
-				}	
+			// First version to be submitted will be stored in js for this browser session (most likely sys.init() will be first)
+			// Log this at the same time
+			if (!Hiro.version) Hiro.sys.log('Current version is ' + (Hiro.version = version))
+					
+			// If a version was provided and the versions match	
+			if (version && version.split('-')[0] && version.split('-')[0] == Hiro.version.split('-')[0]) {
+				// Release the lock	immediately
+				Hiro.sync.cachelock = false;	
 			// Fetch a new one from server		
 			} else {
 				// Get current version
