@@ -470,6 +470,10 @@ input.error:focus {
     width: auto;
   }
 
+  html.touch body #folio .notes .note .archive {
+    display: block;
+  }  
+
   #folio .footer {
     max-width: 340px;
     padding-right: 55px;

@@ -6287,6 +6287,7 @@ var Hiro = {
 					break;
 				case 1:
 				case 2:	
+				case 3:
 					// Set styles at bottom of folio				
 					this.render(function(){
 						Hiro.ui.el_signin.style.display = 'none';
@@ -7216,7 +7217,7 @@ var Hiro = {
 			// Fill data into settings dialog & and other preparations
 			update: function() {
 				var user = Hiro.data.get('profile','c'), fields = this.el_settings.getElementsByTagName('input'), d,
-					plans = ['Anonymous','Basic','Advanced'];
+					plans = ['Anonymous','Basic','Advanced','Pro'];
 
 				// Abort here if user is not signed up yet or settings dialog is not loaded
 				if (!(user.tier > 0) || fields.length < 3) return;
@@ -7498,7 +7499,7 @@ var Hiro = {
 
 				// Set all buttons to display none & reset content first
 				for (i=0,l=buttons.length;i<l;i++) {
-					if (buttons[i].className.indexOf('red') > -1) buttons[i].innerHTML = "Downgrade";		
+					if (buttons[i].className.indexOf('light') > -1) buttons[i].innerHTML = "Downgrade";		
 					buttons[i].style.display = 'none';			
 				}
 
