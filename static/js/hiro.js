@@ -2225,6 +2225,8 @@ var Hiro = {
 			                    Hiro.user.checkout.active = false;	
 			                    // Show "Thank you!" dialog
 			                    Hiro.ui.dialog.showmessage('upgrade')	
+			                    // Ping store
+			                    Hiro.sync.ping('profile');
 								// Clean up form 
 								button.textContent = 'Upgrade';	
 								// Log respective event
