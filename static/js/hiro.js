@@ -146,7 +146,7 @@ var Hiro = {
 						if (Hiro.ui.touch) Hiro.canvas.setcursor(0,true);					
 						break;
 					case 'archivelink':				
-						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; more</em>');
+						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('archiveswitch');
 						break;							
 					case 'settings':
 						Hiro.ui.dialog.show('d_settings','s_account','',true);
@@ -156,7 +156,7 @@ var Hiro = {
 						if (target.className == 'archive') {
 							// Abort if user doesn't have archive yet
 							if (tier < 2) {
-								Hiro.ui.dialog.suggestupgrade('<em>Upgrade now to </em><b>archive notes</b><em> &amp; more</em>');	
+								Hiro.ui.dialog.suggestupgrade('archivenote');	
 								return;							
 							}
 							// Directly set status
@@ -412,7 +412,7 @@ var Hiro = {
 
 			// If the user itself created the note but doesn't have the necessary tier yet
 			if (Hiro.folio.owncount > 10 && user.c.tier < 2) {
-				Hiro.ui.dialog.suggestupgrade('<em>Upgrade now for </em><b>unlimited notes</b><em> &amp; more</em>');
+				Hiro.ui.dialog.suggestupgrade('unlimitednotes');
 				return;
 			}	
 
@@ -2282,8 +2282,7 @@ var Hiro = {
 						// UI Stuff
 	                    Hiro.ui.setstage(data.tier);	
 	                    Hiro.user.checkout.active = false;	
-		                Hiro.ui.dialog.hide();	                    
-	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);	                 	
+		                Hiro.ui.dialog.hide();	                    	                 	
 
 						// Log respective event
 						Hiro.user.track.logevent('Downgraded',{
@@ -7108,6 +7107,12 @@ var Hiro = {
 				}				
 			},
 
+			upgradereasons: {
+				archiveswitch: '<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; more</em>',
+				archivenote: '<em>Upgrade now to </em><b>archive notes</b><em> &amp; more</em>',
+				unlimitednotes: '<em>Upgrade now for </em><b>unlimited notes</b><em> &amp; more</em>'
+			},
+
 			// Open dialog
 			show: function(container, section, focus, close, showmessage) {
 				// Never override messages that are sticky
@@ -7164,7 +7169,7 @@ var Hiro = {
 					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;	
 
 					// Log respective event
-					Hiro.user.track.logevent('Opened ' + container.substring(2) + ' dialog');																		
+					Hiro.user.track.logevent('Opened ' + container.substring(2) + ' dialog ' + this.currentmessage);																		
 				})	
 
 				// Hide folio
@@ -7537,6 +7542,8 @@ var Hiro = {
 					el_checkout = document.getElementById('s_checkout'),
 					els_header = that.el_root.getElementsByClassName('tease');
 
+
+
 				// For anon user simply show login
 				if (!Hiro.data.get('profile','c.uid') || Hiro.data.get('profile','c.tier') < 1) {
 					this.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
@@ -7549,7 +7556,7 @@ var Hiro = {
 				// Render changes
 				Hiro.ui.render(function(){
 					// Set header
-					els_header[0].innerHTML = els_header[1].innerHTML = reason;
+					els_header[0].innerHTML = els_header[1].innerHTML = that.upgradereasons[reason];
 					// Set CSS class
 					el_plans.className = el_checkout.className = 'teaser';	
 					// Open dialog		
