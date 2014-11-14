@@ -5907,7 +5907,7 @@ var Hiro = {
 		versioncheck: function(version) {
 
 			// First version to be submitted will be stored in js for this browser session (most likely sys.init() will be first)
-			if (!Hiro.version) 
+			if (!Hiro.version) {
 				// Set it
 				Hiro.version = version;
 				// Log it
