@@ -5631,15 +5631,15 @@ var Hiro = {
 				delta = this.dmp.diff_toDelta(diffs);
 
 				// Check if we have a relevant UTF16 char (eg Emoji) in old or new text
-				if (utf8count && this.astral.test(oldstring + newstring)) return this.normalizeutf(delta,diffs,-1);			
+				if (utf8count && this.astral.test(oldstring + newstring)) return this.utf16delta(delta,diffs);			
 
 				// Return patch and simple string format
 				return delta;
 			},
 
-			//  
-			normalizeutf: function(delta,diffs,change) {
-				var actions, i, l, counter;
+			// Correct the char count in js, see https://mathiasbynens.be/notes/javascript-unicode
+			utf16delta: function(delta,diffs) {
+				var actions, i, l, runecounter, change = -1;
 
 				// Reopen delta
 				actions = delta.split('\t');
@@ -5652,9 +5652,9 @@ var Hiro = {
 					// If it's a different type (DIFF EQUAL or DIFF DELETE) and contains an Emoji
 					if (this.astral.test(diffs[i][1])) {
 						// Count the occurences
-						counter = diffs[i][1].match(this.astralglobal).length * change;						
+						runecounter = diffs[i][1].match(this.astralglobal).length * change;						
 						// Rewrite the respective action item by subtracting the respective rune count
-						actions[i] = actions[i].charAt(0) + ( parseInt(actions[i].substring(1)) + counter );
+						actions[i] = actions[i].charAt(0) + ( parseInt(actions[i].substring(1)) + runecounter );
 					}	
 				}
 
@@ -5662,12 +5662,83 @@ var Hiro = {
 				return actions.join('\t');
 			},
 
+
+			// Correct the ja char count for incoming deltas, see https://mathiasbynens.be/notes/javascript-unicode
+			utf16patch: function(delta,text) {
+				var actions, command, i, l, cursor = 0, runecount, string, tokens, n, change = 1;
+
+				// Open delta
+				actions = delta.split('\t');
+
+				// Go through delta actions
+				for ( i = 0, l = actions.length; i < l; i++ ) {		
+					// Use the leading char, but only extract it once	
+					command = actions[i].charAt(0);	
+
+					// Ignore additions (we only check the old text, so the additions don't need to move the cursor)
+					if (command == '+') continue;
+
+					// If its an equal or removal command
+					if (command == '-' || command == '=') {
+						// Get the length of changes
+						n = parseInt(actions[i].substring(1));
+
+						// Get the string, plus one extra char in case the rune is at the last pos
+						string = text.substring(cursor, cursor + n + 1);
+
+						// Runes have!
+						if (this.astral.test(string)) {
+							// Use runecount helper, using a string that's up to twice as long 
+							runecount = this.runecount(text.substring(cursor, cursor + n * 2),n); 
+							// We had a rune, build new action
+							actions[i] = command + (n + (runecount * change));
+							// Move the cursor for each rune
+							cursor += runecount;
+						}	
+
+						// Iterate the cursor
+						cursor += n;						
+					}	
+				}
+
+				// Put delta back together
+				return actions.join('\t');
+			},		
+
+			// Provide a string of up to twice the length we're looking for, count runes until we reach this point
+			runecount: function(string,length) {
+				var i, l, cursor = runecount = 0, tokens;
+
+				// Generate tokens
+				tokens = string.split(this.astralglobal);
+
+				// Go through tokens
+				for  (i = 0, l = tokens.length; i < l; i++ ) {
+					// Add the token length to the cursor
+					cursor += tokens[i].length;	
+					// If we already reached the desired length, abort loop
+					if (cursor >= length) break;
+					// Count a rune 
+					runecount++;
+					// And move the cursor one char
+					cursor++;
+					// If we already reached the desired length, abort loop
+					if (cursor >= length) break;
+				}
+
+				// Return the value
+				return runecount;
+			},	
+
 			// Apply a patch to a specific note 
 			patch: function(delta,id) {
 				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor, oldcache;
 
 				// Time start
 				start = Date.now();
+
+				// Check if the current shadow holds an emoji
+				if (this.astral.test(n.s.text)) delta = this.utf16patch(delta,n.s.text);
 
             	// Build diffs from the server delta
             	try { 
