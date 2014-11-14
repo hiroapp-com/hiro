@@ -2276,10 +2276,14 @@ var Hiro = {
 	                type: "POST",
 	                payload: subscription,
 					success: function(req,data) {
+	                    // Ping store
+	                    Hiro.sync.ping('profile');	   
+
+						// UI Stuff
 	                    Hiro.ui.setstage(data.tier);	
 	                    Hiro.user.checkout.active = false;	
 		                Hiro.ui.dialog.hide();	                    
-	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);		
+	                    Hiro.ui.statusflash('green','Downgraded, sorry to see you go.',true);	                 	
 
 						// Log respective event
 						Hiro.user.track.logevent('Downgraded',{
