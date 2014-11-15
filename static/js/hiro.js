@@ -1565,6 +1565,8 @@ var Hiro = {
 		// Internals
 		authinprogress: false,	
 
+		// Token cache
+
 		// Grab registration form data, submit via XHR and process success / error
 		// The Login and Register screens and flows are pretty much the same, 
 		// we only have to decide which DOM branch we use in the first line
@@ -1848,7 +1850,8 @@ var Hiro = {
 			var root = document.getElementById('s_reset'),
 				inputs = root.getElementsByTagName('input'),
 				error = root.getElementsByClassName('mainerror')[0],
-				button = root.getElementsByClassName('hirobutton')[0];
+				button = root.getElementsByClassName('hirobutton')[0],
+				payload, newlinkstring = 'Send new link';
 
 			// Clear error first
 			error.textContent = '';	
@@ -1865,8 +1868,41 @@ var Hiro = {
 				inputs[1].focus();				
 			// Yay, new password have	
 			} else {
+				// Placeholder activity
 				button.textContent = 'Changing password...';
-				//TODO Bruno: Post this properly...
+				// Build payload
+				payload = {};
+				// Get sid
+				payload.sid = Hiro.data.get('profile','c.sid');
+				// Get token
+				payload.token = Hiro.data.tokens.resetpwdtoken;
+				// Add new password
+				payload.new_pwd = inputs[0].value;				
+				// Send request to backend
+				Hiro.sync.ajax.send({
+					url: '/settings/setpwd',
+					type: "POST",
+		            payload: payload,
+					success: function(req,data) {
+						// Hide dialog
+						Hiro.ui.dialog.hide();															                    
+					},
+					error: function(req,data) {		
+						// Reset DOM, most likely token expired
+		               	if (req.status == 403) {
+		               		// Error
+							error.textContent = "Your password reset link expired, please request a new one.";
+							// Button
+							button.textContent = newlinkstring;
+		               	// Something else went wrong, let'S try again later
+		               	} else {
+		               		// Error
+							error.textContent = "Something went wrong on our side, please try again later.";
+							// Button
+							button.textContent = 'Try again';							
+		               	}	                 		                    						                    
+					}
+				});
 			}
 				
 		},
@@ -3872,6 +3908,9 @@ var Hiro = {
 			// Collection of token objects, properties are id, optional action and url
 			bag: [],
 
+			// Cache
+			resetpwdtoken: undefined,
+
 			// Add a token
 			add: function(token) {
 				var i, l, folio;
@@ -3933,8 +3972,10 @@ var Hiro = {
 					Hiro.sync.createsession(token.id);
 					// Show new password overlay if it's a reset request
 					if (token.action == 'reset') {
-						// Make sure create session doesn't close it rigfht away
+						// Make sure create session doesn't close it right away
 						Hiro.ui.dialog.onclose = 'prevent';
+						// Copy token for Flask consumption
+						this.resetpwdtoken = token.id;
 						// Show it
 						Hiro.ui.dialog.show('d_logio','s_reset',document.getElementById('new_password'));
 					}	
