@@ -936,6 +936,9 @@ var Hiro = {
 			// Also ignore setcursor as long was the landing page wasn't loaded (which removes cursor on most mobile platforms)
 			if (!force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1)) return;	
 
+			// Never set cursor if dialog is open & an input is focused or it's a mobile device
+			if (Hiro.ui.dialog.open && (Hiro.ui.touch || document.activeElement && document.activeElement.tagName == 'input')) return;
+
 			// Set default value
 			pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
 
