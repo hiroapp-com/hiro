@@ -2066,9 +2066,19 @@ body#landingPage2 .l_container .l_canvas h1 {
   display: block;
   color: #333;  
   font-weight: 400; 
-  line-height: 40px;
+  line-height: 42px;
   margin: 0;
 }
+
+body#landingPage2 .l_container .l_canvas h1 span, body#landingPage2 .l_container .l_canvas .text span {
+  display: block;
+}
+
+@media (max-width: 370px), (max-height: 390px), (min-width: 550px) and (max-width: 710px) {
+  body#landingPage2 .l_container .l_canvas h1 span, body#landingPage2 .l_container .l_canvas .text span {
+    display: inline;
+  }
+} 
 
 body#landingPage2 .l_container .l_canvas .text {
   color: #666;  
@@ -2173,7 +2183,6 @@ body#landingPage2 .l_footer .l_box .l_header {
   }
 
   body#landingPage2 .l_container .l_canvas h1 {
-    line-height: normal;
     margin-left: 16px;
   }  
 
