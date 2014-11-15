@@ -1814,9 +1814,21 @@ var Hiro = {
 				input = el.getElementsByTagName('input')[0],
 				parse = Hiro.util.mailorphone(input.value),
 				e = el.getElementsByClassName('mainerror')[0],
-				payload = {}, sid = Hiro.data.get('profile','c.sid');
+				payload = {}, sid = Hiro.data.get('profile','c.sid'), user;
 
-			// If we have no input value
+			// Try to fall back on user properties if none were provided
+			if (!parse) {
+				// Get user object
+				user = Hiro.data.get('profile');
+
+				// If we have mail
+				if (user.email) parse = ['mail', user.email];
+
+				// If we have phone
+				if (user.phone) parse = ['phone', user.phone];				
+			}	
+
+			// If we still weren't able to find any user information
 			if (!parse) {
 				// Show error & refocus
 				input.className += ' error';
@@ -1856,8 +1868,14 @@ var Hiro = {
 			// Clear error first
 			error.textContent = '';	
 
+			// We had a previous expired token
+			if (button.textContent == newlinkstring) {
+				// Hide dialog
+				Hiro.ui.dialog.hide();	
+				// Fire request
+				this.requestpwdreset();
 			// No passwords at all provided
-			if (!inputs[0].value && !inputs[1].value) {
+			} else if (!inputs[0].value && !inputs[1].value) {
 				error.textContent = 'Please choose a new password';
 				button.textContent = 'Try again';
 				inputs[0].focus();
