@@ -819,8 +819,8 @@ var Hiro = {
 			// Build canvas with basic values 
 			this.paint();	
 
-			// And set the cursor
-			this.setcursor();
+			// And set the cursor (but don't even try if the dialog is open)
+			if (!Hiro.ui.dialog.open) this.setcursor();
 
 			// Scroll to top of note
 			Hiro.canvas.totop();			
@@ -934,10 +934,9 @@ var Hiro = {
 
 			// Never set focus in moving or open folio on touch devices (pulls up keyboard)
 			// Also ignore setcursor as long was the landing page wasn't loaded (which removes cursor on most mobile platforms)
-			if (!force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1)) return;	
-
-			// Never set cursor if dialog is open & an input is focused or it's a mobile device
-			if (Hiro.ui.dialog.open && (Hiro.ui.touch || document.activeElement && document.activeElement.tagName == 'input')) return;
+			// or when the dialog is open with no input focused
+			if  ( !force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1 || 
+				( Hiro.ui.dialog.open && document.activeElement && document.activeElement.tagName == 'input' ))) return;	
 
 			// Set default value
 			pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
