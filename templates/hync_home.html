@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html {% if want_manifest %}manifest="/static/hiro.appcache"{%endif%}>
+<html>
 	<head>
 		<meta charset="utf-8">
 	    <title>Hiro. Notes with Friends.</title>
@@ -26,7 +26,58 @@
 	<body>
 		<div id="fb-root"></div>		
 
-		<div id="landing"></div>		
+		<div id="landing"></div>	
+
+		<div id="shield">
+			<div class="wrapper">		
+				<div id="d_close"></div>					
+				<div id="d_logio">
+					<div id="s_signin">
+						<a class="fb hirobutton" data-hiro-action="fblogin">Log-In with{{ " " }}<b>Facebook</b></a>
+						<div class="divider"><span class="or">or</span></div>
+						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off" autocomplete="on">
+							<input type="email" name='username' placeholder="E-Mail or Phone" id="signin_mail"></input><div class="inputerror error"></div>
+							<input type="password" name='password' placeholder="Password"></input><div class="inputerror error"></div>
+							<input type="submit" value="foo" onclick="Hiro.user.logio(event,true);" class="pseudobutton"></input>
+						</form>		
+						<a class="hirobutton green" data-hiro-action="login">Log-In</a>	
+						<div class="mainerror error"></div>				
+						<a class="small" data-hiro-action="requestpwdreset">Reset password</a><a class="small" data-hiro-action="switch_s_signup">Create an account</a>
+					</div>				
+					<div id="s_signup">
+						<a class="fb hirobutton" data-hiro-action="fbsignup">Sign-Up with{{ " " }}<b>Facebook</b></a>
+						<div class="divider"><span class="or">or</span></div>
+						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off" autocomplete="on">
+							<input type="email" name='username' placeholder="E-Mail or Phone" id="signup_mail"></input><div class="inputerror error"></div>				
+							<input type="password" name='password' placeholder="Choose a password"></input><div class="inputerror error"></div>	
+							<input type="submit" value="foo" onclick="Hiro.user.logio(event);" class="pseudobutton"></input>
+						</form>		
+						<a class="hirobutton green" data-hiro-action="register">Create Account</a>	
+						<div class="mainerror error"></div>
+						<a class="small" data-hiro-action="switch_s_signin">Already have an account?</a>			
+					</div>		
+					<div id="s_reset">
+						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off">
+							<input type="password" placeholder="New password" id="new_password"></input><div class="inputerror error"></div>
+							<input type="password" placeholder="Repeat password"></input><div class="error"></div>
+							<input type="submit" value="foo" onclick="Hiro.user.resetpwd();" class="pseudobutton"></input>
+						</form>		
+						<a class="hirobutton green" data-hiro-action="resetpwd">Reset Password</a>	
+						<div class="mainerror error"></div>	
+						<a class="small hidden" data-hiro-action="switch_s_signin">Login with old password.</a>
+					</div>			
+				</div>				
+				<div id="d_settings"></div>				
+				<div id="d_msg" class="offline hidden">
+					<div class="icon"></div>
+					<div class="message">
+						<div class="text"></div>
+						<a class="hirobutton green"></a>						
+					</div>
+				</div>				
+				<div id="d_container"></div>				
+			</div>	
+		</div>				
 
 		<div id="showmenu">
 			<div class="bubble red"></div>
@@ -48,7 +99,7 @@
 		<div id="rails">
 			<div class="shade"></div>
 			<div id="canvas">	
-				<input class="title" id="title" value="">				
+				<input class="title" id="title" value="" autocomplete="off">				
 				<textarea placeholder="Just write or paste things for later..." id="content" spellcheck="true"></textarea>
 				<div id="overlay"></div>			
 				<div id="nicequote">
@@ -99,57 +150,6 @@
 				<div id="wwwresults"></div>																		
 			</div>
 		</div>				
-
-		<div id="shield">
-			<div class="wrapper">		
-				<div id="d_close"></div>					
-				<div id="d_logio">
-					<div id="s_signup">
-						<a class="fb hirobutton" data-hiro-action="fbsignup">Sign-Up with{{ " " }}<b>Facebook</b></a>
-						<div class="divider"><span class="or">or</span></div>
-						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off">
-							<input type="email" placeholder="E-Mail or Phone" id="signup_mail" autocorrect="off"></input><div class="inputerror error"></div>				
-							<input type="password" placeholder="Choose a password"></input><div class="inputerror error"></div>	
-							<input type="submit" value="foo" onclick="Hiro.user.logio(event);" class="pseudobutton"></input>
-						</form>		
-						<a class="hirobutton green" data-hiro-action="register">Create Account</a>	
-						<div class="mainerror error"></div>
-						<a class="small" data-hiro-action="switch_s_signin">Already have an account?</a>			
-					</div>	
-					<div id="s_signin">
-						<a class="fb hirobutton" data-hiro-action="fblogin">Log-In with{{ " " }}<b>Facebook</b></a>
-						<div class="divider"><span class="or">or</span></div>
-						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off">
-							<input type="email" placeholder="E-Mail or Phone" id="signin_mail"></input><div class="inputerror error"></div>
-							<input type="password" placeholder="Password"></input><div class="inputerror error"></div>
-							<input type="submit" value="foo" onclick="Hiro.user.logio(event,true);" class="pseudobutton"></input>
-						</form>		
-						<a class="hirobutton green" data-hiro-action="login">Log-In</a>	
-						<div class="mainerror error"></div>				
-						<a class="small" data-hiro-action="requestpwdreset">Reset password</a><a class="small" data-hiro-action="switch_s_signup">Create an account</a>
-					</div>	
-					<div id="s_reset">
-						<form action="javascript:void(0);" autocapitalize="off" autocorrect="off">
-							<input type="password" placeholder="New password" id="new_password"></input><div class="inputerror error"></div>
-							<input type="password" placeholder="Repeat password"></input><div class="error"></div>
-							<input type="submit" value="foo" onclick="Hiro.user.resetpwd();" class="pseudobutton"></input>
-						</form>		
-						<a class="hirobutton green" data-hiro-action="resetpwd">Reset Password</a>	
-						<div class="mainerror error"></div>	
-						<a class="small hidden" data-hiro-action="switch_s_signin">Login with old password.</a>
-					</div>			
-				</div>				
-				<div id="d_settings"></div>				
-				<div id="d_msg" class="offline hidden">
-					<div class="icon"></div>
-					<div class="message">
-						<div class="text"></div>
-						<a class="hirobutton green"></a>						
-					</div>
-				</div>				
-				<div id="d_container"></div>				
-			</div>	
-		</div>	
 
 		<div id="hprogress"><div class="bar" role="bar"><div class="peg"></div></div></div>
 

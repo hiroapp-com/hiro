@@ -133,6 +133,10 @@ var Hiro = {
 					var noteid = id.substring(5);
 					id = 'note';	
 				}	
+
+				// Do not fire if folio is not yet open on touch devices
+				if (!Hiro.folio.open && Hiro.ui.touch) return;
+
 				// Go through cases
 				switch (id) {
 					case 'signin':
@@ -654,12 +658,13 @@ var Hiro = {
 		// When a key is released in the title field
 		titlekeyup: function(event,el) {
 			// Jump to text if user presses return, pagedown or arrowdown
-			if (event.keyCode == 40 || event.keyCode == 13 || event.keyCode == 34) Hiro.canvas.setcursor(0);										
+			if (event.keyCode == 40 || event.keyCode == 13 || event.keyCode == 34) Hiro.canvas.setcursor(0);
 		},
 
 		// Title key pressed
 		titlekeydown: function(event,el) {
 			// MAke sure the shortcuts defined above happy without the cursor jumping
+			// Also prevents autocomplete etc
 			if (event.keyCode == 40 || event.keyCode == 13 || event.keyCode == 34) Hiro.util.stopEvent(event);
 		},
 
@@ -1565,7 +1570,8 @@ var Hiro = {
 			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register, 
 				url = (login) ? '/tokens/login' : '/tokens/signup', 
 				b = branch.getElementsByClassName('hirobutton')[1],
-				v = branch.getElementsByTagName('input'),							
+				v = branch.getElementsByTagName('input'),	
+				form = branch.getElementsByTagName('form')[0],						
 				e = branch.getElementsByClassName('mainerror')[0],
 				payload = {	
 					password: v[1].value
@@ -1573,8 +1579,14 @@ var Hiro = {
 				parse = Hiro.util.mailorphone(v[0].value),
 				sid = Hiro.data.get('profile','c.sid');
 
+			// Always submit form to trigger storing of password
+			form.submit(function(event){
+				// Stop the browser from
+				Hiro.util.stopEvent(event);
+			})
+
 			// Prevent default event if we have one from firing submit
-			if (event) Hiro.util.stopEvent(event);				
+			// if (event) Hiro.util.stopEvent(event);				
 
 			// Preparation
 			if (this.authinprogress) return;
