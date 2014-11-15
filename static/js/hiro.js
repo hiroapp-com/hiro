@@ -681,6 +681,8 @@ var Hiro = {
 
 			// Distinguish between touchstart/mouseover
 			if (type == 'half') {
+	        	// Reset tab notifier
+	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.cleanup();				
 
 				// If we had an app open, close it
 				if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
@@ -6103,7 +6105,7 @@ var Hiro = {
 				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);		
 
 				// Prevent scrolling from leaking
-				Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });			
+				// Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });			
 
 				// Set <html> classnames
 				Hiro.ui.render(function(){
