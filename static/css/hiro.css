@@ -900,8 +900,8 @@ html.ios body #rails #canvas textarea {
   width: 30px;
   background-position: -37px -39px;
   position: absolute;
-  top: 0;
-  right: -35px;
+  top: -2px;
+  right: 0;
 }
 
 #apps .app .widget .title {
@@ -986,6 +986,10 @@ html.ios body #rails #canvas textarea {
   color: #999;
 }
 
+#apps .app.app_sharing .widget form .peers .peer .name {
+  margin-right: 0;
+}
+
 #apps .app.app_sharing .widget form .peers .peer:hover, #apps .app.app_sharing .widget form .peers .peer.selected {
   color: #333;
   background-position: -132px -374px;
@@ -1006,8 +1010,16 @@ html.ios body #rails #canvas textarea {
   background-size: 160px auto;
   background-position: -132px -313px;
   white-space: nowrap;
-  margin-right: 30px;
+  box-sizing: border-box;
+  width: 270px;
   position: relative;  
+}
+
+#apps .app.app_sharing .widget .peers .peer .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-right: 20px;  
 }
 
 #apps .app.app_sharing .widget .peers .peer.seen {
@@ -1125,11 +1137,15 @@ html.ios body #rails #canvas textarea {
   #apps .app.app_sharing .widget .peers .peer {
     padding: 5px 0 5px 25px;
     background-position: -132px -311px;
-  }  
+    width: 100%;
+  } 
 
-  #apps .app.app_sharing .widget form .peers .peer {
-    color: #333;
+  #apps .app.app_sharing .widget form .peers .peer, #apps .app.app_sharing .widget form .peers .peer:hover {
     background-position: -132px -373px;
+  }   
+
+  html.touch body #apps .app.app_sharing .widget form .peers .peer {
+    color: #333;
   }  
 
   #apps .app.app_sharing .widget .peers .peer.seen {

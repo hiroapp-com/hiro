@@ -4,11 +4,14 @@
     "description": "Ridiculously fast note-taking with friends.",
     "version": "0.9",
     "icons": {
-        "128": "hiro_128.png"
+        "16": "hiro_16.png",
+        "48": "hiro_48.png",    
+        "128": "hiro_128.png"        
     },
     "app": {
         "launch": {
             "web_url": "https://beta.hiroapp.com/"
         }
-    }
+    },
+    "offline_enabled": true
 }
