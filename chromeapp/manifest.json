@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
-    "name": "Hiro",
-    "description": "Ridiculously fast note-taking with friends.",
+    "name": "Hiro Preview",
+    "description": "Hiro is an app for shared text snippets, so they don't get lost all over the place..",
     "version": "0.9",
     "icons": {
         "16": "hiro_16.png",
