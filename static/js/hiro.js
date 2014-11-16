@@ -2935,16 +2935,16 @@ var Hiro = {
 
 			// Turns a peer entry into the respective DOM snippet
 			renderpeer: function(peer,us,onlyus) {	
-				var d, r, n, text, user, rt, action, tt;
+				var d, r, n, text, contact, action, tt = '';
 
 				// Other peers
 				if (!us) {
 					// Try to retrieve user details from contacts
-					if (peer.user.uid) user = Hiro.user.contacts.lookup[peer.user.uid]	
+					if (peer.user.uid) contact = Hiro.user.contacts.lookup[peer.user.uid]	
 
-					if (user) {						
+					if (contact) {						
 						// Build text string
-						text = ( ((user.name) && user.name || '') + ( ( (user.name && (user.email || user.phone)) && ' (' + ( user.email || user.phone ) + ')' ) || (user.email || user.phone) || ''));
+						text = ( ((contact.name) && contact.name || '') + ( ( (contact.name && (contact.email || contact.phone)) && ' (' + ( contact.email || contact.phone ) + ')' ) || (contact.email || contact.phone) || ''));
 					} else {
 						// Build string from local object
 						text = peer.user.email || peer.user.phone;
@@ -2976,24 +2976,30 @@ var Hiro = {
 				if (peer.role == "owner") {
 					tt = 'Owner: ';					
 				} else {
-					// Set tooltip for invited only
-					if (peer.user && parseInt(peer.user.tier) == -1) tt = 'Invited';
 					// Add remove link if user is not owner					
 					r = document.createElement('a');
 					r.className = 'remove';
-					r.setAttribute('title',(rt || 'Revoke access'));
+					r.setAttribute('title',((us) ? 'Revoke your own access' : 'Revoke access'));
 					d.appendChild(r);					
 				}
 
-				// Add seen flag to classname
-				if (us || (peer.last_seen && peer.last_seen >= Hiro.data.get('note_' + Hiro.canvas.currentnote,'_lastedit'))) {	
+				// Fetch the current tier
+				tier = (contact) ? contact.tier : (peer.user && peer.user.tier) || 0;
+
+				// Set tooltip for invited only
+				if (tier == -1) {
+					// Set the tooltip to invited only
+					tt = 'Invited';
+				// Add seen flag to classname and append any existing flags									
+				} else if (us || (peer.last_seen && peer.last_seen >= Hiro.data.get('note_' + Hiro.canvas.currentnote,'_lastedit'))) {	
 					// Pimp title
-					tt = (tt || '') + ((us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen).toLowerCase() + ' ago');
+					tt += ((us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen).toLowerCase() + ' ago');
 
 					// Add green tick to icon				
 					d.className += " seen";
+				// We have a proper user, but she hasn't seen any updates	
 				} else {
-					tt = (tt || '') + 'Has not seen the latest version';
+					tt += 'Has not seen the latest version';
 				}	
 
 				// Set tooltip
@@ -3001,7 +3007,7 @@ var Hiro = {
 
 				// Add user name span
 				n = document.createElement('span');
-				n.className = (peer.user && parseInt(peer.user.tier) == -1) ? 'name invited' : 'name';
+				n.className = (tier == -1) ? 'name invited' : 'name';
 				n.textContent = text || 'Anonymous';
 				d.appendChild(n)
 
