@@ -260,7 +260,7 @@ input.error:focus {
 
 #showmenu {
   position: fixed;
-  background: url(../img/icons.4.png) no-repeat;
+  background: url(../img/icons.5.png) no-repeat;
   background-size: 108px auto;
   background-position: -27px -151px;;
   left: 0;
@@ -316,7 +316,7 @@ input.error:focus {
   position: absolute;
   top: 0;
   left: 10px;
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-size: 108px auto;
   opacity: .5;
   cursor: pointer;
@@ -393,7 +393,7 @@ input.error:focus {
 }
 
 #folio .notes .note a .sharing {
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-size: 140px auto;
   background-repeat: no-repeat;
   background-position: 5px -107px;
@@ -428,7 +428,7 @@ input.error:focus {
 }
 
 #folio .footer a.signin, #folio .footer a.archivelink {
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-repeat: no-repeat;
   background-size: 108px auto;
   padding: 15px 10px 15px 50px;
@@ -438,7 +438,7 @@ input.error:focus {
 } 
 
 #folio .footer a.icon {
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-repeat: no-repeat;
   background-size: 108px auto;
   float: right;
@@ -853,7 +853,7 @@ html.ios body #rails #canvas textarea {
   display: block;
   width: 45px;
   height: 50px;
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-repeat: no-repeat;
   background-size: 200px auto;
   opacity: .15;
@@ -873,7 +873,7 @@ html.ios body #rails #canvas textarea {
 }
 
 #apps .app .widget .cancel, #apps .app .widget .remove {
-  background: url(../img/icons.4.png) no-repeat;
+  background: url(../img/icons.5.png) no-repeat;
   background-size: 115px auto;
   color: #fff;
   opacity: .3;
@@ -914,9 +914,9 @@ html.ios body #rails #canvas textarea {
   display: inline-block;
   width: 40px;
   height: 40px;
-  background: url(../img/icons.4.png) no-repeat;
-  background-size: 130px auto;
-  background-position: 15px -293px;
+  background: url(../img/icons.5.png) no-repeat;
+  background-size: 100px auto;
+  background-position: 20px -221px;
   opacity: 0.35;
   position: absolute;
   top: 9px;
@@ -925,6 +925,7 @@ html.ios body #rails #canvas textarea {
 
 #apps .app .widget .hidden .title a {
   background-position: -35px -295px;
+  background-size: 130px auto;
 }
 
 #apps .app .widget small  {
@@ -1005,7 +1006,7 @@ html.ios body #rails #canvas textarea {
   padding: 3px 0 3px 25px;
   font-size: 18px;
   color: #333;
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-repeat: no-repeat;
   background-size: 160px auto;
   background-position: -132px -313px;
@@ -1126,7 +1127,7 @@ html.ios body #rails #canvas textarea {
     top: -3px;
     right: 0;
     width: 45px;
-    background-position: 2px -293px;  
+    background-position: 7px -221px;  
     height: 38px;  
   }  
 
@@ -1271,7 +1272,7 @@ html.ios body #rails #canvas textarea {
 }
 
 #d_close {
-  background: url(../img/icons.4.png) no-repeat;
+  background: url(../img/icons.5.png) no-repeat;
   background-size: 102px auto;
   background-position: -12px -29px;
   position: absolute;
@@ -1307,7 +1308,7 @@ html.ios body #rails #canvas textarea {
 }
 
 #d_msg .icon {
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-repeat: no-repeat;
   background-size: 160px auto;
   position: absolute;
@@ -1541,7 +1542,7 @@ html.ios body #rails #canvas textarea {
   margin-top: -44px;
   float: right;
   cursor: pointer;
-  background-image: url(../img/icons.4.png);
+  background-image: url(../img/icons.5.png);
   background-repeat: no-repeat;
   background-size: 90px auto;  
   background-position: 6px -98px;   
