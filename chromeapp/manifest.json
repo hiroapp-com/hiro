@@ -1,12 +1,14 @@
 {
     "manifest_version": 2,
-    "name": "Hiro Preview",
-    "description": "Hiro is an app for shared text snippets, so they don't get lost all over the place..",
-    "version": "0.9",
+    "name": "Hiro",
+    "short_name": "Notes with friends.",
+    "description": "Hiro is an app for shared text snippets, so they don't get lost all over the place.",
+    "version": "0.9.12",
+    "author": "Hiro Inc.",
     "icons": {
-        "16": "hiro_16.png",
-        "48": "hiro_48.png",    
-        "128": "hiro_128.png"        
+        "16": "16.png",
+        "48": "48.png",    
+        "128": "128.png"        
     },
     "app": {
         "launch": {
