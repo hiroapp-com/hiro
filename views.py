@@ -188,8 +188,8 @@ def change_plan():
 
 
 # Direct Templates
-def landing():
-    return render_template('hync_landing.html')  
+def landing(landing_id):
+    return render_template('landing_%s.html' % landing_id)  
 
 def settings():
     return render_template('hync_settings.html')       

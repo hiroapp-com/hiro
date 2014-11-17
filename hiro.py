@@ -76,7 +76,7 @@ app.add_url_rule('/tokens/signup', 'signup', view_func=views.register, methods=[
 app.add_url_rule('/tokens/resetpwd', 'req_reset_pwd', view_func=views.req_reset_pwd, methods=['POST'])
 app.add_url_rule('/tokens/verify', 'verify', view_func=views.verify, methods=['POST'])
 # components (e.g. landingpage, settings container)
-app.add_url_rule('/component/landing/', 'landing', view_func=views.landing)
+app.add_url_rule('/component/landing/<landing_id>', 'landing', view_func=views.landing)
 app.add_url_rule('/component/settings/', 'settings', view_func=views.settings)
 app.add_url_rule('/offline/app.html', 'offline', view_func=views.offline)
 app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)

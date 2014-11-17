@@ -6657,7 +6657,7 @@ var Hiro = {
 			inited: undefined,
 			showoninit: undefined,
 			visible: undefined,			
-			url: '/component/landing/',	
+			baseurl: '/component/landing/',	
 
 			// DOM links
 			page: undefined,
@@ -6705,12 +6705,12 @@ var Hiro = {
 			},
 
 			// Fetch landing page from server
-			load: function() {
+			load: function(version) {
 				// Create a new frame object
 				frame = document.createElement('iframe');
 
 				// Set src
-				frame.src = this.url;
+				frame.src = this.baseurl + (version || 'default');
 
 				// Append to DOM
 				this.el_root.appendChild(frame);
@@ -6727,7 +6727,7 @@ var Hiro = {
 					// Remove overlay instantly
 					this.el_root.style.display = 'none';
 					// Load it anyway for appcache, set the cursor on mobiles
-					this.load();	
+					this.load('minimal');	
 				}	
 
 				// Set the flag first (needed by the load beneath)
