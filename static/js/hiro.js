@@ -1805,10 +1805,7 @@ var Hiro = {
 		// See createsession handler to see if and when we overwrite this on login
 		logiocomplete: function(data,login) {	
 			// Hide landing page
-			Hiro.ui.landing.hide();
-
-			// Connect to hync
-			Hiro.sync.connect();			
+			Hiro.ui.landing.hide();			
 
 			// Add token to known list
 			Hiro.data.tokens.add({ id: data.token, action: 'login'})		
@@ -4005,7 +4002,10 @@ var Hiro = {
 				// Pick first token from stash
 				token = this.bag[0];
 
-				// Get anon token if we have none yet and spawn flag is set 
+				// Connect to hync
+				if (!Hiro.sync.synconline) Hiro.sync.connect();				
+
+				// Get anon token (added to bag) if we have none yet and spawn flag is set 
 				if (spawn && !token) this.getanon();
 
 				// If we have no connection or token
