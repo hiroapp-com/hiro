@@ -793,7 +793,7 @@ var Hiro = {
 			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);			
 
 			// Always close the folio on small screens
-			if (Hiro.ui.mini() && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);			
+			if (Hiro.ui.mini() && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
 
 			// Abort if we try to load the same note again	
 			if (!forcedreload && id == this.currentnote) return;		
@@ -802,7 +802,10 @@ var Hiro = {
 			if (this.cache._changed) this.save();			
 
 			// Start hprogress bar
-			Hiro.ui.hprogress.begin();	
+			Hiro.ui.hprogress.begin();
+
+			// If it's the very first note we get, also notify other tabs of it
+			if (!this.currentnote) Hiro.data.local.tabtx('Hiro.canvas.load("'  + id + '",' + preventhistory + ',' + forcedreload + ');');		
 
 			// Set internal values
 			this.currentnote = id;				
@@ -1823,7 +1826,10 @@ var Hiro = {
 			Hiro.sys.log('Local data wiped, reloading page');	
 
 			// Reloading system
-			Hiro.sys.reload(true);			
+			setTimeout(function(){
+				// Move to different stack than local.wipe() above
+				Hiro.sys.reload(true);
+			},100);			
 		},	
 
 		// Request password reset
@@ -3393,10 +3399,7 @@ var Hiro = {
 			// Make sure we send another setstage to other tabs
 			Hiro.ui.render(function(){
 				Hiro.ui.setstage();
-			}); 
-
-			// And also load the first note in other tabs
-			Hiro.data.local.tabtx('Hiro.canvas.load();');			
+			}); 			
 
 			// Log
 			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
@@ -3417,7 +3420,6 @@ var Hiro = {
 			if (event.key == 'Hiro.notify') {
 				// Extract command string	
 				command = JSON.parse(event.newValue);	
-				console.log('gooooooooooot ',command,event.newValue);
 				// Eval
 				if (command) {				
 					// Create anon function from string
@@ -3753,16 +3755,16 @@ var Hiro = {
 			tabtx: function(cmd, flush) {
 				var i, l;
 				// Add to queue
-				this.msgqueue.push(cmd);
+				if (cmd) this.msgqueue.push(cmd);
 
 				// persist sent flush command, all other ressources synced
 				if (flush) {
 					// Loop through message
 					while (this.msgqueue.length) {
 						// Send
-						this.todisk('notify', this.msgqueue[0]);
+						this.todisk('notify', this.msgqueue[0]);					
 						// Remove element;
-						this.msgqueue.shift();
+						this.msgqueue.shift();						
 					}	
 				}							
 			},
@@ -6067,8 +6069,8 @@ var Hiro = {
 
 		// Hard reload of page
 		reload: function(fade) {
-			// Make sure other tabs refresh as well
-			Hiro.data.local.tabtx('window.location.href = "/backdoor"');								                    		
+			// Make sure other tabs refresh as well, flsuh the msg right away
+			Hiro.data.local.tabtx('window.location.href = "/backdoor"',true);								                    		
 
 			// Start fading out body, reload our own window after that
 			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/backdoor" });
