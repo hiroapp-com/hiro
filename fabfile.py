@@ -7,6 +7,9 @@ from fabric.tasks import execute
 from fabric.utils import abort
 from fabric.colors import green
 from fabric.api import run, cd, env, task, roles, local
+from fabric.network import ssh
+
+ssh.util.log_to_file('fuuuuu.log', 10)
 
 
 if os.name == 'nt':

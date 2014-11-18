@@ -8575,7 +8575,7 @@ var Hiro = {
 		// Google Analytics
 		ga: {
 			js: '//www.google-analytics.com/analytics.js',
-			key: 'UA-41408220-2',
+			key: 'UA-41408220-1',
 			loaded: false,
 			loading: false,			
 
