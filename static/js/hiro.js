@@ -3354,8 +3354,6 @@ var Hiro = {
 				if (window.location.hostname.indexOf('beta') > -1) {
 					// Reset to trigger new session, token processing will take care of the redirect to www					
 					Hiro.sync.reset();
-					// Abort here
-					return;
 				// Continue normal flow	
 				} else {
 					// Connect to server
@@ -3366,18 +3364,32 @@ var Hiro = {
 				Hiro.ui.setstage();							
 			// If we started with a token											
 			} else if (t) {
-				// Remove landing page
-				Hiro.ui.landing.hide();
+				// Abort further actions on beta.
+				if (window.location.hostname.indexOf('beta') > -1) {
+					// Redirect to www, hoping that first token works					
+					Hiro.sys.reload(false,'https://www.hiroapp.com/#' + t[0].id)					
+				// Continue normal flow	
+				} else {
+					// Remove landing page
+					Hiro.ui.landing.hide();
 
-				// Connect to server
-				Hiro.sync.connect();
+					// Connect to server
+					Hiro.sync.connect();
+				}
 			// Start without session & show landing page
 			} else {
-				// Show landing page contents
-				Hiro.ui.landing.show();
+				// Abort further actions on beta.
+				if (window.location.hostname.indexOf('beta') > -1) {
+					// Redirect to www startpage					
+					Hiro.sys.reload(false,'https://www.hiroapp.com/backdoor')					
+				// Continue normal flow	
+				} else {
+					// Show landing page contents
+					Hiro.ui.landing.show();
 
-				// End progress
-				Hiro.ui.hprogress.done();					
+					// End progress
+					Hiro.ui.hprogress.done();	
+				}								
 			}
 
 			// Size canvas to 100% of viewport if we don't have a note yet
