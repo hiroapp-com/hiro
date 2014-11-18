@@ -6688,7 +6688,6 @@ var Hiro = {
 			// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
 			// Whatever comes first to make sure it's bootstrapped properly
 			show: function() {
-				var frame;
 				// Load landing page on first call
 				if (!this.inited) this.load();	
 
@@ -6711,7 +6710,7 @@ var Hiro = {
 			// Fetch landing page from server
 			load: function(version) {
 				// Create a new frame object
-				frame = document.createElement('iframe');
+				var frame = document.createElement('iframe');
 
 				// Set src
 				frame.src = this.baseurl + (version || this.route || 'default');

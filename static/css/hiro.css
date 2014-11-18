@@ -27,12 +27,19 @@ html.touch {
 html.touch *, body#landingPage2 * {
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);  
 }
-  
 
 input {
   font-family: "urbana",sans-serif; 
-  box-sizing: border-box;   
-}
+  box-sizing: border-box;
+  font-size: 18px;
+  padding: 8px 10px 8px 10px;  
+  display: block;
+  width: 100%;
+  margin: 0 0 10px 0;
+  font-weight: 200;
+  border-radius: 3px;
+  border: 1px solid #bbb;
+}    
 
 em {
   font-style: normal;
@@ -942,17 +949,6 @@ html.ios body #rails #canvas textarea {
   font-size: 18px;
 }
 
-#apps .app .widget input  {
-  font-family: "urbana",sans-serif;
-  font-size: 18px;
-  padding: 8px 10px 8px 10px;  
-  display: block;
-  width: 100%;
-  font-weight: 200;
-  border-radius: 3px;
-  border: 1px solid #bbb;
-}
-
 #apps .app .widget input:disabled {
   cursor: pointer;
   color: #333;
@@ -1237,18 +1233,6 @@ html.ios body #rails #canvas textarea {
   transition: margin-left 0.1s;  
 }
 
-#shield form input  {
-  font-family: "urbana",sans-serif;
-  font-size: 18px;
-  padding: 8px 10px 8px 10px;  
-  display: block;
-  width: 100%;
-  margin: 0 0 10px 0;
-  font-weight: 200;
-  border-radius: 3px;
-  border: 1px solid #bbb;
-}
-
 #shield .divider {
   border-top: 1px solid #ccc;
   margin: 30px 0 26px 0;
@@ -1407,9 +1391,6 @@ html.ios body #rails #canvas textarea {
   float: left;
   margin-top: 4px;
 }
-
-
-
 
 #d_settings .header {
   display: block;
@@ -2138,6 +2119,31 @@ body#landingPage2 .l_container .l_canvas .cto .small a.signin {
   color: #666;
   text-decoration: none;
 }
+
+
+/* wailtlist speciific stuff */
+
+body#landingPage2 .l_container .l_canvas input.ss-q-short {
+  max-width: 370px;
+  padding: 10px 10px 10px 17px;  
+}
+
+body#landingPage2 .l_container .l_canvas .cto a.next {
+  max-width: 332px;
+  padding: 10px 18px 10px 18px; 
+  font-size: 20px;   
+}
+
+body#landingPage2 .l_container .l_canvas .cto .small.or {
+  padding: 4px 0 8px 0;
+} 
+
+body#landingPage2 .l_container .l_canvas .text span#signupname, body#landingPage2 .l_container .l_canvas .text span.wellnotify {
+  display: inline;
+
+}
+
+/* end wailtist */
 
 body#landingPage2 .l_footer {
   display: none;

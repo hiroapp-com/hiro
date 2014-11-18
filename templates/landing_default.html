@@ -7,52 +7,65 @@
 		<div class="l_container">
 			<div class="l_overlay"></div>
 			<div class="l_canvas">			
-				<h1>Hiro.</h1>
-				<div class="cto">					
-					<div id="1" class="step step1">
-						<div class="text">
-							Scrappy Notes with Friends.
-						</div>							
-						<a href="#" class="wpcbutton blue start" id="startwriting" onclick="goto2(); return false;" ontouchstart="goto2(); return false;">Request Invite</a>
-						<span class="small">Or ask an early adopter to share a note with you.</small>
-					</div>
-					<div id="2" class="step step2" style="display:none;">
-						<div class="text">
-							Scrappy Notes with Friends.
-						</div>							
-						<form action="https://docs.google.com/a/hiroapp.com/forms/d/1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug/formResponse" method="POST" id="ss-form" target="googletarget" onsubmit="" class="googleform">
+				<h1>
+					<span>Hiro.{{ " " }}</span>
+					<span>Notes with Friends.</span>
+				</h1>			
+				<div id="1" class="step step1">
+					<div class="text">
+						<span>Hiro is an app for shared text snippets,{{ " " }}</span>
+						<span>so they don't get lost all over the place.</span>
+					</div>	
+					<div class="cto">
+						<a class="hirobutton blue start" id="startwriting" onclick="goto2(); return false;" ontouchstart="goto2(); return false;">Request Invite</a>
+						<span class="small">or ask an early adopter to share a note with you.<br /><br /><a data-hiro-action="signin" class="signin">Sign-in</a>.</small>
+					</div>													
+				</div>
+				<div id="2" class="step step2" style="display:none;">
+					<div class="text">
+						<span>Hiro is an app for shared text snippets,{{ " " }}</span>
+						<span>so they don't get lost all over the place.</span>
+					</div>	
+					<div class="cto">											
+						<form action="https://docs.google.com/a/hiroapp.com/forms/d/1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug/formResponse" method="POST" id="ss-form" target="googletarget" onsubmit="googlesubmit();return false;" class="googleform">
 							<input type="text" name="entry.1791768611" value="" class="ss-q-short" id="entry_1791768611" dir="auto" placeholder="Your Mobile Number or E-Mail" onkeyup="this.className='ss-q-short'" onkeydown="hitenter(event);">
 							<input type="text" name="entry.1985410470" value="" class="ss-q-short" id="entry_1985410470" dir="auto" style="display:none;">
 							<input type="text" name="entry.519630899" value="Mail" class="ss-q-short" id="entry_519630899" dir="auto" style="display:none;">
 							<input type="hidden" name="draftResponse" value="[]">
 							<input type="hidden" name="pageHistory" value="0">
-							<input type="submit" name="submit" value="Submit" id="ss-submit" class="submitbutton">
+							<input type="submit" name="submit" value="Submit" id="ss-submit" class="pseudobutton">
 						</form>
-						<a href="#" class="wpcbutton blue next" onclick="googlesubmit();return false;">Sign up</a><span class="small or"> or </span> 
-						<a href="#" class="wpcbutton blue next" onclick="this.innerHTML='Signing In...';facebooklogin();" id="fbbutton">Sign up with <b>Facebook</b></a>				
+						<a href="#" class="hirobutton blue next" onclick="googlesubmit();return false;">Sign up</a><span class="small or"> or </span> 
+						<a href="#" class="hirobutton blue next" onclick="this.innerHTML='Signing In...';facebooklogin();" id="fbbutton">Sign up with{{ " " }}<b>Facebook</b></a>
+					</div>				
+				</div>	
+				<div id="3" class="step step3" style="display:none;">
+					<div class="text">
+						Thanks<em><span id="signupname"></span></em>!<span class="wellnotify">{{ " " }}We'll hook you up asap.
+					</div>		
+					<div class="cto">											
+						<a href="https://www.facebook.com/dialog/feed?app_id=661704270510690&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton next fb" onclick="facebookshare();return false;">Share</a><span class="small or"> or </span>
+						<a href="https://twitter.com/intent/tweet?text=New%20notetaking%20app%2C%20launching%20soon%3A%20www.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');return false;" class="hirobutton next tw">Tweet</a>
 					</div>	
-					<div id="3" class="step step3" style="display:none;">
-						<div class="text">
-							Thanks<em><span id="signupname"></span></em>!&nbsp;<span class="wellnotify">We'll hook you up asap.
-						</div>							
-						<a href="https://www.facebook.com/dialog/feed?app_id=661704270510690&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton next fb" onclick="facebookshare();return false;">Share</a><span class="small or"> or </span>
-						<a href="https://twitter.com/intent/tweet?text=New%20notetaking%20app%2C%20launching%20soon%3A%20www.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');return false;" class="wpcbutton next tw">Tweet</a>
-					</div>			
+				</div>			
 				</div>
 			</div>		
 		</div>
 		<div class="l_footer">
 			<div class="l_box"><div class="l_header">Ridiculously Fast</div>Start writing with a single tap, in under a second.</div>
-			<div class="l_box middle"><div class="l_header">Safe &amp; Secure</div>Your notes are always encrypted, synced and backed up.</div>
+			<div class="l_box middle"><div class="l_header">Zero Maintenance</div>Always in sync, saved<br />and backed up.</div>
 			<div class="l_box"><div class="l_header">Everywhere &amp; Offline</div>Just works, anytime, on all your devices.</div>
-		</div>		
+		</div>	
 		<iframe id="googletarget" style="display:none;"></iframe>
 		<script type="text/javascript">
-		window.parent.Hiro.ui.landing.init(this);
+		var Hiro = window.parent.Hiro;
+		// Init Hiro to fade in contents
+		Hiro.ui.landing.init(this);
+		// Waitlist foo
 		window.fbAsyncInit = function() {
 			// init the FB JS SDK
 			FB.init({
-			  appId      : '661704270510690',                       
+			  appId      : '{{ config.FACEBOOK_APP_ID }}',                       
 			  status     : true,                                 
 			  xfbml      : true                                  
 			});
@@ -93,7 +106,7 @@
 							FB.api('/me', function(response) {
 								goto3();			  	
 							  	method.value = 'Facebook';
-							  	signupname.innerHTML = '&nbsp;' + response.first_name;
+							  	signupname.innerHTML = ' ' + response.first_name;
 								mail.value = response.email;
 								googlesubmit();					
 							});		
@@ -107,7 +120,7 @@
 							FB.api('/me', function(response) {
 								goto3();			  	
 							  	method.value = 'Facebook';
-							  	signupname.innerHTML = '&nbsp;' + response.first_name;				
+							  	signupname.innerHTML = ' ' + response.first_name;				
 								mail.value = response.email;
 								googlesubmit();					
 							});		
@@ -147,13 +160,15 @@
 				input.focus();
 				return;
 			}	
+			getreferrer();				
 			document.getElementById('ss-submit').click();
-			goto3();			
+			goto3();
+			// Log respective event
+			Hiro.user.track.logevent('Requests early access',{ Referrer: document.referrer });						
 		}
 		function getreferrer() {
 			document.getElementById('ss-form').getElementsByTagName('input')[1] = document.referrer;
-		}
-		getreferrer();		
+		}	
 
 		function goto2() {
 			document.body.style.backgroundImage = 'none';
