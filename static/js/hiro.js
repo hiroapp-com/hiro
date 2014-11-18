@@ -4011,6 +4011,14 @@ var Hiro = {
 				// Pick first token from stash
 				token = this.bag[0];
 
+				// Beta migration,redirect to www once we have a proper session token
+				if (window.location.hostname.indexOf('beta') > -1 && newsessionactions.indexOf(token.action) > -1) {
+					// Reload with new url						
+					Hiro.sys.reload(false,'https://www.hiroapp.com/#' + token.id)
+					// Abort here
+					return;
+				}				
+
 				// Connect to hync
 				if (!Hiro.sync.synconline) Hiro.sync.connect();				
 
@@ -4022,13 +4030,6 @@ var Hiro = {
 
 				// If the action requires a new session or we do have none yet
 				if (!Hiro.data.get('profile','c.sid') || newsessionactions.indexOf(token.action) > -1 ) {
-					// Beta migration,redirect to www once we have a proper session token
-					if (window.location.hostname.indexOf('beta') > -1) {
-						// Reload with new url						
-						Hiro.sys.reload(false,'https://www.hiroapp.com/#' + token.id)
-						// Abort here
-						return;
-					}
 					// Create a new session
 					Hiro.sync.createsession(token.id);
 					// Show new password overlay if it's a reset request
