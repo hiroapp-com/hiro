@@ -6656,8 +6656,11 @@ var Hiro = {
 			// Internal flags
 			inited: undefined,
 			showoninit: undefined,
-			visible: undefined,			
+			visible: undefined,		
+
+			// Landing Base URL and	placeholder for default landing page passed from flask to sys.init()
 			baseurl: '/component/landing/',	
+			route: undefined,
 
 			// DOM links
 			page: undefined,
@@ -6710,7 +6713,7 @@ var Hiro = {
 				frame = document.createElement('iframe');
 
 				// Set src
-				frame.src = this.baseurl + (version || 'default');
+				frame.src = this.baseurl + (version || this.route || 'default');
 
 				// Append to DOM
 				this.el_root.appendChild(frame);

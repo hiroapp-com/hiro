@@ -13,7 +13,8 @@ CACHE:{{ "\n" }}
 /favicon.ico{{ "\n" }}
 /apple-touch-icon-precomposed.png{{ "\n" }}
 /og.png{{ "\n" }}
-/component/landing/{{ "\n" }}
+/component/landing/minimal{{ "\n" }}
+/component/landing/default{{ "\n" }}
 
 FALLBACK:{{ "\n" }}
 /note/ /offline/app.html{{ "\n" }}

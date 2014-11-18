@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:fb="http://ogp.me/ns/fb#" xml:lang="en">
+	<head>
+	    <title>Hiro</title>		
+	    <!-- This is jut a quick landing page by our programming n00b design co-founder, but if you'd be interested in working on a really nice Go/js state machine platform or love tinkering on distribution startegies please get in touch via hello@hiroapp.com-->
+        <meta name="description" content="Dead-simple notetaking. Launching soon." />
+        <meta name="keywords" content="Hiro, notes, notepad, notes with firends, shared notes, notetaking, evernote, simplenote, quip, wordup, shared notes, writing, writing app, word processor, text, text editor" />
+        <meta name="title" content="Hiro" />	    
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-touch-fullscreen" content="yes" />
+		<meta name="apple-mobile-web-app-title" content="Hiro" />	
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">	
+		<meta name="mobile-web-app-capable" content="yes" />		
+		<meta name="mobile-web-app-title" content="Hiro" />					
+		<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=0"/>	
+		<meta property="og:site_name" content="Hiro" />
+        <meta property="og:title" content="Hiro" />
+        <meta property="og:url" content="https://www.hiroapp.com" />
+        <meta property="og:image" content="https://www.hiroapp.com/og.png" />
+        <meta property="og:type" content="website" />
+        <meta property="og:description" content="Dead-simple notetaking. Launching soon." />
+		<link rel="stylesheet" type="text/css" href="/static/css/hiro.css">
+
+		<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png"/>
+		<link rel="canonical" href="https://www.hiroapp.com"/>	
+		<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
+		<script type="text/javascript">try{Typekit.load();}catch(e){}</script>		
+	</head>
+	<body id="landingPage2">
+		<div class="l_container">
+			<div class="l_overlay"></div>
+			<div class="l_canvas">			
+				<h1>Hiro.</h1>
+				<div class="cto">					
+					<div id="1" class="step step1">
+						<div class="text">
+							Scrappy Notes with Friends.
+						</div>							
+						<a href="#" class="wpcbutton blue start" id="startwriting" onclick="goto2(); return false;" ontouchstart="goto2(); return false;">Request Invite</a>
+						<span class="small">Or ask an early adopter to share a note with you.</small>
+					</div>
+					<div id="2" class="step step2" style="display:none;">
+						<div class="text">
+							Scrappy Notes with Friends.
+						</div>							
+						<form action="https://docs.google.com/a/hiroapp.com/forms/d/1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug/formResponse" method="POST" id="ss-form" target="googletarget" onsubmit="" class="googleform">
+							<input type="text" name="entry.1791768611" value="" class="ss-q-short" id="entry_1791768611" dir="auto" placeholder="Your Mobile Number or E-Mail" onkeyup="this.className='ss-q-short'" onkeydown="hitenter(event);">
+							<input type="text" name="entry.1985410470" value="" class="ss-q-short" id="entry_1985410470" dir="auto" style="display:none;">
+							<input type="text" name="entry.519630899" value="Mail" class="ss-q-short" id="entry_519630899" dir="auto" style="display:none;">
+							<input type="hidden" name="draftResponse" value="[]">
+							<input type="hidden" name="pageHistory" value="0">
+							<input type="submit" name="submit" value="Submit" id="ss-submit" class="submitbutton">
+						</form>
+						<a href="#" class="wpcbutton blue next" onclick="googlesubmit();return false;">Sign up</a><span class="small or"> or </span> 
+						<a href="#" class="wpcbutton blue next" onclick="this.innerHTML='Signing In...';facebooklogin();" id="fbbutton">Sign up with <b>Facebook</b></a>				
+					</div>	
+					<div id="3" class="step step3" style="display:none;">
+						<div class="text">
+							Thanks<em><span id="signupname"></span></em>!&nbsp;<span class="wellnotify">We'll hook you up asap.
+						</div>							
+						<a href="https://www.facebook.com/dialog/feed?app_id=661704270510690&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="wpcbutton next fb" onclick="facebookshare();return false;">Share</a><span class="small or"> or </span>
+						<a href="https://twitter.com/intent/tweet?text=New%20notetaking%20app%2C%20launching%20soon%3A%20www.hiroapp.com" onclick="window.open(this.href,'twitter','height=282,width=600');return false;" class="wpcbutton next tw">Tweet</a>
+					</div>			
+				</div>
+			</div>		
+		</div>
+		<div class="l_footer">
+			<div class="l_box"><div class="l_header">Ridiculously Fast</div>Start writing with a single tap, in under a second.</div>
+			<div class="l_box middle"><div class="l_header">Safe &amp; Secure</div>Your notes are always encrypted, synced and backed up.</div>
+			<div class="l_box"><div class="l_header">Everywhere &amp; Offline</div>Just works, anytime, on all your devices.</div>
+		</div>		
+		<iframe id="googletarget" style="display:none;"></iframe>
+		<script>
+		window.fbAsyncInit = function() {
+			// init the FB JS SDK
+			FB.init({
+			  appId      : '661704270510690',                       
+			  status     : true,                                 
+			  xfbml      : true                                  
+			});
+		};
+	  	function facebookshare() {
+	        var obj = {
+	            method: 'feed',
+	            link: 'https://www.hiroapp.com',
+	            picture: 'https://www.hiroapp.com/og.png',
+	            name: "Hiro",
+	            caption: 'https://www.hiroapp.com',
+	            description: "Dead-simple notetaking. Launching soon.",
+	            actions: {
+	                name: 'Request Invite',
+	                link: 'https://www.hiroapp.com',
+	            }
+	        };
+	        FB.ui(obj);
+	    };
+		function facebooklogin() {
+			FB.getLoginStatus(function(response) {	
+			  var method = document.getElementById('ss-form').getElementsByTagName('input')[2];
+			  var mail = document.getElementById('ss-form').getElementsByTagName('input')[0];
+			  var fbbutton = document.getElementById('fbbutton');
+			  var fbbuttonval = 'Sign in with <b>Facebook</b>';
+			  var signupname = document.getElementById('signupname');
+			  if (response.status === 'connected') {
+				FB.api('/me', function(response) {
+					goto3();			  	
+				  	method.value = 'Facebook';
+				  	signupname.innerHTML = ' ' + response.first_name;					
+					mail.value = response.email;
+					googlesubmit();					
+				});			  					    
+			  } else if (response.status === 'not_authorized') {
+					FB.login(function(response) {
+					   if (response.authResponse) {
+							FB.api('/me', function(response) {
+								goto3();			  	
+							  	method.value = 'Facebook';
+							  	signupname.innerHTML = '&nbsp;' + response.first_name;
+								mail.value = response.email;
+								googlesubmit();					
+							});		
+					   } else {
+					   		fbbutton.innerHTML = fbbuttonval;
+					   }
+					},{scope: 'email'});
+			  } else {
+					FB.login(function(response) {
+					   if (response.authResponse) {
+							FB.api('/me', function(response) {
+								goto3();			  	
+							  	method.value = 'Facebook';
+							  	signupname.innerHTML = '&nbsp;' + response.first_name;				
+								mail.value = response.email;
+								googlesubmit();					
+							});		
+					   } else {
+					   	 fbbutton.innerHTML = fbbuttonval;
+					   }
+					},{scope: 'email'});
+				}			
+			});
+		}	    
+		(function(d, s, id){
+		 var js, fjs = d.getElementsByTagName(s)[0];
+		 if (d.getElementById(id)) {return;}
+		 js = d.createElement(s); js.id = id;
+		 js.src = "//connect.facebook.net/en_US/all.js";
+		 fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));
+
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+		ga('create', 'UA-41408220-1', 'hiroapp.com');
+		ga('send', 'pageview');		
+
+		function hitenter(e) {
+			if (e.keyCode==13) {
+				googlesubmit();
+				e.preventDefault();
+			}
+		}
+		function googlesubmit() {
+			var input = document.getElementById('ss-form').getElementsByTagName('input')[0];
+			if (!input.value) {
+				input.className += ' error';
+				input.focus();
+				return;
+			}	
+			document.getElementById('ss-submit').click();
+			goto3();			
+		}
+		function getreferrer() {
+			document.getElementById('ss-form').getElementsByTagName('input')[1] = document.referrer;
+		}
+		getreferrer();		
+
+		function goto2() {
+			document.body.style.backgroundImage = 'none';
+			document.getElementById('1').style.display='none';
+			document.getElementById('2').style.display='block';			
+			document.getElementById('ss-form').getElementsByTagName('input')[0].focus();	
+		}
+		function goto3() {
+			document.getElementById('2').style.display='none';
+			document.getElementById('3').style.display='block';
+		}
+		</script>			
+	</body>
+</html>		
