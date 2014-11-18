@@ -3348,10 +3348,19 @@ var Hiro = {
 				// Otherwise load latest note										
 				} else {
 					Hiro.canvas.load();	
-				}	
+				}
 
-				// Connect to server
-				Hiro.sync.connect();
+				// Abort further actions on beta.
+				if (window.location.hostname.indexOf('beta') > -1) {
+					// Reset to trigger new session, token processing will take care of the redirect to www					
+					Hiro.sync.reset();
+					// Abort here
+					return;
+				// Continue normal flow	
+				} else {
+					// Connect to server
+					Hiro.sync.connect();
+				}				
 
 				// Set stage
 				Hiro.ui.setstage();							
@@ -4013,6 +4022,13 @@ var Hiro = {
 
 				// If the action requires a new session or we do have none yet
 				if (!Hiro.data.get('profile','c.sid') || newsessionactions.indexOf(token.action) > -1 ) {
+					// Beta migration,redirect to www once we have a proper session token
+					if (window.location.hostname.indexOf('beta') > -1) {
+						// Reload with new url						
+						Hiro.sys.reload(false,'https://www.hiroapp.com/#' + token.id)
+						// Abort here
+						return;
+					}
 					// Create a new session
 					Hiro.sync.createsession(token.id);
 					// Show new password overlay if it's a reset request
@@ -5922,6 +5938,9 @@ var Hiro = {
 		// System vars
 		production: (window.location.href.indexOf('hiroapp') != -1),
 
+		// Default URL
+		defaulturl: '/backdoor',
+
 		// System setup, this is called once on startup and then calls inits for the various app parts 
 		init: function(vars) {
 			var el;
@@ -6068,13 +6087,16 @@ var Hiro = {
 		},
 
 		// Hard reload of page
-		reload: function(fade) {
+		reload: function(fade,url) {
+			// FAll back on default url
+			if (!url) url = this.defaulturl;
+
 			// Make sure other tabs refresh as well, flsuh the msg right away
-			Hiro.data.local.tabtx('window.location.href = "/backdoor"',true);								                    		
+			Hiro.data.local.tabtx('window.location.href = "' + url + '"',true);								                    		
 
 			// Start fading out body, reload our own window after that
-			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/backdoor" });
-			else window.location.href = "/backdoor";
+			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = url });
+			else window.location.href = url;
 		},
 
 		// console.log wrapper
