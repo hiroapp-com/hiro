@@ -14,7 +14,7 @@ CACHE:{{ "\n" }}
 /apple-touch-icon-precomposed.png{{ "\n" }}
 /og.png{{ "\n" }}
 /component/landing/minimal{{ "\n" }}
-/component/landing/default{{ "\n" }}
+/component/landing/beta{{ "\n" }}
 
 FALLBACK:{{ "\n" }}
 /note/ /offline/app.html{{ "\n" }}
