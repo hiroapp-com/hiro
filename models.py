@@ -175,7 +175,7 @@ class User(object):
         elif token:
             conn = get_db()
             cur = conn.cursor()
-            cur.execute("SELECT uid FROM tokens WHERE token = %s AND last_consumed_at > now() - interval '3 minutes'", (sha512(token).hexdigest(),))
+            cur.execute("SELECT uid FROM tokens WHERE token = %s AND last_consumed_at > now() - interval '10 minutes'", (sha512(token).hexdigest(),))
             print (sha512(token).hexdigest())
             uid = cur.fetchone()
             print uid
