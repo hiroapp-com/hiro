@@ -61,6 +61,8 @@
 		var Hiro = window.parent.Hiro;
 		// Init Hiro to fade in contents
 		Hiro.ui.landing.init(this);
+		// Remove create account link
+		window.parent.document.getElementById('s_signin').getElementsByClassName('small')[1].style.display = 'none';		
 		// Waitlist foo
 		window.fbAsyncInit = function() {
 			// init the FB JS SDK

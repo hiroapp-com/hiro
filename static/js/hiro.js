@@ -1730,6 +1730,14 @@ var Hiro = {
 							// Set reason for prompting login
 							reason = (response.status === 'not_authorized') ? 'auth' : 'login';
 
+							// If user is not authed yet and landing page is waitlist
+							if (!Hiro.ui.landing.route && reason == 'auth') {
+								// Fire error
+								if (obj && obj.error) obj.error('waitlist');
+								// Abort
+								return;
+							}
+
 							// Ask user to login and or auth Hiro on FB
 							FB.login(function(response) {
 								// Post tokens, or false if login didn't return any
@@ -1758,20 +1766,28 @@ var Hiro = {
 				},
 				// If something hapenned along the way
 				error: function(reason,data) {
+					var tryagain;
 					// We screwed up
 					if (reason == 'backend') {
 						e.textContent = 'Hiro not available, please try again later.';	
 						Hiro.sys.error('Facebook login failed on our side',data);
 					// FB not available (the script fetching of Hiro.lig failed) or user offline										
 					} else if (reason == 'sourceoffline') {
-						e.textContent = 'Facebook not available, please try later.';		
+						e.textContent = 'Facebook not available, please try later.';	
+					// User tried to sign up while in front of waitlist landing page								
+					} else if (reason == 'waitlist') {
+						e.textContent = 'Nice try, but please apply for early access.';
+						// Reset button
+						button.innerHTML = 'Log-In with <b>Facebook</b>';
+						// Do not show Try again	
+						tryagain = false;						
 					// User aborted											
 					} else {
 						e.textContent = 'Something went wrong, please try later.';
 					}
 
 					// Reset button
-					button.textContent = 'Try again';					
+					if (tryagain != false) button.textContent = 'Try again';					
 
 					// End loading bar in error
 					Hiro.ui.hprogress.done(true)
@@ -3401,6 +3417,7 @@ var Hiro = {
 			if (event.key == 'Hiro.notify') {
 				// Extract command string	
 				command = JSON.parse(event.newValue);	
+				console.log('gooooooooooot ',command,event.newValue);
 				// Eval
 				if (command) {				
 					// Create anon function from string
@@ -6051,11 +6068,11 @@ var Hiro = {
 		// Hard reload of page
 		reload: function(fade) {
 			// Make sure other tabs refresh as well
-			Hiro.data.local.tabtx('window.location.href = "/"');								                    		
+			Hiro.data.local.tabtx('window.location.href = "/backdoor"');								                    		
 
 			// Start fading out body, reload our own window after that
-			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/" });
-			else window.location.href = "/";
+			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = "/backdoor" });
+			else window.location.href = "/backdoor";
 		},
 
 		// console.log wrapper
