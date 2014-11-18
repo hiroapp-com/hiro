@@ -804,8 +804,8 @@ var Hiro = {
 			// Start hprogress bar
 			Hiro.ui.hprogress.begin();
 
-			// If it's the very first note we get, also notify other tabs of it
-			if (!this.currentnote) Hiro.data.local.tabtx('Hiro.canvas.load("'  + id + '",' + preventhistory + ',' + forcedreload + ');');		
+			// If it's the very first note we get (or it'S a forced reload from session create), also notify other tabs of it
+			if (forcedreload || !this.currentnote) Hiro.data.local.tabtx('Hiro.canvas.load("'  + id + '",' + preventhistory + ',' + forcedreload + ');');		
 
 			// Set internal values
 			this.currentnote = id;				
@@ -6127,6 +6127,7 @@ var Hiro = {
 		// Internals
 		focus: false,
 		resizing: false,
+		tier: undefined,
 
 		// Setup and browser capability testing
 		init: function() {
@@ -6368,16 +6369,14 @@ var Hiro = {
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
-			var currenttier = Hiro.data.get('profile','c.tier');
-
 			// If the stage setting was triggered by another tab
 			if (this.landing.visible) this.landing.hide();
 
 			// if we want to set it to existing tier, abort
-			if (tier && tier == currenttier) return;
+			if (tier && tier == this.tier) return;
 
 			// Set tier if none is provided 
-			tier = tier || currenttier || 0; 			
+			tier = tier || Hiro.data.get('profile','c.tier') || 0; 			
 
 			// Send tier setting to other tabs
 			Hiro.data.local.tabtx('Hiro.ui.setstage(' + tier + ',true);');
