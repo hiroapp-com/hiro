@@ -69,6 +69,8 @@ def version_dev():
 app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'])
 app.add_url_rule('/crash', 'crash', view_func=views.crash, methods=['GET'])
 app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
+# Backdoor pages
+app.add_url_rule('/backdoor', 'backdoor', view_func=views.backdoors, methods=['GET'], defaults={'page': 'beta'})
 # token handlers
 app.add_url_rule('/tokens/anon', 'anontoken', view_func=views.anon, methods=['GET'])
 app.add_url_rule('/tokens/login', 'login', view_func=views.login, methods=['POST'])

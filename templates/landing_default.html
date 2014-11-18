@@ -1,30 +1,7 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:fb="http://ogp.me/ns/fb#" xml:lang="en">
+<html style="overflow: hidden" manifest="/static/hiro.appcache">
 	<head>
-	    <title>Hiro</title>		
-	    <!-- This is jut a quick landing page by our programming n00b design co-founder, but if you'd be interested in working on a really nice Go/js state machine platform or love tinkering on distribution startegies please get in touch via hello@hiroapp.com-->
-        <meta name="description" content="Dead-simple notetaking. Launching soon." />
-        <meta name="keywords" content="Hiro, notes, notepad, notes with firends, shared notes, notetaking, evernote, simplenote, quip, wordup, shared notes, writing, writing app, word processor, text, text editor" />
-        <meta name="title" content="Hiro" />	    
-		<meta name="apple-mobile-web-app-capable" content="yes" />
-		<meta name="apple-touch-fullscreen" content="yes" />
-		<meta name="apple-mobile-web-app-title" content="Hiro" />	
-		<meta name="apple-mobile-web-app-status-bar-style" content="black">	
-		<meta name="mobile-web-app-capable" content="yes" />		
-		<meta name="mobile-web-app-title" content="Hiro" />					
-		<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=0"/>	
-		<meta property="og:site_name" content="Hiro" />
-        <meta property="og:title" content="Hiro" />
-        <meta property="og:url" content="https://www.hiroapp.com" />
-        <meta property="og:image" content="https://www.hiroapp.com/og.png" />
-        <meta property="og:type" content="website" />
-        <meta property="og:description" content="Dead-simple notetaking. Launching soon." />
-		<link rel="stylesheet" type="text/css" href="/static/css/hiro.css">
-
-		<link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png"/>
-		<link rel="canonical" href="https://www.hiroapp.com"/>	
-		<script type="text/javascript" src="//use.typekit.net/nmo5dsg.js"></script>
-		<script type="text/javascript">try{Typekit.load();}catch(e){}</script>		
+        {{ get_asset('new_css') }}
 	</head>
 	<body id="landingPage2">
 		<div class="l_container">
@@ -70,7 +47,8 @@
 			<div class="l_box"><div class="l_header">Everywhere &amp; Offline</div>Just works, anytime, on all your devices.</div>
 		</div>		
 		<iframe id="googletarget" style="display:none;"></iframe>
-		<script>
+		<script type="text/javascript">
+		window.parent.Hiro.ui.landing.init(this);
 		window.fbAsyncInit = function() {
 			// init the FB JS SDK
 			FB.init({

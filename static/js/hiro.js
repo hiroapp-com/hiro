@@ -5925,12 +5925,13 @@ var Hiro = {
 			// Prevent initing twice
 			if (this.inited) return;
 
-			// Store keys
+			// Store keys / init variables
 			if (vars.fb) Hiro.lib.facebook.key = vars.fb;
 			if (vars.st) Hiro.lib.stripe.key = vars.st;
 			if (vars.rb) Hiro.lib.rollbar.key = vars.rb;
 			if (vars.ic) Hiro.lib.intercom.key = vars.ic;	
 			if (vars.v) this.versioncheck(vars.v);		
+			if (vars.lp) Hiro.ui.landing.route = vars.lp;			
 
 			// Create DMP socket
 			Hiro.sync.diff.dmp = new diff_match_patch();	

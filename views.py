@@ -45,6 +45,9 @@ def version():
 def home():
     return render_template('hync_home.html', version=version())
 
+def backdoors(page):
+    return render_template('hync_home.html', version=version(), page=page)    
+
 def crash():
     raise Exception("intended crash")
     return ''
