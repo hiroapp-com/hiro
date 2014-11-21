@@ -166,6 +166,7 @@
 			}
 			Hiro.sync.ajax.send({
 				payload: payload,
+				type: 'POST',				
 				url: 'https://docs.google.com/a/hiroapp.com/forms/d/1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug/formResponse',
 				success: function(req,data) {
 					goto3()												                    
@@ -175,6 +176,33 @@
 			// Log respective event
 			Hiro.user.track.logevent('Requests early access',{ Referrer: document.referrer });						
 		}
+
+		function googlesubmitb(event) {		
+			var inputs = document.getElementById('ss-form').getElementsByTagName('input'), payload;
+			if (!inputs[0].value) {
+				inputs[0].className += ' error';
+				inputs[0].focus();
+				return;
+			}	
+			if (event) event.preventDefault();
+			payload = {
+				formkey: '1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug',
+				"entry.1791768611": inputs[0].value,
+				"entry.1985410470": document.referrer,
+				"entry.519630899": document.getElementById('entry_519630899').value
+			}
+			Hiro.sync.ajax.send({
+				payload: payload,
+				type: 'POST',				
+				url: '"https://docs.google.com/spreadsheet/formResponse',
+				success: function(req,data) {
+					goto3()												                    
+				},										
+			});							
+			goto3();
+			// Log respective event
+			Hiro.user.track.logevent('Requests early access',{ Referrer: document.referrer });						
+		}		
 	
 
 		function goto2() {
