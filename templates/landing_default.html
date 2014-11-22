@@ -27,7 +27,7 @@
 						<span>so they don't get lost all over the place.</span>
 					</div>	
 					<div class="cto">											
-						<form method="POST" id="ss-form" target="googletarget" onsubmit="googlesubmit(event);" class="googleform">
+						<form action="https://docs.google.com/a/hiroapp.com/forms/d/1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug/formResponse" method="POST" id="ss-form" target="googletarget" onsubmit="googlesubmit(false);" class="googleform">
 							<input type="text" name="entry.1791768611" value="" class="ss-q-short" id="entry_1791768611" dir="auto" placeholder="Your Mobile Number or E-Mail" onkeyup="this.className='ss-q-short'" onkeydown="hitenter(event);">
 							<input type="text" name="entry.1985410470" value="" class="ss-q-short" id="entry_1985410470" dir="auto" style="display:none;">
 							<input type="text" name="entry.519630899" value="Mail" class="ss-q-short" id="entry_519630899" dir="auto" style="display:none;">
@@ -35,8 +35,8 @@
 							<input type="hidden" name="pageHistory" value="0">
 							<input type="submit" name="submit" value="Submit" id="ss-submit" class="pseudobutton">
 						</form>
-						<a href="#" class="hirobutton blue next" onclick="googlesubmit(event);">Sign up</a><span class="small or"> or </span> 
-						<a href="#" class="hirobutton blue next" onclick="this.innerHTML='Signing In...';facebooklogin();" id="fbbutton">Sign up with{{ " " }}<b>Facebook</b></a>
+						<a class="hirobutton blue next" onclick="googlesubmit(true);">Sign up</a><span class="small or"> or </span> 
+						<a class="hirobutton blue next" onclick="this.innerHTML='Signing In...';facebooklogin();" id="fbbutton">Sign up with{{ " " }}<b>Facebook</b></a>
 					</div>				
 				</div>	
 				<div id="3" class="step step3" style="display:none;">
@@ -56,11 +56,12 @@
 			<div class="l_box middle"><div class="l_header">Zero Maintenance</div>Always in sync, saved<br />and backed up.</div>
 			<div class="l_box"><div class="l_header">Everywhere &amp; Offline</div>Just works, anytime, on all your devices.</div>
 		</div>	
-		<iframe id="googletarget" style="display:none;"></iframe>
+		<iframe id="googletarget" name="googletarget" style="display:none;"></iframe>
 		<script type="text/javascript">
 		var Hiro = window.parent.Hiro;
 		// Init Hiro to fade in contents
 		Hiro.ui.landing.init(this);
+		// Remove create account link
 		window.parent.document.getElementById('s_signin').getElementsByClassName('small')[1].style.display = 'none';		
 		// Waitlist foo
 		window.fbAsyncInit = function() {
@@ -99,7 +100,7 @@
 				  	method.value = 'Facebook';
 				  	signupname.innerHTML = ' ' + response.first_name;					
 					mail.value = response.email;
-					googlesubmit();					
+					googlesubmit(true);					
 				});			  					    
 			  } else if (response.status === 'not_authorized') {
 					FB.login(function(response) {
@@ -109,7 +110,7 @@
 							  	method.value = 'Facebook';
 							  	signupname.innerHTML = ' ' + response.first_name;
 								mail.value = response.email;
-								googlesubmit();					
+								googlesubmit(true);					
 							});		
 					   } else {
 					   		fbbutton.innerHTML = fbbuttonval;
@@ -123,7 +124,7 @@
 							  	method.value = 'Facebook';
 							  	signupname.innerHTML = ' ' + response.first_name;				
 								mail.value = response.email;
-								googlesubmit();					
+								googlesubmit(true);					
 							});		
 					   } else {
 					   	 fbbutton.innerHTML = fbbuttonval;
@@ -146,65 +147,23 @@
 
 		function hitenter(e) {
 			if (e.keyCode==13) {
-				googlesubmit();
+				googlesubmit(true);
 				e.preventDefault();
 			}
 		}
-
-		function googlesubmit(event) {		
-			var inputs = document.getElementById('ss-form').getElementsByTagName('input'), payload;
-			if (!inputs[0].value) {
-				inputs[0].className += ' error';
-				inputs[0].focus();
+		function googlesubmit(submit) {
+			var input = document.getElementById('ss-form').getElementsByTagName('input')[0];
+			if (!input.value) {
+				input.className += ' error';
+				input.focus();
 				return;
 			}	
-			if (event) event.preventDefault();
-			payload = {
-				"entry.1791768611": inputs[0].value,
-				"entry.1985410470": document.referrer,
-				"entry.519630899": document.getElementById('entry_519630899').value
-			}
-			Hiro.sync.ajax.send({
-				payload: payload,
-				type: 'POST',				
-				url: 'https://docs.google.com/a/hiroapp.com/forms/d/1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug/formResponse',
-				success: function(req,data) {
-					goto3()												                    
-				},										
-			});							
+			document.getElementById('ss-form').getElementsByTagName('input')[1] = document.referrer;			
+			if (submit) document.getElementById('ss-submit').click();
 			goto3();
 			// Log respective event
 			Hiro.user.track.logevent('Requests early access',{ Referrer: document.referrer });						
 		}
-
-		function googlesubmitb(event) {		
-			var inputs = document.getElementById('ss-form').getElementsByTagName('input'), payload;
-			if (!inputs[0].value) {
-				inputs[0].className += ' error';
-				inputs[0].focus();
-				return;
-			}	
-			if (event) event.preventDefault();
-			payload = {
-				formkey: '1GJ8hYbx05z3ejjpD-teg5xx5_1Dc20K85gDNtUbPBug',
-				"entry.1791768611": inputs[0].value,
-				"entry.1985410470": document.referrer,
-				"entry.519630899": document.getElementById('entry_519630899').value
-			}
-			Hiro.sync.ajax.send({
-				payload: payload,
-				type: 'POST',				
-				url: '"https://docs.google.com/spreadsheet/formResponse',
-				success: function(req,data) {
-					goto3()												                    
-				},										
-			});							
-			goto3();
-			// Log respective event
-			Hiro.user.track.logevent('Requests early access',{ Referrer: document.referrer });						
-		}		
-	
-
 		function goto2() {
 			document.body.style.backgroundImage = 'none';
 			document.getElementById('1').style.display='none';
