@@ -2006,20 +2006,14 @@ html.ios body #rails #canvas textarea {
 /* New style overlay */
 
 #landing.modal  {
-  background-color: rgba(0,0,0,0.8);   
+  background-color: rgba(0,0,0,0.9);   
 }
 
 #landing.modal iframe  {
-  width: 60%;
+  width: 100%;
   height: 80%;
-  background-color: #111;
+  background-color: transparent;
   top: 10%;
-  left: 20%; 
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  -webkit-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  -moz-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  -o-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  -khtml-box-shadow: 0 4px 15px rgba(0,0,0,0.5);  
 }
 
 html.ml {
@@ -2030,9 +2024,9 @@ html.ml {
 html.ml .page {
   position: absolute;
   top: 50px;
-  right: 50px;
+  right: 20%;
   bottom: 0;
-  left: 50px;
+  left: 20%;
   background: #fff;
   border-radius: 3px;
   padding: 35px 45px;  
@@ -2041,29 +2035,35 @@ html.ml .page {
 html.ml .page .title {
   font-size: 27px;
   color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 html.ml .page .hirooverlay {
   padding: 20px 0 0 0;
   position: relative;
   opacity: 0.9;
+  height: 90%;
+  overflow: hidden;
 }
 
 html.ml .page .hirooverlay a {
   cursor: default;
   color: #63788D;
+  margin: 0;
 }
 
 html.ml .description {
   position: absolute;
-  bottom: 0;
+  bottom: 42px;
   left: 0;
   right: 0;
   background-color: #f0f0ed;
   height: 177px;
   z-index: 3000;  
   border-top: 1px solid #dcdcdc;
-  box-shadow: 0px 4px 12px black;  
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);  
+  box-shadow: 0px 1px 8px rgba(0,0,0,0.6);  
   padding: 28px 50px 0 50px; 
   text-align: center;
 }
@@ -2091,6 +2091,7 @@ html.ml .description .cto a.hirobutton {
   line-height: 20px;
   width: 30%;
   margin-bottom: 10px;
+  min-width: 200px;
 }
 
 html.ml .description .cto a.hirobutton small {
@@ -2105,6 +2106,35 @@ html.ml .description .cto small {
 
 html.ml .description .cto small a {
   color: #666;
+}
+
+@media (max-width: 480px) {
+  #landing.modal iframe  {
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0; 
+  }
+  html.ml .page {
+    top: 35px;
+    right: 35px;
+    left: 35px;
+    padding: 35px 45px;  
+  } 
+  html.ml .description {
+    padding-left: 35px;
+    padding-right: 35px;
+    bottom: 0;
+    border-bottom: 0;    
+  }
+  html.ml .description .text span {
+    display: inline;
+  }  
+  html.ml .description .cto a.hirobutton {
+    width: auto;
+    display: block;
+    margin: 0 35px 10px 35px;
+  }  
 }
 
 /* Old landing page designs */ 
