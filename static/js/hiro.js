@@ -6043,7 +6043,6 @@ var Hiro = {
 		// Takes a version nr and compares it to what we have. 
 		// If we have a new git tag, indicated by a change in the version string before first '-'
 		versioncheck: function(version) {
-
 			// First version to be submitted will be stored in js for this browser session (most likely sys.init() will be first)
 			if (!Hiro.version) {
 				// Set it
@@ -6764,6 +6763,9 @@ var Hiro = {
 			load: function(version) {
 				// Create a new frame object
 				var frame = document.createElement('iframe');
+
+				// Change appeareance
+				if (this.route == 'modal') this.el_root.className += 'modal';
 
 				// Set src
 				frame.src = this.baseurl + (version || this.route || 'default');

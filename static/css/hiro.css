@@ -555,7 +555,7 @@ html.touch body #rails #canvas {
     outline: none;
 }
 
-#canvas textarea, #overlay {   
+#canvas textarea, .hirooverlay {   
   margin: 0;
   font-family: "ff-meta-serif-web-pro",serif;
   font-weight: 400;
@@ -585,7 +585,7 @@ html.ios body #rails #canvas textarea {
 }
 
 
-#overlay { 
+.hirooverlay { 
   top: 0;
   position: absolute;
   padding: 147px 395px 80px 96px;   
@@ -596,7 +596,7 @@ html.ios body #rails #canvas textarea {
   word-wrap: break-word;  
 }
 
-#overlay a {
+.hirooverlay a {
   border: 1px solid #C0CFDF;
   border-radius: 4px;
   padding: 3px 7px 0px 7px;
@@ -605,17 +605,17 @@ html.ios body #rails #canvas textarea {
   color: #6097CE;  
 }
 
-#overlay:after {
+.hirooverlay:after {
   content: " ";
 }
 
-#overlay .flag {
+.hirooverlay .flag {
   width: 0;
   display: inline;
   position: relative;
 }
 
-#overlay .flag .name {
+.hirooverlay .flag .name {
   position: absolute;
   top: -14px;
   font-family: "urbana", sans-serif;
@@ -630,32 +630,32 @@ html.ios body #rails #canvas textarea {
   border: 1px solid #999;
 }
 
-#overlay .flag .name.left {
+.hirooverlay .flag .name.left {
   left: -9px;
   right: auto;
 }
 
-#overlay .flag.active .name {
+.hirooverlay .flag.active .name {
   color: #168012;
   border-color: #168012;
 }
 
-#overlay .flag.active .name:before {
+.hirooverlay .flag.active .name:before {
   border-color: rgba(22, 128, 18, 0);
   border-top-color: #168012;    
 }
 
-#overlay .flag.old .name {
+.hirooverlay .flag.old .name {
   color: #bbb;
   border-color: #bbb;
 }
 
-#overlay .flag.old .name:before {
+.hirooverlay .flag.old .name:before {
   border-color: rgba(187, 187, 187, 0);
   border-top-color: #bbb;    
 }
 
-#overlay .flag .name:after, #overlay .flag .name:before {
+.hirooverlay .flag .name:after, .hirooverlay .flag .name:before {
   top: 100%;
   border: solid transparent;
   content: " ";
@@ -665,7 +665,7 @@ html.ios body #rails #canvas textarea {
   pointer-events: none;
 }
 
-#overlay .flag .name:before {
+.hirooverlay .flag .name:before {
   border-color: rgba(153, 153, 153, 0);
   border-top-color: #999;
   border-width: 5px;
@@ -673,7 +673,7 @@ html.ios body #rails #canvas textarea {
   right: 5px;    
 }    
 
-#overlay .flag .name:after {
+.hirooverlay .flag .name:after {
   border-color: rgba(255, 255, 255, 0);
   border-top-color: #fff;
   border-width: 4px;
@@ -681,13 +681,13 @@ html.ios body #rails #canvas textarea {
   right: 6px;
 }
 
-#overlay .flag .name.left:before {
+.hirooverlay .flag .name.left:before {
   margin-left: -5px;
   left: 9px;  
   right: auto;  
 } 
 
-#overlay .flag .name.left:after {
+.hirooverlay .flag .name.left:after {
   margin-left: -4px;
   left: 9px;
   right: auto;   
@@ -769,7 +769,7 @@ html.ios body #rails #canvas textarea {
     line-height: 28px;
   }  
 
-  #overlay {
+  .hirooverlay {
     padding: 45px 12px 40px 12px;
     line-height: 28px;
   }   
@@ -796,7 +796,7 @@ html.ios body #rails #canvas textarea {
     border: 0;
   }  
 
-  #overlay {
+  .hirooverlay {
     padding: 113px 70px 80px 70px;
     line-height: 30px;
   }  
@@ -2001,6 +2001,114 @@ html.ios body #rails #canvas textarea {
   position: absolute; 
 }
 
+
+
+/* New style overlay */
+
+#landing.modal  {
+  background-color: rgba(0,0,0,0.8);   
+}
+
+#landing.modal iframe  {
+  width: 60%;
+  height: 80%;
+  background-color: #111;
+  top: 10%;
+  left: 20%; 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -webkit-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -moz-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -o-box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  -khtml-box-shadow: 0 4px 15px rgba(0,0,0,0.5);  
+}
+
+html.ml {
+  background-color: transparent;
+  overflow: hidden;
+}
+
+html.ml .page {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  bottom: 0;
+  left: 50px;
+  background: #fff;
+  border-radius: 3px;
+  padding: 35px 45px;  
+}
+
+html.ml .page .title {
+  font-size: 27px;
+  color: #666;
+}
+
+html.ml .page .hirooverlay {
+  padding: 20px 0 0 0;
+  position: relative;
+  opacity: 0.9;
+}
+
+html.ml .page .hirooverlay a {
+  cursor: default;
+  color: #63788D;
+}
+
+html.ml .description {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #f0f0ed;
+  height: 177px;
+  z-index: 3000;  
+  border-top: 1px solid #dcdcdc;
+  box-shadow: 0px 4px 12px black;  
+  padding: 28px 50px 0 50px; 
+  text-align: center;
+}
+
+html.ml .description .text {
+  line-height: 22px; 
+}
+
+html.ml .description .text span {
+  display: block;
+}
+
+html.ml .description .cto {
+  position: absolute;
+  bottom: 15px;
+  display: block;
+  left: 0;
+  right: 0;
+}
+
+html.ml .description .cto a.hirobutton {
+  padding: 14px 18px 8px 18px;
+  font-size: 28px;
+  display: inline-block;
+  line-height: 20px;
+  width: 30%;
+  margin-bottom: 10px;
+}
+
+html.ml .description .cto a.hirobutton small {
+  color: rgba(255,255,255,0.95);
+}
+
+html.ml .description .cto small {
+  font-size: 14px;
+  display: block;
+  color: #999;
+}
+
+html.ml .description .cto small a {
+  color: #666;
+}
+
+/* Old landing page designs */ 
+
 body#landingPage2 {
   text-align: center;  
   display: none;
@@ -2287,7 +2395,7 @@ body#landingPage2 .l_footer .l_box .l_header {
     color: #333; 
   }
 
-  #overlay {
+  .hirooverlay {
     padding: 40mm 10% 10mm 10%;
     color: #333;
   }
