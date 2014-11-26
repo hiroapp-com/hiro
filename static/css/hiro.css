@@ -2021,15 +2021,32 @@ html.ml {
   overflow: hidden;
 }
 
-html.ml .page {
+html.ml .pages {
+  width: 300%; 
+}
+
+html.ml .pages .page {
   position: absolute;
   top: 50px;
-  right: 20%;
   bottom: 0;
-  left: 20%;
   background: #fff;
   border-radius: 3px;
   padding: 35px 45px;  
+}
+
+html.ml .pages .page.one {
+  right: 20%;
+  left: 20%; 
+}
+
+html.ml .pages .page.two {
+  right: -80%;
+  left: 120%; 
+}
+
+html.ml .pages .page.three {
+  right: -180%;
+  left: 220%; 
 }
 
 html.ml .page .title {

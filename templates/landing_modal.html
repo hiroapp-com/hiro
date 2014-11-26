@@ -4,28 +4,63 @@
         {{ get_asset('new_css') }}		
 	</head>
 	<body>
-		<div class="page">
-			<div class="title">Cool New Restaurants</div>
-			<div class="hirooverlay">
-				Hey all, rules are simple<div class="flag active"><div class="name">Stephanie</div></div>: Website, opening hours, your one line summary, best table and favorite dish. If it's not good, please add it at the end (No-Go) with a short remark. Enjoy!<br /><br />
-				LATEST KID IN TOWN: <br /><br />
-				Ordinaire NY - Nolita - {{ " " }}<a>https://www.bistroordinaireny.com</a>{{ " " }} 6p - 1a<br /><br />
-				Chris, 4ppl 21/1/2015: Finally something great coming out of SF, incredibly fresh produce, Spotted Pig style simplicity & atmosphere.<br />
-				- The cozy tables on the left, go for the seven course or stick with the burger that made them famous.<br /><br />
-				PREVIOUSLY:<br /><br />Single Bit - Queens -{{ " " }}<a>www.singlebit.com</a>{{ " " }}- Weekends only, 5p - 12a
+		<div class="pages">
+			<div class="page one">
+				<div class="title">Cool New Restaurants</div>
+				<div class="hirooverlay">
+					Hey all, rules are simple<div class="flag active"><div class="name">Stephanie</div></div>: Website, opening hours, your one line summary, best table and favorite dish. If it's not good, please add it at the end (No-Go) with a short remark. Enjoy!<br /><br />
+					LATEST KID IN TOWN: <br /><br />
+					Ordinaire NY - Nolita - {{ " " }}<a>https://www.bistroordinaireny.com</a>{{ " " }} 6p - 1a<br /><br />
+					Chris, 4ppl 21/1/2015: Finally something great coming out of SF, incredibly fresh produce, Spotted Pig style simplicity &amp; atmosphere.<br />
+					- The cozy tables on the left, go for the seven course or stick with the burger that made them famous.<br /><br />
+					PREVIOUSLY:<br /><br />Single Bit - Queens -{{ " " }}<a>www.singlebit.com</a>{{ " " }}- Weekends only, 5p - 12a
+				</div>
+				<div class="dots">
+					&#9899;{{ " " }}<a data-hiro-action="next">&#9898;</a>{{ " " }}<a data-hiro-action="next">&#9898;</a> 
+				</div>	
 			</div>
-			<div class="dots">
-				&#9899;{{ " " }}<a>&#9898;</a>{{ " " }}<a>&#9898;</a> 
-			</div>	
-		</div>
+			<div class="page two">
+				<div class="title">The Ubud Poject</div>
+				<div class="hirooverlay">
+					&#9992; Danielle will land in SIN with SQ 345 on Friday.<br /><br />
+					TODO:<br /><br />
+					[   ]  Danielle:  Prepare Loh Lik Peng meeting <a>http://www.unlistedcollection.com</a><br />
+					[   ]  Bruno:  Generic REIT pitch deck with design of landing page<br />
+					[   ]  Bruno:  Choose &amp; install mobile template<br /><br />
+					DONE<br /><br />
+					[ ✔ ]  Danielle:  Tjampuhan site inspection with Matt, get plenty of good photos<br />
+					[ ✔ ]  Danielle:  WOHA drinks<br />
+					[ ✔ ]  Bruno:  Get 3 resort construction budget breakdowns<br />
+				</div>
+				<div class="dots">
+					<a data-hiro-action="previous">&#9898;</a>{{ " " }}&#9899;{{ " " }}&#9899;{{ " " }}<a data-hiro-action="next">&#9898;</a> 
+				</div>	
+			</div>
+			<div class="page three">
+				<div class="title">Toni &amp; Oz File</div>
+				<div class="hirooverlay">
+					OPEN: Toni > Oz 100 bucks from last weeks field trip.<br /><br />
+					Manhunter <a>http://www.imdb.com/title/tt0091474</a> is the earlier Red Dragon movie adaption by Michael Mann we talked about last time.<br /><br />
+					Address Toni:<br />
+					1 Little West 12th Street<br />
+					10014 New York<br /><br />
+					Address Oz:<br />
+					3491 20th Street<br />
+					94110 San Francisco<br />
+				</div>
+				<div class="dots">
+					<a data-hiro-action="previous">&#9898;</a>{{ " " }}<a data-hiro-action="previous">&#9898;</a>{{ " " }}&#9899; 
+				</div>	
+			</div>						
+		</div>	
 		<div class="description">
 			<div class="text">
 				<span>Hiro is an app for shared text snippets,{{ " " }}</span>
 				<span>so they don't get lost all over the place.</span>
 			</div>
 			<div class="cto">
-				<a class="hirobutton blue">Start a Note<small>No signup required</small></a>
-				<small>or{{ " " }}<a>sign-in</a></small>
+				<a class="hirobutton blue" data-hiro-action="cto">Start a Note<small>No signup required</small></a>
+				<small>or{{ " " }}<a data-hiro-action="signin">sign-in</a></small>
 			</div>
 		</div>
 		<script type="text/javascript">window.parent.Hiro.ui.landing.init(this);</script>
