@@ -2043,7 +2043,7 @@ html.ml .page .hirooverlay {
   padding: 20px 0 0 0;
   position: relative;
   opacity: 0.9;
-  height: 90%;
+  height: 70%;
   overflow: hidden;
 }
 
@@ -2051,6 +2051,20 @@ html.ml .page .hirooverlay a {
   cursor: default;
   color: #63788D;
   margin: 0;
+}
+
+html.ml .page .dots {
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+  left: 0;
+  text-align: center;  
+  color: #666;
+  font-size: 16px;
+}
+
+html.ml .page .dots a {
+  color: #999; 
 }
 
 html.ml .description {
