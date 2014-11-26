@@ -72,6 +72,8 @@ app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
 # Backdoor pages
 app.add_url_rule('/backdoor', 'backdoor', view_func=views.backdoors, methods=['GET'], defaults={'page': 'beta'})
 app.add_url_rule('/modal', 'modal', view_func=views.backdoors, methods=['GET'], defaults={'page': 'modal'})
+# About bpages
+app.add_url_rule('/is', 'is', view_func=views.about, methods=['GET'])
 # token handlers
 app.add_url_rule('/tokens/anon', 'anontoken', view_func=views.anon, methods=['GET'])
 app.add_url_rule('/tokens/login', 'login', view_func=views.login, methods=['POST'])
@@ -83,7 +85,7 @@ app.add_url_rule('/component/landing/<landing_id>', 'landing', view_func=views.l
 app.add_url_rule('/component/settings/', 'settings', view_func=views.settings)
 app.add_url_rule('/offline/app.html', 'offline', view_func=views.offline)
 app.add_url_rule('/static/hiro.appcache', 'appcache', view_func=views.static_manifest)
-# facebook & stipe callbacks
+# facebook & stripe callbacks
 app.add_url_rule('/connect/facebook', 'fb_connect', view_func=views.fb_connect)
 app.add_url_rule('/_cb/facebook', 'fb_callback', view_func=views.fb_callback, methods=['GET','POST'])
 app.add_url_rule('/settings/plan', 'change_plan', view_func=views.change_plan, methods=['POST'])
