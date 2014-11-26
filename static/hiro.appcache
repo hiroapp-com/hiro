@@ -1,6 +1,7 @@
 CACHE MANIFEST{{ "\n" }}
 
 CACHE:{{ "\n" }}
+/{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
 {{ get_asset_url('new_js') }}{{ "\n" }}
 /static/img/icons.4.png{{ "\n" }}
