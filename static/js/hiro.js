@@ -415,10 +415,10 @@ var Hiro = {
 				};	
 
 			// If the user itself created the note but doesn't have the necessary tier yet
-			if (Hiro.folio.owncount > 10 && user.c.tier < 2) {
-				Hiro.ui.dialog.suggestupgrade('unlimitednotes');
-				return;
-			}	
+			// if (Hiro.folio.owncount > 10 && user.c.tier < 2) {
+			//	Hiro.ui.dialog.suggestupgrade('unlimitednotes');
+			//	return;
+			// }	
 
 			// Add new item to beginning of array
 			if (!f.c) f.c = [];
@@ -4544,7 +4544,9 @@ var Hiro = {
 			if (cf.c && cf.c.length > 0) {
 				// Load doc onto canvas, try current note per default so logins / session resets don't change notes
 				// Only do this for not yet synced notes, otherwise it screws up our "tease sharing on first visit"
-				if (Hiro.canvas.currentnote.length > 4) Hiro.canvas.load(Hiro.canvas.currentnote,false,true);					
+				if (Hiro.canvas.currentnote.length > 4) Hiro.canvas.load(Hiro.canvas.currentnote,false,true);
+				// Otherwise end hprogress here
+				else Hiro.ui.hprogress.done();					
 			// If the folio is still empty, we create a new note				
 			} else {
 				// Log
