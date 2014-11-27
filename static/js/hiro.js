@@ -2557,6 +2557,12 @@ var Hiro = {
 			inviting: false,
 			section: 'invite',
 			notoken: false,
+			promoted: false,
+
+			// Modify UI to tease invite
+			promote: function() {
+
+			},
 
 			// Default keyhandler
 			keyhandler: function(event) {
@@ -2858,19 +2864,13 @@ var Hiro = {
 						// Change button
 						el_button.className = 'hirobutton grey';
 						el_button.innerHTML = 'Invite <b>' + string + '</b>';
-					// Make evrythign grey	
+					// Make everything grey	
 					} else if (type) {
-						// Truncate string if it's too long
-						if (string.length > 22) string = string.substring(0,20) + '...';
-
 						// Change button
 						el_button.className = 'hirobutton green';
 						el_button.innerHTML = 'Invite <b>' + string + '</b> via ' + ((type == 'phone') ? 'SMS' : 'E-Mail');
-					// Make evrythign grey	
+					// Make everything grey	
 					} else {
-						// Truncate
-						if (string.length > 30) string = string.substring(0,29) + '...';
-
 						// Switch back to 'disabled'
 						el_button.className = 'hirobutton grey';
 						el_button.innerHTML = 'Invite <b>' + string + '</b>';						
