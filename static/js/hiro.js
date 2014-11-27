@@ -147,7 +147,7 @@ var Hiro = {
 						// Close the folio if it should be open
 						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
 						// And force focus on touch devices
-						// if (Hiro.ui.touch) Hiro.canvas.setcursor(0,true);					
+						if (Hiro.ui.touch) Hiro.apps.sharing.focus();					
 						break;
 					case 'archivelink':				
 						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('archiveswitch');
@@ -883,7 +883,7 @@ var Hiro = {
 			// With the next available frame
 			Hiro.ui.render(function(){						
 				// Get basic values, subtract canvas borderradius from viewport size and 50px top bar from non mini designs
-				viewportheight = (document.documentElement.clientHeight || window.innerHeight ) - 6 - ((Hiro.ui.mini()) ? 0 : 50);
+				viewportheight = (document.documentElement.clientHeight || window.innerHeight ) - 6 - ((Hiro.ui.mini()) ? -1 : 50);
 
 				// Find biggest or overlay,viewport or textarea scroll			
 				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewportheight)				
@@ -972,10 +972,8 @@ var Hiro = {
         		range.select();
         	// Default fallback	
     		} else {
-    			el.focus();    			
+    			el.focus();
     		}
-
-    		Hiro.sys.error('settin cursor')
 
     		// Disable force scroll Chrome does to make cursor visible
     		if (Hiro.folio.open && Hiro.canvas.el_rails.scrollLeft)	Hiro.canvas.el_rails.scrollLeft = 0;
@@ -2576,14 +2574,14 @@ var Hiro = {
 			teasers: {
 				// The one we fall back to
 				reset: {
-					title: 'Invite others',
+					title: 'Add participants',
 					secondary: false
 				},
 
 				// When a new note is created
 				share: {
-					title: 'Who do you want to share this with?',
-					secondary: 'Only me'
+					title: 'Add participants',
+					secondary: 'Only me for now'
 				}
 			},
 			teased: false,
@@ -2603,8 +2601,8 @@ var Hiro = {
 				// Change title	
 				if (teaser.title) title.firstChild.textContent = teaser.title;
 
-				// Change button	
-				if (teaser.secondary) {
+				// Change button, only on small devices				
+				if (teaser.secondary && Hiro.ui.mini()) {
 					// Set content
 					secondarybutton.textContent = teaser.secondary;
 					// Display button
@@ -2754,8 +2752,7 @@ var Hiro = {
 					else el.select();
 				// Only focus the others		
 				} else {							
-					el.focus();		
-					Hiro.sys.error('focusssing');					
+					el.focus();							
 				}	
 			},	
 
@@ -3167,7 +3164,7 @@ var Hiro = {
 				return f;
 			},
 
-			// Check if proper & execute invite
+			// Execute invite
 			addpeer: function(peer,noteid,source) {
 				var peers, shadow, note;
 
@@ -3211,6 +3208,9 @@ var Hiro = {
 					// Set cache reference to ourselves if not done yet
 					if (!Hiro.canvas.cache._me && peer.user.uid == Hiro.data.get('profile','c.uid')) Hiro.canvas.cache._me = peer;
 				}	
+
+				// Send new commit after notediff added folio to unsynced if was the very first diff action for a new document
+				if (noteid.length == 4 && peers.length == 1) Hiro.sync.commit();
 
 				// Repaint folio
 				Hiro.folio.paint();
@@ -4543,7 +4543,8 @@ var Hiro = {
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
 				// Load doc onto canvas, try current note per default so logins / session resets don't change notes
-				Hiro.canvas.load(Hiro.canvas.currentnote,false,true);					
+				// Only do this for not yet synced notes, otherwise it screws up our "tease sharing on first visit"
+				if (Hiro.canvas.currentnote.length > 4) Hiro.canvas.load(Hiro.canvas.currentnote,false,true);					
 			// If the folio is still empty, we create a new note				
 			} else {
 				// Log
@@ -4963,7 +4964,7 @@ var Hiro = {
 			if (this.resetting || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;		
 
 			// Create array
-			newcommit = [];									
+			newcommit = [];							
 
 			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
 			for (i = u.length - 1; i > -1; i--) {
@@ -5592,7 +5593,6 @@ var Hiro = {
 				if (note.id.length < 5) {
 					// Make sure the folio gets diffed again next time if the note has content or token requested
 					if ((note.c.text || note.c.title || note.c.peers.length > 0) && Hiro.data.unsynced.indexOf('folio') == -1) Hiro.data.unsynced.push('folio');			
-
 					// Abort
 					return false;	
 				}	
