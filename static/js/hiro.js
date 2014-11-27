@@ -147,7 +147,7 @@ var Hiro = {
 						// Close the folio if it should be open
 						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
 						// And force focus on touch devices
-						if (Hiro.ui.touch) Hiro.canvas.setcursor(0,true);					
+						// if (Hiro.ui.touch) Hiro.canvas.setcursor(0,true);					
 						break;
 					case 'archivelink':				
 						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('archiveswitch');
@@ -439,16 +439,24 @@ var Hiro = {
 				source = 's';
 			// Set default values for user inited stuff	
 			} else {
+				// Internal flags
 				note._lasteditor = note._owner = user.c.uid;
-				note._lastedit = Hiro.util.now();							
+				note._lastedit = Hiro.util.now();						
 			}				
 
 			// Save kick off setter flows						
 			Hiro.data.set('note_' + id,'',note,source);
 			Hiro.data.set('folio','',f,source);		
 
-			// Showit!
-			if (id.length == 4) Hiro.canvas.load(id);
+			// Do UI stuff after data was set above
+			if (id.length == 4) {
+				// Show it
+				Hiro.canvas.load(id);
+				// Tease invite
+				Hiro.apps.sharing.tease('share');
+				// Show widget
+				Hiro.apps.show(Hiro.apps.sharing.el_root);
+			}					
 
 			// Update settings dialog if it's open (update note counter)
 			if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();				
@@ -964,8 +972,10 @@ var Hiro = {
         		range.select();
         	// Default fallback	
     		} else {
-    			el.focus();
+    			el.focus();    			
     		}
+
+    		Hiro.sys.error('settin cursor')
 
     		// Disable force scroll Chrome does to make cursor visible
     		if (Hiro.folio.open && Hiro.canvas.el_rails.scrollLeft)	Hiro.canvas.el_rails.scrollLeft = 0;
@@ -2540,7 +2550,11 @@ var Hiro = {
 
 			// If no app is given, we close all of them
 			for (var i = this.open.length; i > 0; i--) {
+				// Hide widget
 				document.getElementById('app_' + this.open[i - 1]).getElementsByClassName('widget')[0].style.display = 'none';
+				// Reset if promo is active
+				if (this[this.open[i - 1]].teased) this[this.open[i - 1]].tease('reset');
+				// Remove from array of open apps
 				this.open.pop();
 			}
 
@@ -2561,7 +2575,7 @@ var Hiro = {
 			// Teaser realted stuff
 			teasers: {
 				// The one we fall back to
-				standard: {
+				reset: {
 					title: 'Invite others',
 					secondary: false
 				},
@@ -2575,12 +2589,13 @@ var Hiro = {
 			teased: false,
 
 			// Modify UI to tease invite
-			tease: function(teaser) {
+			tease: function(type) {
 				var title = this.el_root.getElementsByClassName('title')[0],
-					secondarybutton = this.el_root.getElementsByClassName('light')[0];
+					secondarybutton = this.el_root.getElementsByClassName('light')[0],
+					teaser;
 
 				// Fetch proper teaser object from collection
-				teaser = this.teasers[teaser];
+				teaser = this.teasers[type];
 
 				// Abort if we dont have one
 				if (!teaser) return;
@@ -2600,7 +2615,7 @@ var Hiro = {
 				}				
 
 				// Set flag
-				this.teased = true;
+				this.teased = (type == 'reset') ? false : true;
 			},
 
 			// Default keyhandler
@@ -2739,7 +2754,8 @@ var Hiro = {
 					else el.select();
 				// Only focus the others		
 				} else {							
-					el.focus();							
+					el.focus();		
+					Hiro.sys.error('focusssing');					
 				}	
 			},	
 
