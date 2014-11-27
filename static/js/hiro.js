@@ -2498,7 +2498,7 @@ var Hiro = {
 
 			// Close all others if they should be open
 			if (that.open.length > 0) that.closeall();
-			
+
 			// Log respective event
 			Hiro.user.track.logevent('Opened ' + element.id.substring(4) + ' widget');				
 
@@ -2620,8 +2620,18 @@ var Hiro = {
 
 			// Default keyhandler
 			keyhandler: function(event) {
+				var that = Hiro.apps.sharing, target = event.target || event.srcElement;
+
 				// Forward keyup event to validate
 				if (event.type != 'keydown') Hiro.apps.sharing.validate(event); 
+
+				// If we have no value, make it easier for people to get rid of dialog
+				if (!target.value && [37,9].indexOf(event.keyCode) > -1) {
+					// Prevent default, eg for tab
+					Hiro.util.stopEvent(event);
+					// Close dialog & set cursor
+					Hiro.apps.close();
+				}
 			},
 
 			// Default clickhandler
