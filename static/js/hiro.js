@@ -6299,7 +6299,17 @@ var Hiro = {
 					if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();
 					// Hide widgets
 					if (Hiro.apps.open.length > 0) Hiro.apps.close();
+					// Hide landing page
+					if (Hiro.ui.landing.visible && Hiro.ui.landing.route == 'modal') Hiro.ui.landing.stash();
 					break;
+				case 37:
+					// Move to next screen in landing page via fake event
+					if (Hiro.ui.landing.visible) Hiro.ui.landing.click('previous','half');
+					break;
+				case 39:
+					// Move to next screen in landing page via fake event
+					if (Hiro.ui.landing.visible) Hiro.ui.landing.click('next','half');
+					break;					
 			}
 
 
@@ -6804,17 +6814,8 @@ var Hiro = {
 					switch (action) {
 						case 'screenshot':
 						case 'cto':	
-							// Bootstrap local only workspace
-							Hiro.data.bootstrap();
-
-							// Connect to server
-							Hiro.sync.connect();
-
 							// Remove landing page
-							Hiro.ui.fade(Hiro.ui.landing.el_root,-1,150);
-
-							// Set flag
-							Hiro.ui.landingvisible = false;								
+							Hiro.ui.landing.stash();
 							break;		
 						case 'signin':		
 							// Show dialog			
@@ -6840,7 +6841,22 @@ var Hiro = {
 							break;									
 					}					
 				}
-			}			
+			},
+
+			// Remove the landing page and ready the workspace
+			stash: function() {
+				// Bootstrap local only workspace
+				Hiro.data.bootstrap();
+
+				// Connect to server
+				Hiro.sync.connect();
+
+				// Remove landing page
+				Hiro.ui.fade(Hiro.ui.landing.el_root,-1,150);
+
+				// Set flag
+				Hiro.ui.landingvisible = false;					
+			}
 		},		
 
 		// Left / right swipes, also add stability by preventing some default behaviour
