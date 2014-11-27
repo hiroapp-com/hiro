@@ -2557,11 +2557,50 @@ var Hiro = {
 			inviting: false,
 			section: 'invite',
 			notoken: false,
-			promoted: false,
+
+			// Teaser realted stuff
+			teasers: {
+				// The one we fall back to
+				standard: {
+					title: 'Invite others',
+					secondary: false
+				},
+
+				// When a new note is created
+				share: {
+					title: 'Who do you want to share this with?',
+					secondary: 'Only me'
+				}
+			},
+			teased: false,
 
 			// Modify UI to tease invite
-			promote: function() {
+			tease: function(teaser) {
+				var title = this.el_root.getElementsByClassName('title')[0],
+					secondarybutton = this.el_root.getElementsByClassName('light')[0];
 
+				// Fetch proper teaser object from collection
+				teaser = this.teasers[teaser];
+
+				// Abort if we dont have one
+				if (!teaser) return;
+
+				// Change title	
+				if (teaser.title) title.firstChild.textContent = teaser.title;
+
+				// Change button	
+				if (teaser.secondary) {
+					// Set content
+					secondarybutton.textContent = teaser.secondary;
+					// Display button
+					secondarybutton.style.display = 'block';
+				} else {
+					// Make sure button is hidden
+					secondarybutton.style.display = 'none';
+				}				
+
+				// Set flag
+				this.teased = true;
 			},
 
 			// Default keyhandler
