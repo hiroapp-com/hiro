@@ -1,7 +1,6 @@
 CACHE MANIFEST{{ "\n" }}
 
 CACHE:{{ "\n" }}
-/{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
 {{ get_asset_url('new_js') }}{{ "\n" }}
 /static/img/icons.4.png{{ "\n" }}
@@ -16,6 +15,7 @@ CACHE:{{ "\n" }}
 /og.png{{ "\n" }}
 /component/landing/minimal{{ "\n" }}
 /component/landing/beta{{ "\n" }}
+/{{ "\n" }}
 
 FALLBACK:{{ "\n" }}
 /note/ /offline/app.html{{ "\n" }}
