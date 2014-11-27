@@ -2147,24 +2147,47 @@ html.ml .description .cto small a {
   color: #666;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px) {  
   #landing.modal iframe  {
     width: 100%;
     height: 100%;
     top: 0;
     left: 0; 
+    background-color: #2f2f2f;    
   }
-  html.ml .page {
+  html.ml .pages .page {
     top: 35px;
-    right: 35px;
-    left: 35px;
-    padding: 35px 45px;  
+    padding: 35px 45px; 
+    margin: 0 35px; 
   } 
+
+  html.ml .pages .page.one {
+    right: 0;
+    left: 0;
+  }  
+
+  html.ml .pages .page.two {
+    right: -100%;
+    left: 100%;
+  } 
+
+  html.ml .pages .page.three {
+    right: -200%;
+    left: 200%;
+  } 
+
+  html.ml .page .dots {
+    bottom: 172px;
+    z-index: 10000;
+  }      
+
   html.ml .description {
     padding-left: 35px;
     padding-right: 35px;
     bottom: 0;
-    border-bottom: 0;    
+    border-bottom: 0; 
+    padding-top: 40px;
+    height: 165px;      
   }
   html.ml .description .text span {
     display: inline;
