@@ -3224,6 +3224,9 @@ var Hiro = {
 				// Send new commit after notediff added folio to unsynced if was the very first diff action for a new document
 				if (noteid.length == 4 && peers.length == 1) Hiro.sync.commit();
 
+				// Reset tease styling to normal if we teased adding users
+				if (this.teased) this.tease('reset');
+
 				// Repaint folio
 				Hiro.folio.paint();
 			},
