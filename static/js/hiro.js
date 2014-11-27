@@ -6793,7 +6793,8 @@ var Hiro = {
 			},
 
 			// Handle clicks on landingpage
-			click: function(action,type) {
+			click: function(action,type,target,branch,event) {
+				var modal, width;
 				// Woop, we inited started fiddling with something relevant
 				if (type == 'full') {			
 					// Log respective event
@@ -6820,6 +6821,24 @@ var Hiro = {
 							Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
 							break;									
 					}				
+				}
+
+				// If it's something reagrding the new modal signup
+				if (Hiro.ui.landing.route == 'modal' && type == 'half') {
+					// Get pages div
+					modal = Hiro.ui.landing.page.document.body;
+					// Prevent text selection
+					Hiro.util.stopEvent(event);					
+					// Switch based on action					
+					switch (action) {
+						case 'next':	
+							modal.scrollLeft += Hiro.ui.width(); 							
+							break;		
+						case 'previous':		
+							// Show dialog			
+							modal.scrollLeft -=  Hiro.ui.width();	
+							break;									
+					}					
 				}
 			}			
 		},		

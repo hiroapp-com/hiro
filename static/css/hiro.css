@@ -2019,10 +2019,18 @@ html.ios body #rails #canvas textarea {
 html.ml {
   background-color: transparent;
   overflow: hidden;
+  height: 100%;  
+}
+
+html.ml body {
+  overflow: visible;
+  height: 100%;  
 }
 
 html.ml .pages {
-  width: 300%; 
+  width: 300%;
+  display: block;
+  height: 100%; 
 }
 
 html.ml .pages .page {
@@ -2085,7 +2093,7 @@ html.ml .page .dots a {
 }
 
 html.ml .description {
-  position: absolute;
+  position: fixed;
   bottom: 42px;
   left: 0;
   right: 0;
