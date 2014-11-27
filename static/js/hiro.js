@@ -456,6 +456,8 @@ var Hiro = {
 				Hiro.apps.sharing.tease('share');
 				// Show widget
 				Hiro.apps.show(Hiro.apps.sharing.el_root);
+				// Log respective event
+				Hiro.user.track.logevent('Is teased to add participants (newnote)');					
 			}					
 
 			// Update settings dialog if it's open (update note counter)
@@ -2496,6 +2498,9 @@ var Hiro = {
 
 			// Close all others if they should be open
 			if (that.open.length > 0) that.closeall();
+			
+			// Log respective event
+			Hiro.user.track.logevent('Opened ' + element.id.substring(4) + ' widget');				
 
 			// Open widget
 			that.show(element);		
@@ -2522,9 +2527,6 @@ var Hiro = {
 
 			// Add ID to open list
 			this.open.push(app);
-
-			// Log respective event
-			Hiro.user.track.logevent('Opened ' + app + ' widget');	
 
 			// Move canvas to very top on minis
 			if (Hiro.ui.mini()) Hiro.canvas.totop();			
@@ -7553,7 +7555,7 @@ var Hiro = {
 					switch (action) {
 						case 'switch_s_plan':
 							// Log respective event
-							Hiro.user.track.logevent('Looks at plans');
+							Hiro.user.track.logevent('Navigates to plans');
 							Hiro.ui.switchview(document.getElementById(action.substring(7)));
 							break;														
 						case 'switch_s_about':						
@@ -7625,7 +7627,7 @@ var Hiro = {
 							break;												
 						case 'upgrade':
 							// Log respective event
-							Hiro.user.track.logevent('Looks at plans');
+							Hiro.user.track.logevent('Clicks on upgrade');
 							// Switch
 							Hiro.ui.switchview(document.getElementById('s_plan'));
 							break;	
