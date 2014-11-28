@@ -952,7 +952,7 @@ var Hiro = {
 				( Hiro.ui.dialog.open && document.activeElement && document.activeElement.tagName == 'input' ))) return;	
 
 			// Set default value
-			pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
+			if (pos != 0) pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
 
 			// Create array if we only got a number
 			if (typeof pos == 'number') pos = [pos,pos];		
@@ -4559,7 +4559,7 @@ var Hiro = {
 			if (cf.c && cf.c.length > 0) {
 				// Load doc onto canvas, try current note per default so logins / session resets don't change notes
 				// Only do this for not yet synced notes, otherwise it screws up our "tease sharing on first visit"
-				if (Hiro.canvas.currentnote.length > 4) Hiro.canvas.load(Hiro.canvas.currentnote,false,true);
+				if (Hiro.canvas.currentnote && Hiro.canvas.currentnote.length == 4) Hiro.canvas.load(Hiro.canvas.currentnote,false,true);
 				// Otherwise end hprogress here
 				else Hiro.ui.hprogress.done();					
 			// If the folio is still empty, we create a new note				

@@ -940,13 +940,6 @@ html.ios body #rails #canvas textarea {
   padding: 4px 0;  
 }
 
-#apps .app .widget .light  {
-  color: #666;
-  padding: 5px 0;
-  display: block; 
-  font-size: 18px;
-}
-
 #apps .app .widget input {
   width: 270px;
 }  
