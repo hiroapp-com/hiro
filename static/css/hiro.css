@@ -2117,29 +2117,25 @@ html.ml .description {
   left: 0;
   right: 0;
   background-color: #f0f0ed;
-  height: 177px;
   z-index: 3000;  
   border-top: 1px solid #dcdcdc;
   border-bottom: 1px solid rgba(0, 0, 0, 0.4);  
   box-shadow: 0px 1px 8px rgba(0,0,0,0.6);  
-  padding: 28px 50px 0 50px; 
+  padding: 20px 50px 12px 50px; 
   text-align: center;
 }
 
-html.ml .description .text {
-  line-height: 22px; 
-}
-
-html.ml .description .text span {
-  display: block;
-}
-
 html.ml .description .cto {
-  position: absolute;
-  bottom: 15px;
   display: block;
-  left: 0;
-  right: 0;
+}
+
+html.ml .description .cto .text {
+  line-height: 22px;
+  display: block;
+}
+
+html.ml .description .cto .text span {
+  display: block;
 }
 
 html.ml .description .cto a.hirobutton {
@@ -2148,8 +2144,9 @@ html.ml .description .cto a.hirobutton {
   display: inline-block;
   line-height: 20px;
   width: 30%;
-  margin-bottom: 10px;
+  margin: 15px 0 10px 0;
   min-width: 200px;
+  box-sizing: border-box;
 }
 
 html.ml .description .cto a.hirobutton small {
@@ -2196,7 +2193,7 @@ html.ml .description .cto small a {
   } 
 
   html.ml .page .dots {
-    bottom: 172px;
+    bottom: 116px;
     z-index: 10000;
   }      
 
@@ -2205,16 +2202,16 @@ html.ml .description .cto small a {
     padding-right: 35px;
     bottom: 0;
     border-bottom: 0; 
-    padding-top: 40px;
-    height: 165px;      
+    padding-top: 22px;   
   }
-  html.ml .description .text span {
+  html.ml .description .cto .text span {
     display: inline;
   }  
   html.ml .description .cto a.hirobutton {
     width: auto;
     display: block;
-    margin: 0 35px 10px 35px;
+    margin: 40px 0 10px 0;
+    min-width: 160px;
   }  
 }
 
