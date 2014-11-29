@@ -575,6 +575,8 @@ html.touch body #rails #canvas {
   overflow-y: visible;
   resize: none; 
   z-index: 2010;  
+  /* Otherwise Chrome adds a mysterious 5px extra margin to the bottom */
+  display: block;
 }
 
 html.ios body #rails #canvas textarea {

@@ -884,8 +884,8 @@ var Hiro = {
 
 			// With the next available frame
 			Hiro.ui.render(function(){						
-				// Get basic values, subtract canvas borderradius from viewport size and 50px top bar from non mini designs
-				viewportheight = (document.documentElement.clientHeight || window.innerHeight ) - 6 - ((Hiro.ui.mini()) ? -1 : 50);
+				// Get basic values, subtract canvas borderradius from viewport size and 50px (+1px border) top bar from non mini designs
+				viewportheight = (document.documentElement.clientHeight || window.innerHeight ) - ((Hiro.ui.mini()) ? 0 : 51);
 
 				// Find biggest or overlay,viewport or textarea scroll			
 				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewportheight)				
