@@ -4199,6 +4199,10 @@ var Hiro = {
 					Hiro.util.registerEvent(this.cache,'noupdate',Hiro.data.appcache.handler);	
 					Hiro.util.registerEvent(this.cache,'cached',Hiro.data.appcache.handler);
 					Hiro.util.registerEvent(this.cache,'error',Hiro.data.appcache.handler);	
+
+					Hiro.util.registerEvent(this.cache,'progress',Hiro.data.appcache.handler);	
+					Hiro.util.registerEvent(this.cache,'checking',Hiro.data.appcache.handler);
+					Hiro.util.registerEvent(this.cache,'downloading',Hiro.data.appcache.handler);						
 				} else {
 					// Release the cachelock	
 					Hiro.sync.cachelock = false;
@@ -4219,6 +4223,9 @@ var Hiro = {
 				// Switch 
 				switch (event.type) {
 					case 'error':
+						// We're online but still have an error, most likely browser doesn't understand a part of the manifest
+						// Enable hync for now
+						if (navigator.onLine) Hiro.sync.cachelock = false;
 						// Only log errors, the heavy stuff should be picked up by Rollbar
 						Hiro.sys.log('Appcache error: ' + event.message,event,'warn');
 						// Try again manually in 30 secs

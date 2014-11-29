@@ -22,11 +22,8 @@ FALLBACK:{{ "\n" }}
 
 NETWORK:{{ "\n" }}
 /component/settings/{{ "\n" }}
-/tokens/{{ "\n" }}
+/tokens/*{{ "\n" }}
 /connect/facebook{{ "\n" }}
 /_cb/facebook{{ "\n" }}
-/settings/{{ "\n" }}
 /version{{ "\n" }}
-*{{ "\n" }}
-http://*{{ "\n" }}
-https://*
+*
