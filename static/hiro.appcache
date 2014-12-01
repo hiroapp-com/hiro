@@ -3,7 +3,7 @@ CACHE MANIFEST{{ "\n" }}
 CACHE:{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
 {{ get_asset_url('new_js') }}{{ "\n" }}
-/static/img/icons.4.png{{ "\n" }}
+/static/img/icons.5.png{{ "\n" }}
 /static/img/site/landing.mobile.3.png{{ "\n" }}
 /static/img/site/landing.3.png{{ "\n" }}
 /static/img/site/yeah.png{{ "\n" }}
@@ -21,9 +21,4 @@ FALLBACK:{{ "\n" }}
 /note/ /offline/app.html{{ "\n" }}
 
 NETWORK:{{ "\n" }}
-/component/settings/{{ "\n" }}
-/tokens/*{{ "\n" }}
-/connect/facebook{{ "\n" }}
-/_cb/facebook{{ "\n" }}
-/version{{ "\n" }}
 *
