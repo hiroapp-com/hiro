@@ -15,7 +15,7 @@
 	Hiro.user.checkout: Stripe & Flask related checkout stuff
 	Hiro.user.track: Internal analytics & event tracking
 
-	Hiro.apps: Generic plugin setup 
+	Hiro.apps: Generic plugin setup
 	Hiro.apps.sharing: Sharing plugin
 	Hiro.apps.publish: Publish selections to various external services
 
@@ -25,11 +25,11 @@
 		key: supports direct access to all object levels, eg foo.bar.baz
 		value: arbitrary js objects
 		source: Where the update is coming from (client/server)
-	Hiro.data.local: Localstorage abstraction	
+	Hiro.data.local: Localstorage abstraction
 
 	Hiro.sync: Data synchronization with local and remote APIs
 	Hiro.sync.ws: Websocket client
-	Hiro.sync.lp: Longpolling fallback 
+	Hiro.sync.lp: Longpolling fallback
 	Hiro.sync.ajax: Generic AJAX stuff
 
 	Hiro.ui: Basic UI related functions like showing/hiding dialogs, sliding menu etc
@@ -42,7 +42,7 @@
 
 	Hiro.sys: Core functionality like setup, logging etc
 
-	Hiro.lib: External libraries like Facebook or analytics	
+	Hiro.lib: External libraries like Facebook or analytics
 
 	Hiro.util: Utilities like event attachment, humanized timestamps etc
 
@@ -59,7 +59,7 @@
 
 /* TODO Optimizations:
 
-	- Reduce peer and contact diffs to longer frequency or work with internal _haschanged flags 
+	- Reduce peer and contact diffs to longer frequency or work with internal _haschanged flags
 
 */
 
@@ -74,11 +74,11 @@ var Hiro = {
 		archiveopen: false,
 
 		// DOM IDs
-		el_root: document.getElementById('folio'),					
+		el_root: document.getElementById('folio'),
 		el_notelist: document.getElementById('notelist'),
 		el_archivelist: document.getElementById('archivelist'),
 		el_showmenu: document.getElementById('showmenu'),
-		el_archivelink: document.getElementById('archivelink'),			
+		el_archivelink: document.getElementById('archivelink'),
 
 		// Internal values
 		archivecount: 0,
@@ -91,35 +91,35 @@ var Hiro = {
 		// Init folio
 		init: function() {
 			// Event setup
-			Hiro.ui.fastbutton.attach(this.el_root,Hiro.folio.folioclick);	
-			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);		
+			Hiro.ui.fastbutton.attach(this.el_root,Hiro.folio.folioclick);
+			Hiro.ui.fastbutton.attach(this.el_showmenu,Hiro.folio.folioclick);
 
-			// Open the folio if a user hovers		
-			Hiro.ui.hover.attach(this.el_root,Hiro.folio.foliotouch,55);	
-			Hiro.ui.hover.attach(this.el_showmenu,Hiro.folio.foliotouch,55);								
+			// Open the folio if a user hovers
+			Hiro.ui.hover.attach(this.el_root,Hiro.folio.foliotouch,55);
+			Hiro.ui.hover.attach(this.el_showmenu,Hiro.folio.foliotouch,55);
 		},
 
 		// If the user clicked somewhere in the folio
-		folioclick: function(id,type,target) {	
-			var tier = Hiro.data.get('profile','c.tier'), direction; 	
+		folioclick: function(id,type,target) {
+			var tier = Hiro.data.get('profile','c.tier'), direction;
 
 			// Clicks on the main elements, fired immediately on touchstart/mousedown
-			if (type == 'half') {	
+			if (type == 'half') {
 				// Always open folio on touch devices, except if the user clicks on the signing icon while the folio is closed
-				if (id != 'signin' && Hiro.ui.touch) Hiro.folio.foliotouch(); 
+				if (id != 'signin' && Hiro.ui.touch) Hiro.folio.foliotouch();
 
-				// Fire actions			
-				switch (id) {					
-					case 'archivelink':				
+				// Fire actions
+				switch (id) {
+					case 'archivelink':
 						if (tier > 1) Hiro.folio.archiveswitch();
-						break;	
+						break;
 					case 'folio':
 					case 'notelist':
 					case 'archivelist':
 						// Close folio in all these cases
-						if (Hiro.folio.open && Hiro.ui.touch) Hiro.ui.slidefolio(-1,100);	
-						break;					
-					case 'showmenu':	
+						if (Hiro.folio.open && Hiro.ui.touch) Hiro.ui.slidefolio(-1,100);
+						break;
+					case 'showmenu':
 						// Switch folio
 						direction = (Hiro.folio.open) ? -1 : 1;
 						// Do it
@@ -128,11 +128,11 @@ var Hiro = {
 
 				}
 			} else if (type == 'full') {
-				// Deconstruct note id	
+				// Deconstruct note id
 				if (id.indexOf('note_') == 0) {
 					var noteid = id.substring(5);
-					id = 'note';	
-				}	
+					id = 'note';
+				}
 
 				// Do not fire if folio is not yet open on touch devices
 				if (!Hiro.folio.open && Hiro.ui.touch) return;
@@ -141,39 +141,39 @@ var Hiro = {
 				switch (id) {
 					case 'signin':
 						Hiro.ui.dialog.show('d_logio','s_signup',Hiro.user.el_register.getElementsByTagName('input')[0]);
-                        Hiro.user.track.logevent('opened-logio',{ via: 'app' });	
-						break;										
+                        Hiro.user.track.logevent('opened-logio',{ via: 'app' });
+						break;
 					case 'newnote':
 						Hiro.folio.newnote();
 						// Close the folio if it should be open
-						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
+						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 						// And force focus on touch devices
-						if (Hiro.ui.touch) Hiro.apps.sharing.focus();					
+						if (Hiro.ui.touch) Hiro.apps.sharing.focus();
 						break;
-					case 'archivelink':				
+					case 'archivelink':
 						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('archiveswitch');
-						break;							
+						break;
 					case 'settings':
 						Hiro.ui.dialog.show('d_settings','s_account','',true);
-						break;						
+						break;
 					case 'note':
 						// If the click was on an archive icon
 						if (target.className == 'archive') {
 							// Abort if user doesn't have archive yet
 							if (tier < 2) {
-								Hiro.ui.dialog.suggestupgrade('archivenote');	
-								return;							
+								Hiro.ui.dialog.suggestupgrade('archivenote');
+								return;
 							}
 							// Directly set status
 							Hiro.folio.lookup[noteid].status = (Hiro.folio.lookup[noteid].status == 'active') ? 'archived' : 'active';
 							// Getset hack to kick off persistence / sync
 							Hiro.data.set('folio','',Hiro.data.get('folio'));
 							return;
-						}	
+						}
 
 						// Load note
-						Hiro.canvas.load(noteid);												
-				}				
+						Hiro.canvas.load(noteid);
+				}
 			}
 		},
 
@@ -189,16 +189,16 @@ var Hiro = {
 			if (!Hiro.folio.open && !forced) return;
 
 			// that scope because it's called by timeout as well
-			var that = Hiro.folio, i, l, data, 
+			var that = Hiro.folio, i, l, data,
 				f0 = document.createDocumentFragment(), f1, link;
 
 			// Kick off regular updates, only once
-			if (!that.updatetimeout) that.updatetimeout = setInterval( function(){ 
+			if (!that.updatetimeout) that.updatetimeout = setInterval( function(){
 				// Repaint
-				Hiro.folio.paint(true) 
+				Hiro.folio.paint(true)
 			},61000);
 
-			// Get data from store			
+			// Get data from store
 			data = Hiro.data.get('folio','c');
 			if (!data) return;
 
@@ -206,10 +206,10 @@ var Hiro = {
 			that.archivecount = that.unseencount = that.owncount = 0;
 
 			// Empty lookup
-			that.lookup = {};	
+			that.lookup = {};
 
 			// Sort the fucker
-			that.sort();			
+			that.sort();
 
 			// Cycle through notes
 			for (i=0,l=data.length;i<l;i++) {
@@ -217,7 +217,7 @@ var Hiro = {
 				if (data[i].status == 'active') {
 					link = that.renderlink(data[i]);
 					if (link) f0.appendChild(link);
-				// If we didn't have an archived Note yet create the fragment	
+				// If we didn't have an archived Note yet create the fragment
 				} else if (data[i].status == 'archived') {
 					if (!f1) f1 = document.createDocumentFragment();
 					link = that.renderlink(data[i]);
@@ -227,7 +227,7 @@ var Hiro = {
 				}
 
 				// Update lookup object
-				that.lookup[data[i].nid] = data[i];			
+				that.lookup[data[i].nid] = data[i];
 			}
 
 			// Switch folio DOM contents with fragments
@@ -239,10 +239,10 @@ var Hiro = {
 				// Empty lists
 				while (that.el_notelist.firstChild) {
 				    that.el_notelist.removeChild(that.el_notelist.firstChild);
-				}	
+				}
 				while (that.el_archivelist.firstChild) {
 				    that.el_archivelist.removeChild(that.el_archivelist.firstChild);
-				}											
+				}
 
 				// Insert new list
 				that.el_notelist.appendChild(f0);
@@ -251,7 +251,7 @@ var Hiro = {
 				// Update text contents of archivelink
 				if (!that.archiveopen) that.el_archivelink.innerHTML = (that.archivecount > 0) ? 'Archive  (' + that.archivecount.toString() + ')' : 'Archive';
 			})
-		},	
+		},
 
 		renderlink: function(folioentry) {
 			// Abort if we do not have all data loaded yet
@@ -262,7 +262,7 @@ var Hiro = {
 				d = document.createElement('div'),
 				id = folioentry.nid,
 				note = Hiro.data.get('note_' + id),
-				link, t, stats, a, time, tooltip, s, sn, title, user, peercount;				
+				link, t, stats, a, time, tooltip, s, sn, title, user, peercount;
 
 			// Abort if we try to render a link for which we don't have any data
 			if (!note) {
@@ -278,10 +278,10 @@ var Hiro = {
 			fragment.appendChild(d);
 
 			// Find prooper link
-			title = note.c.title || note.c.text.trim().replace(/[\t\n]/g,' ').substring(0,50) || 'Untitled';	
+			title = note.c.title || note.c.text.trim().replace(/[\t\n]/g,' ').substring(0,50) || 'Untitled';
 
 
-			// Set note root node properties	
+			// Set note root node properties
 			d.className = 'note';
 			d.setAttribute('id','note_' + note.id);
 
@@ -290,13 +290,13 @@ var Hiro = {
 
 			// Insert Link, Title and stats
 			link = document.createElement('a');
-			link.setAttribute('href','/note/' + note.id);	
+			link.setAttribute('href','/note/' + note.id);
 
 			t = document.createElement('span');
 			t.className = 'notetitle';
 			t.textContent = title;
 
-			stats = document.createElement('small');	
+			stats = document.createElement('small');
 
  			if (Hiro.data.get('profile','c.tier') > 0) {
 				// Build archive link
@@ -309,13 +309,13 @@ var Hiro = {
 					a.setAttribute('title','Move to archive...')
 				} else if (folioentry.status == 'archived') {
 					// Add tooltip
-					a.setAttribute('title','Move back to current notes...')				
+					a.setAttribute('title','Move back to current notes...')
 					// Iterate counter
 					this.archivecount++;
 				} else {
 					Hiro.sys.error('Folio contains document with unknown status',[folioentry,note])
-				}	
-			}					
+				}
+			}
 
 			// Get basic time string
 			time = (note._lastedit) ? Hiro.util.humantime(note._lastedit) + ' ago': 'Not saved yet';
@@ -325,7 +325,7 @@ var Hiro = {
 			link.appendChild(stats);
 
 			// Get proper number of peers
-			peercount = (id.length == 4) ? note.c.peers.length : note.c.peers.length - 1;						
+			peercount = (id.length == 4) ? note.c.peers.length : note.c.peers.length - 1;
 
 			// If we have two users or more, or if the only user has no uid now (meaning we are absent from peers & everything happened offline)
 			if (peercount > 0) {
@@ -337,13 +337,13 @@ var Hiro = {
 				s.className = 'sharing';
 
 				// Add sharing hover tooltip
-				tooltip = 'Shared with ' + peercount + ' other';	
+				tooltip = 'Shared with ' + peercount + ' other';
 				if (peercount > 1) tooltip = tooltip + 's';
-				s.setAttribute('title',tooltip);	
-				link.appendChild(s);		
-				
+				s.setAttribute('title',tooltip);
+				link.appendChild(s);
+
 				// Change classname
-				d.className += ' shared';	
+				d.className += ' shared';
 
 				// Append time indicator if someone else did the last update
 				if (note._lasteditor && note._lasteditor != Hiro.data.get('profile','c.uid')) {
@@ -353,7 +353,7 @@ var Hiro = {
 					user = Hiro.user.contacts.lookup[note._lasteditor] || {};
 
 					// Complete string
-					time = time + ' by ' + (user.name || user.email || user.phone || ' someone else');	
+					time = time + ' by ' + (user.name || user.email || user.phone || ' someone else');
 				}
 
 			} else {
@@ -367,38 +367,38 @@ var Hiro = {
 				sn = document.createElement('div');
 				sn.className = "bubble red";
 				sn.textContent = '*';
-				link.appendChild(sn);		
+				link.appendChild(sn);
 
 				// Iterate counter for our bubble
-				if (folioentry.status == 'active') this.unseencount++;								
-			}									
+				if (folioentry.status == 'active') this.unseencount++;
+			}
 
 			// Append stats with time indicator
 			stats.appendChild(document.createTextNode(time));
 
 			// Attach link & archive to element
-			d.appendChild(link);				
-			if (a) d.appendChild(a);			
+			d.appendChild(link);
+			if (a) d.appendChild(a);
 
-			return fragment;			
+			return fragment;
 		},
 
 		// Move folio entry to top and resort rest of folio for both, local client and server versions
 		sort: function() {
-			var fc = Hiro.data.get('folio','c'), i, l, as, bs;			
+			var fc = Hiro.data.get('folio','c'), i, l, as, bs;
 
 			// Sort array by last edit
-			fc.sort( function(a,b) { 
+			fc.sort( function(a,b) {
 				// Create shorthands
 				as = Hiro.data.stores['note_' + a.nid]; bs = Hiro.data.stores['note_' + b.nid];
 				// Check if stores exist, this is not the case if we lost a note
 				if (!as || !bs) return -1;
 				// Comparison function
 				return bs._ownedit - as._ownedit;
-			});		
+			});
 		},
 
-		// Add a new note to folio and notes array, then open it 
+		// Add a new note to folio and notes array, then open it
 		// Note: Passing id/note as parameters means newnote was triggered by the server
 		newnote: function(id,status) {
 			var f = Hiro.data.get('folio') || {}, source,
@@ -407,47 +407,47 @@ var Hiro = {
 				user = Hiro.data.get('profile'),
 				note = {
 					c: { text: '', title: '', peers: [] },
-					s: { text: '', title: '', peers: [] },	
-					id: id,						
+					s: { text: '', title: '', peers: [] },
+					id: id,
 					sv: 0, cv: 0,
 					kind: 'note',
 					_cursor: 0,
-					_ownedit: Hiro.util.now()			
-				};	
+					_ownedit: Hiro.util.now()
+				};
 
 			// If the user itself created the note but doesn't have the necessary tier yet
 			// if (Hiro.folio.owncount > 10 && user.c.tier < 2) {
 			//	Hiro.ui.dialog.suggestupgrade('unlimitednotes');
 			//	return;
-			// }	
+			// }
 
 			// Add new item to beginning of array
 			if (!f.c) f.c = [];
-			f.c.unshift(folioc);	
+			f.c.unshift(folioc);
 
-			// Server requested the creation of a new note					
+			// Server requested the creation of a new note
 			if (id.length > 4) {
 				// Also add folio entry to shadow if newnote was triggered by server
 				folios = {	nid: id, status: status	};
 
 				// Also add new note to shadow
-				f.s.unshift(folios);		
+				f.s.unshift(folios);
 
 				// set to unseen
 				note._unseen = true;
 
 				// Set source
 				source = 's';
-			// Set default values for user inited stuff	
+			// Set default values for user inited stuff
 			} else {
 				// Internal flags
 				note._lasteditor = note._owner = user.c.uid;
-				note._lastedit = Hiro.util.now();						
-			}				
+				note._lastedit = Hiro.util.now();
+			}
 
-			// Save kick off setter flows						
+			// Save kick off setter flows
 			Hiro.data.set('note_' + id,'',note,source);
-			Hiro.data.set('folio','',f,source);		
+			Hiro.data.set('folio','',f,source);
 
 			// Do UI stuff after data was set above
 			if (id.length == 4) {
@@ -459,10 +459,10 @@ var Hiro = {
 				Hiro.apps.show(Hiro.apps.sharing.el_root);
 				// Log respective event
 				Hiro.user.track.logevent('teased-sharing-widget');
-			}					
+			}
 
 			// Update settings dialog if it's open (update note counter)
-			if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();				
+			if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();
 
 			// Return the id of the we just created
 			return id;
@@ -477,7 +477,7 @@ var Hiro = {
 				if (f.s[i].nid != id) continue;
 				f.s.splice(i,1);
 				break;
-			}			
+			}
 
 			// Go through master notes
 			for (i = 0, l = f.c.length; i < l; i++ ) {
@@ -489,21 +489,21 @@ var Hiro = {
 				if (f.c.length > 0) {
 					// Load the next in line
 					Hiro.canvas.load();
-				// If we removed the only note	
+				// If we removed the only note
 				} else {
 					// Create & load a new note
 					Hiro.folio.newnote();
-				}	
+				}
 				// Save & sync
-				Hiro.data.set('folio','',f);			
+				Hiro.data.set('folio','',f);
 				// Stop
 				return;
-			}			
+			}
 		},
 
-		// Switch documentlist between active / archived 
+		// Switch documentlist between active / archived
 		archiveswitch: function() {
-			var c = (this.archivecount > 0) ? '(' + this.archivecount.toString() + ')' : '';				
+			var c = (this.archivecount > 0) ? '(' + this.archivecount.toString() + ')' : '';
 
 			// Set CSS properties and Text string
 			if (this.archiveopen) {
@@ -516,8 +516,8 @@ var Hiro = {
 				this.el_archivelist.style.display = 'block';
 				this.el_archivelink.textContent = 'Close Archive'
 				this.archiveopen = true;
-			}	
-		}			
+			}
+		}
 	},
 
 	// The white page, including the all elements like apps and the sidebar
@@ -528,9 +528,9 @@ var Hiro = {
 
 		// DOM IDs
 		el_root: document.getElementById('canvas'),
-		el_rails: document.getElementById('rails'),		
+		el_rails: document.getElementById('rails'),
 		el_title: document.getElementById('title'),
-		el_text: document.getElementById('content'),	
+		el_text: document.getElementById('content'),
 		el_quote: document.getElementById('nicequote'),
 
 		// DOM properties
@@ -548,30 +548,30 @@ var Hiro = {
 		init: function() {
 			// Event setup
 			Hiro.util.registerEvent(this.el_root,'keyup',Hiro.canvas.keystream);
-			Hiro.util.registerEvent(this.el_root,'keydown',Hiro.canvas.keystream);		
-			Hiro.util.registerEvent(this.el_root,'keypress',Hiro.canvas.keystream);	
-			Hiro.util.registerEvent(this.el_root,'change',Hiro.canvas.keystream);				
-			Hiro.util.registerEvent(this.el_root,'input',Hiro.canvas.keystream);		
-			Hiro.util.registerEvent(this.el_root,'cut',Hiro.canvas.keystream);		
-			Hiro.util.registerEvent(this.el_root,'paste',Hiro.canvas.keystream);									
-			Hiro.util.registerEvent(this.el_title,'focus',Hiro.canvas.titlefocus);						
+			Hiro.util.registerEvent(this.el_root,'keydown',Hiro.canvas.keystream);
+			Hiro.util.registerEvent(this.el_root,'keypress',Hiro.canvas.keystream);
+			Hiro.util.registerEvent(this.el_root,'change',Hiro.canvas.keystream);
+			Hiro.util.registerEvent(this.el_root,'input',Hiro.canvas.keystream);
+			Hiro.util.registerEvent(this.el_root,'cut',Hiro.canvas.keystream);
+			Hiro.util.registerEvent(this.el_root,'paste',Hiro.canvas.keystream);
+			Hiro.util.registerEvent(this.el_title,'focus',Hiro.canvas.titlefocus);
 
 			// When a user touches the white canvas area
-			Hiro.ui.hover.attach(this.el_root,Hiro.canvas.canvastouch,55);	
+			Hiro.ui.hover.attach(this.el_root,Hiro.canvas.canvastouch,55);
 
 			// When a user touches the white canvas area
-			Hiro.ui.fastbutton.attach(this.el_root,Hiro.canvas.canvasclick);				
+			Hiro.ui.fastbutton.attach(this.el_root,Hiro.canvas.canvasclick);
 		},
 
 		// Poor man FRP stream
 		keystream: function(event) {
-			var source = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = source.id;			
+			var source = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = source.id;
 
 			// Only listen to title & content
 			if (id != 'title' && id != 'content') return;
 
 			// Route specific keyhandlers
-			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);		
+			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);
 
 			// Check cache if values changed
 			if (cache[id] != source.value) {
@@ -582,10 +582,10 @@ var Hiro = {
 				cache._id = Hiro.canvas.currentnote;
 
 				// Update the overlay without repainting it but realign the cursor
-				if (id == 'content') Hiro.canvas.overlay.update(false,true);				
+				if (id == 'content') Hiro.canvas.overlay.update(false,true);
 
 				// Reset document title
-				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );					
+				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );
 
 				// Kick off write if it't isn't locked
 				if (!lock) {
@@ -599,15 +599,15 @@ var Hiro = {
 					},Hiro.canvas.delay);
 
 					// Save cache data
-					Hiro.canvas.save();					
+					Hiro.canvas.save();
 				}
-			}				
+			}
 		},
 
 		// Save cached note data to local model, thus triggering localStorage save & kick off sync
 		save: function(force) {
 			var note, that = Hiro.canvas, id = 'note_' +  that.cache._id, me = that.cache._me;
-		
+
 			// Check if cache is even still the current doc
 			if (force || that.cache._id && that.cache._id == Hiro.canvas.currentnote) {
 				// Get note
@@ -629,15 +629,15 @@ var Hiro = {
 
 				// Set text & title
 				if (that.cache.content != note.c.text) Hiro.data.set(id,'c.text', ( that.cache.content || '') );
-				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));			
+				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));
 
 				// Reset changed flag
-				that.cache._changed = false;		
+				that.cache._changed = false;
 			}
-		},			
+		},
 
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
-		contentkeydown: function(event,el) {	
+		contentkeydown: function(event,el) {
 			var cursor;
 
 			// The dreaded tab key (makes think jump jump to next field) and return (is painted )
@@ -653,8 +653,8 @@ var Hiro = {
 
 				// Reposition cursor
 				Hiro.canvas.setcursor(cursor[1] + 1);
-				
-			// If the user presses Arrowup or Pageup at position 0				
+
+			// If the user presses Arrowup or Pageup at position 0
 			} else if (event.keyCode == 38 || event.keyCode == 33 || event.keyCode == 8) {
 				cursor = Hiro.canvas.getcursor();
 				if (cursor[0] == cursor[1] && cursor[0] == 0) {
@@ -662,9 +662,9 @@ var Hiro = {
 					Hiro.canvas.el_title.focus();
 					// If we're running the mini UI, also scroll the textarea to the top
 					if (Hiro.canvas.el_text.scrollTop != 0) Hiro.canvas.el_text.scrollTop = 0;
-				}	
-			} 						
-		},			
+				}
+			}
+		},
 
 		// When a key is released in the title field
 		titlekeyup: function(event,el) {
@@ -693,7 +693,7 @@ var Hiro = {
 			// Distinguish between touchstart/mouseover
 			if (type == 'half') {
 	        	// Reset tab notifier
-	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.cleanup();				
+	        	if (Hiro.ui.tabby.active) Hiro.ui.tabby.cleanup();
 
 				// If we had an app open, close it
 				if (!Hiro.ui.mini() && Hiro.apps.open.length) Hiro.apps.close();
@@ -709,34 +709,34 @@ var Hiro = {
 						// Check for links
 						url = Hiro.canvas.overlay.getclicked(event);
 						// Open them in new tab
-						if (url) Hiro.ui.openlink(url.innerText,event);							
+						if (url) Hiro.ui.openlink(url.innerText,event);
 						// Do not pull up keyboard on touch devices
-						if (Hiro.ui.touch && Hiro.folio.open) return;						
+						if (Hiro.ui.touch && Hiro.folio.open) return;
 						// Stick to default beaviour if we have a value
 						if (target.value) return;
 						// Immediately focus if it's empty
-						target.focus();	
+						target.focus();
 						// Prevent any default action
-						Hiro.util.stopEvent(event);							
-						break;								
+						Hiro.util.stopEvent(event);
+						break;
 					case 'title':
 						// Do not pull up keyboard on touch devices
-						if (Hiro.ui.touch && Hiro.folio.open) return;						
+						if (Hiro.ui.touch && Hiro.folio.open) return;
 						// Stick to default behaviour if we already have a value
 						if (Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.title')) return;
 						// Immediately focus if it's empty
-						target.focus();	
+						target.focus();
 						// Prevent any default action
-						Hiro.util.stopEvent(event);							
-						break;																				
+						Hiro.util.stopEvent(event);
+						break;
 				}
-			}			
+			}
 		},
 
 		// If the user hovers over the canvas
 		canvastouch: function(event) {
 			// Close the folio if it should be open
-			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);	
+			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
 		},
 
 		// Emits a current seen event to the server
@@ -757,19 +757,19 @@ var Hiro = {
 			if (!peer || Hiro.data.get('note_' + noteid,'_lastedit') <= peer.last_seen) return;
 
 			// Set new value
-			peer.last_seen = Hiro.util.now();		
+			peer.last_seen = Hiro.util.now();
 
 			// Briefly block statsy
-			Hiro.ui.statsy.shutup(100);				
+			Hiro.ui.statsy.shutup(100);
 
 			// Set flag & kick off commit
 			Hiro.data.set('note_' + noteid,'_peerchange',true);
 		},
 
 		// Load a note onto the canvas
-		load: function(id,preventhistory,forcedreload) {		
+		load: function(id,preventhistory,forcedreload) {
 			// If we call load without id we just pick the doc on top of the folio
-			var folio = Hiro.data.get('folio','c'), note; 
+			var folio = Hiro.data.get('folio','c'), note;
 
 			// Abort if we have no folio
 			if (!folio || !folio.length) {
@@ -778,82 +778,82 @@ var Hiro = {
 				// Abort
 				return;
 			}
-			
+
 			// Set id, use first folio entry if none provided
 			id = id || folio[0].nid;
 
 			// Set note
-			note = Hiro.data.get('note_' + id);	
+			note = Hiro.data.get('note_' + id);
 
 			// Fallback on first folio note if none found
 			// This should nearly always only happen if user uses malformed / forbidden url
 			if (!note) {
 				// Log
 				Hiro.sys.log('Tried to load an unknown note, loading first note in folio.',[id,folio],'warn');
-				// Fall back on first note 
+				// Fall back on first note
 				id = folio[0].nid;
 				// Reset note
 				note = Hiro.data.get('note_' + id);
 				// Also always add history then
 				preventhistory = false;
 				// Log if we still fucked up
-				if (!note) Hiro.sys.error('FATAL: Could not load any note.',[id,folio]);				
-			}		
+				if (!note) Hiro.sys.error('FATAL: Could not load any note.',[id,folio]);
+			}
 
 			// Check if we have an unseen flag and remove if so
-			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);			
+			if (note._unseen) Hiro.data.set('note_' + id,'_unseen',false);
 
 			// Always close the folio on small screens
-			if (Hiro.ui.mini() && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);	
+			if (Hiro.ui.mini() && Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 
-			// Abort if we try to load the same note again	
-			if (!forcedreload && id == this.currentnote) return;		
+			// Abort if we try to load the same note again
+			if (!forcedreload && id == this.currentnote) return;
 
 			// Check if cache of previous note was saved
-			if (this.cache._changed) this.save();			
+			if (this.cache._changed) this.save();
 
 			// Start hprogress bar
 			Hiro.ui.hprogress.begin();
 
 			// If it's the very first note we get (or it'S a forced reload from session create), also notify other tabs of it
-			if (forcedreload || !this.currentnote) Hiro.data.local.tabtx('Hiro.canvas.load("'  + id + '",' + preventhistory + ',' + forcedreload + ');');		
+			if (forcedreload || !this.currentnote) Hiro.data.local.tabtx('Hiro.canvas.load("'  + id + '",' + preventhistory + ',' + forcedreload + ');');
 
 			// Set internal values
-			this.currentnote = id;				
+			this.currentnote = id;
 
 			// Reset cache
 			this.cache = {
 				title: note.c.title,
 				content: note.c.text
-			};			
+			};
 
 			// Mount me reference
-			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});				
+			this.cache._me = Hiro.apps.sharing.getpeer( { user: { uid: Hiro.data.get('profile','c.uid') }});
 
-			// Build canvas with basic values 
-			this.paint();	
+			// Build canvas with basic values
+			this.paint();
 
 			// And set the cursor (but don't even try if the dialog is open)
 			if (!Hiro.ui.dialog.open) this.setcursor();
 
 			// Scroll to top of note
-			Hiro.canvas.totop();			
+			Hiro.canvas.totop();
 
 			// Paint the overlay
 			this.overlay.update(true);
 
 			// Repaint the folio to update active note CSS & visually remove
-			Hiro.folio.paint(true);							
+			Hiro.folio.paint(true);
 
 			// Close apps if they should be open
-			if (Hiro.apps.open.length > 0) Hiro.apps.close();						
+			if (Hiro.apps.open.length > 0) Hiro.apps.close();
 
 			// Update sharing stuff
-			Hiro.apps.sharing.update();					
+			Hiro.apps.sharing.update();
 
 			// Show ready
 			Hiro.ui.statsy.add('ready',0,'Ready.','info',300);
-			
+
 			// Emit seen ts
 			this.seen(id);
 
@@ -861,35 +861,35 @@ var Hiro = {
 			Hiro.ui.hprogress.done();
 
 			// Add note to history API (change browser URL etc)
-			if (!preventhistory) Hiro.ui.history.add(id);						
+			if (!preventhistory) Hiro.ui.history.add(id);
 
 			// Log
-			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);	
+			Hiro.sys.log('Loaded note ' + id + ' onto canvas:',note);
 		},
 
 		// Rebuild the canvas from cache
-		paint: function() {	
+		paint: function() {
 			// Set document title
 			if (!Hiro.ui.tabby.active) document.title = this.cache.title || this.cache.content.substring(0,30) || 'New Note';
 
 			// Set canvas title
 			Hiro.canvas.el_title.value = this.cache.title || 'Title';
-					
-			// Set text		
-			if (Hiro.canvas.el_text.value != this.cache.content) Hiro.canvas.el_text.value = this.cache.content;																									
+
+			// Set text
+			if (Hiro.canvas.el_text.value != this.cache.content) Hiro.canvas.el_text.value = this.cache.content;
 		},
 
 		// Resize textarea to proper height
 		resize: function() {
-			var viewportheight, newheight, bars;			
+			var viewportheight, newheight, bars;
 
 			// With the next available frame
-			Hiro.ui.render(function(){						
+			Hiro.ui.render(function(){
 				// Get basic values, subtract canvas borderradius from viewport size and 50px (+1px border) top bar from non mini designs
 				viewportheight = (document.documentElement.clientHeight || window.innerHeight ) - ((Hiro.ui.mini()) ? 0 : 51);
 
-				// Find biggest or overlay,viewport or textarea scroll			
-				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewportheight)				
+				// Find biggest or overlay,viewport or textarea scroll
+				newheight = Math.max(Hiro.canvas.overlay.el_root.offsetHeight,viewportheight)
 
 				// Spare us the paint if nothing changed
 				if (newheight == Hiro.canvas.cache._height) return;
@@ -907,7 +907,7 @@ var Hiro = {
 
 		// Get cursor position, returns array of selection start and end. These numbers are equal if no selection.
 		getcursor: function() {
-		    var el = this.el_text, x, y, content, l, part, full;	
+		    var el = this.el_text, x, y, content, l, part, full;
 
 		    if ('selectionStart' in el) {
 		    	//Mozilla and DOM 3.0
@@ -931,15 +931,15 @@ var Hiro = {
 		        	y = el.value.length;
 		        	content = '';
 		        	return [x, y, content];
-		        } 
+		        }
 		        part = r.text.replace(/[\r\n]/g,'.'); //for some reason IE doesn't always count the \n and \r in the length
 		        full = el.value.replace(/[\r\n]/g,'.');
 		        x = whole.indexOf(part,tr.text.length);
 		        y = x + part.length;
 		        content = r.text;
-		    }  
+		    }
 
-		    return [x, y, content || ''];	
+		    return [x, y, content || ''];
 		},
 
 		// Set cursor position, accepts either number or array of two numbers representing selection start & end
@@ -949,23 +949,23 @@ var Hiro = {
 			// Never set focus in moving or open folio on touch devices (pulls up keyboard)
 			// Also ignore setcursor as long was the landing page wasn't loaded (which removes cursor on most mobile platforms)
 			// or when the dialog is open with no input focused
-			if  ( !force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1 || 
-				( Hiro.ui.dialog.open && document.activeElement && document.activeElement.tagName == 'input' ))) return;	
+			if  ( !force && Hiro.ui.touch && (Hiro.folio.open || Hiro.ui.slidedirection == 1 ||
+				( Hiro.ui.dialog.open && document.activeElement && document.activeElement.tagName == 'input' ))) return;
 
 			// Set default value
 			if (pos != 0) pos = pos || Hiro.data.get('note_' + this.currentnote,'_cursor') || 0;
 
 			// Create array if we only got a number
-			if (typeof pos == 'number') pos = [pos,pos];		
+			if (typeof pos == 'number') pos = [pos,pos];
 
 			// If we don't have any content yet
 			if (!el.value) {
 				// Just focus
 				el.focus();
-    		// Set the position    		
-    		} else if (el.setSelectionRange) {		
+    		// Set the position
+    		} else if (el.setSelectionRange) {
     			// Best method, if available
-				el.setSelectionRange(pos[0],pos[1]);																																	   									
+				el.setSelectionRange(pos[0],pos[1]);
     		} else if (el.createTextRange) {
     			// Fallback on textrange
         		var range = el.createTextRange();
@@ -973,7 +973,7 @@ var Hiro = {
         		range.moveEnd('character', pos[0]);
         		range.moveStart('character', pos[1]);
         		range.select();
-        	// Default fallback	
+        	// Default fallback
     		} else {
     			el.focus();
     		}
@@ -993,10 +993,10 @@ var Hiro = {
 			})
 		},
 
-		// Overlay (clickable URLs, peer carets etc) 
+		// Overlay (clickable URLs, peer carets etc)
 		overlay: {
 			// DOM Nodes
-			el_root: document.getElementById('overlay'),	
+			el_root: document.getElementById('overlay'),
 
 			// Cache
 			text: undefined,
@@ -1010,7 +1010,7 @@ var Hiro = {
 			// Generate new overlay from cache
 			build: function() {
 				var el = this.el_root, fadedirection, links, peers, i, l, string, newnode;
-		
+
 				// Fallback on cache if no string was provided, always insert at least one char so we can lookup a textnode
 				string = this.text = Hiro.canvas.cache.content || '';
 
@@ -1027,7 +1027,7 @@ var Hiro = {
 				// Remove all nodes
 				while (el.firstChild) {
 					el.removeChild(el.firstChild);
-				}				
+				}
 
 				// Create a new node
 				newnode = document.createTextNode(string);
@@ -1039,7 +1039,7 @@ var Hiro = {
 				links = Hiro.context.extractlinks(string);
 
 				// Yay, render them
-				if (links) this.decorate(links,'a',0);											
+				if (links) this.decorate(links,'a',0);
 
 				// Iterate through peers to set flags
 				for ( i = 0, l = peers.length; i < l; i++ ) {
@@ -1051,11 +1051,11 @@ var Hiro = {
 				if ((string.length > 0 && Hiro.canvas.quoteshown) || (string.length == 0 && !Hiro.canvas.quoteshown)) {
 					fadedirection = (Hiro.canvas.quoteshown) ? -1 : 1;
 					Hiro.ui.fade(Hiro.canvas.el_quote,fadedirection,450);
-					Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;				
+					Hiro.canvas.quoteshown = !Hiro.canvas.quoteshown;
 				}
 
 				// Log
-				Hiro.sys.log('Overlay repainted from scratch.') 														
+				Hiro.sys.log('Overlay repainted from scratch.')
 			},
 
 			// Diff cache, create delta and apply patch below
@@ -1063,8 +1063,8 @@ var Hiro = {
 				var that = this;
 
 				// Wrap it in it's own animationframe
-				Hiro.ui.render(function(){				
-					// Abort if nothing changed 
+				Hiro.ui.render(function(){
+					// Abort if nothing changed
 					if (!forcerepaint && that.text == Hiro.canvas.cache.content) {
 						// Stop
 						return;
@@ -1072,17 +1072,17 @@ var Hiro = {
 					} else if (forcerepaint || !that.text || !Hiro.canvas.cache.content) {
 						// Do a full repaint
 						that.build();
-					// If we have a change	
+					// If we have a change
 					} else {
 						// Create delta & patch it onto the overlay
 						that.patch(Hiro.sync.diff.delta(that.text,Hiro.canvas.cache.content));
 						// Kick off cursor scroll, also in rAF
-						if (aligncursor) that.aligncursor();							
+						if (aligncursor) that.aligncursor();
 					}
-				});	
+				});
 
 				// Resize (also in next rAF)
-				Hiro.canvas.resize();								
+				Hiro.canvas.resize();
 			},
 
 			// Take the standard dmp delta format and apply it to a single DOM textnode
@@ -1104,12 +1104,12 @@ var Hiro = {
 					// If we only have to move
 					if (actions[i].charAt(0) == '=') {
 						// Move the offset
-						globaloffset += parseInt(actions[i].substring(1));	
+						globaloffset += parseInt(actions[i].substring(1));
 						// Next l00p
 						continue;
 					}
-											
-					// First, get the right node 
+
+					// First, get the right node
 					// TODO Bruno: Reuse previous node if this change is within the same one
 					target = that.getnode(globaloffset);
 
@@ -1118,20 +1118,20 @@ var Hiro = {
 						// Paint from scratch
 						that.build();
 						// Stop here
-						return;	
-					}	
+						return;
+					}
 
 					// Set initial values
 					node = target[0];
-					localoffset = target[2];				
-					val = node.nodeValue || '';																
+					localoffset = target[2];
+					val = node.nodeValue || '';
 
 					// Remove something
 					if (actions[i].charAt(0) == '-') {
 						// Parse change length
 						changelength = parseInt(actions[i]);
 						// Build new string
-						val = val.substring(0,localoffset) + val.substring(localoffset - changelength);		
+						val = val.substring(0,localoffset) + val.substring(localoffset - changelength);
 						// Check if we deleted beyond node bounds or should remove a link
 						if (val.length < parseInt(actions[i]) * -1 || node.parentNode.nodeName == 'A' && !Hiro.context.extractlinks(val)) repaint = true;
 					// Add a character
@@ -1141,33 +1141,33 @@ var Hiro = {
 						globaloffset += changelength = addition.length;
 						// Build string
 						val = val.substring(0,localoffset) + addition + val.substring(localoffset);
-						// See if it might be a link if we input a whitespace or pasted something longer							
-						if (node.parentNode.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);						
+						// See if it might be a link if we input a whitespace or pasted something longer
+						if (node.parentNode.nodeName != 'A' && (addition.length > 4 || /\s/.test(addition))) links = Hiro.context.extractlinks(val);
 						// Check if it's still a proper link
 						else if (node.parentNode.nodeName == 'A' && (!Hiro.context.extractlinks(val) || /\s/.test(val))) repaint = true;
-					} 
+					}
 
 					// Repaint & sanity check
 					if (repaint) {
 						// Fire repaint
 						that.build();
 						// Nothing left to do here (and nothing further should be done, eg overwirte values post repaint below)
-						return;							
-					}					
+						return;
+					}
 
 					// Set new value (we don't do this below as (= 3 || +3) and -3 chars give changelength 0)
-					node.textContent = val;					
+					node.textContent = val;
 
 					// Change textlength and node length
 					that.textlength += changelength;
-					that.textnodes[target[1]] += changelength;					
+					that.textnodes[target[1]] += changelength;
 
 					// Process links AFTER we reset the lengths above
-					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);																		
+					if (links) that.decorate(links,'a',globaloffset - localoffset - changelength);
 				}
 
 				// Reset our internal cache once we're done
-				this.text = Hiro.canvas.cache.content;																																									
+				this.text = Hiro.canvas.cache.content;
 			},
 
 			// Takes an array of [pos,string] string tuples, the tag to have them wrapped in and a startingoffset in relationt o the global 0
@@ -1176,8 +1176,8 @@ var Hiro = {
 
 				// Go through all links
 				for ( i = 0, l = strings.length; i < l; i++ ) {
-					// Send off to wrapping			
-					this.wrap('a',undefined, stringstartoffset + strings[i][0],strings[i][1].length);	
+					// Send off to wrapping
+					this.wrap('a',undefined, stringstartoffset + strings[i][0],strings[i][1].length);
 				}
 			},
 
@@ -1186,44 +1186,44 @@ var Hiro = {
 				var range, node, element, initallength, val;
 
 				// Get nodes
-				node = this.getnode(offset);								
+				node = this.getnode(offset);
 
 				// Are we within the bounds of the same node?
 				if (node[0].length >= node[2] + length) {
 					// Build element
-					element = document.createElement(tag);		
-									
+					element = document.createElement(tag);
+
 					// Copy node value
 					val = node[0].nodeValue;
 
 					// Fill el with extracted string part
 					element.textContent = val.substring(node[2],node[2] + length);
 
-					// Remove existing value from textcontent 
+					// Remove existing value from textcontent
 					node[0].textContent = val.substring(0,node[2]) + val.substring(node[2] + length);
 
 					// Splice it in!
 					this.splice(node,element,length);
-				// Spanning multiple nodes						
-				} else {	
+				// Spanning multiple nodes
+				} else {
 					// Paint for now because we don't support paints spanning multiple nodes yet
 					this.build();
 
 					// it's not supported yet
-					return;									
+					return;
 				}
 			},
 
 			// Insert a given (!) HTML element in a given (!) node, splitting the existing textnode into up to two new ones
 			splice: function(node,element,length) {
-				var fragment = document.createDocumentFragment(), 
+				var fragment = document.createDocumentFragment(),
 					val, localoffset, before, after, newvalues = [];
 
 				// Out of bounds, this should only happe when we shorten the text below the cursor pos
 				if (!node || !element) return;
 
 				// Get node contents
-				val = node[0].nodeValue;	
+				val = node[0].nodeValue;
 
 				// Set shortcut
 				localoffset = node[2];
@@ -1236,23 +1236,23 @@ var Hiro = {
 					fragment.appendChild(before);
 					// Add value for array
 					newvalues.push(localoffset)
-				}	
+				}
 
 				// Add the new DOM node
-				fragment.appendChild(element);		
+				fragment.appendChild(element);
 
 				// Add to element length to internal array
-				if (length) newvalues.push(length);	
+				if (length) newvalues.push(length);
 
 				// See if we have text after the element
 				if (localoffset < val.length) {
 					// Build textnode
 					after = document.createTextNode(val.substring(localoffset));
 					// Add it
-					fragment.appendChild(after);	
+					fragment.appendChild(after);
 					// And value to internal array
-					newvalues.push(val.length - localoffset);					
-				}			
+					newvalues.push(val.length - localoffset);
+				}
 
 				// Replace old textnode with new fragment
 				node[0].parentNode.replaceChild(fragment,node[0])
@@ -1263,10 +1263,10 @@ var Hiro = {
 
 			// Paint the caret of a certain peer at a certain point
 			pc: function(peer) {
-				var cursor = peer.cursor_pos, contact, element, el_name, name, age, node;				
+				var cursor = peer.cursor_pos, contact, element, el_name, name, age, node;
 
 				// Abort if user has no known cursor position
-				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;			
+				if (!cursor || Hiro.data.get('profile','c.uid') == peer.user.uid) return false;
 
 				// Try fetching contact
 				contact = Hiro.user.contacts.lookup[peer.user.uid];
@@ -1298,12 +1298,12 @@ var Hiro = {
 				// Get the proper node
 				node = this.getnode(cursor);
 
-				// Append it	
+				// Append it
 				this.splice(node,element,0);
 			},
 
 			// Scroll body / canvas so that cursor is well aligned
-			// TODO Bruno: This can be optimized by combining it with the resize & scroll handlers, 
+			// TODO Bruno: This can be optimized by combining it with the resize & scroll handlers,
 			// thus only realigning if those values changed
 			aligncursor: function() {
 				var currentposition = this.getxy(), scroller, scrolltop, change, viewportheight, totalheight, upperbounds, lowerbounds, lineheight;
@@ -1312,7 +1312,7 @@ var Hiro = {
 				if (currentposition == false || currentposition == this.cursortop) return;
 
 				// Get current viewport height
-				viewportheight = Hiro.ui.height();			
+				viewportheight = Hiro.ui.height();
 
 				// On touch devices, we half the viewportheight to stay above keyboards
 				if (Hiro.ui.touch) viewportheight = parseInt( viewportheight / 2);
@@ -1321,27 +1321,27 @@ var Hiro = {
 				lineheight = (Hiro.ui.mini()) ? 28 : 30;
 
 				// Assign the bounds to two lines
-				upperbounds = lineheight * 2;				
-				lowerbounds = lineheight * 3;				
+				upperbounds = lineheight * 2;
+				lowerbounds = lineheight * 3;
 
 				// Select scroller
 				scroller = (Hiro.ui.touch && Hiro.ui.mini()) ? Hiro.canvas.el_rails : document.body;
 
 				// Get current DOM values
-				scrolltop = scroller.scrollTop;							
+				scrolltop = scroller.scrollTop;
 
 				// If we are outside of upper e
-				if (currentposition < upperbounds) {		
+				if (currentposition < upperbounds) {
 					// If we are within the bounds of the upper end of the note
 					if (scrolltop - currentposition < upperbounds) {
 						// Scroll all the way back to the top
 						change = scrolltop * -1;
-					// If we're somewhere in the note,						
+					// If we're somewhere in the note,
 					} else {
 						// scroll relatively
-						change = (upperbounds - currentposition) * -1;	
-					} 
-				// Out of lower bounds	
+						change = (upperbounds - currentposition) * -1;
+					}
+				// Out of lower bounds
 				} else if (currentposition > viewportheight - lowerbounds) {
 					// Get the totalheight first
 					if (Hiro.canvas.cache._height - (scrolltop + viewportheight) < lowerbounds) {
@@ -1349,18 +1349,18 @@ var Hiro = {
 					// Otherwise
 					} else {
 						// Scroll down one line height
-						change = (currentposition - (viewportheight - lowerbounds)); 
+						change = (currentposition - (viewportheight - lowerbounds));
 					}
 				}
 
 				// Do it!
 				if (change)	{
 					// Scroll right away
-					scroller.scrollTop += change;						
-				}					
+					scroller.scrollTop += change;
+				}
 
 				// Always save internal value
-				this.cursortop = currentposition;					
+				this.cursortop = currentposition;
 			},
 
 			// Return the current cursor x & y position
@@ -1375,19 +1375,19 @@ var Hiro = {
 				freshnodevalues = this.getnode(cursorposition);
 
 				// If we have no node, abort
-				if (!freshnodevalues || !freshnodevalues[0]) return false;	
+				if (!freshnodevalues || !freshnodevalues[0]) return false;
 
 				// Set node
 				node = freshnodevalues[0];
 
 				// And offset
-				nodestartoffset = freshnodevalues[2];	
+				nodestartoffset = freshnodevalues[2];
 
 				// debug
 				if (nodestartoffset > node.length) {
 					// Reset
 					nodestartoffset = node.length;
-				}													
+				}
 
 				// Create new range
 				range = ('createRange' in document) ? document.createRange() : new Range();
@@ -1412,7 +1412,7 @@ var Hiro = {
 				// Lucky us, change is within the first node
 				if (offset <= nodes[0]) {
 					// Set node to first
-					subnode = 0;	
+					subnode = 0;
 					// Offset stays same
 					subnodeoffset = offset || 0;
 				// Hm, maybe it's in the last node
@@ -1420,13 +1420,13 @@ var Hiro = {
 					// Choose last text node from array
 					subnode = nodes.length - 1;
 					// Offset is n chars away from end of last node
-					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - offset);					
+					subnodeoffset = nodes[nodes.length - 1] - (this.textlength - offset);
 				} else {
 					// Set initial counter
-					subnodeoffset = nodes[0];	
+					subnodeoffset = nodes[0];
 
 					// Start with the second node
-					for (i = 1, l = nodes.length; i < l; i++ ) {					
+					for (i = 1, l = nodes.length; i < l; i++ ) {
 						// Jackpot, we found the right one
 						if (offset >= subnodeoffset && offset <= (subnodeoffset + nodes[i])) {
 							// Set right subnode
@@ -1438,14 +1438,14 @@ var Hiro = {
 						}
 						// Add node length to counter and iterate to next node
 						subnodeoffset += nodes[i];
-					}					
+					}
 				}
 
 				// Abort if we havent't found anything
 				if (subnode === undefined) return false;
 
 				// Helper that extracts textnodes from a provided nodelist
-				// TODO Bruno: Use binary search or similar for better search, do not return full array				
+				// TODO Bruno: Use binary search or similar for better search, do not return full array
 				function extract(nodelist,wanted) {
 					var i, l, results = [], children, node, deep;
 
@@ -1457,7 +1457,7 @@ var Hiro = {
 						if (node.nodeType == 3) {
 							// Add it right away
 							results.push(node);
-						// If it's an anchor tag	
+						// If it's an anchor tag
 						} else if (node.nodeName == 'A') {
 							// Set quick reference
 							children = node.childNodes;
@@ -1467,10 +1467,10 @@ var Hiro = {
 							else if (children.length == 3) {
 								// Set results to new merged array
 								results = results.concat(extract(children));
-							}			
+							}
 						}
 						// Stop once we reached the desired node
-						if (results.length > wanted) break;												
+						if (results.length > wanted) break;
 					}
 
 					// Return results
@@ -1478,10 +1478,10 @@ var Hiro = {
 				}
 
 				// Fetch all overlay childnodes and convert them to normal array
-				domnodes = extract(this.el_root.childNodes,subnode);								
-		
+				domnodes = extract(this.el_root.childNodes,subnode);
+
 				// Return subnode
-				return [domnodes[subnode],subnode,subnodeoffset];			
+				return [domnodes[subnode],subnode,subnodeoffset];
 
 				// No node found
 				return false;
@@ -1510,7 +1510,7 @@ var Hiro = {
 
 					// Se if we're out of bounds
 					if (boundingbox.top > eventy || boundingbox.bottom < eventy || boundingbox.left > eventx || boundingbox.right < eventx) continue;
-					
+
 					// We have a candidate
 					candidate = elements[i];
 
@@ -1542,7 +1542,7 @@ var Hiro = {
 					}
 				}
 			}
-		}	
+		}
 	},
 
 	// "Context Engine" related stuff
@@ -1561,39 +1561,39 @@ var Hiro = {
 			{
 				// Add to results
 				results.push([temparray.index,temparray[0]])
-			}			
-			
+			}
+
 			// See if we have a match
 			if (results.length) return results;
 
 			// Otehrwise return a clear false
-			return false;		
+			return false;
 		}
-	},	
+	},
 
 	// All user related stuff
 	user: {
 		// DOM Nodes
 		el_login: document.getElementById('s_signin'),
 		el_register: document.getElementById('s_signup'),
-		el_reset: document.getElementById('s_reset'),		
+		el_reset: document.getElementById('s_reset'),
 
 		// Internals
-		authinprogress: false,	
+		authinprogress: false,
 
 		// Token cache
 
 		// Grab registration form data, submit via XHR and process success / error
-		// The Login and Register screens and flows are pretty much the same, 
+		// The Login and Register screens and flows are pretty much the same,
 		// we only have to decide which DOM branch we use in the first line
 		logio: function(event,login) {
-			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register, 
-				url = (login) ? '/tokens/login' : '/tokens/signup', 
+			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register,
+				url = (login) ? '/tokens/login' : '/tokens/signup',
 				b = branch.getElementsByClassName('hirobutton')[1],
-				v = branch.getElementsByTagName('input'),	
-				form = branch.getElementsByTagName('form')[0],						
+				v = branch.getElementsByTagName('input'),
+				form = branch.getElementsByTagName('form')[0],
 				e = branch.getElementsByClassName('mainerror')[0],
-				payload = {	
+				payload = {
 					password: v[1].value
 				},
 				parse = Hiro.util.mailorphone(v[0].value),
@@ -1606,7 +1606,7 @@ var Hiro = {
 			})
 
 			// Prevent default event if we have one from firing submit
-			// if (event) Hiro.util.stopEvent(event);				
+			// if (event) Hiro.util.stopEvent(event);
 
 			// Preparation
 			if (this.authinprogress) return;
@@ -1617,15 +1617,15 @@ var Hiro = {
 				if (!v[1].value) {
                 	v[1].className += ' error';
                 	v[1].nextSibling.textContent = "Your password";
-                	v[1].focus();					
-				}	
+                	v[1].focus();
+				}
 				if (!parse) {
                 	v[0].className += ' error';
                 	v[0].nextSibling.textContent = "Your Email or Phone #";
-                	v[0].focus();					
-				}				
+                	v[0].focus();
+				}
 				// Abort here
-				return;			
+				return;
 			}
 
 			// Add data to payload
@@ -1633,32 +1633,32 @@ var Hiro = {
 			if (sid) payload.sid = sid;
 
 			// Letttsssss gooo
-			this.authinprogress = true;				
+			this.authinprogress = true;
 			b.textContent = (login) ? 'Logging in...' : 'Signing Up...';
 
 			// Begin loading bar
-			Hiro.ui.hprogress.begin();	
+			Hiro.ui.hprogress.begin();
 
 			// Remove focus on mobiles
-			if (Hiro.ui.touch && document.activeElement) document.activeElement.blur();				
+			if (Hiro.ui.touch && document.activeElement) document.activeElement.blur();
 
 			// Clear any old error messages
-			v[0].nextSibling.innerHTML = v[1].nextSibling.innerHTML = e.innerHTML = '';			
- 
+			v[0].nextSibling.innerHTML = v[1].nextSibling.innerHTML = e.innerHTML = '';
+
 			// Send request to backend
 			Hiro.sync.ajax.send({
 				url: url,
 	            type: "POST",
 	            payload: payload,
 				success: function(req,data) {
-					// Reset flag	
+					// Reset flag
 	                Hiro.user.authinprogress = false;
 
 					// Try fetching a name if registration form was used
-					Hiro.user.setname(parse[1],true); 	                
+					Hiro.user.setname(parse[1],true);
 
-	                // Process login					
-					Hiro.user.logiocomplete(data,login);	
+	                // Process login
+					Hiro.user.logiocomplete(data,login);
 
 					// analytics
                     if (!login) {
@@ -1667,38 +1667,38 @@ var Hiro = {
                     }
 					Hiro.user.track.logevent('logged-in', {via: parse[0]});
 				},
-				error: function(req,data) {		
-					// Reset DOM & flag	
+				error: function(req,data) {
+					// Reset DOM & flag
 	                b.textContent = (login) ? 'Log-In' : 'Create Account';
 	                Hiro.user.authinprogress = false;
 
 					// End loading bar in error
-					Hiro.ui.hprogress.done(true)		                
+					Hiro.ui.hprogress.done(true)
 
-	                // Show error						
+	                // Show error
 					if (req.status==500) {
 						e.textContent = "Something went wrong, please try again.";
-						Hiro.sys.error('Auth server error for ' + payload.email,req);							
+						Hiro.sys.error('Auth server error for ' + payload.email,req);
 						return;
 					}
 	                if (data.email) {
 	                	v[0].className += ' error';
 	                	v[0].nextSibling.textContent = data.email;
 	                	v[0].focus();
-	                }	
+	                }
 	                if (data.password) {
-	                	v[1].className += ' error';	                    	
-	                	v[1].nextSibling.textContent = data.password;  
-	                	v[1].focus();	                	
-	                }	                 		                    						                    
-				}										
-			});	
+	                	v[1].className += ' error';
+	                	v[1].nextSibling.textContent = data.password;
+	                	v[1].focus();
+	                }
+				}
+			});
 		},
 
 		// Handle Fb Signups / Logins
 		fbauth: function(target,login) {
-			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register, 	
-				button = branch.getElementsByClassName('fb')[0],						
+			var branch = (login) ? Hiro.user.el_login : Hiro.user.el_register,
+				button = branch.getElementsByClassName('fb')[0],
 				e = branch.getElementsByClassName('mainerror')[0], reason;
 
 			// Only do one at a time
@@ -1706,7 +1706,7 @@ var Hiro = {
 			this.authinprogress = true;
 
 			// Begin loading bar
-			Hiro.ui.hprogress.begin();				
+			Hiro.ui.hprogress.begin();
 
 			// Set UI
 			button.textContent = 'Connecting...';
@@ -1730,12 +1730,12 @@ var Hiro = {
 								error: function(req,data) {
 									obj.error('backend',data)
 								}
-							});							
+							});
 						} else {
 							// FB login or hiro auth process aborted by user
 							if (obj && obj.error) obj.error('abort' + reason)
 						}
-					}					
+					}
 
 					// First try to get status
 					FB.getLoginStatus(function(response) {
@@ -1743,8 +1743,8 @@ var Hiro = {
 						if (response.status === 'connected') {
 							// Post tokens
 							posttokens(response.authResponse);
-						// Not logged into FB or Hiro not authed	
-						} else { 
+						// Not logged into FB or Hiro not authed
+						} else {
 							// Set reason for prompting login
 							reason = (response.status === 'not_authorized') ? 'auth' : 'login';
 
@@ -1763,7 +1763,7 @@ var Hiro = {
 							// Add scope here
 							},{scope: 'email'});
 						}
-					});	
+					});
 				},
 				// If the TODO was successfully completed
 				success: function(data) {
@@ -1775,8 +1775,8 @@ var Hiro = {
 						// Forward to handler
 						Hiro.user.logiocomplete(data,login);
 
-						// Allow next try	
-						Hiro.user.authinprogress = false;	
+						// Allow next try
+						Hiro.user.authinprogress = false;
 
 						// Logging
                         if (!login) {
@@ -1784,69 +1784,69 @@ var Hiro = {
                             Hiro.user.track.logevent('signed-up', {via: 'facebook', id: response.id, 'fb-url': response.link});
                         }
                         Hiro.user.track.logevent('logged-in', {via: 'facebook'});
-			        });						
+			        });
 				},
 				// If something hapenned along the way
 				error: function(reason,data) {
 					var tryagain;
 					// We screwed up
 					if (reason == 'backend') {
-						e.textContent = 'Hiro not available, please try again later.';	
+						e.textContent = 'Hiro not available, please try again later.';
 						Hiro.sys.error('Facebook login failed on our side',data);
-					// FB not available (the script fetching of Hiro.lig failed) or user offline										
+					// FB not available (the script fetching of Hiro.lig failed) or user offline
 					} else if (reason == 'sourceoffline') {
-						e.textContent = 'Facebook not available, please try later.';	
-					// User tried to sign up while in front of waitlist landing page								
+						e.textContent = 'Facebook not available, please try later.';
+					// User tried to sign up while in front of waitlist landing page
 					} else if (reason == 'waitlist') {
 						e.textContent = 'Nice try, but please apply for early access.';
 						// Reset button
 						button.innerHTML = 'Log-In with <b>Facebook</b>';
-						// Do not show Try again	
-						tryagain = false;						
-					// User aborted											
+						// Do not show Try again
+						tryagain = false;
+					// User aborted
 					} else {
 						e.textContent = 'Something went wrong, please try later.';
 					}
 
 					// Reset button
-					if (tryagain != false) button.textContent = 'Try again';					
+					if (tryagain != false) button.textContent = 'Try again';
 
 					// End loading bar in error
 					Hiro.ui.hprogress.done(true)
 
-					// Allow next try	
-					Hiro.user.authinprogress = false;										
+					// Allow next try
+					Hiro.user.authinprogress = false;
 				}
 			});
 		},
 
 		// Post successfull auth stuff
 		// See createsession handler to see if and when we overwrite this on login
-		logiocomplete: function(data,login) {	
+		logiocomplete: function(data,login) {
 			// Hide landing page
-			Hiro.ui.landing.hide();			
+			Hiro.ui.landing.hide();
 
 			// Add token to known list
-			Hiro.data.tokens.add({ id: data.token, action: 'login'})		
+			Hiro.data.tokens.add({ id: data.token, action: 'login'})
 		},
 
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
 		logout: function() {
 			// Log respective event
-			Hiro.user.track.logevent('logged-out');	
+			Hiro.user.track.logevent('logged-out');
 
-			// Wipe local data immediately 
+			// Wipe local data immediately
 			Hiro.data.local.wipe();
 
 			// Log
-			Hiro.sys.log('Local data wiped, reloading page');	
+			Hiro.sys.log('Local data wiped, reloading page');
 
 			// Reloading system
 			setTimeout(function(){
 				// Move to different stack than local.wipe() above
 				Hiro.sys.reload(true);
-			},100);			
-		},	
+			},100);
+		},
 
 		// Request password reset
 		requestpwdreset: function() {
@@ -1865,8 +1865,8 @@ var Hiro = {
 				if (user.email) parse = ['mail', user.email];
 
 				// If we have phone
-				if (user.phone) parse = ['phone', user.phone];				
-			}	
+				if (user.phone) parse = ['phone', user.phone];
+			}
 
 			// If we still weren't able to find any user information
 			if (!parse) {
@@ -1875,7 +1875,7 @@ var Hiro = {
 				input.focus();
 				e.textContent = "Please enter your mail or phone and click 'Reset password' again";
 				return;
-			}	
+			}
 
 			// Build proper object
 			payload[parse[0]] = parse[1];
@@ -1888,14 +1888,14 @@ var Hiro = {
 	            payload: payload,
 				success: function(req,data) {
 					// Show message
-	                e.textContent = "Success, check your " + parse[0] + " to continue.";										                    
+	                e.textContent = "Success, check your " + parse[0] + " to continue.";
 				},
-				error: function(req,data) {		
-					// Reset DOM & flag	
-	               	e.textContent = "Please try again.";	                 		                    						                    
+				error: function(req,data) {
+					// Reset DOM & flag
+	               	e.textContent = "Please try again.";
 				}
-			});	
-		},	
+			});
+		},
 
 		// Submit password reset
 		resetpwd: function() {
@@ -1906,12 +1906,12 @@ var Hiro = {
 				payload, newlinkstring = 'Send new link';
 
 			// Clear error first
-			error.textContent = '';	
+			error.textContent = '';
 
 			// We had a previous expired token
 			if (button.textContent == newlinkstring) {
 				// Hide dialog
-				Hiro.ui.dialog.hide();	
+				Hiro.ui.dialog.hide();
 				// Fire request
 				this.requestpwdreset();
 			// No passwords at all provided
@@ -1919,12 +1919,12 @@ var Hiro = {
 				error.textContent = 'Please choose a new password';
 				button.textContent = 'Try again';
 				inputs[0].focus();
-			// String mismatch	
+			// String mismatch
 			} else if (inputs[0].value != inputs[1].value) {
 				error.textContent = 'Passwords do not match';
 				button.textContent = 'Try again';
-				inputs[1].focus();				
-			// Yay, new password have	
+				inputs[1].focus();
+			// Yay, new password have
 			} else {
 				// Placeholder activity
 				button.textContent = 'Changing password...';
@@ -1935,7 +1935,7 @@ var Hiro = {
 				// Get token
 				payload.token = Hiro.data.tokens.resetpwdtoken;
 				// Add new password
-				payload.new_pwd = inputs[0].value;				
+				payload.new_pwd = inputs[0].value;
 				// Send request to backend
 				Hiro.sync.ajax.send({
 					url: '/settings/setpwd',
@@ -1943,9 +1943,9 @@ var Hiro = {
 		            payload: payload,
 					success: function(req,data) {
 						// Hide dialog
-						Hiro.ui.dialog.hide();															                    
+						Hiro.ui.dialog.hide();
 					},
-					error: function(req,data) {		
+					error: function(req,data) {
 						// Reset DOM, most likely token expired
 		               	if (req.status == 403) {
 		               		// Error
@@ -1957,12 +1957,12 @@ var Hiro = {
 		               		// Error
 							error.textContent = "Something went wrong on our side, please try again later.";
 							// Button
-							button.textContent = 'Try again';							
-		               	}	                 		                    						                    
+							button.textContent = 'Try again';
+		               	}
 					}
 				});
 			}
-				
+
 		},
 
 		// Change name to new value
@@ -1973,11 +1973,11 @@ var Hiro = {
 			// Use getname helper to extract name from mail or phone, only if we don't have one yet
 			if (fetchsuggestion) newname = Hiro.util.getname(newname)[1];
 			// Save name & update link text
-			Hiro.data.set('profile','c.name',newname);	
+			Hiro.data.set('profile','c.name',newname);
 			// Update trackers
 			Hiro.user.track.update();
 			// Log respective event
-			Hiro.user.track.logevent('changed-name');								
+			Hiro.user.track.logevent('changed-name');
 		},
 
 		// Hello. Is it them you're looking for?
@@ -2009,22 +2009,22 @@ var Hiro = {
 				// Return if no search provided
 				if (!string) return;
 
-				// Make sure we have the right string	
+				// Make sure we have the right string
 				if (typeof string == "string") string = string.toLowerCase();
-				else if (typeof string == "number") string = string.toString();	
+				else if (typeof string == "number") string = string.toString();
 				else return;
 
 				// Impose length limits
-				if ( (l > 100 && string.length == 1) || (l > 500 && string.length == 2) ) return;			
+				if ( (l > 100 && string.length == 1) || (l > 500 && string.length == 2) ) return;
 
 				// Iterate through contacts
-				for (i = 0; i < l ; i++) {	
-					c = contacts[i];				
+				for (i = 0; i < l ; i++) {
+					c = contacts[i];
 					// Rules to be observed
 					// IndexOf on strings should be our fastest option here
 					// TODO Bruno: Sort the continue statements from most to least likely
 					if 	((!c.name || c.name.toLowerCase().indexOf(string) == -1) &&
-						(!c.email || c.email.toLowerCase().indexOf(string) == -1) &&	
+						(!c.email || c.email.toLowerCase().indexOf(string) == -1) &&
 						(!c.phone || c.phone.indexOf(string) == -1)) continue;
 
 					// Add all who made it until
@@ -2053,7 +2053,7 @@ var Hiro = {
 						for ( i = 0, l = contacts.length; i < l; i++ ) {
 							// Ignore irrelevant properties
 							if (prop != 'uid' && prop != 'email' && prop != 'phone') continue;
-							// 
+							//
 							if (contacts[i][prop] == obj[prop]) {
 								// Log
 								Hiro.sys.log('Already have contact with ' + prop + ' ' + obj[prop] + ', aborting add',obj);
@@ -2061,7 +2061,7 @@ var Hiro = {
 								// End here
 								return;
 							}
-						}			
+						}
 					}
 				}
 
@@ -2072,7 +2072,7 @@ var Hiro = {
 				this.update();
 
 				// Add copy to shadow if server created it
-				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));				
+				if (source == 's') shadow.push(JSON.parse(JSON.stringify(obj)));
 
 				// Save data
 				Hiro.data.set('profile','c.contacts',contacts,source);
@@ -2084,7 +2084,7 @@ var Hiro = {
 					i, l, prop, type;
 
 				// Abort if we don not have contacts yet but for some reason managed to call this
-				if (!contacts) return;	
+				if (!contacts) return;
 
 				// Remove from shadow if user obj has a uid
 				if (obj.uid && clearshadow) {
@@ -2093,14 +2093,14 @@ var Hiro = {
 							// Remove from array, this means it has to be in contacts as well so we save below
 							shadow.splice(i,1);
 							break;
-						}	
+						}
 					}
 				}
 
 				// If we have multiple properties
 				for (prop in obj) {
 					if (obj.hasOwnProperty(prop)) {
-						// See if we can find what we're looking for		
+						// See if we can find what we're looking for
 						for ( i = 0, l = contacts.length; i < l; i++ ) {
 							if (contacts[i][prop] == obj[prop]) {
 								// Remove contact from array
@@ -2110,14 +2110,14 @@ var Hiro = {
 								Hiro.data.set('profile','c.contacts',contacts,source);
 
 								// Update lookup
-								this.update();	
+								this.update();
 
 								// End here
 								return;
 							}
 						}
 					}
-				}											
+				}
 			},
 
 			// Retrieve a specific contact, expects { property: value } format, and sets it's contents to new value
@@ -2137,13 +2137,13 @@ var Hiro = {
 						// Cycle through contacts
 						for (i =0, l = contacts.length; i < l; i++) {
 							if (contact[p] == contacts[i][p]) {
-								// Set reference									
-								contacts[i] = newvalue;	
+								// Set reference
+								contacts[i] = newvalue;
 								// Set success flag
-								found = true;							
+								found = true;
 								// Abort loop
 								break;
-							}	
+							}
 						}
 					}
 				}
@@ -2153,8 +2153,8 @@ var Hiro = {
 					// If a shadow sync is requested
 					if (syncshadow) {
 						// Set reference
-						shadow = Hiro.data.get('profile','s.contacts');		
-										
+						shadow = Hiro.data.get('profile','s.contacts');
+
 						// Just add it if it got no uid
 						if (!contact.uid) { shadow.push(JSON.parse(JSON.stringify(newvalue))) }
 
@@ -2180,7 +2180,7 @@ var Hiro = {
 
 					// Return
 					return true;
-				// Nothing found				
+				// Nothing found
 				} else {
 					// Log
 					Hiro.sys.error("Server asked us to swap contact details of a contact we don't know",contact);
@@ -2208,7 +2208,7 @@ var Hiro = {
 					d, tip, action;
 
 				// Set local vars
-				this.targettier = tt;	
+				this.targettier = tt;
 
 				// User chooses current plan
 				if (ct == tt) {
@@ -2220,8 +2220,8 @@ var Hiro = {
 				} else if (tt > ct) {
 					// Check if Stripe is already loaded or do so otherwise
 					if (!window.Stripe) Hiro.lib.stripe.load();
-									
-					// Set values for upgrade / preorder smoke test					
+
+					// Set values for upgrade / preorder smoke test
 					if (tt == 2) {
 						d = 'Advanced Plan: $ 9';
 						tip = '';
@@ -2247,7 +2247,7 @@ var Hiro = {
 
 					// Log respective event
 					Hiro.user.track.logevent('clicked-choose-plan', {'old': ct, 'new': tt});
-				// User wants to downgrade	
+				// User wants to downgrade
 				} else if (tt < ct) {
 					this.downgrade(tt);
 				}
@@ -2259,7 +2259,7 @@ var Hiro = {
 					form, fields, ccfields, el, me, button, subscription;
 
 				// Fatal!
-				if (!window.Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);					
+				if (!window.Stripe) Hiro.sys.error('User tried to checkout with no stripe loaded',root);
 
 				// One try at a time
 				if (this.active || !root || !window.Stripe) return;
@@ -2274,36 +2274,36 @@ var Hiro = {
 				me = form.getElementsByClassName('mainerror')[0];
 
 				// Show user whats going on
-				button.textContent = 'Validating...';					
+				button.textContent = 'Validating...';
 
 				// Build subscription object
 				subscription = {};
-				subscription.plan = this.plans[this.targettier];		
+				subscription.plan = this.plans[this.targettier];
 				subscription.sid = Hiro.data.get('profile','c.sid');
 
 				// Log respective event
-				Hiro.user.track.logevent('clicked-submit-payment');				
+				Hiro.user.track.logevent('clicked-submit-payment');
 
 				// Ping Stripe for token
-				Stripe.createToken(form, function(status,response) {					
+				Stripe.createToken(form, function(status,response) {
 					if (response.error) {
 						// Form field list to Stripe field name mapping and add error class
 						ccfields = [0,'number','exp_month','exp_year','cvc'];
 						if (ccfields.indexOf(response.error.param) > 0) {
 							el = fields[ccfields.indexOf(response.error.param)];
-							el.className += ' error';	
+							el.className += ' error';
 							// FOcus on problematic field
 							el.focus();
-						}											
+						}
 
 						// Add error message for number
-						if (response.error.param == 'number') {							
+						if (response.error.param == 'number') {
 							fields[1].nextSibling.textContent = response.error.message;
 							fields[1].nextSibling.className += ' error';
 
-						// Or all other errors to generic field											
+						// Or all other errors to generic field
 						} else if (me) {
-							me.textContent = response.error.message;							
+							me.textContent = response.error.message;
 						}
 
 						// Reset
@@ -2311,12 +2311,12 @@ var Hiro = {
 						button.textContent = "Try again";
 
 						// Log & return
-						Hiro.sys.error('CC check gone wrong, Stripe sez:',response);							
+						Hiro.sys.error('CC check gone wrong, Stripe sez:',response);
 						return;
 
 					} else {
 						// add new stripe data to subscription object
-						subscription.stripetoken = response.id;						
+						subscription.stripetoken = response.id;
 
 						// Send token to backend
 						Hiro.sync.ajax.send({
@@ -2326,28 +2326,28 @@ var Hiro = {
 							success: function(req,data) {
 								// TODO Bruno: Make this experience waaaaaaaayyy funkier
 								// w00p w00p, set stage and everything
-			                    Hiro.ui.setstage(data.tier);	
-			                    Hiro.user.checkout.active = false;	
+			                    Hiro.ui.setstage(data.tier);
+			                    Hiro.user.checkout.active = false;
 			                    // Show "Thank you!" dialog
-			                    Hiro.ui.dialog.showmessage('upgrade')	
+			                    Hiro.ui.dialog.showmessage('upgrade')
 			                    // Ping store
 			                    Hiro.sync.ping('profile');
-								// Clean up form 
-								button.textContent = 'Upgrade';	
+								// Clean up form
+								button.textContent = 'Upgrade';
 								// Log respective event
 								Hiro.user.track.logevent('changed-plan', {tier: data.tier, price: {currency: 'USD', amount: 9.00}});
 							},
 			                error: function(req,data) {
 			                	// Log
-			                	Hiro.sys.error('Checkout went wrong on our side: ', data);		
+			                	Hiro.sys.error('Checkout went wrong on our side: ', data);
 			                	// Reset and show
 			                    Hiro.user.checkout.active = false;
 			                    me.textContent = data.error || "Hiro wasn't available, please try again a little bit later";
-								button.textContent = "Try again";			                    				                	                	
-			                }					
-						});														
-					}								
-				});								
+								button.textContent = "Try again";
+			                }
+						});
+					}
+				});
 			},
 
 			// Sniiieff, so loooneeesssoooommmmeee tonight
@@ -2364,8 +2364,8 @@ var Hiro = {
 				button.textContent = 'Downgrading...';
 
 				// Build subscription object
-				subscription.plan = this.plans[tier];		
-				subscription.sid = user.sid;				
+				subscription.plan = this.plans[tier];
+				subscription.sid = user.sid;
 
 				// Post to server, bitterly
 				Hiro.sync.ajax.send({
@@ -2374,17 +2374,17 @@ var Hiro = {
 	                payload: subscription,
 					success: function(req,data) {
 	                    // Ping store
-	                    Hiro.sync.ping('profile');	   
+	                    Hiro.sync.ping('profile');
 
 						// UI Stuff
-	                    Hiro.ui.setstage(data.tier);	
-	                    Hiro.user.checkout.active = false;	
-		                Hiro.ui.dialog.hide();	                    	                 	
+	                    Hiro.ui.setstage(data.tier);
+	                    Hiro.user.checkout.active = false;
+		                Hiro.ui.dialog.hide();
 
 						// Log respective event
                         Hiro.user.track.logevent('changed-plan', {tier: tier, price: {amount: 0.00}});
 					}
-				});					
+				});
 			}
 		},
 
@@ -2399,10 +2399,10 @@ var Hiro = {
 				if (window.Intercom) {
 					// Update existing settings
 					Intercom('update', Hiro.lib.intercom.getsettings() );
-				// Load intercom if not yet happened (eg initial signin)					
+				// Load intercom if not yet happened (eg initial signin)
 				} else if (Hiro.sys.production) {
 					Hiro.lib.intercom.load();
-				}	
+				}
 
 				// GA
 				if (window.ga) ga('set', '&uid', Hiro.data.get('profile','c.uid'));
@@ -2420,8 +2420,8 @@ var Hiro = {
                     case 'created-note':
                     case 'changed-name':
                     case 'changed-plan':
-                    case 'signed-up': 
-                    case 'added-contacts': 
+                    case 'signed-up':
+                    case 'added-contacts':
                         props = {'tier': Hiro.data.get('profile', 'c.tier'),
                                  'name': Hiro.data.get('profile', 'c.name'),
                                  'email': Hiro.data.get('profile', 'c.email'),
@@ -2445,69 +2445,69 @@ var Hiro = {
                         case 'unarchived-note':
                             cat = 'note'; action = 'set-status'; label = 'active';
                             break;
-                        case 'invited-user': 
+                        case 'invited-user':
                             cat = 'note'; action = 'invite-user'; label = meta['via']; value = meta['peers'];
                             break;
-                        case 'shared-link': 
+                        case 'shared-link':
                             cat = 'note'; action = 'share-link'; label = meta['channel'];
                             break;
-                        case 'consumed-token': 
+                        case 'consumed-token':
                             cat = 'note'; action = 'consume-token'; label = meta['kind'];
                             break;
 
                         // profile events
-                        case 'logged-in': 
+                        case 'logged-in':
                             cat = 'profile'; action = 'login'; label = meta['via'];
                             break;
-                        case 'logged-out': 
+                        case 'logged-out':
                             cat = 'profile'; action = 'logout';
                             break;
-                        case 'signed-up': 
-                            cat = 'profile'; action = 'signup'; label = meta['via']; 
+                        case 'signed-up':
+                            cat = 'profile'; action = 'signup'; label = meta['via'];
                             break;
                         case 'changed-name':
-                            cat = 'profile'; action = 'set-name'; 
+                            cat = 'profile'; action = 'set-name';
                             break;
                         case 'set-passwd':
-                            cat = 'profile'; action = 'set-passwd'; 
+                            cat = 'profile'; action = 'set-passwd';
                             break;
-                        case 'changed-plan': 
+                        case 'changed-plan':
                             cat = 'profile'; action = 'change-plan'; label = props.tier; value = meta.price.amount;
                             break;
-                        case 'added-contact': 
+                        case 'added-contact':
                             cat = 'profile'; action = 'add-contact'; label = meta['via']; value = props.contacts;
                             break;
 
                         // dialog events
-                        case 'viewed-settings': 
-                        case 'viewed-account': 
-                        case 'viewed-plan': 
-                        case 'viewed-checkout': 
-                        case 'viewed-about': 
+                        case 'viewed-settings':
+                        case 'viewed-account':
+                        case 'viewed-plan':
+                        case 'viewed-checkout':
+                        case 'viewed-about':
                             cat = 'dialog'; action = 'view'; label = name.slice(7);
                             break;
-                        case 'hit-paywall': 
+                        case 'hit-paywall':
                             cat = 'dialog'; action = 'hit'; label = 'paywall';
                             break;
-                        case 'opened-logio': 
+                        case 'opened-logio':
                             cat = 'dialog'; action = 'view'; label = 'logio-'+meta.via;
                             break;
 
                         // widget events
-                        case 'viewed-sharing-widget': 
+                        case 'viewed-sharing-widget':
                             cat = 'widget'; action = 'view'; label = 'sharing';
                             break;
-                        case 'teased-sharing-widget': 
+                        case 'teased-sharing-widget':
                             cat = 'widget'; action = 'tease'; label = 'sharing';
                             break;
 
                         // button events
-                        case 'clicked-upgrade': 
-                        case 'clicked-choose-plan': 
-                        case 'clicked-submit-payment': 
+                        case 'clicked-upgrade':
+                        case 'clicked-choose-plan':
+                        case 'clicked-submit-payment':
                             cat = 'button'; action = 'click'; label = name.slice(8);
                             break;
-                        case 'clicked-promote-hiro': 
+                        case 'clicked-promote-hiro':
                             cat = 'button'; action = 'click'; label = 'promote-' + meta.channel;
                             break;
 
@@ -2520,10 +2520,10 @@ var Hiro = {
                             break;
 
                         // misc events
-                        case 'opened-app': 
+                        case 'opened-app':
                             cat = 'app'; action = 'open'; label = 'web';
                             break;
-                        case 'hit-landingpage': 
+                        case 'hit-landingpage':
                             cat = 'landing'; action = 'hit'; label = meta['campaign'];
                             break;
                     }
@@ -2579,10 +2579,10 @@ var Hiro = {
 				el = document.getElementById('app_' + app);
 
 				// Attach touch and click handlers
-				Hiro.ui.hover.attach(el,Hiro.apps.hoverhandler,100);		
-				Hiro.ui.fastbutton.attach(el,Hiro.apps.clickhandler);				
-				Hiro.util.registerEvent(el,'keyup',Hiro.apps[app].keyhandler);	
-			}	
+				Hiro.ui.hover.attach(el,Hiro.apps.hoverhandler,100);
+				Hiro.ui.fastbutton.attach(el,Hiro.apps.clickhandler);
+				Hiro.util.registerEvent(el,'keyup',Hiro.apps[app].keyhandler);
+			}
 		},
 
 		// Touchy handler thats fired for each app on hover or touchstart
@@ -2598,7 +2598,7 @@ var Hiro = {
 			Hiro.user.track.logevent('viewed-' + element.id.substring(4).toLowerCase() + '-widget');
 
 			// Open widget
-			that.show(element);		
+			that.show(element);
 		},
 
 		// Fires on touch or click within an app, delegate to respective app
@@ -2609,10 +2609,10 @@ var Hiro = {
 			// If we clicked on the icon, forward to hoverhandler
 			if (type == 'half' && id.substring(0,4) == 'app_') {
 				that.hoverhandler(event,document.getElementById(id))
-			// Otherwise forward to right subclickhandler	
+			// Otherwise forward to right subclickhandler
 			} else {
 				// Fire
-				Hiro.apps[branch.id.substring(4)].clickhandler(id,type,target,branch,event)					
+				Hiro.apps[branch.id.substring(4)].clickhandler(id,type,target,branch,event)
 			}
 		},
 
@@ -2624,10 +2624,10 @@ var Hiro = {
 			this.open.push(app);
 
 			// Move canvas to very top on minis
-			if (Hiro.ui.mini()) Hiro.canvas.totop();			
+			if (Hiro.ui.mini()) Hiro.canvas.totop();
 
-			// Update & display app			
-			Hiro.ui.render(function(){		
+			// Update & display app
+			Hiro.ui.render(function(){
 				// Update contents before opening
 				Hiro.apps[app].update();
 
@@ -2635,8 +2635,8 @@ var Hiro = {
 				if (!el.style.display || el.style.display == 'none') el.style.display = 'block';
 
 				// Make sure proper elements are focussed etc
-				Hiro.apps[app].focus();					
-			});		
+				Hiro.apps[app].focus();
+			});
 		},
 
 		close: function(app) {
@@ -2695,10 +2695,10 @@ var Hiro = {
 				// Abort if we dont have one
 				if (!teaser) return;
 
-				// Change title	
+				// Change title
 				if (teaser.title) title.firstChild.textContent = teaser.title;
 
-				// Change button, only on small devices				
+				// Change button, only on small devices
 				if (teaser.secondary && Hiro.ui.mini()) {
 					// Set content
 					secondarybutton.textContent = teaser.secondary;
@@ -2707,7 +2707,7 @@ var Hiro = {
 				} else {
 					// Make sure button is hidden
 					secondarybutton.style.display = 'none';
-				}				
+				}
 
 				// Set flag
 				this.teased = (type == 'reset') ? false : true;
@@ -2718,7 +2718,7 @@ var Hiro = {
 				var that = Hiro.apps.sharing, target = event.target || event.srcElement;
 
 				// Forward keyup event to validate
-				if (event.type != 'keydown') Hiro.apps.sharing.validate(event); 
+				if (event.type != 'keydown') Hiro.apps.sharing.validate(event);
 
 				// If we have no value, make it easier for people to get rid of dialog
 				if (!target.value && [37,9].indexOf(event.keyCode) > -1) {
@@ -2742,15 +2742,15 @@ var Hiro = {
 						case 'close':
 							Hiro.apps.close(branch.id);
 							break;
-						// Fired by keyboard handler on invite input and fastbutton submit	
+						// Fired by keyboard handler on invite input and fastbutton submit
 						case 'invite':
-							this.validate(event,true);	
+							this.validate(event,true);
 							break;
 						// Tap on typeahead link
 						case 'ta':
 							this.validate(event,true,id[2],id[1]);
-							break;						
-						// Exisitng peer list click/tap	
+							break;
+						// Exisitng peer list click/tap
 						case 'peer':
 							if (target.className == 'remove') {
 								// Build object of peer to remove
@@ -2765,14 +2765,14 @@ var Hiro = {
 									contact = {};
 									contact[id[1]] = id[2];
 									Hiro.user.contacts.remove(contact);
-								}								
-							}	
+								}
+							}
 							break;
 						// Switch between modes
 						case 'switch':
 							// Switch to respective subsection & select input field contents
 							this.focus(id[1]);
-							// All set	
+							// All set
 							break;
 						// Clicked on sharing URL input field
 						case 'generate':
@@ -2780,12 +2780,12 @@ var Hiro = {
 							el = document.getElementById('widget:share').getElementsByTagName('input')[0];
 							// Fetch a fresh token if we're online and have a note
 							if (note && !note._token) {
-								// Notify users 
+								// Notify users
 								el.value = (Hiro.sync.synconline) ? 'Requesting fresh link from server...' : 'Offline, waiting for connection.';
 								// Set _token to 0 so foliodiff typeof returns number while false otherwise
-								Hiro.data.set('note_' + note.id,'_token',0);									
+								Hiro.data.set('note_' + note.id,'_token',0);
 								// Set folio to itself to trigger folio diff
-								Hiro.data.set('folio','',Hiro.data.get('folio'));								
+								Hiro.data.set('folio','',Hiro.data.get('folio'));
 							}
 							break;
 						// Teh shares! Teh shares!
@@ -2808,20 +2808,20 @@ var Hiro = {
 						            actions: {
 						                name: 'Start Your Own',
 						                link: 'https://www.hiroapp.com/connect/facebook',
-						            }										
+						            }
 								})
 							// Tweet (Love to 'Ooops, oh my' song by her)
 							} else if (id[1] == 'tw') {
 								Hiro.ui.sharer.tweet((note.c.title.substring(0,120) || note.c.text.substring(0,120) || 'See my note at ') + ' ' + url);
-							// Send mail	
+							// Send mail
 							} else if (id[1] == 'mail') {
 								Hiro.ui.sharer.mail(title, 'Join in via ' + url + ' , preview attached:\n\n' + text.substring(0,2000));
 							}
 							// Log respective event
 							Hiro.user.track.logevent('shared-link', {'note-id': Hiro.data.currentnote, channel: id[1]});
 					}
-				}				
-			},	
+				}
+			},
 
 			// Prepare the respective area
 			focus: function(section) {
@@ -2833,43 +2833,43 @@ var Hiro = {
 				section = section || this.section;
 
 				// Grab input field
-				el = document.getElementById('widget:' + section).getElementsByTagName('input')[0];		
+				el = document.getElementById('widget:' + section).getElementsByTagName('input')[0];
 
 				// Switch to desired part
-				Hiro.ui.switchview('widget:' + section);	
+				Hiro.ui.switchview('widget:' + section);
 
 				// Save section internally
-				this.section = section;									
+				this.section = section;
 
-				// Focus & select the sharing URL							
-				if (section == 'share') {	
+				// Focus & select the sharing URL
+				if (section == 'share') {
 					// Do not select if no token present
 					if (this.notoken) {
 						// Remove keyboard on mobile devices in underlaying textarea
 						if (Hiro.ui.touch && Hiro.ui.mini() && document.activeElement && document.activeElement.id == 'content') document.activeElement.blur();
 						// Abort
-						return;	
-					}				
+						return;
+					}
 					// Mobiles mostly prevent select(), using two steps
 					// https://developer.mozilla.org/en-US/docs/Web/API/Input.select
 					if (Hiro.ui.touch && el.setSelectionRange) el.setSelectionRange(0, 70);
 					else el.select();
-				// Only focus the others		
-				} else {							
-					el.focus();							
-				}	
-			},	
+				// Only focus the others
+				} else {
+					el.focus();
+				}
+			},
 
-			// Validate the current form, this is either triggered by keyup event handler or click on invite 
+			// Validate the current form, this is either triggered by keyup event handler or click on invite
 			validate: function(event,submit,string,type) {
 				// Only one invite at a time
 				if (this.inviting) return;
 
-				var error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0], 
+				var error, el = this.el_root, that = this, el_button = el.getElementsByClassName('hirobutton')[0],
 					el_input = el.getElementsByTagName('input')[0], el_error = el.getElementsByClassName('error')[0],
 					string = string || el_input.value, parse = Hiro.util.mailorphone(string),
 					peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers'), newpeer, search, contact, i, l,
-					ta, el_ta = el.getElementsByClassName('peers')[0], 
+					ta, el_ta = el.getElementsByClassName('peers')[0],
 					el_sel = el.getElementsByClassName('selected')[0], oldsel, newsel,meta;
 
 				// See if we can interpret what we got
@@ -2878,7 +2878,7 @@ var Hiro = {
 					string = parse[1];
 				}
 
-				// Check for dupes 
+				// Check for dupes
 				if (type) {
 					for ( i = 0, l = peers.length; i < l; i++ ) {
 						// Delete peer and stop loop if successfull
@@ -2886,11 +2886,11 @@ var Hiro = {
 							// Set type
 							type = 'dupe';
 
-							// End loop			
+							// End loop
 							break;
-						}	
-					} 
-				}				
+						}
+					}
+				}
 
 				// User presses enter, evaleval!
 				if (event.keyCode == 13 || submit) {
@@ -2915,7 +2915,7 @@ var Hiro = {
 						if (type != 'uid' && search && search[0] && search[0].uid) {
 							type = 'uid';
 							string = search[0].uid;
-						// Add copy of new peer to contacts as well							
+						// Add copy of new peer to contacts as well
 						} else {
 							contact = {};
 							contact[type] = string;
@@ -2928,18 +2928,18 @@ var Hiro = {
 						this.addpeer(newpeer);
 
 						// Show quick inviting
-						Hiro.ui.statsy.add('invite',0,'Inviting...','info',300);	
+						Hiro.ui.statsy.add('invite',0,'Inviting...','info',300);
 
 						// Log respective event
 						Hiro.user.track.logevent('invited-user', {'note-id': Hiro.canvas.currentnote, 'via': type, 'id': string, 'peers': peers.length});
 
 						// Set inviting so render below can work properly
 						this.inviting = true;
-					// Throw error, this is rendered by the render() below if error isn't an empty string	
+					// Throw error, this is rendered by the render() below if error isn't an empty string
 					} else {
 						error = 'Please use a valid email address or phone number';
-					}	
-				// Check for cursor up (38) & down (40), maybe left (37) or right (39) for typeahead	
+					}
+				// Check for cursor up (38) & down (40), maybe left (37) or right (39) for typeahead
 				} else if (event.keyCode == 40 || event.keyCode == 38) {
 
 					// Abort if we have no typeahead suggestions
@@ -2948,21 +2948,21 @@ var Hiro = {
 					// Noes, no seleted node
 					if (!el_sel) {
 						// Select first or last element
-						el_sel = (event.keyCode == 40) ? el_ta.firstChild : el_ta.lastChild;						
+						el_sel = (event.keyCode == 40) ? el_ta.firstChild : el_ta.lastChild;
 
 						// Add classname
 						el_sel.className += ' selected';
 
 					// If we pressed up and have a prevous sibling
-					} else if (event.keyCode == 38 && el_sel.previousSibling) {		
+					} else if (event.keyCode == 38 && el_sel.previousSibling) {
 						// Set references, some browser lose the getElementsByClassName selections on classname change
 						oldsel = el_sel; newsel = el_sel.previousSibling;
 
-						// Add new class to sibling						
+						// Add new class to sibling
 						newsel.className += ' selected';
 
 						// Reset existing classname
-						oldsel.className = 'peer';						
+						oldsel.className = 'peer';
 					// If we pressed down and have a next sibling
 					} else if (event.keyCode == 40 && el_sel.nextSibling) {
 						// Set references
@@ -2983,20 +2983,20 @@ var Hiro = {
 				if (!this.inviting) ta = Hiro.apps.sharing.typeahead(string);
 
 				// Render everything
-				Hiro.ui.render(function(){					
-					// Add results to typeahead area or empty it					
+				Hiro.ui.render(function(){
+					// Add results to typeahead area or empty it
 					el_ta.innerHTML = '';
 					if (ta) el_ta.appendChild(ta);
 
 					// Clean up error if we have one
-					el_error.innerHTML = error || ''; 	
+					el_error.innerHTML = error || '';
 					el_error.style.display = (error) ? 'block' : 'none';
 
 					// Refocus input on submit event
 					if (submit) el_input.focus();
 
 					// Pretend to do something that takes time if we fired a proper invite
-					if (that.inviting) {						
+					if (that.inviting) {
 						// Enable next invite
 						that.inviting = false;
 
@@ -3006,40 +3006,40 @@ var Hiro = {
 
 						// Switch button to standard
 						el_button.className = 'hirobutton grey';
-						el_button.innerHTML = (Hiro.ui.mini()) ? 'Invite next' : 'Added! Invite next';	
+						el_button.innerHTML = (Hiro.ui.mini()) ? 'Invite next' : 'Added! Invite next';
 
 						// Show quick inviting
-						Hiro.ui.statsy.add('invite',3,'Invited.');	
+						Hiro.ui.statsy.add('invite',3,'Invited.');
 
 					// We have a dupe
 					} else if (type == 'dupe') {
 						// Change button
 						el_button.className = 'hirobutton grey';
 						el_button.innerHTML = 'Invite <b>' + string + '</b>';
-					// Make everything grey	
+					// Make everything grey
 					} else if (type) {
 						// Change button
 						el_button.className = 'hirobutton green';
 						el_button.innerHTML = 'Invite <b>' + string + '</b> via ' + ((type == 'phone') ? 'SMS' : 'E-Mail');
-					// Make everything grey	
+					// Make everything grey
 					} else {
 						// Switch back to 'disabled'
 						el_button.className = 'hirobutton grey';
-						el_button.innerHTML = 'Invite <b>' + string + '</b>';						
-					}	
-				});				
+						el_button.innerHTML = 'Invite <b>' + string + '</b>';
+					}
+				});
 			},
 
 			// Populate header and widget with data from currentnote, triggerd by show and peer changes from server
-			update: function(repaintoverlay) {				
+			update: function(repaintoverlay) {
 				var peers = Hiro.data.get('note_' + Hiro.canvas.currentnote, 'c.peers'),
 					token = Hiro.data.get('note_' + Hiro.canvas.currentnote, '_token'),
 					counter = this.el_root.getElementsByClassName('counter')[0],
 					el_peers = this.el_root.getElementsByClassName('peers'), f, i, l, us, onlyus,
 					el_url = this.el_root.getElementsByTagName('input'), focus, that = this;
 
-				// Abort if we have no peers array (yet) 	
-				if (typeof peers == 'undefined') return;		
+				// Abort if we have no peers array (yet)
+				if (typeof peers == 'undefined') return;
 
 				// Repaint the overlay as well as the peers (and thus flags) changed
 				if (repaintoverlay) Hiro.canvas.overlay.update(true);
@@ -3053,16 +3053,16 @@ var Hiro = {
 						// Remember if token was missing
 						focus = that.notoken;
 						// Render active & reset flag
-						el_url[el_url.length - 1].disabled = that.notoken = false;							
+						el_url[el_url.length - 1].disabled = that.notoken = false;
 						// If update was called while widget is open & vnotoken value is still true, focus on input
-						if (focus && that.section == 'share' && Hiro.apps.open.indexOf('sharing') > -1) that.focus();						
-					// Otherwise render placeholder	
+						if (focus && that.section == 'share' && Hiro.apps.open.indexOf('sharing') > -1) that.focus();
+					// Otherwise render placeholder
 					} else {
 						// Insert Text
-						el_url[el_url.length - 1].value = (Hiro.sync.synconline) ? 'Generate Link' : 'Offline, no fresh link available.';	
-						// Render inactive	
-						el_url[el_url.length - 1].disabled = that.notoken = true;										
-					}	
+						el_url[el_url.length - 1].value = (Hiro.sync.synconline) ? 'Generate Link' : 'Offline, no fresh link available.';
+						// Render inactive
+						el_url[el_url.length - 1].disabled = that.notoken = true;
+					}
 
 					// Placeholder fragments
 					f = document.createDocumentFragment();
@@ -3076,11 +3076,11 @@ var Hiro = {
 
 							// But do not render yet
 							continue;
-						} 				
+						}
 
 						// Fetch DOM snippet
-						f.appendChild(Hiro.apps.sharing.renderpeer(peers[i])); 
-					}		
+						f.appendChild(Hiro.apps.sharing.renderpeer(peers[i]));
+					}
 
 					// See if we are the only ones
 					if (peers.length == 0 || (peers.length == 1 && !f.firstChild)) onlyus = true;
@@ -3089,41 +3089,41 @@ var Hiro = {
 					counter.style.display = (onlyus) ? 'none' : 'block';
 
 					// Add one if we had a dummy us
-					counter.textContent = ( (!us) ? peers.length + 1 : peers.length ).toString();										
+					counter.textContent = ( (!us) ? peers.length + 1 : peers.length ).toString();
 
 					// Add dummy user for ourselves (if doc was created offline and not synced yet)
-					if (!us) us = { role: 'owner'};						
+					if (!us) us = { role: 'owner'};
 
 					// Clear both typeahead and peers list
 					el_peers[0].innerHTML = el_peers[1].innerHTML = '';
 
 					// Add ourselves and then rest to DOM
- 					el_peers[1].appendChild(Hiro.apps.sharing.renderpeer(us,true,onlyus))					
+ 					el_peers[1].appendChild(Hiro.apps.sharing.renderpeer(us,true,onlyus))
 					if (Hiro.ui.mini()) el_peers[1].insertBefore(f,el_peers[1].firstChild);
-					else el_peers[1].appendChild(f);						
-				});		
+					else el_peers[1].appendChild(f);
+				});
 			},
 
 			// Turns a peer entry into the respective DOM snippet
-			renderpeer: function(peer,us,onlyus) {	
+			renderpeer: function(peer,us,onlyus) {
 				var d, r, n, text, contact, action, tt = '';
 
 				// Other peers
 				if (!us) {
 					// Try to retrieve user details from contacts
-					if (peer.user.uid) contact = Hiro.user.contacts.lookup[peer.user.uid]	
+					if (peer.user.uid) contact = Hiro.user.contacts.lookup[peer.user.uid]
 
-					if (contact) {						
+					if (contact) {
 						// Build text string
 						text = ( ((contact.name) && contact.name || '') + ( ( (contact.name && (contact.email || contact.phone)) && ' (' + ( contact.email || contact.phone ) + ')' ) || (contact.email || contact.phone) || ''));
 					} else {
 						// Build string from local object
 						text = peer.user.email || peer.user.phone;
 					}
-				// Ourselves	
+				// Ourselves
 				} else {
 					text = (onlyus) ? 'Only you' : 'You';
-				}	
+				}
 
 				// Build main DIV
 				d = document.createElement('div');
@@ -3133,7 +3133,7 @@ var Hiro = {
 				if (!peer.user) {
 					// Do nothing if we have no peer
 				} else if (peer.user.uid) {
-					action = 'uid:' + peer.user.uid; 
+					action = 'uid:' + peer.user.uid;
 				} else if (peer.user.email) {
 					action = 'email:' + peer.user.email;
 				} else if (peer.user.phone) {
@@ -3145,13 +3145,13 @@ var Hiro = {
 
 				// Add Owner tooltip or removal link
 				if (peer.role == "owner") {
-					tt = 'Owner: ';					
+					tt = 'Owner: ';
 				} else {
-					// Add remove link if user is not owner					
+					// Add remove link if user is not owner
 					r = document.createElement('a');
 					r.className = 'remove';
 					r.setAttribute('title',((us) ? 'Revoke your own access' : 'Revoke access'));
-					d.appendChild(r);					
+					d.appendChild(r);
 				}
 
 				// Fetch the current tier
@@ -3161,20 +3161,20 @@ var Hiro = {
 				if (tier == -1) {
 					// Set the tooltip to invited only
 					tt = 'Invited';
-				// Add seen flag to classname and append any existing flags									
-				} else if (us || (peer.last_seen && peer.last_seen >= Hiro.data.get('note_' + Hiro.canvas.currentnote,'_lastedit'))) {	
+				// Add seen flag to classname and append any existing flags
+				} else if (us || (peer.last_seen && peer.last_seen >= Hiro.data.get('note_' + Hiro.canvas.currentnote,'_lastedit'))) {
 					// Pimp title
 					tt += ((us) ? 'You are looking at the latest version' : 'Has seen the latest version ' + Hiro.util.humantime(peer.last_seen).toLowerCase() + ' ago');
 
-					// Add green tick to icon				
+					// Add green tick to icon
 					d.className += " seen";
-				// We have a proper user, but she hasn't seen any updates	
+				// We have a proper user, but she hasn't seen any updates
 				} else {
 					tt += 'Has not seen the latest version';
-				}	
+				}
 
 				// Set tooltip
-				if (tt) d.setAttribute('title', tt);						
+				if (tt) d.setAttribute('title', tt);
 
 				// Add user name span
 				n = document.createElement('span');
@@ -3184,11 +3184,11 @@ var Hiro = {
 
 				// Return object
 				return d;
-			},	
+			},
 
 			// Creates a DOM element for typeahead
-			rendersuggestion: function(peer,s) {		
-				var d, n, start, prop, 
+			rendersuggestion: function(peer,s) {
+				var d, n, start, prop,
 					type, types = ['phone','email'],
 					channel;
 
@@ -3202,10 +3202,10 @@ var Hiro = {
 				d.className = 'peer';
 				d.setAttribute('data-hiro-action','ta:' + ((peer.uid) && 'uid' || type) + ':' + (peer.uid || peer[type]));
 
-				// Define namestring 
+				// Define namestring
 				ns = (peer.name || '') + ((peer.name && peer[type]) && ' (' + peer[type] + ')' || peer[type] || '');
 
-				// Insert <em>s around found string				
+				// Insert <em>s around found string
 				start = ns.toLowerCase().indexOf(s.toLowerCase());
 				ns = 'Invite ' + ns.substring(0,start) + '<em>' + ns.substr(start,s.length) + '</em>' + ns.substring(start + s.length);
 
@@ -3219,7 +3219,7 @@ var Hiro = {
 
 				// Return object
 				return d;
-			},			
+			},
 
 			// Typeahead function that fetches & renders contacts
 			typeahead: function(string) {
@@ -3276,10 +3276,10 @@ var Hiro = {
 				shadow = Hiro.data.get('note_' + noteid, 's.peers') || [];
 
 				// On small screens we add the new peer to the top of the array
-				if (Hiro.ui.mini()) peers.unshift(peer); 
+				if (Hiro.ui.mini()) peers.unshift(peer);
 				else peers.push(peer);
 
-				// If the server triggered the add 
+				// If the server triggered the add
 				if (source == 's') {
 					// Also add it to the shadow
 					shadow.push(JSON.parse(JSON.stringify(peer)));
@@ -3296,7 +3296,7 @@ var Hiro = {
 
 					// Add owner
 					if (peer.role == 'owner') note._owner = peer.user.uid;
-				}	
+				}
 
 				// Save peer changes
 				Hiro.data.set('note_' + noteid,'c.peers',peers,source);
@@ -3307,7 +3307,7 @@ var Hiro = {
 					this.update(true);
 					// Set cache reference to ourselves if not done yet
 					if (!Hiro.canvas.cache._me && peer.user.uid == Hiro.data.get('profile','c.uid')) Hiro.canvas.cache._me = peer;
-				}	
+				}
 
 				// Send new commit after notediff added folio to unsynced if was the very first diff action for a new document
 				if (noteid.length == 4 && peers.length == 1) Hiro.sync.commit();
@@ -3338,7 +3338,7 @@ var Hiro = {
 					for (p in peers[i].user) {
 						if (peers[i].user.hasOwnProperty(p)) {
 							// Ignore all properties except those
-							if (p != 'uid' && p != 'email' && p != 'phone') continue;							
+							if (p != 'uid' && p != 'email' && p != 'phone') continue;
 							// Compare the unique peers[i] properties with the one of our provided user
 							if (peer.user[p] == peers[i].user[p]) return peers[i];
 						}
@@ -3405,7 +3405,7 @@ var Hiro = {
 							break;
 						}
 					}
-				}				
+				}
 
 				// Iterate through peers
 				for (i = 0, l = peers.length; i < l; i++ ) {
@@ -3434,9 +3434,9 @@ var Hiro = {
 				}
 
 				// No peers found & deleted above
-				return false;									
-			}		
-		} 
+				return false;
+			}
+		}
 
 	},
 
@@ -3455,14 +3455,14 @@ var Hiro = {
 		// Set up datastore on pageload
 		init: function() {
 			// Lookup most common store and all notes
-			var p = this.local.fromdisk('profile'), 
-				n = this.local.fromdisk('_allnotes'), 
+			var p = this.local.fromdisk('profile'),
+				n = this.local.fromdisk('_allnotes'),
 				f = this.local.fromdisk('folio'),
 				t = this.local.fromdisk('tokens'),
 				urlid, i, l;
 
 			// If we do have data stored locally
-			if (p && n) {	
+			if (p && n) {
 				// Remove landing page
 				Hiro.ui.landing.hide();
 
@@ -3491,10 +3491,10 @@ var Hiro = {
 					n[i]._tag = undefined;
 					// Save notes
 					this.set('note_' + n[i].id,'',n[i],'l');
-				}							
+				}
 				this.set('folio','',f,'l');
 
-				// Log 
+				// Log
 				Hiro.sys.log('Found existing data in localstorage',localStorage);
 
 				// Check if we have a non root url
@@ -3502,31 +3502,31 @@ var Hiro = {
 
 				// If we have a note id in the url, load this one
 				if (urlid && urlid.length == 10 && !Hiro.ui.mobileapp) {
-					Hiro.canvas.load(urlid, false);	
-				// Otherwise load latest note										
+					Hiro.canvas.load(urlid, false);
+				// Otherwise load latest note
 				} else {
-					Hiro.canvas.load();	
+					Hiro.canvas.load();
 				}
 
 				// Abort further actions on beta.
 				if (window.location.hostname.indexOf('beta') > -1) {
-					// Reset to trigger new session, token processing will take care of the redirect to www					
+					// Reset to trigger new session, token processing will take care of the redirect to www
 					Hiro.sync.reset();
-				// Continue normal flow	
+				// Continue normal flow
 				} else {
 					// Connect to server
 					Hiro.sync.connect();
-				}				
+				}
 
 				// Set stage
-				Hiro.ui.setstage();							
-			// If we started with a token											
+				Hiro.ui.setstage();
+			// If we started with a token
 			} else if (t) {
 				// Abort further actions on beta.
 				if (window.location.hostname.indexOf('beta') > -1) {
-					// Redirect to www, hoping that first token works					
-					Hiro.sys.reload(false,'https://www.hiroapp.com/#' + t[0].id)					
-				// Continue normal flow	
+					// Redirect to www, hoping that first token works
+					Hiro.sys.reload(false,'https://www.hiroapp.com/#' + t[0].id)
+				// Continue normal flow
 				} else {
 					// Remove landing page
 					Hiro.ui.landing.hide();
@@ -3538,24 +3538,24 @@ var Hiro = {
 			} else {
 				// Abort further actions on beta.
 				if (window.location.hostname.indexOf('beta') > -1) {
-					// Redirect to www startpage					
-					Hiro.sys.reload(false,'https://www.hiroapp.com/backdoor')					
-				// Continue normal flow	
+					// Redirect to www startpage
+					Hiro.sys.reload(false,'https://www.hiroapp.com/backdoor')
+				// Continue normal flow
 				} else {
 					// Show landing page contents
 					Hiro.ui.landing.show();
 
 					// End progress
-					Hiro.ui.hprogress.done();	
-				}								
+					Hiro.ui.hprogress.done();
+				}
 			}
 
 			// Size canvas to 100% of viewport if we don't have a note yet
 			if (!Hiro.canvas.currentnote) Hiro.canvas.resize();
 
 			// Attach localstore change listener
-			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);							
-		},		
+			Hiro.util.registerEvent(window,'storage',Hiro.data.localchange);
+		},
 
 		// Load minimal data necessary for session if we didn't get one from the server
 		bootstrap: function() {
@@ -3570,16 +3570,16 @@ var Hiro = {
 			Hiro.data.set('folio','',folio);
 
 			// Create & load first note
-			Hiro.folio.newnote();			
+			Hiro.folio.newnote();
 
 			// Make sure we send another setstage to other tabs
 			Hiro.ui.render(function(){
 				Hiro.ui.setstage();
-			}); 			
+			});
 
 			// Log
 			Hiro.sys.log('Spawned a new workspace in the client',[this.stores]);
-			Hiro.sys.log('',null,'groupEnd');				
+			Hiro.sys.log('',null,'groupEnd');
 		},
 
 		// Detect changes to localstorage for all connected tabs
@@ -3594,23 +3594,23 @@ var Hiro = {
 
 			// Receive a message and execute it
 			if (event.key == 'Hiro.notify') {
-				// Extract command string	
-				command = JSON.parse(event.newValue);	
+				// Extract command string
+				command = JSON.parse(event.newValue);
 				// Eval
-				if (command) {				
+				if (command) {
 					// Create anon function from string
 					fn = new Function(command);
-					// Execute						
-					fn();					
+					// Execute
+					fn();
 				} else {
-					// Delete message right away but in seperate stack. 
+					// Delete message right away but in seperate stack.
 					Hiro.data.local.wipe('notify');
 				}
 			// Check that it'S not our initial testkey to determine localStorage availability
 			} else if (event.key != "Hiro") {
 				// Write changes
 				if (event.newValue) Hiro.data.set(event.key.split('.')[1],'',JSON.parse(event.newValue),'l',true);
-			}	
+			}
 		},
 
 		// Set local data
@@ -3620,11 +3620,11 @@ var Hiro = {
 			// Create store if it doesn't exist yet
 			if (!this.stores[store]) this.stores[store] = {};
 
-			// Set data 
-			if (key && key.indexOf('.') >= 0) { 
+			// Set data
+			if (key && key.indexOf('.') >= 0) {
 				this.deepset(this.stores[store],key,value);
 			} else if (key) {
-				this.stores[store][key] = value; 
+				this.stores[store][key] = value;
 			} else {
 				// No key provided, so we write to the root of the object
 				this.stores[store] = value
@@ -3640,12 +3640,12 @@ var Hiro = {
 				if (this.stores[store] && this.post[this.stores[store].kind]) this.post[this.stores[store].kind](store,key,value,source,paint);
 
 				// Only commit if changes came from client
-				if (source == 'c') Hiro.sync.commit();	
+				if (source == 'c') Hiro.sync.commit();
 
 			} else {
 				// Mark store for local persistence and kickoff write
-				if (source != 'l') this.local.quicksave(store);	
-			}						
+				if (source != 'l') this.local.quicksave(store);
+			}
 		},
 
 		// If the key contains '.', we set the respective property
@@ -3664,7 +3664,7 @@ var Hiro = {
             }
 
             // Set value result
-            o[a[a.length - 1]] = value;					
+            o[a[a.length - 1]] = value;
 		},
 
 		// Return data from local client
@@ -3674,15 +3674,15 @@ var Hiro = {
 				return this.deepget(this.stores[store],key);
 			}
 			// Simple lookups
-			else if (key && this.stores[store] && this.stores[store][key]) {		
-				// Store & key value found		
+			else if (key && this.stores[store] && this.stores[store][key]) {
+				// Store & key value found
 				return this.stores[store][key];
-			} 
-			// Return full store if no key provided			
-			else if (!key && this.stores[store]) {				
+			}
+			// Return full store if no key provided
+			else if (!key && this.stores[store]) {
 				return this.stores[store];
-			// Try to see if there's something on disk				
-			} else {				
+			// Try to see if there's something on disk
+			} else {
 				return this.local.fromdisk(store,key);
 			}
 		},
@@ -3690,8 +3690,8 @@ var Hiro = {
 		// Quick lookup of foo.bar.baz formated strings as keys
 		deepget: function(obj,key) {
 			// Split string into array
-			var a = key.split('.'), o = obj;	
-			
+			var a = key.split('.'), o = obj;
+
 			// Simply go through values while we have some in the array
             while (a.length) {
             	// Pick the first key in line
@@ -3716,7 +3716,7 @@ var Hiro = {
 			if (!this.stores[oldid]) {
 				Hiro.sys.error('Tried to rename unknown store',[oldid,newid])
 				return;
-			}				
+			}
 
 			// Copy object
 			this.stores[newid] = JSON.parse(JSON.stringify(this.stores[oldid]));
@@ -3724,9 +3724,9 @@ var Hiro = {
 			// In case of being a note, we also reset the folio and currentnote pointers to it
 			if (oldid.substring(0,5) == 'note_') {
 				// Update the client side of things
-				Hiro.folio.lookup[oldid.substring(5)].nid = newid.substring(5);		
+				Hiro.folio.lookup[oldid.substring(5)].nid = newid.substring(5);
 
-				// Update the shadow 
+				// Update the shadow
 				fs = this.get('folio','s');
 				for ( i = 0, l = fs.length; i < l ; i++ ) {
 					// Yay, we found it
@@ -3735,7 +3735,7 @@ var Hiro = {
 						fs[i].nid = newid.substring(5);
 						// End here
 						break;
-					}	
+					}
 				}
 
 				// Set new currentnote id
@@ -3752,12 +3752,12 @@ var Hiro = {
 			this.destroy(oldid);
 
 			// Update our state arrays
-			if (this.unsaved.indexOf(oldid) > -1) this.unsaved[this.unsaved.indexOf(oldid)] = newid;			
+			if (this.unsaved.indexOf(oldid) > -1) this.unsaved[this.unsaved.indexOf(oldid)] = newid;
 			if (this.unsynced.indexOf(oldid) > -1) this.unsynced[this.unsynced.indexOf(oldid)] = newid;
 
 			// Save changes
 			this.local.quicksave(newid);
-			this.set('folio','s',fs);						
+			this.set('folio','s',fs);
 		},
 
 		// Remove all synced data, this happens if we get new session data
@@ -3776,25 +3776,25 @@ var Hiro = {
 
 						// Keep unsynced notes that have distinctive values, or if we'd remove the very last
 						if ((newfoliolength == 0 && notelist.length == 1) || (note.text || note.title || note.peers.length > 0))  continue;
-					}	
+					}
 
 					// Update state arrays
-					if (this.unsaved.indexOf('note_' + notelist[i].nid) > -1) this.unsaved.splice(this.unsaved.indexOf('note_' + notelist[i].nid),1);			
-					if (this.unsynced.indexOf('note_' + notelist[i].nid) > -1) this.unsynced.splice(this.unsynced.indexOf('note_' + notelist[i].nid),1);				
+					if (this.unsaved.indexOf('note_' + notelist[i].nid) > -1) this.unsaved.splice(this.unsaved.indexOf('note_' + notelist[i].nid),1);
+					if (this.unsynced.indexOf('note_' + notelist[i].nid) > -1) this.unsynced.splice(this.unsynced.indexOf('note_' + notelist[i].nid),1);
 
 					// Delete synced notes
 					this.destroy('note_' + notelist[i].nid);
 
 					// Remove this entry from folio
 					notelist.splice(i,1);
-				}				
+				}
 			}
 
 			// Empty folio edit stack without saving it yet
 			if (folio && folio.edits && folio.edits.length) folio.edits = [];
 
 			// Delete any local backup
-			this.local.wipe('folio.backup');			
+			this.local.wipe('folio.backup');
 
 			// If we have any contacts
 			if (contacts) {
@@ -3805,22 +3805,22 @@ var Hiro = {
 
 					// Remove this entry from contacts
 					contacts.splice(i,1);
-				}	
+				}
 			}
 
 			// Empty folio edit stack without saving it yet
-			if (profile && profile.edits && profile.edits.length) profile.edits = [];					
+			if (profile && profile.edits && profile.edits.length) profile.edits = [];
 		},
 
 		// Remove Note from memory & localstorage
-		destroy: function(id) {		
-			// Delete all values	
+		destroy: function(id) {
+			// Delete all values
 			this.stores[id] = null;
 			delete this.stores[id];
-			this.local.wipe(id);			
+			this.local.wipe(id);
 			// And any entries in unsynced/unsaved
-			if (this.unsaved.indexOf(id) > -1) this.unsaved.splice(this.unsaved.indexOf(id),1);			
-			if (this.unsynced.indexOf(id) > -1) this.unsynced.splice(this.unsynced.indexOf(id),1);				
+			if (this.unsaved.indexOf(id) > -1) this.unsaved.splice(this.unsaved.indexOf(id),1);
+			if (this.unsynced.indexOf(id) > -1) this.unsynced.splice(this.unsynced.indexOf(id),1);
 
 		},
 
@@ -3832,7 +3832,7 @@ var Hiro = {
 					current = (store.substring(5) == Hiro.canvas.currentnote);
 
 				// If the whole thing or client title changed, repaint the folio
-				if (key == 'c.title' || (key == 'c.text' && !n.c.title) || source == 's') Hiro.folio.paint();	
+				if (key == 'c.title' || (key == 'c.text' && !n.c.title) || source == 's') Hiro.folio.paint();
 
 				// Update sharing dialog if it's open and it's no client update
 				if (source != 'c' && current && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
@@ -3846,52 +3846,52 @@ var Hiro = {
 						Hiro.canvas.cache.content = n.c.text;
 						// Always rebuild the canvas in this case
 						Hiro.canvas.paint();
-					}	
+					}
 					// Always repaint folio
 					Hiro.folio.paint();
 					// Never re-save
 					return;
-				}	
+				}
 
 				// Save
- 				Hiro.data.local.quicksave(store);							
+ 				Hiro.data.local.quicksave(store);
 			},
 
 			// After the folio was set
 			folio: function(store,key,value,source,paint) {
 				// Repaint folio
-				Hiro.folio.paint(true);	
+				Hiro.folio.paint(true);
 
 				// Abort if source is localStorage
 				if (source == 'l') return;
 
 				// Save
 				Hiro.data.local.quicksave(store);
-			},			
+			},
 
 			// After the profile was set
 			profile: function(store,key,value,source,paint) {
 				// Update contact lookup
-				Hiro.user.contacts.update();	
+				Hiro.user.contacts.update();
 
 				// Update settings dialog if it's open
-				if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();					
+				if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();
 
 				// Update sharing dialog if it's open
-				if (Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();				
+				if (Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
 
 				// Abort if source is localStorage
-				if (source == 'l') return;				
+				if (source == 'l') return;
 
 				// Save
-				Hiro.data.local.quicksave(store);								
+				Hiro.data.local.quicksave(store);
 			}
 
 		},
 
 		// All localstorage related functions
 		local: {
-			// Localstorage best messaging to other tabs, we want to make sure this only gets send 
+			// Localstorage best messaging to other tabs, we want to make sure this only gets send
 			// after the respective store changes, which might be delayed by the writer timeout
 			msgqueue: [],
 
@@ -3900,13 +3900,13 @@ var Hiro = {
 			saving: false,
 			timeout: null,
 			maxinterval: 3000,
-			dynamicinterval: 100,	
+			dynamicinterval: 100,
 
 			// Make sure we can use localstorage (eg Private sessions on mobile throw an error on setItem)
 			resolve: function() {
-				var teststring = 'Hiro'; 
+				var teststring = 'Hiro';
 
-				// If we already resolve it				
+				// If we already resolve it
 				if (this.enabled != undefined) return this.enabled;
 
 				// Other wise write & read once
@@ -3925,7 +3925,7 @@ var Hiro = {
 					// Return false
 					return false;
 				}
-			},	
+			},
 
 			// Add messages to queue
 			tabtx: function(cmd, flush) {
@@ -3938,17 +3938,17 @@ var Hiro = {
 					// Loop through message
 					while (this.msgqueue.length) {
 						// Send
-						this.todisk('notify', this.msgqueue[0]);					
+						this.todisk('notify', this.msgqueue[0]);
 						// Remove element;
-						this.msgqueue.shift();						
-					}	
-				}							
+						this.msgqueue.shift();
+					}
+				}
 			},
 
-			// Mark a store for local persistence and kick it off 
+			// Mark a store for local persistence and kick it off
 			quicksave: function(store) {
 				// Add store to currently unsaved data
-				if (Hiro.data.unsaved.indexOf(store) < 0) Hiro.data.unsaved.push(store);			
+				if (Hiro.data.unsaved.indexOf(store) < 0) Hiro.data.unsaved.push(store);
 
 				// Update localstore
 				this.persist();
@@ -3965,18 +3965,18 @@ var Hiro = {
 				if (!Hiro.sync.synconline || Hiro.sync.cachelock || !Hiro.data.get('profile','c.tier')) Hiro.ui.statsy.add('sns',0,'Saving...');
 
 				// Start timer
-				start = Date.now(); 
+				start = Date.now();
 
 				// Cycle through unsaved stores
 				for (i = 0, l = Hiro.data.unsaved.length; i < l; i++) {
-					key = Hiro.data.unsaved[i],	value = Hiro.data.stores[key];	
+					key = Hiro.data.unsaved[i],	value = Hiro.data.stores[key];
 
-					// Write data into localStorage	
-					this.todisk(key,value)						
+					// Write data into localStorage
+					this.todisk(key,value)
 				}
 
 				// Persist list of unsynced values and tokens
-				this.todisk('unsynced',Hiro.data.unsynced);			
+				this.todisk('unsynced',Hiro.data.unsynced);
 
 				// Empty array
 				Hiro.data.unsaved = [];
@@ -4001,7 +4001,7 @@ var Hiro = {
 					if (Hiro.data.unsaved.length > 0) Hiro.data.local.persist();
 
 					// Or let user know were done
-					else Hiro.ui.statsy.add('sns',3,'Saved.');	
+					else Hiro.ui.statsy.add('sns',3,'Saved.');
 				},this.dynamicinterval);
 			},
 
@@ -4022,32 +4022,32 @@ var Hiro = {
 						// Add notes to array, but not backups
 						if (k.substring(0,10) == 'Hiro.note_' && k.substring(20) != '.backup') notes.push(JSON.parse(localStorage.getItem(k)));
 					}
-					return notes;					
+					return notes;
 				}
 
 				// Standard cases
 				store = 'Hiro.' + store;
 
 				// Fetch data
-				data = localStorage.getItem(store);	
+				data = localStorage.getItem(store);
 
 				// If we only need the string format
 				if (stringonly) return data;
 
 				// Otherwise parse
-				data = JSON.parse(data);						
+				data = JSON.parse(data);
 
 				// Abort if no data was returned at all;
 				if (!data) return undefined;
 
 				// Fetch key or return complete object
-				if (key && key.split('.').length) { 					
+				if (key && key.split('.').length) {
 					return Hiro.data.deepget(data,key);
 				} else if (key && data[key]) {
 					return data[key];
 				} else {
 					return data;
-				}				
+				}
 			},
 
 			// Generic localstore writer, room for browser quirks
@@ -4077,15 +4077,15 @@ var Hiro = {
 						// Verify that we only delete Hiro data and no third party stuff
 						if (localStorage.key(i) && localStorage.key(i).substring(0, 5) == 'Hiro.') localStorage.removeItem(localStorage.key(i));
 					}
-				// Store var provided, remove specific store	
+				// Store var provided, remove specific store
 				} else {
 					// Remove data itself
-					if (localStorage['Hiro.' + store]) localStorage.removeItem('Hiro.' + store); 
+					if (localStorage['Hiro.' + store]) localStorage.removeItem('Hiro.' + store);
 
 					// Also remove any backups
-					if (localStorage['Hiro.' + store + '.backup']) localStorage.removeItem('Hiro.' + store + '.backup'); 
+					if (localStorage['Hiro.' + store + '.backup']) localStorage.removeItem('Hiro.' + store + '.backup');
 
-				}	
+				}
 			},
 
 			// Quickcopy a certain store
@@ -4121,7 +4121,7 @@ var Hiro = {
 
 				// Report success
 				return true;
-			}		
+			}
 		},
 
 		// Small token handling lib that makes sure tokens are properly handled even if hync or user is offline
@@ -4144,7 +4144,7 @@ var Hiro = {
 						Hiro.sys.log('Tried to add known token', token, 'warn');
 						// Abort
 						return false;
-					}				
+					}
 				}
 
 				// If the token is part of a note id
@@ -4153,7 +4153,7 @@ var Hiro = {
 					folio = Hiro.data.get('folio','c');
 					// CHeck fi we got a folio at all
 					if (folio && folio.length) {
-						// Check if it concerns a url we already know 
+						// Check if it concerns a url we already know
 						for ( i = 0, l = folio.length; i < l; i++) {
 							// Abort if we already know this url
 							if (folio[i].nid == token.urlid) return false;
@@ -4165,12 +4165,12 @@ var Hiro = {
 				this.bag.push(token);
 
 				// Save tokens to disc
-				Hiro.data.local.todisk('tokens',this.bag);	
+				Hiro.data.local.todisk('tokens',this.bag);
 
 				// Try to process it right away
-				this.process();				
+				this.process();
 
-				// Signal success				
+				// Signal success
 				return true;
 			},
 
@@ -4184,16 +4184,16 @@ var Hiro = {
 
 				// Beta migration,redirect to www once we have a proper session token
 				if (window.location.hostname.indexOf('beta') > -1 && newsessionactions.indexOf(token.action) > -1) {
-					// Reload with new url						
+					// Reload with new url
 					Hiro.sys.reload(false,'https://www.hiroapp.com/#' + token.id)
 					// Abort here
 					return;
-				}				
+				}
 
 				// Connect to hync
-				if (!Hiro.sync.synconline) Hiro.sync.connect();				
+				if (!Hiro.sync.synconline) Hiro.sync.connect();
 
-				// Get anon token (added to bag) if we have none yet and spawn flag is set 
+				// Get anon token (added to bag) if we have none yet and spawn flag is set
 				if (spawn && !token) this.getanon();
 
 				// If we have no connection or token
@@ -4211,7 +4211,7 @@ var Hiro = {
 						this.resetpwdtoken = token.id;
 						// Show it
 						Hiro.ui.dialog.show('d_logio','s_reset',document.getElementById('new_password'));
-					}	
+					}
 				// Fall back to normal consumption
 				} else {
 					// Consume
@@ -4222,24 +4222,24 @@ var Hiro = {
 			// Get token from Flask and use it to create new session
 			getanon: function() {
 	        	// Logging
-				Hiro.sys.log('Requesting anonymous token');		
+				Hiro.sys.log('Requesting anonymous token');
 
 				// Send request to backend
 				Hiro.sync.ajax.send({
 					url: '/tokens/anon',
 					success: function(req,data) {
 			        	// Logging
-						Hiro.sys.log('Received anonymous token ' + data.token);	
+						Hiro.sys.log('Received anonymous token ' + data.token);
 
-						// Request session	
-						Hiro.data.tokens.add({ id: data.token, action: 'anon'})													                    
+						// Request session
+						Hiro.data.tokens.add({ id: data.token, action: 'anon'})
 					},
-					error: function(req,data) {	
+					error: function(req,data) {
 			        	// Logging
-						Hiro.sys.error('Unable to fetch Anon token',req);                 		                    						                    
-					}										
-				});			
-			},			
+						Hiro.sys.error('Unable to fetch Anon token',req);
+					}
+				});
+			},
 
 			// Delete a token by id
 			remove: function(tokenid) {
@@ -4252,16 +4252,16 @@ var Hiro = {
 						// Remove
 						this.bag.splice(i,1);
 						// Save tokens to disc
-						Hiro.data.local.todisk('tokens',this.bag);						
+						Hiro.data.local.todisk('tokens',this.bag);
 						// Log
 						Hiro.sys.log('Consumed and removed token ' + tokenid);
 						// End it here
 						return true;
 					}
-				}	
+				}
 
 				// Signal failure
-				return false;			
+				return false;
 			}
 		},
 
@@ -4285,21 +4285,21 @@ var Hiro = {
 
 					// Attaché!
 					Hiro.util.registerEvent(this.cache,'updateready',Hiro.data.appcache.handler);
-					Hiro.util.registerEvent(this.cache,'noupdate',Hiro.data.appcache.handler);	
+					Hiro.util.registerEvent(this.cache,'noupdate',Hiro.data.appcache.handler);
 					Hiro.util.registerEvent(this.cache,'cached',Hiro.data.appcache.handler);
-					Hiro.util.registerEvent(this.cache,'error',Hiro.data.appcache.handler);	
+					Hiro.util.registerEvent(this.cache,'error',Hiro.data.appcache.handler);
 
-					Hiro.util.registerEvent(this.cache,'progress',Hiro.data.appcache.handler);	
+					Hiro.util.registerEvent(this.cache,'progress',Hiro.data.appcache.handler);
 					Hiro.util.registerEvent(this.cache,'checking',Hiro.data.appcache.handler);
-					Hiro.util.registerEvent(this.cache,'downloading',Hiro.data.appcache.handler);						
+					Hiro.util.registerEvent(this.cache,'downloading',Hiro.data.appcache.handler);
 				} else {
-					// Release the cachelock	
+					// Release the cachelock
 					Hiro.sync.cachelock = false;
 				}
 
 				// Finish
 				this.inited = true;
-			},		
+			},
 
 			// Check for new appcache
 			update: function() {
@@ -4309,7 +4309,7 @@ var Hiro = {
 
 			// Handle appcache progress events
 			handler: function(event) {
-				// Switch 
+				// Switch
 				switch (event.type) {
 					case 'error':
 						// We're online but still have an error, most likely browser doesn't understand a part of the manifest
@@ -4321,22 +4321,22 @@ var Hiro = {
 						setTimeout(function(){
 							Hiro.data.appcache.update();
 						},30000);
-						break;				
+						break;
 					case 'updateready':
 						// Engage cachelock (at least until we got confirmation from Flask that we still use the current version)
-						Hiro.sync.cachelock = true;					
+						Hiro.sync.cachelock = true;
 						// See if we have breaking changes by checking the current tag
-						Hiro.sys.versioncheck();	
+						Hiro.sys.versioncheck();
 						// Always swap
-						Hiro.data.appcache.cache.swapCache();							
-						break;				
+						Hiro.data.appcache.cache.swapCache();
+						break;
 					case 'cached':
 					case 'noupdate':
 						// Release cachelock
 						Hiro.sync.cachelock = false;
 						break;
-				}			
-			}			
+				}
+			}
 		}
 	},
 
@@ -4372,13 +4372,13 @@ var Hiro = {
 				this.ws.url = ws_url;
 			} else if (window.XMLHttpRequest) {
 				// Longpolling fallback
-				this.protocol = 'lp';			
+				this.protocol = 'lp';
 			} else {
-				Hiro.sys.error('Oh noes, no transport protocol available',navigator);					
-			}	
+				Hiro.sys.error('Oh noes, no transport protocol available',navigator);
+			}
 		},
 
-		// Establish connection with server 
+		// Establish connection with server
 		connect: function() {
 			// Connect through proper protocol
 			if (this.protocol) this[this.protocol].connect();
@@ -4398,25 +4398,25 @@ var Hiro = {
 			var sid = Hiro.data.get('profile','c.sid'), payload;
 
 			// Just quick ehlo with to make sure session is still valid
-			if (sid) {	
+			if (sid) {
 				// End bootstrapping logging group
-				Hiro.sys.log('Startup completed with existing ID',sid);	
-				Hiro.sys.log('',undefined,'groupEnd');						        	
+				Hiro.sys.log('Startup completed with existing ID',sid);
+				Hiro.sys.log('',undefined,'groupEnd');
 
-				// Send	a waiting commit or a client ack	
-				if (!this.commit()) this.ping();	
+				// Send	a waiting commit or a client ack
+				if (!this.commit()) this.ping();
 
 				// See if we got any tokens to consume
-				Hiro.data.tokens.process();			
-			// We have no session! 	
+				Hiro.data.tokens.process();
+			// We have no session!
 			} else {
 	        	// Logging
-				Hiro.sys.log('No session found, creating new one');		
+				Hiro.sys.log('No session found, creating new one');
 
 				// Spawn a new token
-				Hiro.data.tokens.process(true);							
+				Hiro.data.tokens.process(true);
 			}
-		},	
+		},
 
 		// Create session handler
 		createsession: function(token) {
@@ -4437,16 +4437,16 @@ var Hiro = {
 					r.sid = sid;
 
 		        	// Logging
-					Hiro.sys.log('Requesting new session while we do have an active one ', sid,'warn');				
+					Hiro.sys.log('Requesting new session while we do have an active one ', sid,'warn');
 				}
 
 	        	// Logging
-				Hiro.sys.log('Requesting new session with token ',token);				
+				Hiro.sys.log('Requesting new session with token ',token);
 
 				// Sending request
-				this.tx(r)				
+				this.tx(r)
 			}
-		},	
+		},
 
 		// Send message to server
 		tx: function(data) {
@@ -4455,40 +4455,40 @@ var Hiro = {
 			// See if we have any data
 			if (data) {
 				// If we got a single message, wrap in array
-				if (!(data instanceof Array)) data = [ data ];	
+				if (!(data instanceof Array)) data = [ data ];
 
 				// Inspect all messages in data payload
-				for (var i=0,l=data.length;i<l;i++) {	
-					// Add tag fallback		
-					if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);	
-				}	
-				
+				for (var i=0,l=data.length;i<l;i++) {
+					// Add tag fallback
+					if (!data[i].tag) data[i].tag = Math.random().toString(36).substring(2,8);
+				}
+
 				// Concat it to buffer
-				this.buffer = this.buffer.concat(data);			
-			}							
+				this.buffer = this.buffer.concat(data);
+			}
 
 			// Send to respective protocol handlers
 			if (this.protocol == 'ws') {
 				// Check socket integrity
 				if (this.ws.socket.readyState == 1) {
 					// Send off
-					this.ws.socket.send(JSON.stringify(this.buffer));	
+					this.ws.socket.send(JSON.stringify(this.buffer));
 					// Empty buffer
-					this.buffer = [];				
+					this.buffer = [];
 					// Reset timestamp
-					this.lastsend = Hiro.util.now();					
+					this.lastsend = Hiro.util.now();
 				// No 'all clear' received
-				} else {	
-					// Log 
+				} else {
+					// Log
 					Hiro.sys.log('Tried to send data over WebSocket while readyState was ' + this.ws.socket.readyState + ', buffering...',[this.ws.socket,this.buffer],'warn')
 					// Set retry
 					setTimeout(function(){
 						// Fire it in case we still have a buffer
 						if (Hiro.sync.buffer.length) Hiro.sync.tx();
-					},5000)				
+					},5000)
 				}
 			} else if (this.protocol == 'lp') {
-				this.lp.send(JSON.stringify(data));				
+				this.lp.send(JSON.stringify(data));
 			} else {
 				Hiro.sys.error('Tried to send data but no transport protocol available',data);
 			}
@@ -4504,7 +4504,7 @@ var Hiro = {
 				// Ignore empty messages
 				if (!data[i]) continue;
 
-				// Build handler name				
+				// Build handler name
 				handler = (data[i].name) ? data[i].name.replace(/-/g, "_") : undefined;
 				if (handler) handler = 'rx_' + handler + '_handler';
 
@@ -4515,11 +4515,11 @@ var Hiro = {
 				}
 
 				// Fire handler
-				this[handler](data[i]);	
+				this[handler](data[i]);
 
 				// Measure roundtrip and reset
 				if (this.lastsend > 0) this.latency = (Hiro.util.now() - this.lastsend) || 100;
-				this.lastsend = 0;			
+				this.lastsend = 0;
 			}
 		},
 
@@ -4528,7 +4528,7 @@ var Hiro = {
 			var n, note, sf, cf, fv, peers, req, sp, cp, peer, user, i, l, keeper;
 
 			// Remove any used tokens
-			Hiro.data.tokens.remove(data.token);			
+			Hiro.data.tokens.remove(data.token);
 
 			// See if there was a problem with the session
 			if (!data.session || (data.remark && this.error(data))) {
@@ -4543,7 +4543,7 @@ var Hiro = {
 			}
 
 			// Close dialog first so UI builds while closing
-			if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();				
+			if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();
 
 			// Remove all synced data
 			Hiro.data.cleanup(data.session.folio.val.length);
@@ -4552,58 +4552,58 @@ var Hiro = {
 			this.buffer = [];
 
 			// Create new blank profile object
-			sp = data.session.profile; 
+			sp = data.session.profile;
 			cp = {};
 
 			// Set versions and other basics
-			cp.cv = cp.sv = 0;	
+			cp.cv = cp.sv = 0;
 			cp.kind = sp.kind;
 			cp.id = sp.id;
 
-			// Stringify contact array 
+			// Stringify contact array
 			peers = JSON.stringify(sp.val.contacts || []);
 			user = JSON.stringify(sp.val.user)
 
 			// Add data to profile object
-			cp.c = JSON.parse(user); 
+			cp.c = JSON.parse(user);
 			cp.s = JSON.parse(user);
 
 			// Fall back to present name if none know by server
 			cp.c.name = sp.val.user.name || Hiro.data.get('profile','c.name');
 
 			// Add contacts & session
-			cp.c.contacts = (cp.c.contacts) ? cp.c.contacts.concat(JSON.parse(peers)) : JSON.parse(peers);			
+			cp.c.contacts = (cp.c.contacts) ? cp.c.contacts.concat(JSON.parse(peers)) : JSON.parse(peers);
 			cp.s.contacts = JSON.parse(peers);
-			cp.c.sid = cp.s.sid = data.session.sid;	
+			cp.c.sid = cp.s.sid = data.session.sid;
 
 			// Save profile, overwriting existing data
-			Hiro.data.set('profile','',cp,'s');			
+			Hiro.data.set('profile','',cp,'s');
 
 			// Create notes
 			for (note in data.session.notes) {
 				if (!data.session.notes.hasOwnProperty(note)) continue;
 
 				// Create client and server references
-				sn = data.session.notes[note];	
+				sn = data.session.notes[note];
 				cn = {};
 
 				// Set versions and other basics
-				cn.cv = cn.sv = 0;	
+				cn.cv = cn.sv = 0;
 				cn.kind = sn.kind;
-				cn.id = sn.id;			
+				cn.id = sn.id;
 
 				// Build client and shadow versions
 				cn.c = {}; cn.s = {};
 
-				// Copy peer array 
+				// Copy peer array
 				peers = JSON.stringify(sn.val.peers || []);
 				cn.c.peers = JSON.parse(peers);
 				cn.s.peers = JSON.parse(peers);
 
 				// Set custom internal values
-				cn._token = sn.val.sharing_token;	
+				cn._token = sn.val.sharing_token;
 
-				// Loop through peers	
+				// Loop through peers
 				// NOTE: We can't work with simple references and keep all data in the respective peer elements
 				// because simple references become their own objects after writing/reading them to/from localstorage
 				for (i = 0, l = cn.c.peers.length; i < l; i++ ) {
@@ -4624,7 +4624,7 @@ var Hiro = {
 
 					// Set owner
 					if (peer.role == 'owner') cn._owner = peer.user.uid;
-				}	
+				}
 
 				// Set fallback values
 				// Used for sorting, if we never touched the note we sort it by lastedit or (superedgy) default to now
@@ -4635,21 +4635,21 @@ var Hiro = {
 				cn.c.title = cn.s.title = sn.val.title;
 
 				// Create a dedicated store for each note
-				Hiro.data.set('note_' + note,'',cn,'s');				
-			}		
+				Hiro.data.set('note_' + note,'',cn,'s');
+			}
 
 			// Add notes to folio
-			sf = data.session.folio; 
+			sf = data.session.folio;
 			cf = Hiro.data.get('folio') || {};
 			cf.cv = cf.sv = 0;
-			fv = JSON.stringify(sf.val);			
+			fv = JSON.stringify(sf.val);
 			cf.s = JSON.parse(fv);
-			cf.c = (cf.c) ? cf.c.concat(JSON.parse(fv)) : JSON.parse(fv);	
+			cf.c = (cf.c) ? cf.c.concat(JSON.parse(fv)) : JSON.parse(fv);
 			cf.kind = sf.kind;
-			cf.id = sf.id;		
+			cf.id = sf.id;
 
-			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed								
-			Hiro.data.set('folio','',cf,'s');	
+			// Folio triggers a paint, make sure it happens after notes ad the notes data is needed
+			Hiro.data.set('folio','',cf,'s');
 
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
@@ -4657,51 +4657,51 @@ var Hiro = {
 				// Only do this for not yet synced notes, otherwise it screws up our "tease sharing on first visit"
 				if (Hiro.canvas.currentnote && Hiro.canvas.currentnote.length == 4) Hiro.canvas.load(Hiro.canvas.currentnote,false,true);
 				// Otherwise end hprogress here
-				else Hiro.ui.hprogress.done();					
-			// If the folio is still empty, we create a new note				
+				else Hiro.ui.hprogress.done();
+			// If the folio is still empty, we create a new note
 			} else {
 				// Log
-				Hiro.sys.log('New session contains no notes and folio is empty, creating & loading first note...')	
+				Hiro.sys.log('New session contains no notes and folio is empty, creating & loading first note...')
 
 				// Do
-				Hiro.folio.newnote();			
-			}	
+				Hiro.folio.newnote();
+			}
 
 			// If we were resetting, reenable sync
-			if (this.resetting) this.resetting = false;			
+			if (this.resetting) this.resetting = false;
 
 			// Reset UI
-			Hiro.ui.setstage();		
+			Hiro.ui.setstage();
 
 			// Update trackers
-			Hiro.user.track.update();		
+			Hiro.user.track.update();
 
 			// Log
 			Hiro.sys.log('New session created',data);
-			Hiro.sys.log('',undefined,'groupEnd');						
+			Hiro.sys.log('',undefined,'groupEnd');
 		},
 
 		// Process changes sent from server
 		rx_res_sync_handler: function(data) {
 			// Find out which store we're talking about
-			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind, 
+			var id = (data.res.kind == 'note') ? 'note_' + data.res.id : data.res.kind,
 				store = Hiro.data.get(id), ack, backup,
-				dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;	
+				dosave, update, regex, ops, i, l, j, jl, ssv, scv, stack, regex = /^=[0-9]+$/, obj, me;
 
 			// Set ack
 			if (store) ack = (data.tag == store._tag);
 
 			// If we had a proper error or are resetting atm
 			if (this.resetting || (data.remark && this.error(data)) || !data.changes) return;
-				
+
 			// Log edge cases
  			if (!store) {
 				// Couldn't get local data
 				Hiro.sys.error("Server sent a res-sync for a resource (" + id + ") we don't know",data);
 				// Reset sessions
 				this.reset();
-				// Abort			
-				return;				
+				// Abort
+				return;
 			} else if (store._tag && !ack) {
 				// See if we have a proper response we're waiting for or abort otherwise
 				Hiro.sys.log('Server sent a res-sync with new tag ' + data.tag + ' while we were waiting for an ack for ' + store._tag + ', ignoring res-sync',data,'warn');
@@ -4709,29 +4709,29 @@ var Hiro = {
 			} else if (Hiro.data.get('profile','c.sid') != data.sid) {
 				// See if we have a proper response we're waiting for or abort otherwise
 				Hiro.sys.error('Server sent res-sync for unknown sid ' + data.sid + ', current sid is ' + Hiro.data.get('profile','c.sid') + ', ignoring res-sync',data);
-				return;				
-			}		
+				return;
+			}
 
 			// Process change stack
 			for (i=0,l=data.changes.length; i<l; i++) {
-				// Check for potential infinite lopp				
+				// Check for potential infinite lopp
 				if (data.changes.length > 100 || (store.edits && store.edits.length > 100) ) {
 					Hiro.sys.error('Unusual high number of changes',JSON.parse(JSON.stringify([data,store])));
-				}	
+				}
 
-				// Log stuff to doublecheck which rules should be applied				
+				// Log stuff to doublecheck which rules should be applied
 				if (data.changes[i].clock.cv != store.cv || data.changes[i].clock.sv != store.sv) {
 					// Shorten before get crazy here
 					ssv = data.changes[i].clock.sv;
 					scv = data.changes[i].clock.cv
 
-					// Server resends an already processed change because it doesn't know we already got it 
+					// Server resends an already processed change because it doesn't know we already got it
 					// Aka "The Lost Return" scenario (Lost outbound is not handled here as it needs no handling)
-					if (scv != store.cv) {	
+					if (scv != store.cv) {
 						// Log
-						Hiro.sys.log('Backup recovery','','group');						
+						Hiro.sys.log('Backup recovery','','group');
 						Hiro.sys.log('Server sent wrong client version ' + scv + ', current client is ' + store.cv + ', trying to recover from backup',data.changes[i].delta);
-						
+
 						// Retrieve backup
 						backup = Hiro.data.local.fromdisk(id + '.backup');
 
@@ -4739,81 +4739,81 @@ var Hiro = {
 						if (backup && backup.sv == ssv && backup.cv == scv) {
 							// Log
 							Hiro.sys.log('Backup found & verified, both sv ' + ssv + ' and cv ' + scv + ' remotely and locally.')
-							
+
 							// Set shadow to backup
 							store.s = JSON.parse(JSON.stringify(backup.s));
 
 							// Set version numbers to backup
 							store.cv = backup.cv;
-							// store.sv = backup.sv;						
+							// store.sv = backup.sv;
 
 							// Delete stack
 							store.edits = [];
 
-							// Close logging						
+							// Close logging
 							Hiro.sys.log('Sucessfully recovered, continuing');
-							Hiro.sys.log('',null,'groupEnd');						
+							Hiro.sys.log('',null,'groupEnd');
 
 						// Abort restore
 						} else {
 							// Log
 							if (backup) Hiro.sys.error('Corrupted backup with cv/sv ' + backup.cv + '/' + backup.sv + ' instead of ' + scv + '/' + ssv + ', aborting.',[backup,data]);
 							else Hiro.sys.error('No backup found, resetting session',data);
-							Hiro.sys.log('',null,'groupEnd');							
+							Hiro.sys.log('',null,'groupEnd');
 							// Reset session
-							this.reset();	
+							this.reset();
 							// Abort here
 							return;
-						}																
-					} 					
+						}
+					}
 
 					// Server sends an edit twice, so we just ignore it
 					// The "Duplicate Paket" scenario
 					if (ssv < store.sv) {
 						Hiro.sys.log('Server sent sv' + ssv + ' twice, local sv' + store.sv + ', ignoring changes:',data.changes[i].delta);
 						continue;
-					// If the restored backup solved all problems	
-					} else if (store.sv == ssv && store.cv == scv) {	
+					// If the restored backup solved all problems
+					} else if (store.sv == ssv && store.cv == scv) {
 						Hiro.sys.log('No more conflicts after backup was restored, processing changes normally.',data.changes[i].delta);
-					// Log all other cases we don't handle / know how to handle yet	
+					// Log all other cases we don't handle / know how to handle yet
 					} else {
 						Hiro.sys.error('Unknown sync case with Server cv' + scv + ' sv' + ssv	+ ' and Client cv' + store.cv + ' sv' +  store.sv,JSON.parse(JSON.stringify([data,store])));
-						continue;					
+						continue;
 					}
-				}	
+				}
 
 				// Iterate through delta msg's
 				ops = data.changes[i].delta;
 				for (j = 0, jl = ops.length; j < jl; j++) {
 					// Process ops according to ressource kind and op
-					switch (data.res.kind  + '|' + ops[j].op) {	
-						// Store token with the document				
+					switch (data.res.kind  + '|' + ops[j].op) {
+						// Store token with the document
 						case 'note|set-token':
 							// Set value
-							store._token = ops[j].value;	
+							store._token = ops[j].value;
 							// Change shown URL
-							if (store.id == Hiro.canvas.currentnote) Hiro.ui.history.add(store.id,true);								
+							if (store.id == Hiro.canvas.currentnote) Hiro.ui.history.add(store.id,true);
 							update = true;
-							break;						
-						// Add a peer to a note			
+							break;
+						// Add a peer to a note
 						case 'note|add-peer':
 							// Add to peers
-							Hiro.apps.sharing.addpeer(ops[j].value,store.id,'s');	
+							Hiro.apps.sharing.addpeer(ops[j].value,store.id,'s');
 							update = true;
-							break;	
-						// Remove a peer from a note			
+							break;
+						// Remove a peer from a note
 						case 'note|rem-peer':
 							// Build peer object
 							obj = { user: {} };
 							obj.user[ops[j].path.split(':')[0].replace('peers/','')] = ops[j].path.split(':')[1];
 							// Send off for removal
-							Hiro.apps.sharing.removepeer(obj,store.id,'s',true);	
+							Hiro.apps.sharing.removepeer(obj,store.id,'s',true);
 							update = true;
 							break;
-						// Swap an existing peer for a new one or change it's role		
+						// Swap an existing peer for a new one or change it's role
 						case 'note|swap-user':
-						case 'note|change-role':	
-						case 'note|set-cursor':					
+						case 'note|change-role':
+						case 'note|set-cursor':
 							// Build peer object
 							obj = { user: {} };
 							obj.user[ops[j].path.split(':')[0].replace('peers/','')] = ops[j].path.split(':')[1];
@@ -4827,16 +4827,16 @@ var Hiro = {
 								if (store.id == Hiro.canvas.currentnote) Hiro.canvas.overlay.update(true);
 							// Call swap user
 							} else if (ops[j].op == 'swap-user') {
-								Hiro.apps.sharing.swappeer(obj,store.id,ops[j].value,true);	
+								Hiro.apps.sharing.swappeer(obj,store.id,ops[j].value,true);
 							// Set other values (hackish shortcut depending on ops name not changing)
 							} else {
-								Hiro.apps.sharing.getpeer(obj,store.id)[ops[j].op.split('-')[1]] = ops[j].value;	
+								Hiro.apps.sharing.getpeer(obj,store.id)[ops[j].op.split('-')[1]] = ops[j].value;
 							}
 							update = true;
-							break;	
-						// Set timestamp							
+							break;
+						// Set timestamp
 						case 'note|set-ts':
-							// Reference for our own user 
+							// Reference for our own user
 							me = Hiro.data.get('profile','c');
 
 							// Assign obj to peer
@@ -4861,84 +4861,84 @@ var Hiro = {
 										// that checks the previous value, sets the new and hard repaints if it changed
 										if (store.id != Hiro.canvas.currentnote) Hiro.folio.paint(!store._unseen && (store._unseen = true));
 										// Add notification if we're not focused
-										if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store.id);	
-									}																				
+										if (!Hiro.ui.focus) Hiro.ui.tabby.notify(store.id);
+									}
 								}
 
-								// If the devil was us, also reset _ownedit	
+								// If the devil was us, also reset _ownedit
 								if (obj.user.uid == me.uid) store._ownedit = ops[j].value.edit;
 							}
-							
-							// Update seen	
+
+							// Update seen
 							if (ops[j].value.seen) {
 								// Set value
 								obj.last_seen = ops[j].value.seen;
 
 								// Update sharing dialog if it's open
 								if (store.id == Hiro.canvas.currentnote && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
-							
+
 								// Remove unseen flag if present & update came from one of our other sessions, same syntax as above
 								if (obj.user.uid == me.uid && store._unseen) Hiro.folio.paint(store._unseen && !(store._unseen = false));
-							}	
+							}
 
 							// Always iterate & save
-							update = true;														
-							break;																																							
-						// Update title if it's a title update					
+							update = true;
+							break;
+						// Update title if it's a title update
 						case 'note|set-title':
 							// Set values
 							store.s.title = store.c.title = Hiro.canvas.cache.title = ops[j].value;
 							// Repaint note if it's the current
-							if (store.id == Hiro.canvas.currentnote) Hiro.canvas.el_title.value = ops[j].value;							
+							if (store.id == Hiro.canvas.currentnote) Hiro.canvas.el_title.value = ops[j].value;
 							update = true;
 							break;
-						// Update text if it's a text update							
+						// Update text if it's a text update
 						case 'note|delta-text':
 							if (!(regex.test(ops[j].value))) {
 								// Patch values
-								this.diff.patch(ops[j].value,data.res.id);							
+								this.diff.patch(ops[j].value,data.res.id);
 								// Continue if we had no error
-								update = true;	
+								update = true;
 							} else {
 								Hiro.sys.error('Received unknown note delta op',ops[j])
-							}							
-							break;	
-						// Set proper id of a new note					
-						case 'folio|set-nid':
-							// Rename existing store, this also takes care of the as of now missing folio shadow entry 
-							Hiro.data.rename('note_' + ops[j].path.split(':')[1],'note_' + ops[j].value);	
-							update = true;																			
+							}
 							break;
-						// Set changed folio status							
+						// Set proper id of a new note
+						case 'folio|set-nid':
+							// Rename existing store, this also takes care of the as of now missing folio shadow entry
+							Hiro.data.rename('note_' + ops[j].path.split(':')[1],'note_' + ops[j].value);
+							update = true;
+							break;
+						// Set changed folio status
 						case 'folio|set-status':
 							Hiro.folio.lookup[ops[j].path.split(':')[1]].status = ops[j].value;
-							update = true;								
-							break;	
-						// Add a new note to the folio	
+							update = true;
+							break;
+						// Add a new note to the folio
 						case 'folio|add-noteref':
 							// Trigger newnote with know parameters
-							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);							
-							update = true;							
+							Hiro.folio.newnote(ops[j].value.nid,ops[j].value.status);
+							update = true;
 							break;
 						// Remove a note from the folio
 						case 'folio|rem-noteref':
 							// Make sure it's not part of the folio anymore
-							Hiro.folio.remove(ops[j].path.split(':')[1]);	
+							Hiro.folio.remove(ops[j].path.split(':')[1]);
 							// Also delete the store
-							Hiro.data.destroy('note_' + ops[j].path.split(':')[1]);						
-							update = true;							
-							break;							
+							Hiro.data.destroy('note_' + ops[j].path.split(':')[1]);
+							update = true;
+							break;
 						// Change a user property
 						case 'profile|set-name':
 						case 'profile|set-email':
-						case 'profile|set-phone':	
-						case 'profile|set-tier':																	
+						case 'profile|set-phone':
+						case 'profile|set-tier':
 							// Get profile object
 							me = Hiro.data.get('profile');
 							// Set values
-							me.c[ops[j].op.split('-')[1]] = me.s[ops[j].op.split('-')[1]] = ops[j].value;						
+							me.c[ops[j].op.split('-')[1]] = me.s[ops[j].op.split('-')[1]] = ops[j].value;
 							update = true;
-							break; 									
+							break;
 						// Remove a user from the contact list
 						case 'profile|rem-user':
 							// Build quick object
@@ -4947,32 +4947,32 @@ var Hiro = {
 							// Remove
 							Hiro.user.contacts.remove(obj,'s',true);
 							update = true;
-							break; 	
+							break;
 						// Grab user and give it new properties
 						case 'profile|swap-user':
 							// Build object
 							obj = {};
 							obj[ops[j].path.split(':')[0].replace('contacts/','')] = ops[j].path.split(':')[1];
 							// Set new value
-							Hiro.user.contacts.swap(obj,ops[j].value,true);							
-							update = true;														
-							break;	
+							Hiro.user.contacts.swap(obj,ops[j].value,true);
+							update = true;
+							break;
 						// Add a user to the contact list
 						case 'profile|add-user':
 							// Add straight to contacts
 							Hiro.user.contacts.add(ops[j].value,'s');
 							update = true;
-							break; 																			
+							break;
 						default:
-							Hiro.sys.error('Received unknown change op from server',ops[j]);		
+							Hiro.sys.error('Received unknown change op from server',ops[j]);
 					}
-				}		
+				}
 
 				// Remove outdated edits from stores
 				if (store.edits && store.edits.length > 0) {
 					stack = store.edits.length;
 					while (stack--) {
-						if (store.edits[stack].clock.cv <= data.changes[i].clock.cv) store.edits.splice(stack,1); 
+						if (store.edits[stack].clock.cv <= data.changes[i].clock.cv) store.edits.splice(stack,1);
 					}
 				}
 
@@ -4987,8 +4987,8 @@ var Hiro = {
 					update = false;
 					// Set flag to save data
 					dosave = true;
-				} 				
-			}							
+				}
+			}
 
 			// Find out if it's a response or server initiated
 			if (ack) {
@@ -4996,48 +4996,48 @@ var Hiro = {
 				store._tag = undefined;
 
 				// Showit
-				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');														
+				if (Hiro.data.get('profile','c.tier') > 0) Hiro.ui.statsy.add('sns',2,'Synced.');
 
 				// See if we piled up any other changes in the meantime
 				if ((store.edits && store.edits.length) || this.diff.makediff(store)) {
 					// Commit them right away
 					Hiro.sync.commit();
-				// If all is set & done	
+				// If all is set & done
 				} else {
 					// Remove the backup
 					if (!dosave) Hiro.data.local.dropstash(id);
 					// Remove retry timeout
-					if (this.committimeout) window.clearTimeout(this.committimeout);					
-				}					
+					if (this.committimeout) window.clearTimeout(this.committimeout);
+				}
 			// Respond if it was server initiated
 			} else {
 				// Send any edits as response if there are any waitingwaitingwaiting
 				if (store.edits && store.edits.length) {
 					data.changes = store.edits;
-				// Make a quick diff to see if anything changed 
+				// Make a quick diff to see if anything changed
 				} else if (this.diff.makediff(store)) {
 					// Add edits to changes object
-					data.changes = store.edits;					
+					data.changes = store.edits;
 				// If there are no changes at all, send a blank ack
 				} else {
 					data.changes = [{ clock: { cv: store.cv, sv: store.sv }, delta: []}];
-				}		
+				}
 
 				// Send
-				this.tx(data);				
-			}	
+				this.tx(data);
+			}
 
 			// Save changes back to store, for now we just save the whole store, see if this could/should be more granular in the future
-			if (dosave) Hiro.data.set(id,'',store,'s');								
+			if (dosave) Hiro.data.set(id,'',store,'s');
 		},
 
 		// Process consume token response
-		rx_token_consume_handler: function(data) {	
+		rx_token_consume_handler: function(data) {
 			// Remove data from tokens
 			Hiro.data.tokens.remove(data.token);
 
 			// If we had a proper error just log it for now
-			if (data.remark) this.error(data);			
+			if (data.remark) this.error(data);
 		},
 
 		// Send simple ping to server, either generic if no store id is provided or latest store edits / empty delta
@@ -5045,12 +5045,12 @@ var Hiro = {
 			var sid = Hiro.data.get('profile','c.sid'), store, data = {};
 
 			// Abort if we have no SID
-			if (!sid) return;			
+			if (!sid) return;
 
 			if (storeid) {
 				// Fetch store data
-				store = Hiro.data.get(storeid)		
-				
+				store = Hiro.data.get(storeid)
+
 				// Abort if store doesn't exist
 				if (!store) {
 					Hiro.sys.error('Store to be pinged does not exist on client', storeid);
@@ -5062,35 +5062,35 @@ var Hiro = {
 			} else {
 				// Build ping
 				data.name = "client-ehlo";
-	       		data.sid = sid;				
-			}		
+	       		data.sid = sid;
+			}
 
     		// Send ping
     		this.tx(data);
-		},		
+		},
 
 		// Create messages representing all changes between local model and shadow
 		commit: function() {
 			var u = Hiro.data.unsynced, i, l, newcommit, s, d;
 
 			// Only one build at a time, and only when we're online, already have a session ID and had a appcache NoUpdate
-			if (this.resetting || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;		
+			if (this.resetting || !this.synconline || !Hiro.data.get('profile','c.sid') || this.cachelock || !u.length) return;
 
 			// Create array
-			newcommit = [];							
+			newcommit = [];
 
 			// Cycle through stores flagged unsynced, iterating backwards because makediff could splice a store from the list
 			for (i = u.length - 1; i > -1; i--) {
 				// Get store
-				s = Hiro.data.get(u[i]);			
+				s = Hiro.data.get(u[i]);
 
 				// If we got no store or the store is waiting for a server tag ack, stop here
-				if (!s || s._tag) continue; 
+				if (!s || s._tag) continue;
 
 				// Grab existing diff or make a new one
-				d = this.diff.makediff(s);					
+				d = this.diff.makediff(s);
 
-				// If we have a diff, add it to the note				
+				// If we have a diff, add it to the note
 				if (d) newcommit.push(this.wrapmsg(s));
 			}
 
@@ -5126,7 +5126,7 @@ var Hiro = {
 
 				// Nothing committed
 				return false;
-			}	
+			}
 		},
 
 		// Clear all commit locks
@@ -5150,7 +5150,7 @@ var Hiro = {
 		},
 
 		// Build a complete res-sync message for given store
-		wrapmsg: function(store) {			
+		wrapmsg: function(store) {
 			// Build wrapper object
 			var r = {};
 			r.name = 'res-sync';
@@ -5159,10 +5159,10 @@ var Hiro = {
 			r.sid = Hiro.data.get('profile','c.sid');
 
 			// Attach a tag to msg and store
-			store._tag = r.tag = Math.random().toString(36).substring(2,8);	
+			store._tag = r.tag = Math.random().toString(36).substring(2,8);
 
 			// Return r
-			return r;	
+			return r;
 		},
 
 		// Consume a provided token
@@ -5171,11 +5171,11 @@ var Hiro = {
 				msg = {
 					name: 'token-consume',
 					token: token,
-					sid: sid					
+					sid: sid
 				};
 
 			// Abort if there's absolutely no token or session
-			if (!sid || !token) return;		
+			if (!sid || !token) return;
 
 			// Else send it
 			this.tx(msg);
@@ -5189,7 +5189,7 @@ var Hiro = {
 			this.resetting = true;
 
         	// Logging
-			Hiro.sys.error('Local session fucked up beyond repair, requesting new login token to reset session ' + sid,Hiro.data.stores);		
+			Hiro.sys.error('Local session fucked up beyond repair, requesting new login token to reset session ' + sid,Hiro.data.stores);
 
 			// Send request to backend
 			this.ajax.send({
@@ -5198,18 +5198,18 @@ var Hiro = {
 				payload: { sid: sid },
 				success: function(req,data) {
 		        	// Logging
-					Hiro.sys.log('Received new login token ' + data.token);	
+					Hiro.sys.log('Received new login token ' + data.token);
 
 					// Request new session via session handler
-					Hiro.data.tokens.add({ id: data.token, action: 'login'})													                    
+					Hiro.data.tokens.add({ id: data.token, action: 'login'})
 				},
-				error: function(req,data) {	
+				error: function(req,data) {
 		        	// Logging
-					Hiro.sys.error('Unable to fetch new login token',req); 
+					Hiro.sys.error('Unable to fetch new login token',req);
 					// Enable retriggering of reset
-					Hiro.sync.resetting = false;           		                    						                    
-				}										
-			});	
+					Hiro.sync.resetting = false;
+				}
+			});
 		},
 
 		// Handle server sent error
@@ -5218,15 +5218,15 @@ var Hiro = {
 			Hiro.sys.log('Server sent ' + data.remark.slug + ' error',data.remark,'warn');
 
 			// End hprogress with error if it's active
-			if(Hiro.ui.hprogress.active) Hiro.ui.hprogress.done(true)	
+			if(Hiro.ui.hprogress.active) Hiro.ui.hprogress.done(true)
 
 			// In case it's fatal reset session
 			if (data.remark.lvl == 'fatal') {
 				// Reset
-				this.reset();	
+				this.reset();
 				// Affirm abort
 				return true;
-			}			
+			}
 		},
 
 		// If either sync or template server just timed out or got a fatal response
@@ -5235,7 +5235,7 @@ var Hiro = {
 			switch (server) {
 				case 'sync':
 					// Start trying to reconnect
-					this[this.protocol].reconnect();	
+					this[this.protocol].reconnect();
 
 					// Edge case: If we have a eg hashbang token the client tries to fetch a new session immediately
 					// but if it's offline the user sits in front of an empty workspace, so we should bootstrap one now
@@ -5246,24 +5246,24 @@ var Hiro = {
 						Hiro.data.bootstrap();
 					}
 
-					// If we already where offline abort here 
+					// If we already where offline abort here
 					if (!this.synconline) return;
 
 					// Set online/offline flag
-					this.synconline = false;								
+					this.synconline = false;
 
 					break;
 				case 'web':
 					// Start trying to reconnect
 					this.ajax.reconnect();
 
-					// If we already where offline abort here 
+					// If we already where offline abort here
 					if (!this.webonline) return;
 
 					// Set online/offline flag
-					this.webonline = false;						
+					this.webonline = false;
 
-					break;					
+					break;
 			}
 
 			// Switch dialog content if it's open
@@ -5272,7 +5272,7 @@ var Hiro = {
 				// don't let the UI flicker
 				Hiro.ui.dialog.showmessage('offline');
 				Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' });
-			}			
+			}
 
 			// Log
 			Hiro.sys.log('Connection to ' + server + '-server lost','','warn');
@@ -5281,14 +5281,14 @@ var Hiro = {
 		// Yay, we just came (back) online
 		cameonline: function(server) {
 			// Log
-			Hiro.sys.log('Connection to ' + server + '-server established');			
+			Hiro.sys.log('Connection to ' + server + '-server established');
 
 			// Depending on which server we mean
 			switch (server) {
 				case 'sync':
 					// Set online/offline flag, reset reconnect delay
 					this.synconline = true;
-					this[this.protocol].rcd = 1000;					
+					this[this.protocol].rcd = 1000;
 
 					// Check for updated cache manifest
 					Hiro.data.appcache.update();
@@ -5297,23 +5297,23 @@ var Hiro = {
 				case 'web':
 					// Set online/offline flag
 					this.webonline = true;
-					this.ajax.rcd = 1000;					
+					this.ajax.rcd = 1000;
 
-					break;					
+					break;
 			}
 
 			// Switch dialog content if it's open
 			if (Hiro.ui.dialog.open) {
 				if (Hiro.data.get('profile','c.tier') > 0) {
 					// Populate contents with contents
-					Hiro.ui.dialog.update();							
+					Hiro.ui.dialog.update();
 					// Display elements
 					Hiro.ui.switchview('d_settings');
-					Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' }) 							
+					Hiro.ui.render(function(){ Hiro.ui.dialog.el_close.style.display = 'block' })
 				} else {
 					Hiro.ui.switchview('d_logio')
-				}	
-			}			
+				}
+			}
 		},
 
 		// WebSocket settings and functions
@@ -5321,7 +5321,7 @@ var Hiro = {
 			// The socket object
 			socket: null,
 
-			// Generic config			
+			// Generic config
 			url: undefined,
 			protocol: 'hync',
 
@@ -5341,10 +5341,10 @@ var Hiro = {
 					Hiro.sys.log('WebSocket opened',this.socket);
 
 					// Switch to online
-					Hiro.sync.cameonline('sync');		
+					Hiro.sync.cameonline('sync');
 
 					// Auth the connection right away
-					Hiro.sync.auth();		
+					Hiro.sync.auth();
 				}
 
 				// Message handler
@@ -5354,21 +5354,21 @@ var Hiro = {
 
 				// Close handler
 				this.socket.onclose = function(e) {
-					// Log				
-					Hiro.sys.log('WebSocket closed with code ' + e.code + ' and ' + (e.reason || 'no reason given.'),[e,Hiro.sync.ws.socket]);	
+					// Log
+					Hiro.sys.log('WebSocket closed with code ' + e.code + ' and ' + (e.reason || 'no reason given.'),[e,Hiro.sync.ws.socket]);
 
 					// Switch to offline
-					Hiro.sync.goneoffline('sync');	
-				}				
+					Hiro.sync.goneoffline('sync');
+				}
 			},
 
 			// Attempt a reconnect
 			reconnect: function() {
 				// Double delay
-				this.rcd = (this.rcd > 10000) ? 20000 : this.rcd * 2; 			
+				this.rcd = (this.rcd > 10000) ? 20000 : this.rcd * 2;
 
 				// Log
-				Hiro.sys.log('Trying to reconnect to sync server via websockets in ' + ( this.rcd / 1000) + ' second(s)...');	
+				Hiro.sys.log('Trying to reconnect to sync server via websockets in ' + ( this.rcd / 1000) + ' second(s)...');
 
 				// Set timeout
 				window.setTimeout(function(){
@@ -5376,8 +5376,8 @@ var Hiro = {
 					if (Hiro.sync.synconline) return;
 
 					// Attempt reconnect
-					Hiro.sync.ws.connect();					
-				},this.rcd);	
+					Hiro.sync.ws.connect();
+				},this.rcd);
 			}
 		},
 
@@ -5397,7 +5397,7 @@ var Hiro = {
 			// URL: Target URL
 			// Headers: HTTP Headers to be included
 			// Success: Success callback function
-			// Error: Error callback function			
+			// Error: Error callback function
 			send: function(obj) {
 				if (!obj) return;
 
@@ -5405,7 +5405,7 @@ var Hiro = {
 				var method = obj.type || 'GET',
 					async = obj.async || true,
 					contentType = obj.contentType || 'application/json; charset=UTF-8',
-					payload;	
+					payload;
 
 				// Build proper URL encoded string for Form fallback
 				if (obj.payload && contentType == 'application/x-www-form-urlencoded') {
@@ -5416,23 +5416,23 @@ var Hiro = {
 							str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj.payload[p]));
 						}
 					}
-					payload = str.join("&");	
-				// Encode payload to JSON				
+					payload = str.join("&");
+				// Encode payload to JSON
 				} else {
 					payload = JSON.stringify(obj.payload);
-				}	
+				}
 
 				// Non Patch supporting devices, move to array check once we have more
 				if (method == 'PATCH' && navigator.appVersion.indexOf('BB10') > -1) method = 'POST';
 
 				// Spawn new request object
-				var req = this.getreq();	
+				var req = this.getreq();
 
-				try {				
+				try {
 					// Set basic data
 					req.open(method, obj.url, async);
-					req.timeout = obj.timeout || 20000;	
-					
+					req.timeout = obj.timeout || 20000;
+
 					// Pass on state changes and attach event handlers
 					if (async) {
 						// This should work in all relevant browsers
@@ -5443,24 +5443,24 @@ var Hiro = {
 						};
 
 						// Here we have to get browser specific
-						if (typeof req.ontimeout != 'undefined') {						
-							req.ontimeout = function() { 
-								Hiro.sync.ajax.responsehandler(obj,this);									
+						if (typeof req.ontimeout != 'undefined') {
+							req.ontimeout = function() {
+								Hiro.sync.ajax.responsehandler(obj,this);
 							};
 						} else {
 							// TODO: timeout fallback
-						}	
+						}
 						// Note: This fires only on network level errors where state never changes to 4, otherwise we use the handler above
-						if (typeof req.onerror != 'undefined') {												
-							req.onerror = function() {					 
-								Hiro.sync.ajax.responsehandler(obj,this);		
-							};	
+						if (typeof req.onerror != 'undefined') {
+							req.onerror = function() {
+								Hiro.sync.ajax.responsehandler(obj,this);
+							};
 						} else {
-							req.addEventListener("error", function() { 						
-								Hiro.sync.ajax.responsehandler(obj,this);			
-							}, false);						
-						}										
-					}	
+							req.addEventListener("error", function() {
+								Hiro.sync.ajax.responsehandler(obj,this);
+							}, false);
+						}
+					}
 
 					// Set headers
 					req.setRequestHeader("Content-Type", contentType);
@@ -5486,7 +5486,7 @@ var Hiro = {
 				if (obj.called) return;
 
 				// Set called flag
-				obj.called = true;		
+				obj.called = true;
 
 				// Build proper <data> response
 				var ct = response.getResponseHeader('content-type') || '',
@@ -5495,8 +5495,8 @@ var Hiro = {
 				// Try to parse JSON
 				if (ct.indexOf('application/json') > -1) {
 					try { data = JSON.parse(data);
-					} catch(e) { 
-						Hiro.sys.error('Application/JSON response contains no valid JSON',[e,response,obj]); 
+					} catch(e) {
+						Hiro.sys.error('Application/JSON response contains no valid JSON',[e,response,obj]);
 					}
 				}
 
@@ -5509,7 +5509,7 @@ var Hiro = {
 					obj.error(response,data);
 					// Logging
 					Hiro.sys.log('XHR Error:',response,'warn')
-				}	
+				}
 
 				// Set internal status if applicable
 				if (!Hiro.sync.webonline && (success || this.alivecodes.indexOf(response.status) > -1) ) {
@@ -5519,7 +5519,7 @@ var Hiro = {
 				}
 
 				// Speed up GC
-				obj = response = null;			
+				obj = response = null;
 			},
 
 			// Returns proper cross browser xhr method
@@ -5530,14 +5530,14 @@ var Hiro = {
 					try { req = new XMLHttpRequest(); }	catch(e) { Hiro.sys.error(e) }
 				} else if (window.ActiveXObject) {
 					// MS ftw
-					if (this.msXMLHttpService) {	
+					if (this.msXMLHttpService) {
 						// See if we already have determined the available MS service
 						try { req = new ActiveXObject(this.msXMLHttpService); }
 						catch(e) { Hiro.sys.error(e) }
 					} else {
 						// Find it if not
 						for (var i=0, l=this.msXMLHttpServices.length; i<l; i++) {
-							try { 
+							try {
 								req = new ActiveXObject(this.msXMLHttpServices[i]);
 								if (req) {
 									this.msXMLHttpService=this.msXMLHttpServices[i];
@@ -5558,21 +5558,21 @@ var Hiro = {
 			// Try reconnecting to template server
 			reconnect: function() {
 				// Double delay
-				this.rcd = (this.rcd > 30000) ? 60000 : this.rcd * 2; 
+				this.rcd = (this.rcd > 30000) ? 60000 : this.rcd * 2;
 
 				// Log
-				Hiro.sys.log('Trying to reconnect to template server in ' + ( this.rcd / 1000) + ' second(s)...');	
+				Hiro.sys.log('Trying to reconnect to template server in ' + ( this.rcd / 1000) + ' second(s)...');
 
-				// 
+				//
 				window.setTimeout(function(){
 					// Abort if for some reason sync is already back online
 					if (Hiro.sync.webonline) return;
 
 					// Attempt reconnect
 					// TODO Bruno: See if a dedicated beacon/health template makes more sense
-					Hiro.ui.dialog.load();					
-				},this.rcd);				
-			}			
+					Hiro.ui.dialog.load();
+				},this.rcd);
+			}
 		},
 
 		// Diff/match/patch specific stuff
@@ -5583,10 +5583,10 @@ var Hiro = {
 			// Regex for Unicode characters beyond the 16-bit Basic Multilingual plane
 			// From https://mathiasbynens.be/notes/javascript-unicode
 			// Careful: Iterating like we do below has quirky behaviour in different browsers
-			// http://stackoverflow.com/questions/3827456/what-is-wrong-with-my-date-regex/3827500#3827500			
+			// http://stackoverflow.com/questions/3827456/what-is-wrong-with-my-date-regex/3827500#3827500
 			astral: /[\uD800-\uDBFF][\uDC00-\uDFFF]/,
 			// Unfortunately js doesn't let us construct a new regex with different flags from the one above
-			astralglobal: /[\uD800-\uDBFF][\uDC00-\uDFFF]/g,						
+			astralglobal: /[\uD800-\uDBFF][\uDC00-\uDFFF]/g,
 
 			// Run diff over a specified store, create and add edits to edits array, mark store as unsaved
 			makediff: function(store) {
@@ -5603,32 +5603,32 @@ var Hiro = {
 						break;
 					case 'profile':
 						d = this.diffprofile(store);
-						break;							
+						break;
 				}
 
 				// Build changes object, iterate cv and return data if we have any changes
 				if (d) {
 					// Build changes object, iterate client version
 					changes = {};
-					changes.clock = { sv : store['sv'] , cv : store['cv']++ };						
+					changes.clock = { sv : store['sv'] , cv : store['cv']++ };
 					changes.delta = d;
 
 					// Add this round's changes to edits
 					store.edits = store.edits || [];
-					store.edits.push(changes);	
+					store.edits.push(changes);
 
 					// Mark store as tainted but do not persist yet for performance reasons
-					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);	
+					if (Hiro.data.unsaved.indexOf(id) < 0) Hiro.data.unsaved.push(id);
 
 					// Signal pending changes
 					return true;
-				// No new edits, but old pending edits found					
-				} else if (store.edits && store.edits.length) {			
-					// Signal old pending changes					
-					return true;	
-				// Remove store from unsynced already at this point (as opposed to res_sync ack/incoming) if we have nothing to sync													
+				// No new edits, but old pending edits found
+				} else if (store.edits && store.edits.length) {
+					// Signal old pending changes
+					return true;
+				// Remove store from unsynced already at this point (as opposed to res_sync ack/incoming) if we have nothing to sync
 				} else {
-					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);						
+					if (id) Hiro.data.unsynced.splice(Hiro.data.unsynced.indexOf(id),1);
 					// Return false to signal "no changes"
 					return false;
 				}
@@ -5651,7 +5651,7 @@ var Hiro = {
 						delta.push({ op: "set-status", path: "nid:" + store.s[i].nid, value: Hiro.folio.lookup[store.s[i].nid].status });
 						// Set shadow to client version
 						store.s[i].status = Hiro.folio.lookup[store.s[i].nid].status;
-					}					
+					}
 				}
 
 				// Lookup new notes that aren't synced yet
@@ -5665,23 +5665,23 @@ var Hiro = {
 						// Iterate
 						for (i = 0, l = ad.added.length; i < l; i++) {
 							// Only consider notes that don't have a server id yet
-							if (ad.added[i].length > 4) return;	
-													
+							if (ad.added[i].length > 4) return;
+
 							// Fetch respective note
-							note = Hiro.data.get('note_' + ad.added[i]);				
+							note = Hiro.data.get('note_' + ad.added[i]);
 
 							// Do not diff notes that don't have any content yet
 							// and where we don't have a token requested yet
 							if (!note.c.text && !note.c.title && note.c.peers.length == 0 && typeof note._token == 'undefined') continue;
 
 							// Create delta array if not done so yet
-							if (!delta) delta = [];	
+							if (!delta) delta = [];
 
 							// Create folio entry object
 							folioentry = {}
 							folioentry.nid = ad.added[i];
 							folioentry.status = (Hiro.folio.lookup[ad.added[i]]) ? Hiro.folio.lookup[ad.added[i]].status : 'active';
-													
+
 							// Add appropriate op msg
 							delta.push({ op: "add-noteref", path: "", value: folioentry })
 
@@ -5705,10 +5705,10 @@ var Hiro = {
 				// Do not diff notes that have no server ID yet
 				if (note.id.length < 5) {
 					// Make sure the folio gets diffed again next time if the note has content or token requested
-					if ((note.c.text || note.c.title || note.c.peers.length > 0) && Hiro.data.unsynced.indexOf('folio') == -1) Hiro.data.unsynced.push('folio');			
+					if ((note.c.text || note.c.title || note.c.peers.length > 0) && Hiro.data.unsynced.indexOf('folio') == -1) Hiro.data.unsynced.push('folio');
 					// Abort
-					return false;	
-				}	
+					return false;
+				}
 
 				// Compare different values, starting with text
 				if (note.c.text != note.s.text) {
@@ -5719,25 +5719,25 @@ var Hiro = {
 					// Retrieve peer
 					peer = Hiro.apps.sharing.getpeer({ user: { uid: Hiro.data.get('profile','c.uid') }}, note.id);
 					// Add cursor if we already have a proper syncable peer object of ourselves
-					if (peer) delta.push({op: "set-cursor", path: "peers/uid:" + peer.user.uid, value: peer.cursor_pos || note._cursor || 0 }) 					
+					if (peer) delta.push({op: "set-cursor", path: "peers/uid:" + peer.user.uid, value: peer.cursor_pos || note._cursor || 0 })
 				}
 
-				// Check title	
+				// Check title
 				if (note.c.title != note.s.title) {
 					// Add title op
 					delta.push({op: "set-title", path: "", value: note.c.title });
-					// Copy c to s					
+					// Copy c to s
 					note.s.title = note.c.title;
-				}	
+				}
 
 				// Peers changed
-				if (note._peerchange) {	
+				if (note._peerchange) {
 					// Find the peers with no uid yet
 					for (i = 0, l = note.c.peers.length; i < l; i++ ) {
 						// Ignore those
 						if (note.c.peers[i].user.uid) continue;
 						// Iterate through the others
-						for (p in note.c.peers[i].user) {					
+						for (p in note.c.peers[i].user) {
 							// Grab the first prop
 							if (note.c.peers[i].user.hasOwnProperty(p)) {
 								// Prepare op object
@@ -5747,7 +5747,7 @@ var Hiro = {
 								// Add to changes
 								delta.push(op);
 								// Break this obj iteration
-								break; 
+								break;
 							};
 						}
 					}
@@ -5764,12 +5764,12 @@ var Hiro = {
 								// Don't do this for other users
 								if (ad.changed[i].client.user.uid != Hiro.data.get('profile','c.uid')) continue;
 								// Add op
-								delta.push({op: "set-ts", path: "peers/uid:" + ad.changed[i].client.user.uid, value: { 
-									seen: ad.changed[i].client.last_seen 
+								delta.push({op: "set-ts", path: "peers/uid:" + ad.changed[i].client.user.uid, value: {
+									seen: ad.changed[i].client.last_seen
 								}});
 								// Equalize value
 								ad.changed[i].shadow.last_seen = ad.changed[i].client.last_seen;
-							}						
+							}
 						}
 					}
 
@@ -5780,14 +5780,14 @@ var Hiro = {
 							// Add op
 							delta.push({ op: "rem-peer", path: "peers/uid:" + ad.removed[i] });
 							// Remove peer from shadow
-							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, 'c', true);	
+							Hiro.apps.sharing.removepeer({ user: { uid: ad.removed[i] }}, note.id, 'c', true);
 							// If we removed ourselves
 							if (ad.removed[i] == Hiro.data.get('profile','c.uid')) {
-								// We delete the note from the folio immediately, but wait for the server ack to delete note 
+								// We delete the note from the folio immediately, but wait for the server ack to delete note
 								// (in case we were offline we need to process it'S edit stack first)
 								Hiro.folio.remove(note.id);
-							}						
-						}						
+							}
+						}
 					}
 
 					// Process added peers
@@ -5797,10 +5797,10 @@ var Hiro = {
 							// Add op
 							delta.push({ op: "invite", path: "peers/", value: { uid: ad.added[i] }});
 							// Copy peer to shadow
-							note.s.peers.push(JSON.parse(JSON.stringify(Hiro.apps.sharing.getpeer({user: { uid: ad.added[i] }}))))							
-						}						
-					}					
-					
+							note.s.peers.push(JSON.parse(JSON.stringify(Hiro.apps.sharing.getpeer({user: { uid: ad.added[i] }}))))
+						}
+					}
+
 					// Reset flag
 					note._peerchange = false;
 				}
@@ -5809,7 +5809,7 @@ var Hiro = {
 				if (delta.length == 0) delta = false;
 
 				// Return value
-				return delta;	
+				return delta;
 			},
 
 			// Specific profile diff, returns proper changes format
@@ -5818,12 +5818,12 @@ var Hiro = {
 
 				// If name changed
 				if (store.c.name != store.s.name) {
-					// First if, create delta 
+					// First if, create delta
 					delta = [];
 					// Add op
 					delta.push({ op: "set-name", path: "user/uid:" + store.c.uid, value: store.c.name });
 					// Copy value
-					store.s.name = store.c.name;			
+					store.s.name = store.c.name;
 				}
 
 				// Check if contacts hash changed
@@ -5847,11 +5847,11 @@ var Hiro = {
 								// Add all available fields to user object
 								delta[delta.length - 1].value[p] = c[p];
 							}
-						}			
+						}
 					}
 
-					// TODO Bruno: Look through all known contacts if any values changed. 
-					// This should only happen on the client if we look at the phonebook again and find extra numbers, mails.				
+					// TODO Bruno: Look through all known contacts if any values changed.
+					// This should only happen on the client if we look at the phonebook again and find extra numbers, mails.
 
 					// Save new hash value
 					store._contacthash = h;
@@ -5859,13 +5859,13 @@ var Hiro = {
 
 				// Return
 				return delta || false;
-			},	
+			},
 
-			// Generic function that takes two arrays and returns a list of items that where 
+			// Generic function that takes two arrays and returns a list of items that where
 			// Added to current and/or removed from shadow
 			// This works independent of order but needs a unique ID property of the objects
 			// NOTE: For performance reasons this only returns the value(s) of the properties given by ID
-			arraydiff: function(current,shadow,id) {								
+			arraydiff: function(current,shadow,id) {
 				var delta = {}, removed = [], added = [], changed = [], lookup = {}, i, l, v, p, ch;
 
 				// Return if we didn't provide two arrays
@@ -5879,7 +5879,7 @@ var Hiro = {
 					// Otherwise traverse object structure
 					p = prop.split('.')
 					for (var i = 0; i < p.length; i++) {
-						if (typeof obj != "undefined") obj = obj[p[i]]; 
+						if (typeof obj != "undefined") obj = obj[p[i]];
 					}
 
 					// Return object
@@ -5895,7 +5895,7 @@ var Hiro = {
 					// 	Build associative array and add to removed
 					lookup[v] = shadow[i];
 					removed.push(v);
-				}		
+				}
 
 				// Cycle through current version
 				// TODO Bruno: See how indexOf works and if it screws our complexity
@@ -5908,15 +5908,15 @@ var Hiro = {
 					// See if we can find it the lookup object, if not it's been added
 					if (!lookup[v]) {
 						added.push(v);
-					// If yes, we check if it changed and add it to changed, right now we only do this for last seen	
+					// If yes, we check if it changed and add it to changed, right now we only do this for last seen
 					} else if (current[i].last_seen && lookup[v].last_seen != current[i].last_seen) {
 						// Build change object & add to changed
 						changed.push({ id: v, shadow: lookup[v], client: current[i] });
-					}	
-				}	
+					}
+				}
 
 				// Return false if nothing was added or removed
-				if (removed.length == 0 && added.length == 0 && changed.length == 0) return false;	
+				if (removed.length == 0 && added.length == 0 && changed.length == 0) return false;
 
 				// Build delta
 				if (removed.length > 0) delta.removed = removed;
@@ -5931,13 +5931,13 @@ var Hiro = {
 			// Optionally convert javascript weirdo count to proper rune length
 			delta: function(oldstring,newstring,utf8count) {
 				// Basic diff and cleanup
-				var diffs = this.dmp.diff_main(oldstring, newstring), delta;	
+				var diffs = this.dmp.diff_main(oldstring, newstring), delta;
 
 				// Get delta
 				delta = this.dmp.diff_toDelta(diffs);
 
 				// Check if we have a relevant UTF16 char (eg Emoji) in old or new text
-				if (utf8count && this.astral.test(oldstring + newstring)) return this.utf16delta(delta,diffs);			
+				if (utf8count && this.astral.test(oldstring + newstring)) return this.utf16delta(delta,diffs);
 
 				// Return patch and simple string format
 				return delta;
@@ -5951,17 +5951,17 @@ var Hiro = {
 				actions = delta.split('\t');
 
 				// Go through diffs
-				for ( i = 0, l = diffs.length; i < l; i++ ) {				
-					// Do not change addings ('+') at all 
+				for ( i = 0, l = diffs.length; i < l; i++ ) {
+					// Do not change addings ('+') at all
 					if (diffs[i][0] == 1) continue;
 
 					// If it's a different type (DIFF EQUAL or DIFF DELETE) and contains an Emoji
 					if (this.astral.test(diffs[i][1])) {
 						// Count the occurences
-						runecounter = diffs[i][1].match(this.astralglobal).length * change;						
+						runecounter = diffs[i][1].match(this.astralglobal).length * change;
 						// Rewrite the respective action item by subtracting the respective rune count
 						actions[i] = actions[i].charAt(0) + ( parseInt(actions[i].substring(1)) + runecounter );
-					}	
+					}
 				}
 
 				// Put delta back together
@@ -5977,9 +5977,9 @@ var Hiro = {
 				actions = delta.split('\t');
 
 				// Go through delta actions
-				for ( i = 0, l = actions.length; i < l; i++ ) {		
-					// Use the leading char, but only extract it once	
-					command = actions[i].charAt(0);	
+				for ( i = 0, l = actions.length; i < l; i++ ) {
+					// Use the leading char, but only extract it once
+					command = actions[i].charAt(0);
 
 					// Ignore additions (we only check the old text, so the additions don't need to move the cursor)
 					if (command == '+') continue;
@@ -5994,22 +5994,22 @@ var Hiro = {
 
 						// Runes have!
 						if (this.astral.test(string)) {
-							// Use runecount helper, using a string that's up to twice as long 
-							runecount = this.runecount(text.substring(cursor, cursor + n * 2),n); 
+							// Use runecount helper, using a string that's up to twice as long
+							runecount = this.runecount(text.substring(cursor, cursor + n * 2),n);
 							// We had a rune, build new action
 							actions[i] = command + (n + (runecount * change));
 							// Move the cursor for each rune
 							cursor += runecount;
-						}	
+						}
 
 						// Iterate the cursor
-						cursor += n;						
-					}	
+						cursor += n;
+					}
 				}
 
 				// Put delta back together
 				return actions.join('\t');
-			},		
+			},
 
 			// Provide a string of up to twice the length we're looking for, count runes until we reach this point
 			runecount: function(string,length) {
@@ -6021,10 +6021,10 @@ var Hiro = {
 				// Go through tokens
 				for  (i = 0, l = tokens.length; i < l; i++ ) {
 					// Add the token length to the cursor
-					cursor += tokens[i].length;	
+					cursor += tokens[i].length;
 					// If we already reached the desired length, abort loop
 					if (cursor >= length) break;
-					// Count a rune 
+					// Count a rune
 					runecount++;
 					// And move the cursor one char
 					cursor++;
@@ -6034,9 +6034,9 @@ var Hiro = {
 
 				// Return the value
 				return runecount;
-			},	
+			},
 
-			// Apply a patch to a specific note 
+			// Apply a patch to a specific note
 			patch: function(delta,id) {
 				var n = Hiro.data.get('note_' + id), diffs, patch, start, cursor, oldcache;
 
@@ -6047,21 +6047,21 @@ var Hiro = {
 				if (this.astral.test(n.s.text)) delta = this.utf16patch(delta,n.s.text);
 
             	// Build diffs from the server delta
-            	try { 
-            		diffs = this.dmp.diff_fromDelta(n.s.text,delta) 
+            	try {
+            		diffs = this.dmp.diff_fromDelta(n.s.text,delta)
             		patch = this.dmp.patch_make(n.s.text,diffs);
-            	} 
+            	}
             	catch(e) {
             		Hiro.sys.error('Something went wrong during patching:',e);
-            	}	        	       	
+            	}
 
             	// Apply
-                if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) { 
+                if (diffs && (diffs.length != 1 || diffs[0][0] != DIFF_EQUAL)) {
             		// Apply the patch, shadow first
-                    n.s.text = this.dmp.patch_apply(patch, n.s.text)[0]; 
+                    n.s.text = this.dmp.patch_apply(patch, n.s.text)[0];
 
                     // TODO Bruno: Insert logic here if the following patches fail
-	                Hiro.sys.log('Shadow updated');       
+	                Hiro.sys.log('Shadow updated');
 
                     // Apply the changes to the cache if it's the current document
                     if (id == Hiro.canvas.currentnote) {
@@ -6070,18 +6070,18 @@ var Hiro = {
                     	// Apply patch to textarea, cache and set current version to cache
                     	Hiro.canvas.el_text.value = Hiro.canvas.cache.content = n.c.text = this.dmp.patch_apply(patch, Hiro.canvas.cache.content)[0];
                     	// Update the overlay
-                    	Hiro.canvas.overlay.update();                     	
+                    	Hiro.canvas.overlay.update();
                     	// Recalculate cursor
-                    	this.resetcursor(diffs,cursor);                    	                   	
-                    // Apply the changes to the current version	
+                    	this.resetcursor(diffs,cursor);
+                    // Apply the changes to the current version
                     } else {
 		                // Apply to text only
-	                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];                    	
+	                    n.c.text = this.dmp.patch_apply(patch, n.c.text)[0];
                     }
 
-                    // Log                                      
+                    // Log
 	                Hiro.sys.log('Patches successfully applied in ' + (Date.now() - start) + 'msecs');
-                }             	
+                }
 			},
 
 			// Calculate new cursor position
@@ -6099,11 +6099,11 @@ var Hiro = {
             	} else if (oldcursor[0] == oldcursor[1]) {
             		// Set with int
             		newrange = this.dmp.diff_xIndex(diffs,oldcursor[0]);
-            	// We had a selection, preserving it            		
+            	// We had a selection, preserving it
             	} else {
             		// Set with array
             		newrange = [this.dmp.diff_xIndex(diffs,oldcursor[0]),this.dmp.diff_xIndex(diffs,oldcursor[1])];
-            	}   
+            	}
 
             	// Set it
             	Hiro.canvas.setcursor(newrange)
@@ -6122,7 +6122,7 @@ var Hiro = {
 		// Default URL
 		defaulturl: '/backdoor',
 
-		// System setup, this is called once on startup and then calls inits for the various app parts 
+		// System setup, this is called once on startup and then calls inits for the various app parts
 		init: function(vars) {
 			var el;
 
@@ -6139,7 +6139,7 @@ var Hiro = {
 			}
 
 			// Begin startup logging
-			Hiro.sys.log('Hiro startup sequence','','group');		
+			Hiro.sys.log('Hiro startup sequence','','group');
 
 			// Prevent initing twice
 			if (this.inited) return;
@@ -6148,15 +6148,15 @@ var Hiro = {
 			if (vars.fb) Hiro.lib.facebook.key = vars.fb;
 			if (vars.st) Hiro.lib.stripe.key = vars.st;
 			if (vars.rb) Hiro.lib.rollbar.key = vars.rb;
-			if (vars.ic) Hiro.lib.intercom.key = vars.ic;	
-			if (vars.v) this.versioncheck(vars.v);		
-			if (vars.lp) Hiro.ui.landing.route = vars.lp;			
+			if (vars.ic) Hiro.lib.intercom.key = vars.ic;
+			if (vars.v) this.versioncheck(vars.v);
+			if (vars.lp) Hiro.ui.landing.route = vars.lp;
 
 			// Create DMP socket
-			Hiro.sync.diff.dmp = new diff_match_patch();	
+			Hiro.sync.diff.dmp = new diff_match_patch();
 
 			// Polyfills
-			if (!Date.now) Date.now = function now() { return new Date().getTime(); };	
+			if (!Date.now) Date.now = function now() { return new Date().getTime(); };
 			if (!String.prototype.trim) String.prototype.trim = function () { return this.replace(/^\s+|\s+$/g, ''); };
 
 			// Check for hashes
@@ -6165,17 +6165,17 @@ var Hiro = {
 			// Setup other app parts (NOTE: Order is rather critical, only mess if you're sure about it)
 			Hiro.folio.init();
 			Hiro.canvas.init();
-			Hiro.ui.init();	
-			Hiro.sync.init(vars.ws);			
-			Hiro.data.init();				
-			Hiro.lib.init();		
-			Hiro.apps.init();			
+			Hiro.ui.init();
+			Hiro.sync.init(vars.ws);
+			Hiro.data.init();
+			Hiro.lib.init();
+			Hiro.apps.init();
 
 			// Make sure we don't fire twice
-			this.inited = true;		
+			this.inited = true;
 
 			// Yay, nothing went fatally wrong (This has a very long time so "Ready/Offline" doesn't get overwritten by the initial save)
-			Hiro.ui.statsy.add('startup',0,((!Hiro.sync.synconline || Hiro.data.get('profile','c.tier') === 0) && 'Ready.' || 'Offline.'),'info',1000);				
+			Hiro.ui.statsy.add('startup',0,((!Hiro.sync.synconline || Hiro.data.get('profile','c.tier') === 0) && 'Ready.' || 'Offline.'),'info',1000);
 
 			// Log completion
 			Hiro.sys.log('Hiro.js fully inited');
@@ -6208,7 +6208,7 @@ var Hiro = {
 			}
 		},
 
-		// Takes a version nr and compares it to what we have. 
+		// Takes a version nr and compares it to what we have.
 		// If we have a new git tag, indicated by a change in the version string before first '-'
 		versioncheck: function(version) {
 			// First version to be submitted will be stored in js for this browser session (most likely sys.init() will be first)
@@ -6217,28 +6217,28 @@ var Hiro = {
 				Hiro.version = version;
 				// Log it
 				Hiro.sys.log('Current version is ' + version)
-			// If a version was provided and the versions match	
+			// If a version was provided and the versions match
 			} else if (version && version.split('-')[0] && version.split('-')[0] == Hiro.version.split('-')[0]) {
 				// Release the lock	immediately
-				Hiro.sync.cachelock = false;	
-			// Fetch a new one from server		
+				Hiro.sync.cachelock = false;
+			// Fetch a new one from server
 			} else {
 				// Get current version
 				Hiro.sync.ajax.send({
 					url: '/version',
 					success: function(req,data) {
 						// Compare & see if theres something to do
-						if (data.version.split('-')[0] == Hiro.version.split('-')[0]) {							
-							// Release lock	
-							Hiro.sync.cachelock = false;								
+						if (data.version.split('-')[0] == Hiro.version.split('-')[0]) {
+							// Release lock
+							Hiro.sync.cachelock = false;
 						} else {
 							// Log
 							Hiro.sys.log('Update to ' + data.version + ' available.')
 							// Show modal
-							Hiro.ui.dialog.showmessage('update',true);														
+							Hiro.ui.dialog.showmessage('update',true);
 						}
 						// Always safe version for next browser session start
-						Hiro.data.local.todisk('version',data.version);																			
+						Hiro.data.local.todisk('version',data.version);
 					}
 				});
 			}
@@ -6253,14 +6253,14 @@ var Hiro = {
 
 			// Send to logging service
 			if (window.Rollbar) {
-				Rollbar.error(description, { data: data, stack: stacktrace }, err);	
-			// Load & init error logger	
+				Rollbar.error(description, { data: data, stack: stacktrace }, err);
+			// Load & init error logger
 			} else {
 				// Cache error in the meantime
 				Hiro.lib.rollbar.backlog.push({ description: description, data: data || {}, error: err });
 				// Do this
 				Hiro.lib.rollbar.init();
-			}		
+			}
 
 			// Log in console
 			this.log(description,data,'error');
@@ -6272,7 +6272,7 @@ var Hiro = {
 			if (!url) url = this.defaulturl;
 
 			// Make sure other tabs refresh as well, flsuh the msg right away
-			Hiro.data.local.tabtx('window.location.href = "' + url + '"',true);								                    		
+			Hiro.data.local.tabtx('window.location.href = "' + url + '"',true);
 
 			// Start fading out body, reload our own window after that
 			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = url });
@@ -6298,15 +6298,15 @@ var Hiro = {
 		// General properties
 		// TODO Bruno: Compare with http://patrickhlauke.github.io/touch/tests/results/
 		touch: ('ontouchstart' in document.documentElement),
-		mobileapp: window.navigator.standalone,	
+		mobileapp: window.navigator.standalone,
 		ios: /(iPad|iPhone|iPod)/g.test(navigator.userAgent),
 
 		// This values might change over time, thus we wrap it in anon functions
 		mini: function() { return (document.body.offsetWidth < 481) },
-		midi: function() { return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },	
+		midi: function() { return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },
 
 		// MEasurements
-		width: function() { return document.documentElement.clientWidth || window.innerWidth },	
+		width: function() { return document.documentElement.clientWidth || window.innerWidth },
 		height: function() { return document.documentElement.clientHeight || window.innerHeight },
 
 		// DOM IDs. Note: Changing Nodes deletes this references, only use for inital HTML Nodes that are never replaced
@@ -6318,13 +6318,13 @@ var Hiro = {
 		// Browser specific properties
 		vendors: ['webkit','moz','o','ms'],
 		browser: undefined,
-		opacity: '',		
+		opacity: '',
 
 		// Folio open/close properties
 		slidewidth: 300,
 		slideduration: 200,
 		slidepos: 0,
-		slidedirection: 0,	
+		slidedirection: 0,
 
 		// Internals
 		focus: false,
@@ -6355,7 +6355,7 @@ var Hiro = {
 						this.browser = v[i];
 						break;
 					}
-				}				
+				}
 			}
 
 			// Set vendor specific global animationframe property
@@ -6392,57 +6392,57 @@ var Hiro = {
 				// document.getElementById('viewport').setAttribute('content', measure);
 
 				// Attach swipe event listener (this also kills all touchmove events)
-				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);		
+				Hiro.util.registerEvent(window,'touchmove',Hiro.ui.swipe.move);
 
 				// Prevent scrolling from leaking
-				// Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });			
+				// Hiro.util.registerEvent(Hiro.canvas.el_rails,'touchmove',function(event) { if (Hiro.ui.mini()) event.stopPropagation(); });
 
 				// Set <html> classnames
 				Hiro.ui.render(function(){
 					// Generic
-					document.documentElement.className = 'touch';	
+					document.documentElement.className = 'touch';
 					// iOS Specifics (textarea indent)
-					if (Hiro.ui.ios) document.documentElement.className += ' ios';	
-				});								
-			}	
+					if (Hiro.ui.ios) document.documentElement.className += ' ios';
+				});
+			}
 
 			// Fix browser quirk that allows very long textareas to scroll sideways by resetting them once they scroll. Same for body.
-			Hiro.util.registerEvent(Hiro.canvas.el_text,'scroll',function(event) { 
+			Hiro.util.registerEvent(Hiro.canvas.el_text,'scroll',function(event) {
 				// Right the textarea
-				if (this.scrollLeft != 0) this.scrollLeft = 0; 
+				if (this.scrollLeft != 0) this.scrollLeft = 0;
 				// Check if the body moved as well
 				if (document.body.scrollLeft != 0) document.body.scrollLeft = 0;
-			});				
+			});
 
 			// Start hprogress on init
-			this.hprogress.init();	
+			this.hprogress.init();
 
 			// Attach keyboard shortcut listener & resize cleaner
 			Hiro.util.registerEvent(window,'keydown',Hiro.ui.keyhandler);
-			Hiro.util.registerEvent(window,'resize',Hiro.ui.resizehandler);			
+			Hiro.util.registerEvent(window,'resize',Hiro.ui.resizehandler);
 
 			// Attach delegated clickhandler for shield, this handles every touch-start/end & mouse-down/up in the settings area
 			this.fastbutton.attach(this.dialog.el_root,Hiro.ui.dialog.clickhandler)
 
 			// Keyhandler for dialog
-			Hiro.util.registerEvent(this.dialog.el_root,'input',this.dialog.keyhandler);	
+			Hiro.util.registerEvent(this.dialog.el_root,'input',this.dialog.keyhandler);
 
 			// Attach focus change handler
 			this.attachfocuschange();
 
 			// Attach History API event handler
 			if (window.onpopstate) {
-				window.onpopstate = function(e) { Hiro.ui.history.goback(e) };			
+				window.onpopstate = function(e) { Hiro.ui.history.goback(e) };
 			} else {
-				Hiro.util.registerEvent(window,'popstate', function(e) { Hiro.ui.history.goback(e) });			
-			}		 		
+				Hiro.util.registerEvent(window,'popstate', function(e) { Hiro.ui.history.goback(e) });
+			}
 
 			// Always load settings from server to determine contents and webserver availability
-			this.dialog.load();					
+			this.dialog.load();
 		},
 
 		// Render changes via rAF or, if window is not focused, right away
-		// The reason we do this is that rAF collects all actions and executes them only if window gains focus again, 
+		// The reason we do this is that rAF collects all actions and executes them only if window gains focus again,
 		// so we could erronously end up with thousands of folio paints tha all get executed at once thus killing the window
 		// for some secs or good
 		render: function(fn) {
@@ -6461,7 +6461,7 @@ var Hiro = {
 		keyhandler: function(event) {
 			// Single keys that trigger an action
 			switch (event.keyCode) {
-				// If ESC key is pressed				
+				// If ESC key is pressed
 				case 27:
 					// Hide dialog
 					if (Hiro.ui.dialog.open) Hiro.ui.dialog.hide();
@@ -6477,7 +6477,7 @@ var Hiro = {
 				case 39:
 					// Move to next screen in landing page via fake event
 					if (Hiro.ui.landing.visible) Hiro.ui.landing.click('next','half');
-					break;					
+					break;
 			}
 
 
@@ -6487,16 +6487,16 @@ var Hiro = {
 				switch (event.keyCode) {
 					// I key, open invite dialog
 					case 73:
-						Hiro.apps.show(Hiro.apps.sharing.el_root)					
-						break;					
+						Hiro.apps.show(Hiro.apps.sharing.el_root)
+						break;
 					// N key, not supressable in Chrome
 					case 78:
-						Hiro.util.stopEvent(event);						
-						Hiro.folio.newnote();										
+						Hiro.util.stopEvent(event);
+						Hiro.folio.newnote();
 						break;
 					// S key
 					case 83:
-						Hiro.util.stopEvent(event);						
+						Hiro.util.stopEvent(event);
 						alert("Hiro saves all your notes automatically and syncs them with the cloud if you're signed in");
 						break;
 				}
@@ -6512,7 +6512,7 @@ var Hiro = {
 			Hiro.ui.resizing = true;
 
 			// Wrap in rendering
-			Hiro.ui.render(function(){				
+			Hiro.ui.render(function(){
 				// Reset canvas
 				Hiro.canvas.resize();
 
@@ -6523,7 +6523,7 @@ var Hiro = {
 				if (Hiro.folio.open) Hiro.canvas.el_root.style.width = Hiro.canvas.width() + 'px';
 
 				// Reset flag
-				Hiro.ui.resizing = false;				
+				Hiro.ui.resizing = false;
 			})
 		},
 
@@ -6533,8 +6533,8 @@ var Hiro = {
 
 		    // Standards browser
 		    if ('focus' in window && 'blur' in window) {
-				Hiro.util.registerEvent(window, 'focus', handler);	 
-				Hiro.util.registerEvent(window, 'blur', handler);				   	
+				Hiro.util.registerEvent(window, 'focus', handler);
+				Hiro.util.registerEvent(window, 'blur', handler);
 		    }
 
 		    // Iterate through teh crazies
@@ -6552,14 +6552,14 @@ var Hiro = {
 
 		    // All others (aka wishfull thinking)
 		    else window.onpageshow = window.onpagehide = window.onfocus = window.onblur =  handler;
-		},	
+		},
 
 		// If the focus of the current tab changed
 		focuschange: function(event) {
 			// Some browser send the event from window
-	        event = event || window.event;			
+	        event = event || window.event;
 	        var map = {focus: true, focusin: true, pageshow: true, blur: false, focusout: false, pagehide: false},
-	        	focus = Hiro.ui.focus = (event.type in map) ? map[event.type] : !Hiro.ui.focus; 
+	        	focus = Hiro.ui.focus = (event.type in map) ? map[event.type] : !Hiro.ui.focus;
 
 	        // If the window gets focused & we already see a workspace
 	        if (focus && !Hiro.ui.landing.visible) {
@@ -6569,15 +6569,15 @@ var Hiro = {
 	        	// Try immediate reconnect (eg focused because OS woke up)
 				if (!Hiro.sync.synconline || !Hiro.sync.webonline) {
 					Hiro.sync.reconnect();
-				// Sent new seen timestamp	
+				// Sent new seen timestamp
 				} else {
 					Hiro.canvas.seen();
-				}	
+				}
 	        // If the window blurs
 	        } else {
 
 	        }
-		},		
+		},
 
 		// Setup UI according to account level where 0 = anon
 		setstage: function(tier) {
@@ -6587,8 +6587,8 @@ var Hiro = {
 			// if we want to set it to existing tier, abort
 			if (tier && tier == this.tier) return;
 
-			// Set tier if none is provided 
-			tier = tier || Hiro.data.get('profile','c.tier') || 0; 			
+			// Set tier if none is provided
+			tier = tier || Hiro.data.get('profile','c.tier') || 0;
 
 			// Send tier setting to other tabs
 			Hiro.data.local.tabtx('Hiro.ui.setstage(' + tier + ',true);');
@@ -6600,30 +6600,30 @@ var Hiro = {
 					this.render(function(){
 						Hiro.ui.el_signin.style.display = 'block';
 						Hiro.ui.el_settings.style.display = Hiro.ui.el_archive.style.display = 'none';
-					})				
+					})
 					break;
 				case 1:
-				case 2:	
+				case 2:
 				case 3:
-					// Set styles at bottom of folio				
+					// Set styles at bottom of folio
 					this.render(function(){
 						Hiro.ui.el_signin.style.display = 'none';
 						Hiro.ui.el_settings.style.display = Hiro.ui.el_archive.style.display = 'block';
-					})									
+					})
 					break;
 			}
 		},
 
 		// Switch to an element on the same DOM level and hide all others
 		switchview: function(el, display) {
-			// Function accepts both the element directly or a an ID 
+			// Function accepts both the element directly or a an ID
 			if (typeof el != 'object') el = document.getElementById(el);
 
 			// Set default display
 			if (!display || typeof display != 'string') display = 'block';
 
 			// Walk up & down the same DOM level within animationframe
-			var n;				
+			var n;
 			if (el && el.style) {
 				el.style.display = display;
 				n = el.previousSibling;
@@ -6637,24 +6637,24 @@ var Hiro = {
 					 n = n.nextSibling;
 				}
 			}
-		},		
+		},
 
 		// Slide folio: 1 to open, -1 to close
 		slidefolio: function(direction,slideduration,force,callback) {
 			// Catch cases where sliding makes no sense
-			if ((direction < 0 && this.slidepos === 0) ||  
+			if ((direction < 0 && this.slidepos === 0) ||
 				(direction > 0 && this.slidepos > 100) ||
 				(!force && this.slidedirection != 0))
 				return;
 
-			// Allow simple call without direction		
-			if (!direction) direction = (this.slidedirection == 1 || Hiro.folio.open) ? -1 : 1;	
+			// Allow simple call without direction
+			if (!direction) direction = (this.slidedirection == 1 || Hiro.folio.open) ? -1 : 1;
 
 			// Make room on mobiles
 			if (direction == 1 && Hiro.ui.mini() && Hiro.apps.open.length > 0) Hiro.apps.close();
 
 			// Repaint folio
-			if (direction == 1) Hiro.folio.paint(true);		
+			if (direction == 1) Hiro.folio.paint(true);
 
 			// Local vars
 			var mini = Hiro.ui.mini(),
@@ -6663,7 +6663,7 @@ var Hiro = {
 				canvaswidth = Hiro.canvas.width();
 				distance = (maxwidth < this.slidewidth) ? maxwidth : this.slidewidth,
 				// Start value
-				x0 = this.slidepos,	
+				x0 = this.slidepos,
 				// Target value
 				x1 = (direction < 0) ? 0 : distance,
 				// Distance to be achieved
@@ -6672,10 +6672,10 @@ var Hiro = {
 				sd = slideduration || this.slideduration,
 				duration = sd / distance * Math.abs(dx),
 				start = Hiro.util.now(),
-				_this = this;	
+				_this = this;
 
 			// Set direction
-			_this.slidedirection = direction;				
+			_this.slidedirection = direction;
 
 			// Remove keyboard if we open the menu on touch devices
 			if (document.activeElement && document.activeElement !== document.body && this.touch && direction === 1) document.activeElement.blur();
@@ -6686,13 +6686,13 @@ var Hiro = {
 				if (mini) Hiro.apps.el_root.style.display = 'none';
 				// Set canvas to fixed with
 				Hiro.canvas.el_root.style.width = canvaswidth + 'px';
-			// When starting to close on non-mini devices	
+			// When starting to close on non-mini devices
 			} else if (direction === -1) {
 				// Show apps again
-				if (!mini) Hiro.apps.el_root.style.display = 'block';						
+				if (!mini) Hiro.apps.el_root.style.display = 'block';
 			}
 
-			// Easing function (quad), see 
+			// Easing function (quad), see
 			// Code: https://github.com/danro/jquery-easing/blob/master/jquery.easing.js
 			// Overview / demos: http://easings.net/
 			function ease(t, b, c, d) {
@@ -6703,7 +6703,7 @@ var Hiro = {
 			// Step through frames
 			function step() {
 
-				var dt = Hiro.util.now() - start, 
+				var dt = Hiro.util.now() - start,
 				    v = _this.slidepos = x0 + Math.round(ease(dt, 0, dx, duration)),
 				    done = false;
 
@@ -6713,19 +6713,19 @@ var Hiro = {
 					done = true;
 					// Make sure that in the last step we jump to the target position
 					v = _this.slidepos = x1;
-				} 
+				}
 
 				// Change DOM CSS values = Hiro.context.el_root.style.right
-				Hiro.canvas.el_rails.style.left = v + 'px';		
+				Hiro.canvas.el_rails.style.left = v + 'px';
 
 				// Cross browser non-mini
 				if (!mini) {
 					// document.documentElement.clientHeight || window.innerHeight;
-					Hiro.apps.el_root.style.right = (v*-1)+'px'										
+					Hiro.apps.el_root.style.right = (v*-1)+'px'
 				}
-					
 
-				// If we still have time we step on each possible frame in modern browser or fall back in others											
+
+				// If we still have time we step on each possible frame in modern browser or fall back in others
 				if (done) {
 					// Timessssup, set internal values
 					Hiro.folio.open = (direction > 0) ? true : false;
@@ -6738,21 +6738,21 @@ var Hiro = {
 					// Reset ui (this would only be necessary in mini, but user might have changed orientation)mini ui
 					if (direction === -1) {
 						// Reset with to relative one
-						Hiro.canvas.el_root.style.width = '100%';						
+						Hiro.canvas.el_root.style.width = '100%';
 						// Display the apps again
-						if (mini) Hiro.apps.el_root.style.display = 'block';	
-					// When done opening on non mini devices	
+						if (mini) Hiro.apps.el_root.style.display = 'block';
+					// When done opening on non mini devices
 					} else if (!mini && direction === 1) {
 						// Hide apps
-						Hiro.apps.el_root.style.display = 'none';						
-					}														
+						Hiro.apps.el_root.style.display = 'none';
+					}
 				} else {
 					_this.slidetimer = requestAnimationFrame(step);
-				}	
+				}
 			}
 
 			// Kick off stepping loop
-			step();							
+			step();
 
 		},
 
@@ -6762,21 +6762,21 @@ var Hiro = {
 				a1 = (direction < 0) ? 0 : 1,
 				da = a1 - a0,
 				duration = duration || 1000,
-				start = Hiro.util.now(), 
+				start = Hiro.util.now(),
 				_this = this, cssd, css, i = 0;
 
 			// If we can read the transition property, use CSS animations instead
-			// TODO Bruno: Investigate a proper way to do this 
+			// TODO Bruno: Investigate a proper way to do this
 			if (false &&  typeof element.style.transition == 'string') {
 				cssd = (duration / 1000), csst = (a1 != 1) ? 'visibility 0s linear ' + cssd + 's' : 'visibility ' + cssd + 's';
 				requestAnimationFrame(function(){
 					if (Hiro.ui.browser) element.style[Hiro.ui.browser + 'Transition'] = '-' + Hiro.ui.browser + '-opacity ' + csst;
-					element.style.transition = csst;				 
+					element.style.transition = csst;
 					element.style[Hiro.ui.browser + 'Opacity'] = element.style.opacity = a1;
-					element.style.visibility = (a1) ? 'visible' : 'hidden';					
+					element.style.visibility = (a1) ? 'visible' : 'hidden';
 				});
 				return;
-			}	
+			}
 
 			// Step through the animation
 			function step() {
@@ -6786,14 +6786,14 @@ var Hiro = {
 				if (dt >= duration) {
 					dt = duration;
 					done = true;
-				}								
+				}
 
 				// Change opacity
 				element.style[_this.opacity] = a0 + da * dt / duration;
 
 				// Keep stepping or clean up
 				if (done) {
-					if (element._fadeDirection < 0) element.style.display = 'none';					
+					if (element._fadeDirection < 0) element.style.display = 'none';
 					element._fadeDirection = 0;
 					delete element._fadeTimer;
 					delete element._fadeDirection;
@@ -6801,10 +6801,10 @@ var Hiro = {
 				}
 				else element._fadeTimer = requestAnimationFrame(step);
 			}
-		
+
 			// Abort if we already reached max opacity or are currently fading
 			if ((element._fadeDirection == direction) || (a0 == 0 && direction < 0) || (a0 == 1 && direction > 0)) return;
-		
+
 			// Compute / set internal values
 			duration = duration * Math.abs(da);
 			element._fadeDirection = direction;
@@ -6813,23 +6813,23 @@ var Hiro = {
 			if (direction > 0) {
 				element.style.display='block';
 				if (!a0) element.style[this.opacity]=0;
-			} 
+			}
 
 			// DO IT!
-			step();			
-		},		
+			step();
+		},
 
 		// Prgrammatically get Opacity of an element via property resolved on init or 2 common fallbacks
 		getopacity: function(element) {
 			if (this.opacity && element.style[this.opacity] !==undefined ) return element.style[this.opacity];
 			if (element.currentStyle) return element.currentStyle["opacity"];
 			if (window.getComputedStyle) return window.getComputedStyle(element,null).getPropertyValue("opacity");
-		},		
+		},
 
 		// Play a specific piece of autio
 		playaudio: function(filename, volume) {
 			// Plays a sound in /static/filename
-			var url = '/static/sounds/' + filename + '.wav'; 
+			var url = '/static/sounds/' + filename + '.wav';
 			volume = volume || 1;
 
 			// Check if audio is supported
@@ -6847,12 +6847,12 @@ var Hiro = {
 				audio.setAttribute('autobuffer', 'autobuffer');
 				audio.setAttribute('src', url);
 				audio.volume = volume;
-				audio.play();				
+				audio.play();
 			} else {
 				// In old browsers we do it via embed
 				document.getElementById(this.wastebinid).innerHTML = '<embed src="' + url + '" hidden="true" autostart="true" loop="false" />';
 			}
-		}, 		
+		},
 
 		// Mail helper
 		mail: function(subject,text,recipients) {
@@ -6860,7 +6860,7 @@ var Hiro = {
 
 			// TODO Bruno: Proper mail client detection etc
 			window.location.href = s;
-		},	
+		},
 
 		// Open link in new tab/window
 		openlink: function(url,event) {
@@ -6874,12 +6874,12 @@ var Hiro = {
 			// iOS hack from http://stackoverflow.com/questions/7930001/force-link-to-open-in-mobile-safari-from-a-web-app-with-javascript
 		    anchorelement = document.createElement('a');
 		    anchorelement.setAttribute("href", url);
-		    anchorelement.setAttribute("data-href", url);			    
+		    anchorelement.setAttribute("data-href", url);
 		    anchorelement.setAttribute("target", "_blank");
 
 		    syntheticevent = document.createEvent("HTMLEvents");
 		    syntheticevent.initEvent("click", true, true);
-		    anchorelement.dispatchEvent(syntheticevent);			
+		    anchorelement.dispatchEvent(syntheticevent);
 		},
 
 		// Landing page specific stuff
@@ -6887,15 +6887,15 @@ var Hiro = {
 			// Internal flags
 			inited: undefined,
 			showoninit: undefined,
-			visible: undefined,		
+			visible: undefined,
 
 			// Landing Base URL and	placeholder for default landing page passed from flask to sys.init()
-			baseurl: '/component/landing/',	
+			baseurl: '/component/landing/',
 			route: undefined,
 
 			// DOM links
 			page: undefined,
-			el_root: document.getElementById('landing'),		
+			el_root: document.getElementById('landing'),
 
 			// Init triggered by the landing page once it's loaded, this also serves at our appCache homebase
 			init: function(page) {
@@ -6903,23 +6903,23 @@ var Hiro = {
 				if (this.inited) return;
 
 				// Set shortcut to landingpage
-				this.page = page;	
+				this.page = page;
 
 				// Send page object to appcache init
-				Hiro.data.appcache.init(page);		
+				Hiro.data.appcache.init(page);
 
 				// Set flag
-				this.inited = true;		
+				this.inited = true;
 
 				// Fade in if we're told to do so
-				if (this.showoninit) this.show();			
+				if (this.showoninit) this.show();
 			},
 
 			// Show landing page, triggered by either the landing page itself or Hiro.data if it has no local data
 			// Whatever comes first to make sure it's bootstrapped properly
 			show: function() {
 				// Load landing page on first call
-				if (!this.inited) this.load();	
+				if (!this.inited) this.load();
 
 				// Make sure to set the show on init flag if the landing page is not loaded yet
 				this.showoninit = true;
@@ -6934,7 +6934,7 @@ var Hiro = {
 				Hiro.ui.fade(this.page.document.body,1);
 
 				// Attach fastbuttons to landing page
-				Hiro.ui.fastbutton.attach(this.page.document.documentElement,Hiro.ui.landing.click);						
+				Hiro.ui.fastbutton.attach(this.page.document.documentElement,Hiro.ui.landing.click);
 			},
 
 			// Fetch landing page from server
@@ -6957,44 +6957,44 @@ var Hiro = {
 				// Check if user did this while on landing page
 				if (this.visible) {
 					// Fade out landing page element
-					Hiro.ui.fade(this.el_root,-1,150);	
-				// Happened on init		
+					Hiro.ui.fade(this.el_root,-1,150);
+				// Happened on init
 				} else {
 					// Remove overlay instantly
 					this.el_root.style.display = 'none';
 					// Load it anyway for appcache, set the cursor on mobiles
-					this.load('minimal');	
-				}	
+					this.load('minimal');
+				}
 
 				// Set the flag first (needed by the load beneath)
-				this.visible = false;									
+				this.visible = false;
 			},
 
 			// Handle clicks on landingpage
 			click: function(action,type,target,branch,event) {
 				var modal, width;
 				// Woop, we inited started fiddling with something relevant
-				if (type == 'full') {			
-					// Remove overlay & prepare					
+				if (type == 'full') {
+					// Remove overlay & prepare
 					switch (action) {
 						case 'screenshot':
 							// remove landing page
 							Hiro.ui.landing.stash();
                             Hiro.user.track.logevent('cta-screenshot');
                             Hiro.user.track.logevent('opened-app');
-							break;		
-						case 'cto':	
+							break;
+						case 'cto':
 							// remove landing page
 							Hiro.ui.landing.stash();
                             Hiro.user.track.logevent('cta-start-note');
                             Hiro.user.track.logevent('opened-app');
-							break;		
-						case 'signin':		
-							// Show dialog			
-							Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
-                            Hiro.user.track.logevent('opened-logio',{ via: 'landingpage' });	
-							break;									
-					}				
+							break;
+						case 'signin':
+							// Show dialog
+							Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
+                            Hiro.user.track.logevent('opened-logio',{ via: 'landingpage' });
+							break;
+					}
 				}
 
 				// If it's something reagrding the new modal signup
@@ -7002,17 +7002,17 @@ var Hiro = {
 					// Get pages div
 					modal = Hiro.ui.landing.page.document.body;
 					// Prevent text selection
-					Hiro.util.stopEvent(event);					
-					// Switch based on action					
+					Hiro.util.stopEvent(event);
+					// Switch based on action
 					switch (action) {
-						case 'next':	
-							modal.scrollLeft += Hiro.ui.width(); 							
-							break;		
-						case 'previous':		
-							// Show dialog			
-							modal.scrollLeft -=  Hiro.ui.width();	
-							break;									
-					}					
+						case 'next':
+							modal.scrollLeft += Hiro.ui.width();
+							break;
+						case 'previous':
+							// Show dialog
+							modal.scrollLeft -=  Hiro.ui.width();
+							break;
+					}
 				}
 			},
 
@@ -7028,9 +7028,9 @@ var Hiro = {
 				Hiro.ui.fade(Hiro.ui.landing.el_root,-1,150);
 
 				// Set flag
-				Hiro.ui.landingvisible = false;					
+				Hiro.ui.landingvisible = false;
 			}
-		},		
+		},
 
 		// Left / right swipes, also add stability by preventing some default behaviour
 		swipe: {
@@ -7041,11 +7041,11 @@ var Hiro = {
 
 			// Track movements
 			move: function(event) {
-				var that = Hiro.ui.swipe;			
+				var that = Hiro.ui.swipe;
 
 				// If the user starts moving
-	    		if (event.touches.length == 1 && !that.active && that.identifier != event.touches[0].identifier) {	 
-	    			// Store reference to starting touch 			    			
+	    		if (event.touches.length == 1 && !that.active && that.identifier != event.touches[0].identifier) {
+	    			// Store reference to starting touch
 	    			that.start_x = event.touches[0].screenX;
 	    			that.start_y = event.touches[0].screenY;
 	    			that.active = true;
@@ -7053,42 +7053,42 @@ var Hiro = {
 
 	    			// Set timeout after which assume it wasn't a swipe
 	    			setTimeout(function(){
-	    				that.active = false;	    				
+	    				that.active = false;
 	    				that.cancel();
 	    			},120);
 
-	    		// As long as we didn't time out / move off course	
-	    		} else if (that.active) { 
-	    			// init rest of variables  			
+	    		// As long as we didn't time out / move off course
+	    		} else if (that.active) {
+	    			// init rest of variables
 		    	 	var x = event.touches[0].screenX,
 		    			y = event.touches[0].screenY,
 		    			dx = that.start_x - x,
-		    			dy = that.start_y - y;  		
+		    			dy = that.start_y - y;
 
-		    		// If the left/right movement was more than 45 devicepixels	
-		    		if (Math.abs(dx) >= (45 * window.devicePixelRatio)) {	
-		    			// Cancel event listener	    			
+		    		// If the left/right movement was more than 45 devicepixels
+		    		if (Math.abs(dx) >= (45 * window.devicePixelRatio)) {
+		    			// Cancel event listener
 		    			that.cancel();
 
 		    			// Cancel if we veered outside a 45° corridor
 		    			if (Math.abs(dy) > Math.abs(dx*0.5)) return;
 
 		    			// Prevent further move action (stabilises ui)
-		    			Hiro.util.stopEvent(event);   		    			
+		    			Hiro.util.stopEvent(event);
 
 		    			// User swiped left
-		    			if(dx > 0) {	    				
+		    			if(dx > 0) {
 		    				// If the folio is open, close
 		    				if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 		    			}
 		    			// User swiped right
 		    			else {
 		    				// Open folio
-		    				if (!Hiro.folio.open) Hiro.ui.slidefolio(1,100);	    				
+		    				if (!Hiro.folio.open) Hiro.ui.slidefolio(1,100);
 		    			}
 		    		}
 	    		}
-			},	
+			},
 
 			// Reset properties and remove listener
 			cancel: function() {
@@ -7097,9 +7097,9 @@ var Hiro = {
 
 				// Reset internal values
 				that.start_x = 0;
-				that.active = false;			
-			}			
-		},		
+				that.active = false;
+			}
+		},
 
 		// Handle clicks depending on device (mouse or touch), this shoudl mostly be used on delegated handlers spanning larger areas
 		fastbutton: {
@@ -7121,7 +7121,7 @@ var Hiro = {
 			// Attach event triggers
 			attach: function(element,handler) {
 				// Attach buster when attaching first fastbutton
-				if (!this.installed) this.install(); 
+				if (!this.installed) this.install();
 
 				// Store handler in mapping table, create id if element has none
 				if (!element.id) element.id = 'fastbutton' + Math.random().toString(36).substring(2,6);
@@ -7131,30 +7131,30 @@ var Hiro = {
 
 				// TODO Bruno: See if there is a reliable way to check if device supports mouse or not
 				Hiro.util.registerEvent(element,'mousedown',Hiro.ui.fastbutton.fire);
-				Hiro.util.registerEvent(element,'mouseup',Hiro.ui.fastbutton.fire);				
+				Hiro.util.registerEvent(element,'mouseup',Hiro.ui.fastbutton.fire);
 				// Optionally attach touchstart event for touch devices
 				if (Hiro.ui.touch) {
 					Hiro.util.registerEvent(element,'touchstart', Hiro.ui.fastbutton.fire);
-					Hiro.util.registerEvent(element,'touchend', Hiro.ui.fastbutton.fire);	
-				} 
+					Hiro.util.registerEvent(element,'touchend', Hiro.ui.fastbutton.fire);
+				}
 			},
 
 			// Handle firing of events
 			fire: function(event) {
-				var target = event.target || event.srcElement, that = Hiro.ui.fastbutton, 
+				var target = event.target || event.srcElement, that = Hiro.ui.fastbutton,
 					// Traverse up DOM tree for up to two levels
-					id = target.id || target.getAttribute('data-hiro-action') || 
-						 target.parentNode.id || target.parentNode.getAttribute('data-hiro-action') || 
-						 target.parentNode.parentNode.id || target.parentNode.parentNode.getAttribute('data-hiro-action'),	
-					handler = that.mapping[this.id].handler, branch = this, button = event.which || event.button;		
+					id = target.id || target.getAttribute('data-hiro-action') ||
+						 target.parentNode.id || target.parentNode.getAttribute('data-hiro-action') ||
+						 target.parentNode.parentNode.id || target.parentNode.parentNode.getAttribute('data-hiro-action'),
+					handler = that.mapping[this.id].handler, branch = this, button = event.which || event.button;
 
 				// Don't even start if it's not a leftclick, this also kills touch mousedown events
-				if ((event.type == 'mousedown' || event.type == 'mouseup') && (button != 1 || event.touches)) return;				
+				if ((event.type == 'mousedown' || event.type == 'mouseup') && (button != 1 || event.touches)) return;
 
 				// Properly define x/y: screen (mouseup/down), event.touches[0] (tocuhstart) or last know touch pos (touchend)
-				x = (event.screenX >= 0) ? event.screenX : ((event.changedTouches && event.changedTouches.length > 0) ? event.changedTouches[0].screenX : event.clientX); 
-				y = (event.screenY >= 0) ? event.screenY : ((event.changedTouches && event.changedTouches.length > 0) ? event.changedTouches[0].screenY : event.clientY);																		
-				
+				x = (event.screenX >= 0) ? event.screenX : ((event.changedTouches && event.changedTouches.length > 0) ? event.changedTouches[0].screenX : event.clientX);
+				y = (event.screenY >= 0) ? event.screenY : ((event.changedTouches && event.changedTouches.length > 0) ? event.changedTouches[0].screenY : event.clientY);
+
 				// Stop events from propagating beyond our scope
 				event.stopPropagation();
 
@@ -7167,24 +7167,24 @@ var Hiro = {
 					if (handler) handler(id,'half',target,branch,event)
 
 					// Stop here for now
-					return;	
-				}						
+					return;
+				}
 
-				// Things that need start & end within n pixels. 
+				// Things that need start & end within n pixels.
 				// Being mouseup or touchend is implicity by having a lastaction id
 				if 	(that.lastid && ((Math.abs(x - that.x) < 10) && (Math.abs(y - that.y) < 10 ))) {
 					// Add coordinates to buster to prevent clickhandler from also firing, remove after n msecs
 					that.bustthis.push(y,x);
 					setTimeout(function(){
 						Hiro.ui.fastbutton.bustthis.splice(0,2);
-					},that.delay);		
+					},that.delay);
 
 					// Always stop fired event on non input elements
-					if (target.tagName != 'INPUT' && target.tagName != 'TEXTAREA') Hiro.util.stopEvent(event);		
-							
+					if (target.tagName != 'INPUT' && target.tagName != 'TEXTAREA') Hiro.util.stopEvent(event);
+
 					// Call handler
-					if (id && handler) handler(id,'full',target,branch,event)	
-				} 	
+					if (id && handler) handler(id,'full',target,branch,event)
+				}
 
 				// Reset values
 				that.x = that.y = that.touchx = that.touchy = 0;
@@ -7197,15 +7197,15 @@ var Hiro = {
 				Hiro.util.registerEvent(document,'touchmove',function(event){
 					if (Hiro.ui.fastbutton.lastid) {
 						Hiro.ui.fastbutton.touchx = event.touches[0].screenX;
-						Hiro.ui.fastbutton.touchy = event.touches[0].screenY;						
-					} 
-				});				
+						Hiro.ui.fastbutton.touchy = event.touches[0].screenY;
+					}
+				});
 
 				// Prevent clicks from happening
-				Hiro.util.registerEvent(document,'click',Hiro.ui.fastbutton.bust,true);		
+				Hiro.util.registerEvent(document,'click',Hiro.ui.fastbutton.bust,true);
 
 				// Set flag to prevent multiple settings
-				this.installed = true;		
+				this.installed = true;
 			},
 
 			// Fires when buster installed & click event happens on document
@@ -7216,14 +7216,14 @@ var Hiro = {
 				// See if the click is close the where we fired the full handler above
 				for (var i = 0, l = Hiro.ui.fastbutton.bustthis.length; i < l; i += 2) {
 					// Compare vertical offset
-					if (Math.abs(Hiro.ui.fastbutton.bustthis[i] - event.screenY) < 25 
+					if (Math.abs(Hiro.ui.fastbutton.bustthis[i] - event.screenY) < 25
 						// Compare horizontal offset
 						&& Math.abs(Hiro.ui.fastbutton.bustthis[i + 1] - event.screenX) < 25) {
 							// Bust events
-							Hiro.util.stopEvent(event);						
+							Hiro.util.stopEvent(event);
 					}
-				}				
-			}			 		
+				}
+			}
 		},
 
 		// Attach events to areas that fire under certain conditions like hover and support delays
@@ -7239,28 +7239,28 @@ var Hiro = {
 
 			// If the event is fired
 			fire: function(event,element,handler,delay) {
-				// If its a touch event we fire abort immediately	
-				if (event.type === 'touchstart') return;				
-				else if (event.type === 'mouseover') {	
-					// Prevent event from triggering touchies fruther up the treee			
-					Hiro.util.stopEvent(event);						
-					// If we already listen to this element but moved to a different subnode do nothing					
+				// If its a touch event we fire abort immediately
+				if (event.type === 'touchstart') return;
+				else if (event.type === 'mouseover') {
+					// Prevent event from triggering touchies fruther up the treee
+					Hiro.util.stopEvent(event);
+					// If we already listen to this element but moved to a different subnode do nothing
 					if (element === this.element) return;
-					// Initiate the delayed event firing and stop event from bubbling				
+					// Initiate the delayed event firing and stop event from bubbling
 					delay = delay || this.defaultdelay;
 					this.element = element;
 					// Set timeout as local var (only one touchy at a time)
 					element._hirotimeout = setTimeout(function() {
 						// If the timeout wasnt killed by the bounds handler, we execute the handler
 						handler(event,element);
-						// And clean up 
+						// And clean up
 						Hiro.ui.hover.abort(element);
-						Hiro.util.releaseEvent(element,'mouseout',Hiro.ui.hover.boundschecker);						
+						Hiro.util.releaseEvent(element,'mouseout',Hiro.ui.hover.boundschecker);
 					}, delay);
 					// Register mouseout event to clean things up once we leave target area
-					Hiro.util.registerEvent(element,'mouseout', Hiro.ui.hover.boundschecker);				
-				} 
-				// Log error to see if any browsers fire unknown events				
+					Hiro.util.registerEvent(element,'mouseout', Hiro.ui.hover.boundschecker);
+				}
+				// Log error to see if any browsers fire unknown events
 				else Hiro.sys.error('Touchy triggered unknown event: ', event);
 			},
 
@@ -7268,19 +7268,19 @@ var Hiro = {
 			boundschecker: function(event) {
 				// Get the DOM element the cursor is moving to
 				var target = event.relatedTarget || event.toElement;
-				// If we mouseout to the same or a contained DOM node do nothing				
+				// If we mouseout to the same or a contained DOM node do nothing
 				if (target === this || this.contains(target)) return;
 				// If we leave the DOM aree of interest, remove the handler and clean up
 				Hiro.util.stopEvent(event);
-				Hiro.util.releaseEvent(this,'mouseout',Hiro.ui.hover.boundschecker);								
+				Hiro.util.releaseEvent(this,'mouseout',Hiro.ui.hover.boundschecker);
 				Hiro.ui.hover.element = null;
-				Hiro.ui.hover.abort(this);							
+				Hiro.ui.hover.abort(this);
 			},
 
 			// Abort our timeout & clean up
-			abort: function(element) {				
-				window.clearTimeout(element._hirotimeout);				
-				element._hirotimeout = undefined;									
+			abort: function(element) {
+				window.clearTimeout(element._hirotimeout);
+				element._hirotimeout = undefined;
 			}
 
 		},
@@ -7295,27 +7295,27 @@ var Hiro = {
 
 			notify: function(id,silent) {
 				// Cycles a que of notifictaions if tab is not focused and changes favicon
-				var that = Hiro.ui.tabby, 
+				var that = Hiro.ui.tabby,
 					nextstate = (that.faviconstate == 'normal') ? 'red' : 'normal',
-					pos, nextpos, next, nexttitle;	
+					pos, nextpos, next, nexttitle;
 
 				// Forward message to other tabs
 				Hiro.data.local.tabtx('Hiro.ui.tabby.notify("' + id + '",true);');
 
 				// Cancel all actions and reset state
 				if (Hiro.ui.focus) {
-					that.cleanup(); 		
+					that.cleanup();
 					return;
-				}	
+				}
 
 				// Turn on internal notify value
 				if (!that.active) that.active = true;
 
 				// Add another message to the array if we haven't yet and play sound
 				if (id && that.pool.indexOf(id) == -1) {
-					that.pool.push(id); 
+					that.pool.push(id);
 					if (!silent) Hiro.ui.playaudio('unseen',0.7);
-				}	
+				}
 
 				// Stop here if we're already cycling
 				if (that.timeout) return;
@@ -7332,25 +7332,25 @@ var Hiro = {
 					document.title = (document.title == 'Updated!') ? nexttitle : 'Updated!';
 				} else if (that.pool.length == 1) {
 					// If we have multiple we cycle between them
-					document.title = (document.title == ( Hiro.canvas.cache.title || Hiro.canvas.cache.content.substring(0,30) || 'New Note') ) ? '(' + that.pool.length + ') ' + nexttitle + ' updated!' : ( Hiro.canvas.cache.title || Hiro.canvas.cache.content.substring(0,30) || 'New Note');				
+					document.title = (document.title == ( Hiro.canvas.cache.title || Hiro.canvas.cache.content.substring(0,30) || 'New Note') ) ? '(' + that.pool.length + ') ' + nexttitle + ' updated!' : ( Hiro.canvas.cache.title || Hiro.canvas.cache.content.substring(0,30) || 'New Note');
 				} else {
 					// If we have multiple we cycle between them
-					document.title ='(' + that.pool.length + ') ' + nexttitle + ' updated!';				
+					document.title ='(' + that.pool.length + ') ' + nexttitle + ' updated!';
 				}
 
 				// Only one timeout cycling at a time
-				if (that.timeout) return;				
+				if (that.timeout) return;
 
 				// Switch favicon
 				that.setfavicon(nextstate);
 
 				// Repeat cycle
-				that.timeout = window.setTimeout(function(){ 
+				that.timeout = window.setTimeout(function(){
 					// Make sure
 					window.clearTimeout(that.timeout);
 					that.timeout = null;
 
-					// We send the current id to the function so it can easily pick the next from the array				
+					// We send the current id to the function so it can easily pick the next from the array
 					that.notify(next);
 				},1000);
 
@@ -7361,17 +7361,17 @@ var Hiro = {
 				var that = Hiro.ui.tabby;
 
 				// Clear other tabs as well
-				Hiro.data.local.tabtx('Hiro.ui.tabby.cleanup()');				
+				Hiro.data.local.tabtx('Hiro.ui.tabby.cleanup()');
 
-				// Clear timeout							
+				// Clear timeout
 				window.clearTimeout(that.timeout);
 				that.timeout = null;
 
 				// Reset document and internal states
-				that.pool.length = 0;	
-				that.active = false;														
-				that.setfavicon('normal');		
-				document.title = Hiro.canvas.el_title.value;					
+				that.pool.length = 0;
+				that.active = false;
+				that.setfavicon('normal');
+				document.title = Hiro.canvas.el_title.value;
 			},
 
 			// Change the favicon to a certain state
@@ -7380,7 +7380,7 @@ var Hiro = {
 					old = document.getElementById('dynacon'), el = document.createElement('link'), src;
 
 				// Remove any old links
-				if (old) h.removeChild(old);	
+				if (old) h.removeChild(old);
 
 				// pick right path & file
 				switch (state) {
@@ -7388,11 +7388,11 @@ var Hiro = {
 						src = '/static/img/favicon.png';
 						break;
 					case 'red':
-						src = '/static/img/faviconred.png';	
+						src = '/static/img/faviconred.png';
 						break;
 				}
 
-				// Build link	
+				// Build link
 				el.id = 'dynacon';
 				el.rel = 'shortcut icon';
 				el.href = src;
@@ -7403,8 +7403,8 @@ var Hiro = {
 				Hiro.ui.render(function(){
 					// Add favicon link to DOM
 					h.appendChild(el);
-				})	
-			}			
+				})
+			}
 		},
 
 		// All dialog related stuff
@@ -7423,7 +7423,7 @@ var Hiro = {
 			currentmessage: undefined,
 
 			// Hooks
-			onclose: undefined, 
+			onclose: undefined,
 
 			// List of messages to show
 			messages: {
@@ -7440,7 +7440,7 @@ var Hiro = {
 					},
 					forcereload: true,
 					sticky: true,
-					css: 'yeah'	
+					css: 'yeah'
 				},
 				upgrade: {
 					title: 'Your Hiro is upgraded!',
@@ -7450,8 +7450,8 @@ var Hiro = {
 						label: 'Explore New Features'
 					},
 					sticky: true,
-					css: 'yeah'	
-				}				
+					css: 'yeah'
+				}
 			},
 
 			upgradereasons: {
@@ -7471,7 +7471,7 @@ var Hiro = {
 					this.showmessage('offline');
 					// Abort here
 					return;
-				}		
+				}
 
 				// Fade in dialog
 				if (!this.open) Hiro.ui.fade(Hiro.ui.dialog.el_root,1,200,function(){
@@ -7487,7 +7487,7 @@ var Hiro = {
 						// Filter canvas 2 px
 						Hiro.canvas.el_root.style[filter] = Hiro.apps.el_root.style[filter]	= 'blur(2px)';
 						// Filter sidebar 1 px
-						Hiro.context.el_root.style[filter] = 'blur(1px)';										
+						Hiro.context.el_root.style[filter] = 'blur(1px)';
 					});
 				});
 
@@ -7496,28 +7496,28 @@ var Hiro = {
 
 				// Set wanted areas to display block
 				if (container) Hiro.ui.switchview(container);
-				if (section) Hiro.ui.switchview(section);		
+				if (section) Hiro.ui.switchview(section);
 
-				// Set focus				
-				if (focus) focus.focus();								
+				// Set focus
+				if (focus) focus.focus();
 
 				// Change visibility etc
 				Hiro.ui.render(function(){
 					// Update contents
 					if (container == 'd_settings') Hiro.ui.dialog.update();
 
-					// Show or hide close button, has to have own rAF because switchview above does too				
+					// Show or hide close button, has to have own rAF because switchview above does too
 					Hiro.ui.dialog.el_close.style.display = (close) ? 'block' : 'none';
 
 					// Center the white area
-					Hiro.ui.dialog.center();	
+					Hiro.ui.dialog.center();
 
 					// Set top margin for upward movement
-					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;	
+					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;
 
 					// Log respective event
 					Hiro.user.track.logevent('viewed-' + container.substring(2), {msg: this.currentmessage});
-				})	
+				})
 
 				// Hide folio
 				if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
@@ -7535,7 +7535,7 @@ var Hiro = {
 					obj = this.messages[message], action;
 
 				// Set classname to message label, we can throw away hidden here
-				root.className = obj.css || message;	
+				root.className = obj.css || message;
 
 				// See if we have a button, show hide it
 				button.style.display = (obj.button) ? 'block' : 'none';
@@ -7557,7 +7557,7 @@ var Hiro = {
 				if (tabsync) Hiro.data.local.tabtx('Hiro.ui.dialog.showmessage("' + message + '");');
 
 				// Set reload hook
-				if (obj.forcereload) this.onclose = function() { Hiro.sys.reload() };				
+				if (obj.forcereload) this.onclose = function() { Hiro.sys.reload() };
 
 				// Set root to button action or default to close
 				root.setAttribute('data-hiro-action', action || 'd_close')
@@ -7569,7 +7569,7 @@ var Hiro = {
 				this.show('d_msg', undefined, undefined, true, true)
 
 				// Prevent subsequent messages from showing
-				this.currentmessage = message;				
+				this.currentmessage = message;
 			},
 
 			// Fill data into settings dialog & and other preparations
@@ -7584,22 +7584,22 @@ var Hiro = {
 				fields[0].value = user.name || '';
 				fields[1].value = user.email || user.phone || '';
 				fields[2].value = 'Member since: ' + Hiro.util.monthddyyyy(user.signup_at) || 'Some time';
-				fields[3].value = plans[user.tier] + ((Hiro.ui.mini()) ? '' : ' plan') + ': ' + Hiro.folio.owncount + ((user.tier < 2) ? ' of 10' : '') + ' note';	
+				fields[3].value = plans[user.tier] + ((Hiro.ui.mini()) ? '' : ' plan') + ': ' + Hiro.folio.owncount + ((user.tier < 2) ? ' of 10' : '') + ' note';
 
 				// Add proper s at the end of the string
 				if (Hiro.folio.owncount != 1 || user.tier == 1) fields[3].value += 's';
 
 				// Remove upgrade link if user is already aying customer
-				fields[3].nextSibling.style.display = (user.tier > 1) ? 'none' : 'block';			
+				fields[3].nextSibling.style.display = (user.tier > 1) ? 'none' : 'block';
 
 				// Update the boxes
 				this.paintboxes();
 			},
 
-			// Close the dialog 
+			// Close the dialog
 			hide: function() {
 				// Remove blur filters, only if we set them before
-				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter', prevent, that = this;		
+				var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter', prevent, that = this;
 
 				// If we got a onclose hook
 				if (this.onclose) {
@@ -7611,57 +7611,57 @@ var Hiro = {
 					this.onclose = undefined;
 					// Stop closing
 					if (prevent) return;
-				}	
+				}
 
 				Hiro.ui.render(function(){
 					// Reset filter CSS
 					if (Hiro.canvas.el_root.style[filter]) Hiro.canvas.el_root.style[filter] = Hiro.apps.el_root.style[filter] = Hiro.context.el_root.style[filter] =Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
-				})	
+				})
 
 				// Change visibility etc
-				Hiro.ui.fade(Hiro.ui.dialog.el_root,-1,100);			
+				Hiro.ui.fade(Hiro.ui.dialog.el_root,-1,100);
 
 				// Reset left margin for inward movement after we closed the dialog
-				setTimeout(function(){	
-					Hiro.ui.render(function(){							
+				setTimeout(function(){
+					Hiro.ui.render(function(){
 						that.el_wrapper.style.marginLeft = '300px';
 						// Reset CSS class if we had a teaser
 						if (that.upgradeteaser) {
 							// Reset classname
 							document.getElementById('s_plan').removeAttribute('class');
-							document.getElementById('s_checkout').removeAttribute('class');	
+							document.getElementById('s_checkout').removeAttribute('class');
 
 							// Reset flags
-							that.upgradeteaser = false;							
-						}	
-					});						
-				},150);										
+							that.upgradeteaser = false;
+						}
+					});
+				},150);
 
 				// Reset internal values
-				this.currentmessage = undefined;	
-				this.open = false;				
-			},		
+				this.currentmessage = undefined;
+				this.open = false;
+			},
 
 			// Center triggered initially and on resize
 			center: function() {
 				Hiro.ui.render( function(){
 					var wh = document.documentElement.clientHeight || window.innerHeight,
-						ww = document.documentElement.clientWidth || window.innerWidth,											
+						ww = document.documentElement.clientWidth || window.innerWidth,
 						dh = Hiro.ui.dialog.el_wrapper.clientHeight,
 						dw = Hiro.ui.dialog.el_wrapper.clientWidth;
 
-					// Set properties	
+					// Set properties
 					Hiro.ui.dialog.el_wrapper.style.left = Math.floor((ww - dw) / 2 ) + 'px';
-					Hiro.ui.dialog.el_wrapper.style.top = Math.floor((wh - dh) / 2 ) + 'px';					
+					Hiro.ui.dialog.el_wrapper.style.top = Math.floor((wh - dh) / 2 ) + 'px';
 				})
 			},
 
-			// If the user clicks somewhere in the dialog 
+			// If the user clicks somewhere in the dialog
 			clickhandler: function(action,type,target,branch,event) {
 				var param = action.split(':')[1], el, inputs;
 
 				// Split actions into array
-				action = action.split(':')[0];	
+				action = action.split(':')[0];
 
 				// Woop, we inited started fiddling with something relevant
 				if (type == 'half') {
@@ -7671,11 +7671,11 @@ var Hiro = {
 							// Log respective event
 							Hiro.user.track.logevent('viewed-plan');
 							Hiro.ui.switchview(document.getElementById(action.substring(7)));
-							break;														
-						case 'switch_s_about':						
+							break;
+						case 'switch_s_about':
 						case 'switch_s_account':
 							Hiro.ui.switchview(document.getElementById(action.substring(7)));
-							break;		
+							break;
 					}
 				} else if (type == 'full') {
 					// Kill focus on mobile devices if we execute an action
@@ -7685,13 +7685,13 @@ var Hiro = {
 					switch (action) {
 						case 'd_msg':
 						case 'reload':
-						case 'd_close':	
+						case 'd_close':
 							Hiro.ui.dialog.hide();
-							break;																	
+							break;
 						case 'shield':
 							// Double check that we clicked on shield on not some child
 							if (target.id == 'shield') Hiro.ui.dialog.hide();
-							break;						
+							break;
 						case 'switch_s_signup':
 							// Get input fields
 							inputs = Hiro.user.el_register.getElementsByTagName('input');
@@ -7700,12 +7700,12 @@ var Hiro = {
 							// Focus mail/phone, or password if it's blank & other already there
 							if (!inputs[0].value || !Hiro.util.mailorphone(inputs[0].value)) {
 								inputs[0].focus();
-							// Otherwise focus password	
+							// Otherwise focus password
 							} else {
 								inputs[1].focus();
-							}						
-							break;							
-						case 'switch_s_signin':	
+							}
+							break;
+						case 'switch_s_signin':
 							// Get input fields
 							inputs = Hiro.user.el_login.getElementsByTagName('input');
 							// Switch view
@@ -7713,58 +7713,58 @@ var Hiro = {
 							// Focus mail/phone, or password if it's blank & other already there
 							if (!inputs[0].value || !Hiro.util.mailorphone(inputs[0].value)) {
 								inputs[0].focus();
-							// Otherwise focus password	
+							// Otherwise focus password
 							} else {
 								inputs[1].focus();
-							}						
-							break;											
+							}
+							break;
 						case 'requestpwdreset':
 							Hiro.user.requestpwdreset();
-							break;	
+							break;
 						case 'resetpwd':
 							Hiro.user.resetpwd();
-							break;							
+							break;
 						case 'register':
 						case 'login':
 							Hiro.user.logio(event,(action == 'login'));
-                            Hiro.user.track.logevent('opened-logio',{ via: 'app' });	
-							break;	
+                            Hiro.user.track.logevent('opened-logio',{ via: 'app' });
+							break;
 						case 'fblogin':
-						case 'fbsignup':						
+						case 'fbsignup':
 							Hiro.user.fbauth(target,(action == 'fblogin'));
-							break;																		
+							break;
 						case 'logout':
 							Hiro.user.logout();
 							break;
-						case 'changeplan':	
+						case 'changeplan':
 							// Switch
 							Hiro.ui.switchview(document.getElementById('s_plan'));
-							break;												
+							break;
 						case 'upgrade':
 							// Log respective event
 							Hiro.user.track.logevent('clicked-upgrade');
 							// Switch
 							Hiro.ui.switchview(document.getElementById('s_plan'));
-							break;	
+							break;
 						case 'selectplan':
 							Hiro.user.checkout.show(param,target);
-							break;	
+							break;
 						case 'savename':
 							// Get name field
 							el = Hiro.ui.dialog.el_settings.getElementsByTagName('input')[0];
 							// Set name
-							Hiro.user.setname(el.value,false,true);												
+							Hiro.user.setname(el.value,false,true);
 							// Set target if we have none (clickhandler called by form submit pseudobutton click) and set text
 							target = target || el.nextSibling.firstChild;
 							target.textContent = 'Saved!';
-							break;	
+							break;
 						case 'checkout':
 							// Calls teh checkout
 							Hiro.user.checkout.validate();
-							break;	
+							break;
 						case 'share':
-							// First we have to kill all events!							
-							Hiro.util.stopEvent(event);							
+							// First we have to kill all events!
+							Hiro.util.stopEvent(event);
 							// Post to FB
 							if (param == 'fb') {
 								// Use the 2.0 dialog
@@ -7775,7 +7775,7 @@ var Hiro = {
 									if (response && !response.error_code) {
 										// Log respective event
 										Hiro.user.track.logevent('clicked-promote-hiro', {channel: 'facebook'});
-									}									
+									}
 								});
 							// Tweet sumethin
 							} else if (param == 'tw') {
@@ -7797,11 +7797,11 @@ var Hiro = {
 			// Clean up errors etc and handle input actions (namechange, cc etc)
 			keyhandler: function(event) {
 				var t = event.target || event.srcElement,
-					c = t.getAttribute('class'), id = t.id || t.getAttribute('data-hiro-value'), 
+					c = t.getAttribute('class'), id = t.id || t.getAttribute('data-hiro-value'),
 					name = Hiro.data.get('profile','c.name'), el, mains = this.getElementsByClassName('mainerror'), i, l;
 
 				// Remove error from input error overlay
-				if (t.nextSibling.innerHTML && t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = ''; 
+				if (t.nextSibling.innerHTML && t.nextSibling.innerHTML.length > 0 && t.nextSibling.getAttribute('class').indexOf('error') > 0) t.nextSibling.innerHTML = '';
 
 				// If we had an error CSS class in the input field
 				if (c && c.indexOf('error') > 0) t.setAttribute('class',c.replace('error',''));
@@ -7811,7 +7811,7 @@ var Hiro = {
 					for (i = 0, l = mains.length; i < l; i++ ) {
 						if (mains[i].innerHTML) mains[i].innerHTML = '';
 					}
-				});	
+				});
 
 				// Copy values to other input if it happens on login
 				if (t.id == 'signin_mail') document.getElementById('signup_mail').value = t.value;
@@ -7819,12 +7819,12 @@ var Hiro = {
 
 				// Small overlay helpers for input fields
 				switch (id) {
-					case 'name':		
+					case 'name':
 						if (t.value != name) {
 							t.nextSibling.style.display = 'block';
 							t.nextSibling.firstChild.textContent = 'Save changes';
 						} else {
-							t.nextSibling.style.display = 'none';							
+							t.nextSibling.style.display = 'none';
 						}
 						break;
 				}
@@ -7840,14 +7840,14 @@ var Hiro = {
 							Hiro.ui.render(function(){
 								Hiro.ui.dialog.el_settings.innerHTML = data;
 								Hiro.ui.dialog.paintboxes();
-							});						
-						}	
+							});
+						}
 					},
 					error: function(req) {
 						// Log server error
 						if (req.status == 500) Hiro.sys.error('Unable to load settings',req);
 					}
-				});					
+				});
 			},
 
 			// Choose which buttons to display in plan selection boxes
@@ -7864,29 +7864,29 @@ var Hiro = {
 
 				// Set all buttons to display none & reset content first
 				for (i=0,l=buttons.length;i<l;i++) {
-					if (buttons[i].className.indexOf('light') > -1) buttons[i].innerHTML = "Downgrade";		
-					buttons[i].style.display = 'none';			
+					if (buttons[i].className.indexOf('light') > -1) buttons[i].innerHTML = "Downgrade";
+					buttons[i].style.display = 'none';
 				}
 
 				// Switch CSS
 				switch (tier) {
 					case 0:
-					case 1:				
-						boxes[0].getElementsByClassName('grey')[0].style.display = 
-						boxes[1].getElementsByClassName('green')[0].style.display = 
+					case 1:
+						boxes[0].getElementsByClassName('grey')[0].style.display =
+						boxes[1].getElementsByClassName('green')[0].style.display =
 						boxes[2].getElementsByClassName('green')[0].style.display = 'block';
 						break;
 					case 2:
-						boxes[0].getElementsByClassName('light')[0].style.display = 
-						boxes[1].getElementsByClassName('grey')[0].style.display = 
+						boxes[0].getElementsByClassName('light')[0].style.display =
+						boxes[1].getElementsByClassName('grey')[0].style.display =
 						boxes[2].getElementsByClassName('green')[0].style.display = 'block';
 					 	break;
 					case 3:
-						boxes[0].getElementsByClassName('light')[0].style.display = 
-						boxes[1].getElementsByClassName('light')[0].style.display = 
+						boxes[0].getElementsByClassName('light')[0].style.display =
+						boxes[1].getElementsByClassName('light')[0].style.display =
 						boxes[2].getElementsByClassName('grey')[0].style.display = 'block';
 						break;
-				}				
+				}
 			},
 
 			// Show certain actions if user has unsufficient tier
@@ -7902,7 +7902,7 @@ var Hiro = {
 				if (!Hiro.data.get('profile','c.uid') || Hiro.data.get('profile','c.tier') < 1) {
 					this.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
 					return;
-				}	
+				}
 
 				// Set flag
 				this.upgradeteaser = true;
@@ -7912,21 +7912,21 @@ var Hiro = {
 					// Set header
 					els_header[0].innerHTML = els_header[1].innerHTML = that.upgradereasons[reason];
 					// Set CSS class
-					el_plans.className = el_checkout.className = 'teaser';	
-					// Open dialog		
-					that.show('d_settings','s_plan',undefined,true);	
+					el_plans.className = el_checkout.className = 'teaser';
+					// Open dialog
+					that.show('d_settings','s_plan',undefined,true);
 					// Log respective event
 					Hiro.user.track.logevent('hit-paywall', {'reason': reason });
 				});
-			}			
+			}
 		},
 
 		// Simple top loading bar lib
 		hprogress: {
 			active: false,
-			renderstyle: undefined,	
-			bar: document.getElementById('hprogress').getElementsByTagName('div')[0],	
-			progress: 0,	
+			renderstyle: undefined,
+			bar: document.getElementById('hprogress').getElementsByTagName('div')[0],
+			progress: 0,
 
 			// How long until we start hiding the text and minimum visibility time
 			slowtreshhold: 800,
@@ -7952,7 +7952,7 @@ var Hiro = {
 			    }
 
 				// Start loading bar on init
-				Hiro.ui.hprogress.begin();			    
+				Hiro.ui.hprogress.begin();
 			},
 
 			begin: function() {
@@ -7960,12 +7960,12 @@ var Hiro = {
 				if (this.active) {
 					this.inc(0.2);
 					return;
-				} 
+				}
 				this.active = true;
 
 				// Fade in
 				Hiro.ui.hprogress.bar.style.display = 'block';
-				Hiro.ui.hprogress.bar.style.opacity = 1;							
+				Hiro.ui.hprogress.bar.style.opacity = 1;
 
 				// Set initial treshhold
 				this.progress = 0.15;
@@ -7992,33 +7992,33 @@ var Hiro = {
 
 			inc: function(inc) {
 				// Increment n inc
-				if (!this.active) return;	
+				if (!this.active) return;
 
-				// Return if we'd increment beyond 1	
+				// Return if we'd increment beyond 1
 				if (this.progress + inc > 1) return;
 
 				this.progress = this.progress + inc;
-				this._setbarcss(this.progress);				
+				this._setbarcss(this.progress);
 			},
 
 			done: function(error) {
 				// Complete bar and fade out
-				if (!this.active) return;				
+				if (!this.active) return;
 				this.progress = 1;
 				this._setbarcss(1);
 				setTimeout(function(){
-					Hiro.ui.hprogress.bar.style.opacity = 0.15;				
-				},300);						
+					Hiro.ui.hprogress.bar.style.opacity = 0.15;
+				},300);
 
 				// if we had an error we change the color to red and fade out later
-				if (error) this.bar.style.background = '#D61818';											
+				if (error) this.bar.style.background = '#D61818';
 
 				// Renove remains and get ready again
 				setTimeout(function(){
 					Hiro.ui.hprogress.bar.style.display = 'none';
-					if (error) Hiro.ui.hprogress.bar.style.background = '#3c6198';						
-					Hiro.ui.hprogress.active = false;					
-				},500);					
+					if (error) Hiro.ui.hprogress.bar.style.background = '#3c6198';
+					Hiro.ui.hprogress.active = false;
+				},500);
 			},
 
 			_setbarcss: function(pos) {
@@ -8029,7 +8029,7 @@ var Hiro = {
 					v, tf = (vendor) ? vendor + 'Transform' : 'transform';
 
 				// Complete vendor prefix string
-				if (vendor) vendor = '-' + vendor + '-'; 	
+				if (vendor) vendor = '-' + vendor + '-';
 
 				// Determine & set the css transition value
 				if (s == 'translate3d') {
@@ -8037,10 +8037,10 @@ var Hiro = {
 					this.bar.style[tf] = v;
 				} else if (s == 'translate') {
 					v = 'translate(' + pos + '%,0)';
-					this.bar.style[tf] = v;					
+					this.bar.style[tf] = v;
 				} else {
-					this.bar.style.marginRight = (pos * -1) + '%'; 
-				}	
+					this.bar.style.marginRight = (pos * -1) + '%';
+				}
 			}
 		},
 
@@ -8053,11 +8053,11 @@ var Hiro = {
 			timeshown: 800,
 			timeout: null,
 			locked: false,
-			el_status: document.getElementById('status'),			
+			el_status: document.getElementById('status'),
 
 			// Add status to the status chain, id 0 always starts a new chain
 			add: function(id,phase,value,type,lock) {
-				var s = this.statuschain;	 							
+				var s = this.statuschain;
 
 				// Start a new sequence if we're ready (no messages before that, nervous flashing)
 				if (phase == 0 && Hiro.sys.inited) {
@@ -8070,29 +8070,29 @@ var Hiro = {
 					// If the id changed, we reset the chain
 					if (s.id != id) {
 						this.statuschain = { chain: [] };
-						s = this.statuschain;				
+						s = this.statuschain;
 
 						// Set first status
 						s.id = id;
-						s.type = type || 'info';					
+						s.type = type || 'info';
 
 						// Set initial value
-						s.chain[0] = value;												
-					}						
+						s.chain[0] = value;
+					}
 
 					// Set phase to start
-					s.phase = 0;								
+					s.phase = 0;
 
 					// Start showing first msg
-					this.show(lock);						
+					this.show(lock);
 				// Add or overwrite existing chain phase if it changed
 				} else if (id == s.id && phase > s.phase && s.chain[phase] != value) {
 					// Set value
 					s.chain[phase] = value;
 
 					// If our timeout died somewhere along the way we continue from last shown chain phase
-					if (!this.timeout) this.show();					
-				}						
+					if (!this.timeout) this.show();
+				}
 			},
 
 			// Disable statsy for a brief time
@@ -8131,7 +8131,7 @@ var Hiro = {
 					// Safe phase & exit
 					s.phase = i;
 					break;
-				}	
+				}
 
 				// Iterate phase or reset id
 				if (s.phase++ == l) s.id = undefined;
@@ -8146,10 +8146,10 @@ var Hiro = {
 					// Show next msg after n msecs
 					this.timeout = setTimeout(function(){
 						// Reset timeout
-						Hiro.ui.statsy.timeout = null;					
+						Hiro.ui.statsy.timeout = null;
 						// Show next;
 						Hiro.ui.statsy.show();
-					},this.timeshown); 
+					},this.timeshown);
 				}
 			}
 		},
@@ -8162,10 +8162,10 @@ var Hiro = {
 			// Add a new history state
 			add: function(id,replaceonly) {
 				// Build URL
-				var token = Hiro.data.get('note_' + id,'_token'), url = '/note/' + id, type;	
+				var token = Hiro.data.get('note_' + id,'_token'), url = '/note/' + id, type;
 
 				// Extend URL with token if we have one
-				if (token) url = url + '#' + token;	
+				if (token) url = url + '#' + token;
 
 				// Do not change url on touch to devices (screws appcache homescreen apps)
 				if (Hiro.ui.touch) url = undefined;
@@ -8178,21 +8178,21 @@ var Hiro = {
 					// Set flag to trigger normal pushstates from now on
 					this.first = false;
 
-				// Add to browser stack	
+				// Add to browser stack
 				} else if (history && 'pushState' in history) {
 					// Add new item
 					history.pushState(id, null, url);
-				}	
+				}
 
 				// Send to other tabs
-				Hiro.data.local.tabtx('Hiro.ui.history.add("' + id + '",' + replaceonly + ');');				
+				Hiro.data.local.tabtx('Hiro.ui.history.add("' + id + '",' + replaceonly + ');');
 			},
 
 			// Triggered if user presses back button (popstate event)
 			goback: function(event) {
 				// Test if we have an id & supported history in the first place
-				if (history && 'pushState' in history && event.state) Hiro.canvas.load(event.state,true);	
-			}			
+				if (history && 'pushState' in history && event.state) Hiro.canvas.load(event.state,true);
+			}
 		},
 
 		// Collection of sharing functions like tweet, post to facebook, mail etc
@@ -8211,7 +8211,7 @@ var Hiro = {
 				if (Hiro.ui.mobileapp || Hiro.ui.touch) {
 					// Open with URL handler
 					Hiro.util.openlink(url);
-				// Normal modal  
+				// Normal modal
 				} else {
 					// Crappy popup similar to https://dev.twitter.com/web/intents#tweet-intent
 					height = 522,
@@ -8219,12 +8219,12 @@ var Hiro = {
 					properties = 'height=' + height + ',width=' + width;
 					// Center if possiple
 					if (screen.availHeight) properties = properties + ',top=' + ((screen.availHeight - height) / 2);
-					if (screen.availWidth) properties = properties + ',left=' + ((screen.availWidth - width) / 2);					
+					if (screen.availWidth) properties = properties + ',left=' + ((screen.availWidth - width) / 2);
 					// Open it
 					window.open(url,'twitter',properties);
 					// Prevent any funky redirects
 					return false;
-				} 
+				}
 			},
 
 			// Post to facebook,
@@ -8268,7 +8268,7 @@ var Hiro = {
 				// Fire!
 				window.location = urlstring;
 			}
-		}		
+		}
 	},
 
 	// External js library handling (Facebook, Analytics, DMP etc)
@@ -8288,19 +8288,19 @@ var Hiro = {
 		},
 
 		// Generic script loader
-		loadscript: function(obj) {		
+		loadscript: function(obj) {
 			var head = document.getElementsByTagName("head")[0] || document.documentElement,
 				s = document.createElement('script'), done;
 
 			// Abort if we have no url
 			if (!obj.url) return;
 
-			// Set DOM node params	
+			// Set DOM node params
 			s.type="text/javascript"
 			s.src = obj.url;
 			s.async = true;
 			if (obj.defer === true) s.defer = true;
-			if (obj.id) s.id = obj.id;	
+			if (obj.id) s.id = obj.id;
 
 			// Attach handlers for all browsers, nicked from jQuery
 			s.onload = s.onreadystatechange = function() {
@@ -8309,9 +8309,9 @@ var Hiro = {
 			        done = true;
 
 			        // Execute success
-			        if (obj.success) obj.success();				 
+			        if (obj.success) obj.success();
 			    }
-			};	
+			};
 
 			// Onerror for modern browsers
 			s.onerror = function() {
@@ -8324,13 +8324,13 @@ var Hiro = {
 
 			        // Handle memory leak in IE
 			        s.onload = s.onreadystatechange = null;
-			        if (head && s.parentNode) head.removeChild(s);				        
-			    }					
-			}		
+			        if (head && s.parentNode) head.removeChild(s);
+			    }
+			}
 
 			// Insert into DOM
-			head.insertBefore(s, head.firstChild);					
-		},	
+			head.insertBefore(s, head.firstChild);
+		},
 
 		// Stripe
 		stripe: {
@@ -8366,7 +8366,7 @@ var Hiro = {
 						// Reset flag
 						that.loading = false;
 					}
-				});			
+				});
 			},
 
 			// Lib specific init stuff
@@ -8379,7 +8379,7 @@ var Hiro = {
 					Stripe.setPublishableKey(k);
 					this.inited = true;
 
-				// Oh noes, no key					
+				// Oh noes, no key
 				} else {
 					Hiro.sys.error('Tried to init Stripe, but no key found',Hiro.lib.keys)
 				}
@@ -8405,8 +8405,8 @@ var Hiro = {
 
 				// Do it!
 				Hiro.lib.loadscript({
-					url: this.js,					
-					id: 'facebook-jssdk',	
+					url: this.js,
+					id: 'facebook-jssdk',
 					success: function() {
 						// Set flag
 						Hiro.lib.facebook.loaded = true;
@@ -8420,9 +8420,9 @@ var Hiro = {
 						// Set flag
 						Hiro.lib.facebook.loading = false;
 						// Fire callback if we have one
-						if (error) error();						
-					}			
-				});				
+						if (error) error();
+					}
+				});
 			},
 
 			// This blurs input, so we delay it until user selects first FB action
@@ -8438,12 +8438,12 @@ var Hiro = {
 				// Init, which unfortunately offers no callback (anymore)
 			    FB.init({ appId : that.key, version: 'v2.0', status : false, xfbml : false });
 
-			    // Call 
+			    // Call
 			    FB.getLoginStatus(function(response){
 			    	that.inited = true;
 			    	that.initing = false;
 			    	if (success) success();
-			    });				
+			    });
 			},
 
 			// Abstract connectivity & lib specific foo
@@ -8454,15 +8454,15 @@ var Hiro = {
 				if (!this.loaded) {
 					that.load(function() { that.pipe(obj) },obj.error);
 					return;
-				// Or not inited	
+				// Or not inited
 				} else if (!this.inited) {
 					that.init(function() { that.pipe(obj) },obj.error);
 					return;
-				}	
+				}
 
 				// Execute our command
-				if (obj && obj.todo) obj.todo(obj);			
-			}			
+				if (obj && obj.todo) obj.todo(obj);
+			}
 		},
 
 		// Rollbar error logger, dashboard at https://rollbar.com/HiroInc/Beta/
@@ -8471,7 +8471,7 @@ var Hiro = {
 			backlog: [],
 			loaded: false,
 			url: "//d37gvrvc0wt4s1.cloudfront.net/js/v1.1/rollbar.min.js",
-			key: undefined,			
+			key: undefined,
 
 			// For rollbar we currently use their really far reaching shim
 			// TODO Bruno: Have a detailled look at how it works and simplify that shit
@@ -8492,7 +8492,7 @@ var Hiro = {
     				payload: this.getpayload(),
     				enabled: Hiro.sys.production,
     				maxItems: 50
-    			}	
+    			}
 
     			// https://github.com/rollbar/rollbar.js/blob/9b13c193eb6994e4143d0a13a4f3aae7db073a2d/src/shim.js
 				var _shimCounter = 0;
@@ -8502,7 +8502,7 @@ var Hiro = {
 				  this.notifier = null;
 				  this.parentShim = parentShim;
 				  this.logger = function() {};
-				  
+
 				  if (window.console) {
 				    if (window.console.shimId === undefined) {
 				      this.logger = window.console.log;
@@ -8672,9 +8672,9 @@ var Hiro = {
 				var _methods = 'log,debug,info,warn,warning,error,critical,global,configure,scope,uncaughtError'.split(',');
 				for (var i = 0; i < _methods.length; ++i) {
 				  Rollbar.prototype[_methods[i]] = stub(_methods[i]);
-				}    			
+				}
 
-				// Init 
+				// Init
 				Rollbar.init(window, _rollbarConfig);
 
 				// Call loadscript & init right away
@@ -8688,28 +8688,28 @@ var Hiro = {
 						Hiro.lib.rollbar.processbacklog();
 
 						// Log
-						Hiro.sys.log('Rollbar loaded');		
+						Hiro.sys.log('Rollbar loaded');
 
 						// Release flag
-						Hiro.lib.rollbar.initing = false;			
+						Hiro.lib.rollbar.initing = false;
 					},
 					error: function() {
 						// Log
-						Hiro.sys.error('Unable to load rollbar');		
+						Hiro.sys.error('Unable to load rollbar');
 
 						// Release flag
-						Hiro.lib.rollbar.initing = false;						
+						Hiro.lib.rollbar.initing = false;
 					}
-				});			
+				});
 
 				// Log
-				Hiro.sys.log('Loading & initing Rollbar....')	
+				Hiro.sys.log('Loading & initing Rollbar....')
 			},
 
 			// Get backlog queue and process any errors
 			processbacklog: function() {
 				// End here if we have no backlog or Rollbar
-				if (!this.backlog.length || !Rollbar) return; 
+				if (!this.backlog.length || !Rollbar) return;
 
 				// Iterate
 				for (var i = 0, l = this.backlog.length; i < l; i++ ) {
@@ -8748,8 +8748,8 @@ var Hiro = {
 				payload.environment = (Hiro.sys.production) ? 'Production' : 'Unknown';
 
 				// Return object
-				return payload;			
-			}	
+				return payload;
+			}
 		},
 
 		// intercom.io analytics & user communication
@@ -8757,7 +8757,7 @@ var Hiro = {
 			js: 'https://widget.intercom.io/widget/',
 			key: undefined,
 			loaded: false,
-			loading: false,	
+			loading: false,
 
 			// Load script, we do this when we can identify a user
 			load: function(success) {
@@ -8769,8 +8769,8 @@ var Hiro = {
 
 				// Do it!
 				Hiro.lib.loadscript({
-					url: this.js + this.key,					
-					id: 'intercom-jssdk',	
+					url: this.js + this.key,
+					id: 'intercom-jssdk',
 					success: function() {
 						// Init as soon as loaded, as per http://docs.intercom.io/installing-Intercom/intercom-javascript-api
 						Intercom('boot', Hiro.lib.intercom.getsettings());
@@ -8785,9 +8785,9 @@ var Hiro = {
 						// Fire callback if we have one
 						if (error) error();
 						// Reset loading
-						this.loading = false;						
-					}				
-				});				
+						this.loading = false;
+					}
+				});
 			},
 
 			// Put together an intercomsettings object
@@ -8807,7 +8807,7 @@ var Hiro = {
 				if (user.tier) {
 					settings.tier = user.tier;
 					settings.created_at = Math.round(user.signup_at / 1000);
-				}	
+				}
 
 				// Other properties we track
 				settings.notes = Hiro.folio.owncount;
@@ -8818,7 +8818,7 @@ var Hiro = {
 
 				// Return object
 				return settings;
-			}					
+			}
 		},
 
 		// Google Analytics
@@ -8826,7 +8826,7 @@ var Hiro = {
 			js: '//www.google-analytics.com/analytics.js',
 			key: 'UA-41408220-1',
 			loaded: false,
-			loading: false,			
+			loading: false,
 
 			// We user Googles default snippet & execute it froma different stack right on init
 			load: function() {
@@ -8847,8 +8847,8 @@ var Hiro = {
 
 				// Do it!
 				Hiro.lib.loadscript({
-					url: this.js,					
-					id: 'google-jssdk',	
+					url: this.js,
+					id: 'google-jssdk',
 					success: function() {
 						// Log
 						Hiro.sys.log('Google Analytics sucessfully loaded');
@@ -8857,9 +8857,9 @@ var Hiro = {
 					},
 					error: function() {
 						// Reset loading
-						this.loading = false;						
-					}				
-				});					
+						this.loading = false;
+					}
+				});
 			}
 		}
 	},
@@ -8869,10 +8869,10 @@ var Hiro = {
 
 		// Takes a unix timestamp and turns it into mins/days/weeks/months
 		// 86400 = 1 day
-		// 604800 = 1 week 
+		// 604800 = 1 week
 		// 2592000 = 30 days
-		// 31536000 = 1 year		
-		humantime: function(timestamp) {			
+		// 31536000 = 1 year
+		humantime: function(timestamp) {
 			var now = Hiro.util.now(), t;
 
 			// Make sure we got a UTC string
@@ -8881,21 +8881,21 @@ var Hiro = {
 
 			// Return the various string values
 			if (t<60) return "Moments";
-			if (t<90) return Math.round(t/60) + " minute";			
+			if (t<90) return Math.round(t/60) + " minute";
 			if (t<3600) return Math.round(t/60) + " minutes";
-			// if less than 1 hour ago			
-			if (t<5200) return Math.round(t/3600) + " hour";			
-			// if less than 36 hours ago			
-			if (t<129600) return Math.round(t/3600) + " hours";					
+			// if less than 1 hour ago
+			if (t<5200) return Math.round(t/3600) + " hour";
+			// if less than 36 hours ago
+			if (t<129600) return Math.round(t/3600) + " hours";
 			// if less than 14 days ago
 			if (t<1209600) return Math.round(t/86400) + " days";
 			// if less than 8 weeks ago
-			if (t<4838400) return Math.round(t/604800) + " weeks";	
+			if (t<4838400) return Math.round(t/604800) + " weeks";
 			// if less a year ago
 			if (t<31536000) return Math.round(t/2592000) + " months";
 			// if less two years ago
-			if (t<63072000) return "More than a year";			
-			return Math.round(t/31536000) + " years";					
+			if (t<63072000) return "More than a year";
+			return Math.round(t/31536000) + " years";
 		},
 
 		// Returns Month DD, YYYY
@@ -8912,7 +8912,7 @@ var Hiro = {
 			// Return string
 			return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
 
-		},	
+		},
 
 		// Return current timestamp in UTC unix msecs (or whatever format we'll decide to use)
 		now: function() {
@@ -8928,11 +8928,11 @@ var Hiro = {
 			// See if we have an email
 			if (mailregex.test(string)) {
 				type = 'email';
-			// See if we have a long enough number	
+			// See if we have a long enough number
 			} else if (nums.length > 5) {
 				type = 'phone';
 				// see if we have a plus leading our number and convert string
-				string = (string.replace( /([^\d\+])/g, '').charAt(0) == '+' && '+' || '') + nums; 
+				string = (string.replace( /([^\d\+])/g, '').charAt(0) == '+' && '+' || '') + nums;
 			// No good
 			} else {
 				return false;
@@ -8945,7 +8945,7 @@ var Hiro = {
 		// As always we use supersafe ECMA 1
 		getname: function(string) {
 			var details, ending;
-			// First get type 
+			// First get type
 			details = this.mailorphone(string);
 
 			// If no string was provided
@@ -8978,7 +8978,7 @@ var Hiro = {
 
 		// Returns a hash for simple or complex object provided
 		// According to http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
-		// and it's links this produces the best results for our contacts use case 
+		// and it's links this produces the best results for our contacts use case
 		hash: function(s) {
 			var h = 0, i, chr, l;
 
@@ -8990,11 +8990,11 @@ var Hiro = {
 
 			// Use reduce on modern browsers
 		    if (Array.prototype.reduce) {
-		        return s.split('').reduce( function(a,b) { 
-		        	a = ( ( a << 5 ) - a ) + b.charCodeAt(0); 
+		        return s.split('').reduce( function(a,b) {
+		        	a = ( ( a << 5 ) - a ) + b.charCodeAt(0);
 		        	return a & a;
-		        },0); 
-		    // Use for loop on older ones          
+		        },0);
+		    // Use for loop on older ones
 		    } else {
 				for (i = 0, l = s.length; i < l; i++) {
 					// Grab next char
@@ -9002,10 +9002,10 @@ var Hiro = {
 					// Shift bitwise
 					h = ((h << 5) - h) + c;
 					// Convert to 32bit integer
-					h |= 0; 
+					h |= 0;
 				}
 				return h;
-		    }		
+		    }
 		},
 
 		// Cross browser event registration
@@ -9021,7 +9021,7 @@ var Hiro = {
 				if ((obj.Event) && (obj.Event[et]) && (obj.captureEvents)) obj.captureEvents(Event[et]);
 				obj['on'+eventType.toLowerCase()]=handler;
 			}
-		},	
+		},
 
 		// Cross browser event removal
 		releaseEvent: function(obj, eventType, handler) {
@@ -9044,7 +9044,7 @@ var Hiro = {
 			else e.returnValue = false;
 			if (e.stopPropagation) e.stopPropagation();
 			e.cancelBubble = true;
-		}		
+		}
 	}
 };
 
