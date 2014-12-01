@@ -94,7 +94,7 @@ def register():
     user = User.find_by(email=email, phone=phone)
     if user:
         if user.check_pwd(pwd):
-            return jsonify(token=user.token('login'))
+            return jsonify(token=user.token('login'), login=True)
         return jsonify_err(400, password="Wrong password")
 
     
