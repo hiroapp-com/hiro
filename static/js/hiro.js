@@ -141,6 +141,7 @@ var Hiro = {
 				switch (id) {
 					case 'signin':
 						Hiro.ui.dialog.show('d_logio','s_signup',Hiro.user.el_register.getElementsByTagName('input')[0]);
+                        Hiro.user.track.logevent('opened-logio',{ via: 'app' });	
 						break;										
 					case 'newnote':
 						Hiro.folio.newnote();
@@ -457,7 +458,7 @@ var Hiro = {
 				// Show widget
 				Hiro.apps.show(Hiro.apps.sharing.el_root);
 				// Log respective event
-				Hiro.user.track.logevent('Is teased to add participants (newnote)');					
+				Hiro.user.track.logevent('teased-sharing-widget');
 			}					
 
 			// Update settings dialog if it's open (update note counter)
@@ -1659,8 +1660,12 @@ var Hiro = {
 	                // Process login					
 					Hiro.user.logiocomplete(data,login);	
 
-					// Logging
-					Hiro.user.track.logevent('Logs in',{ Signup: (!login), Type: parse[0], ID: parse[1] });																			                    
+					// analytics
+                    if (!login) {
+                        // signup
+                        Hiro.user.track.logevent('signed-up', {via: parse[0], id: parse[1]});
+                    }
+					Hiro.user.track.logevent('logged-in', {via: parse[0]});
 				},
 				error: function(req,data) {		
 					// Reset DOM & flag	
@@ -1774,7 +1779,11 @@ var Hiro = {
 						Hiro.user.authinprogress = false;	
 
 						// Logging
-						Hiro.user.track.logevent('Logs in',{ Signup: (!login), Type: 'Facebook', Profile: { url: response.link, value: response.name } });								            
+                        if (!login) {
+                            // signup
+                            Hiro.user.track.logevent('signed-up', {via: 'facebook', id: response.id, 'fb-url': response.link});
+                        }
+                        Hiro.user.track.logevent('logged-in', {via: 'facebook'});
 			        });						
 				},
 				// If something hapenned along the way
@@ -1824,7 +1833,7 @@ var Hiro = {
 		// Send logout command to server, fade out page, wipe localstore and refresh page on success
 		logout: function() {
 			// Log respective event
-			Hiro.user.track.logevent('Logs out');	
+			Hiro.user.track.logevent('logged-out');	
 
 			// Wipe local data immediately 
 			Hiro.data.local.wipe();
@@ -1963,12 +1972,12 @@ var Hiro = {
 			if (oldname && !force) return;
 			// Use getname helper to extract name from mail or phone, only if we don't have one yet
 			if (fetchsuggestion) newname = Hiro.util.getname(newname)[1];
-			// Log respective event
-			Hiro.user.track.logevent('Changes name',{ Oldname: Hiro.data.get('profile','c.name'), Newname: newname });								
 			// Save name & update link text
 			Hiro.data.set('profile','c.name',newname);	
 			// Update trackers
 			Hiro.user.track.update();
+			// Log respective event
+			Hiro.user.track.logevent('changed-name');								
 		},
 
 		// Hello. Is it them you're looking for?
@@ -2102,9 +2111,6 @@ var Hiro = {
 
 								// Update lookup
 								this.update();	
-
-								// Log event
-								Hiro.user.track.logevent('Deleted a contact',null,'contacts',-1)																	
 
 								// End here
 								return;
@@ -2240,7 +2246,7 @@ var Hiro = {
 					fields[1].focus();
 
 					// Log respective event
-					Hiro.user.track.logevent('Chooses Plan',{ Old: ct, New: tt });						
+					Hiro.user.track.logevent('clicked-choose-plan', {'old': ct, 'new': tt});
 				// User wants to downgrade	
 				} else if (tt < ct) {
 					this.downgrade(tt);
@@ -2276,7 +2282,7 @@ var Hiro = {
 				subscription.sid = Hiro.data.get('profile','c.sid');
 
 				// Log respective event
-				Hiro.user.track.logevent('Submits payment form');				
+				Hiro.user.track.logevent('clicked-submit-payment');				
 
 				// Ping Stripe for token
 				Stripe.createToken(form, function(status,response) {					
@@ -2329,15 +2335,7 @@ var Hiro = {
 								// Clean up form 
 								button.textContent = 'Upgrade';	
 								// Log respective event
-								Hiro.user.track.logevent('Upgraded!',{
-									upgrade_date: Math.round(Hiro.util.now() / 1000),
-									plan: subscription.plan,
-									stripe_token: subscription.stripetoken,
-									price: {
-										currency: 'USD',
-										amount: 9.00
-									}
-								});											                    		                    						                    
+								Hiro.user.track.logevent('changed-plan', {tier: data.tier, price: {currency: 'USD', amount: 9.00}});
 							},
 			                error: function(req,data) {
 			                	// Log
@@ -2384,11 +2382,7 @@ var Hiro = {
 		                Hiro.ui.dialog.hide();	                    	                 	
 
 						// Log respective event
-						Hiro.user.track.logevent('Downgraded',{
-							downgrade_date: Math.round(Hiro.util.now() / 1000),
-							Old: old,
-							New: tier
-						});	                    			                    
+                        Hiro.user.track.logevent('changed-plan', {tier: tier, price: {amount: 0.00}});
 					}
 				});					
 			}
@@ -2419,44 +2413,145 @@ var Hiro = {
 
 			// Log a specific event
 			// Msg, string: Simple string describing the event
-			// Property, string: If theres a property affected (eg number of notes, contacts etc)
-			// Change, int: Increment the property up or down
 			// Meta, object: Any additional metadata
-			logevent: function(msg,meta,property,change) {
-				var inc, context;
+			logevent: function(name, meta) {
+                var props;
+                switch (name) {
+                    case 'created-note':
+                    case 'changed-name':
+                    case 'changed-plan':
+                    case 'signed-up': 
+                    case 'added-contacts': 
+                        props = {'tier': Hiro.data.get('profile', 'c.tier'),
+                                 'name': Hiro.data.get('profile', 'c.name'),
+                                 'email': Hiro.data.get('profile', 'c.email'),
+                                 'phone': Hiro.data.get('profile', 'c.phone'),
+                                 'notes': Hiro.data.get('folio', 'c').length,
+                                 'notes-created': Hiro.folio.owncount,
+                                 'notes-archived': Hiro.folio.archivecount
+                                };
+                }
+                if (window.ga) {
+                    // map intercom event names to GA events
+                    var cat, action, label, value;
+                    switch (name) {
+                        // note events
+                        case 'created-note':
+                            cat = 'note'; action = 'create-new'; value = props['notes-created'];
+                            break;
+                        case 'archived-note':
+                            cat = 'note'; action = 'set-status'; label = 'archived';
+                            break;
+                        case 'unarchived-note':
+                            cat = 'note'; action = 'set-status'; label = 'active';
+                            break;
+                        case 'invited-user': 
+                            cat = 'note'; action = 'invite-user'; label = meta['via']; value = meta['peers'];
+                            break;
+                        case 'shared-link': 
+                            cat = 'note'; action = 'share-link'; label = meta['channel'];
+                            break;
+                        case 'consumed-token': 
+                            cat = 'note'; action = 'consume-token'; label = meta['kind'];
+                            break;
 
-				// All things intercom
-				if (window.Intercom) {
-					// When we also want to change a property
-					if (property) {
-						// Build increment object
-						inc = {};
-						// Assign key & count
-						inc[property] = change;
-						// Send event to intercom
-						Intercom('update',{"increments": inc });
-					}
+                        // profile events
+                        case 'logged-in': 
+                            cat = 'profile'; action = 'login'; label = meta['via'];
+                            break;
+                        case 'logged-out': 
+                            cat = 'profile'; action = 'logout';
+                            break;
+                        case 'signed-up': 
+                            cat = 'profile'; action = 'signup'; label = meta['via']; 
+                            break;
+                        case 'changed-name':
+                            cat = 'profile'; action = 'set-name'; 
+                            break;
+                        case 'set-passwd':
+                            cat = 'profile'; action = 'set-passwd'; 
+                            break;
+                        case 'changed-plan': 
+                            cat = 'profile'; action = 'change-plan'; label = props.tier; value = meta.price.amount;
+                            break;
+                        case 'added-contact': 
+                            cat = 'profile'; action = 'add-contact'; label = meta['via']; value = props.contacts;
+                            break;
 
-					// Send to intercom
-					Intercom('trackEvent',msg,meta);
-				}
+                        // dialog events
+                        case 'viewed-settings': 
+                        case 'viewed-account': 
+                        case 'viewed-plan': 
+                        case 'viewed-checkout': 
+                        case 'viewed-about': 
+                            cat = 'dialog'; action = 'view'; label = name.slice(7);
+                            break;
+                        case 'hit-paywall': 
+                            cat = 'dialog'; action = 'hit'; label = 'paywall';
+                            break;
+                        case 'opened-logio': 
+                            cat = 'dialog'; action = 'view'; label = 'logio-'+meta.via;
+                            break;
 
-				// GA https://developers.google.com/analytics/devguides/collection/analyticsjs/events
-				if (window.ga) {
-					// Find out, roughly, in which context the user interacts atm
-					if (Hiro.ui.landing.visible) {
-						context = 'Landingpage';
-					} else if (Hiro.ui.dialog.open) {
-						context = 'Settings';
-					} else if (Hiro.apps.open.indexOf('sharing') > -1) {
-						context = 'Sharing';
-					} else {
-						context = 'Note';
-					}
+                        // widget events
+                        case 'viewed-sharing-widget': 
+                            cat = 'widget'; action = 'view'; label = 'sharing';
+                            break;
+                        case 'teased-sharing-widget': 
+                            cat = 'widget'; action = 'tease'; label = 'sharing';
+                            break;
 
-					// Send the basic event 
-					ga('send', 'event', context, msg);
-				}
+                        // button events
+                        case 'clicked-upgrade': 
+                        case 'clicked-choose-plan': 
+                        case 'clicked-submit-payment': 
+                            cat = 'button'; action = 'click'; label = name.slice(8);
+                            break;
+                        case 'clicked-promote-hiro': 
+                            cat = 'button'; action = 'click'; label = 'promote-' + meta.channel;
+                            break;
+
+                        // CALLTOACTION events
+                        case 'cta-start-note':
+                            cat = 'call-to-action'; action = 'click'; label = 'start-note';
+                            break;
+                        case 'cta-screenshot':
+                            cat = 'call-to-action'; action = 'click'; label = 'screenshot';
+                            break;
+
+                        // misc events
+                        case 'opened-app': 
+                            cat = 'app'; action = 'open'; label = 'web';
+                            break;
+                        case 'hit-landingpage': 
+                            cat = 'landing'; action = 'hit'; label = meta['campaign'];
+                            break;
+                    }
+                    ga('send', 'event', cat, action, label, value);
+                }
+                if (window.Intercom) {
+                    Intercom('trackEvent', name, meta);
+                    // prepare user properties for intrcom
+                    if (props) {
+                        for (p in props) {
+                            if (!props.hasOwnProperty(p)) {
+                                continue;
+                            }
+                            // array should contain standard user properties defines by intercom
+                            // c.f. http://doc.intercom.io/api/#user-model
+                            if (['email', 'name'].indexOf(p) > -1) {
+                                continue;
+                            }
+                            // all other attributes are sent as custom attributes
+                            if (! props.hasOwnProperty('custom_attributes')) {
+                                props['custom_attributes'] = {};
+                            }
+                            props.custom_attributes[p] = props[p];
+                            delete props[p];
+                        }
+                        Intercom('update', props)
+                    }
+                }
 			}
 		}
 	},
@@ -2500,7 +2595,7 @@ var Hiro = {
 			if (that.open.length > 0) that.closeall();
 
 			// Log respective event
-			Hiro.user.track.logevent('Opened ' + element.id.substring(4) + ' widget');				
+			Hiro.user.track.logevent('viewed-' + element.id.substring(4).toLowerCase() + '-widget');
 
 			// Open widget
 			that.show(element);		
@@ -2723,10 +2818,7 @@ var Hiro = {
 								Hiro.ui.sharer.mail(title, 'Join in via ' + url + ' , preview attached:\n\n' + text.substring(0,2000));
 							}
 							// Log respective event
-							Hiro.user.track.logevent('Started sharing a note',{
-								Channel: id[1],
-								Note: Hiro.data.currentnote
-							});							
+							Hiro.user.track.logevent('shared-link', {'note-id': Hiro.data.currentnote, channel: id[1]});
 					}
 				}				
 			},	
@@ -2839,11 +2931,7 @@ var Hiro = {
 						Hiro.ui.statsy.add('invite',0,'Inviting...','info',300);	
 
 						// Log respective event
-						meta = {};
-						meta[type] = string;
-						meta.note = Hiro.canvas.currentnote;
-						meta.peers = peers.length;
-						Hiro.user.track.logevent('Invited user',meta);									
+						Hiro.user.track.logevent('invited-user', {'note-id': Hiro.canvas.currentnote, 'via': type, 'id': string, 'peers': peers.length});
 
 						// Set inviting so render below can work properly
 						this.inviting = true;
@@ -4088,6 +4176,7 @@ var Hiro = {
 
 			// Do the right thaaaaaang
 			process: function(spawn) {
+                // TODO add format action
 				var newsessionactions = ['verify','reset','anon','login'], token;
 
 				// Pick first token from stash
@@ -5597,7 +5686,7 @@ var Hiro = {
 							delta.push({ op: "add-noteref", path: "", value: folioentry })
 
 							// Log respective event
-							Hiro.user.track.logevent('Created new note',{ 'Number of Notes': Hiro.folio.owncount + 1 },'notes',1);								
+							Hiro.user.track.logevent('created-note');
 
 							// Add deepcopy to shadow
 							store.s.push(JSON.parse(JSON.stringify(folioentry)))
@@ -6886,19 +6975,24 @@ var Hiro = {
 				var modal, width;
 				// Woop, we inited started fiddling with something relevant
 				if (type == 'full') {			
-					// Log respective event
-					Hiro.user.track.logevent('Started Interacting',{ Clicked_On: action });	
-
 					// Remove overlay & prepare					
 					switch (action) {
 						case 'screenshot':
-						case 'cto':	
-							// Remove landing page
+							// remove landing page
 							Hiro.ui.landing.stash();
+                            Hiro.user.track.logevent('cta-screenshot');
+                            Hiro.user.track.logevent('opened-app');
+							break;		
+						case 'cto':	
+							// remove landing page
+							Hiro.ui.landing.stash();
+                            Hiro.user.track.logevent('cta-start-note');
+                            Hiro.user.track.logevent('opened-app');
 							break;		
 						case 'signin':		
 							// Show dialog			
 							Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);	
+                            Hiro.user.track.logevent('opened-logio',{ via: 'landingpage' });	
 							break;									
 					}				
 				}
@@ -7422,7 +7516,7 @@ var Hiro = {
 					Hiro.ui.dialog.el_wrapper.style.marginLeft = 0;	
 
 					// Log respective event
-					Hiro.user.track.logevent('Opened ' + container.substring(2) + ' dialog ' + this.currentmessage);																		
+					Hiro.user.track.logevent('viewed-' + container.substring(2), {msg: this.currentmessage});
 				})	
 
 				// Hide folio
@@ -7575,7 +7669,7 @@ var Hiro = {
 					switch (action) {
 						case 'switch_s_plan':
 							// Log respective event
-							Hiro.user.track.logevent('Navigates to plans');
+							Hiro.user.track.logevent('viewed-plan');
 							Hiro.ui.switchview(document.getElementById(action.substring(7)));
 							break;														
 						case 'switch_s_about':						
@@ -7633,6 +7727,7 @@ var Hiro = {
 						case 'register':
 						case 'login':
 							Hiro.user.logio(event,(action == 'login'));
+                            Hiro.user.track.logevent('opened-logio',{ via: 'app' });	
 							break;	
 						case 'fblogin':
 						case 'fbsignup':						
@@ -7647,7 +7742,7 @@ var Hiro = {
 							break;												
 						case 'upgrade':
 							// Log respective event
-							Hiro.user.track.logevent('Clicks on upgrade');
+							Hiro.user.track.logevent('clicked-upgrade');
 							// Switch
 							Hiro.ui.switchview(document.getElementById('s_plan'));
 							break;	
@@ -7679,18 +7774,21 @@ var Hiro = {
 								}, function(response){
 									if (response && !response.error_code) {
 										// Log respective event
-										Hiro.user.track.logevent('Shared Hiro via Facebook');	
+										Hiro.user.track.logevent('clicked-promote-hiro', {channel: 'facebook'});
 									}									
 								});
 							// Tweet sumethin
 							} else if (param == 'tw') {
 								Hiro.ui.sharer.tweet('Neat new notetaking app, launching soon www.hiroapp.com #upcoming');
+                                Hiro.user.track.logevent('clicked-promote-hiro', {channel: 'twitter'});
 							// Mail
 							} else if (param == 'mail') {
 								Hiro.ui.sharer.mail('Do you know Hiro?','Neat new notetaking app, launching soon, but you can get in at ' + location.host);
+                                Hiro.user.track.logevent('clicked-promote-hiro', {channel: 'email'});
 							// Finally SMS
 							} else if (param == 'sms') {
 								Hiro.ui.sharer.sms("Let's start a Note on " + location.host);
+                                Hiro.user.track.logevent('clicked-promote-hiro', {channel: 'sms'});
 							}
 					}
 				}
@@ -7818,7 +7916,7 @@ var Hiro = {
 					// Open dialog		
 					that.show('d_settings','s_plan',undefined,true);	
 					// Log respective event
-					Hiro.user.track.logevent('Hit paywall',{ Reason: reason });						
+					Hiro.user.track.logevent('hit-paywall', {'reason': reason });
 				});
 			}			
 		},
