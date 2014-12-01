@@ -1664,6 +1664,7 @@ var Hiro = {
                     if (!login) {
                         // signup
                         Hiro.user.track.logevent('signed-up', {via: parse[0], id: parse[1]});
+                        Hiro.user.track.update();
                     }
 					Hiro.user.track.logevent('logged-in', {via: parse[0]});
 				},
@@ -1782,6 +1783,7 @@ var Hiro = {
                         if (!login) {
                             // signup
                             Hiro.user.track.logevent('signed-up', {via: 'facebook', id: response.id, 'fb-url': response.link});
+                            Hiro.user.track.update();
                         }
                         Hiro.user.track.logevent('logged-in', {via: 'facebook'});
 			        });
@@ -2336,6 +2338,7 @@ var Hiro = {
 								button.textContent = 'Upgrade';
 								// Log respective event
 								Hiro.user.track.logevent('changed-plan', {tier: data.tier, price: {currency: 'USD', amount: 9.00}});
+								Hiro.user.track.update();
 							},
 			                error: function(req,data) {
 			                	// Log
@@ -2383,6 +2386,7 @@ var Hiro = {
 
 						// Log respective event
                         Hiro.user.track.logevent('changed-plan', {tier: tier, price: {amount: 0.00}});
+                        Hiro.user.track.update();
 					}
 				});
 			}
@@ -2415,21 +2419,8 @@ var Hiro = {
 			// Msg, string: Simple string describing the event
 			// Meta, object: Any additional metadata
 			logevent: function(name, meta) {
-                var props;
-                switch (name) {
-                    case 'created-note':
-                    case 'changed-name':
-                    case 'changed-plan':
-                    case 'signed-up':
-                    case 'added-contacts':
-                        props = {'tier': Hiro.data.get('profile', 'c.tier'),
-                                 'name': Hiro.data.get('profile', 'c.name'),
-                                 'email': Hiro.data.get('profile', 'c.email'),
-                                 'phone': Hiro.data.get('profile', 'c.phone'),
-                                 'notes': Hiro.data.get('folio', 'c').length,
-                                 'notes-created': Hiro.folio.owncount,
-                                 'notes-archived': Hiro.folio.archivecount
-                                };
+                if (window.Intercom) {
+                    Intercom('trackEvent', name, meta);
                 }
                 if (window.ga) {
                     // map intercom event names to GA events
@@ -2437,7 +2428,7 @@ var Hiro = {
                     switch (name) {
                         // note events
                         case 'created-note':
-                            cat = 'note'; action = 'create-new'; value = props['notes-created'];
+                            cat = 'note'; action = 'create-new'; value = Hiro.folio.owncount;
                             break;
                         case 'archived-note':
                             cat = 'note'; action = 'set-status'; label = 'archived';
@@ -2472,10 +2463,10 @@ var Hiro = {
                             cat = 'profile'; action = 'set-passwd';
                             break;
                         case 'changed-plan':
-                            cat = 'profile'; action = 'change-plan'; label = props.tier; value = meta.price.amount;
+                            cat = 'profile'; action = 'change-plan'; label = Hiro.data.get('profile', 'c.tier'); value = meta.price.amount;
                             break;
                         case 'added-contact':
-                            cat = 'profile'; action = 'add-contact'; label = meta['via']; value = props.contacts;
+                            cat = 'profile'; action = 'add-contact'; label = meta['via']; 
                             break;
 
                         // dialog events
@@ -2528,29 +2519,6 @@ var Hiro = {
                             break;
                     }
                     ga('send', 'event', cat, action, label, value);
-                }
-                if (window.Intercom) {
-                    Intercom('trackEvent', name, meta);
-                    // prepare user properties for intrcom
-                    if (props) {
-                        for (p in props) {
-                            if (!props.hasOwnProperty(p)) {
-                                continue;
-                            }
-                            // array should contain standard user properties defines by intercom
-                            // c.f. http://doc.intercom.io/api/#user-model
-                            if (['email', 'name'].indexOf(p) > -1) {
-                                continue;
-                            }
-                            // all other attributes are sent as custom attributes
-                            if (! props.hasOwnProperty('custom_attributes')) {
-                                props['custom_attributes'] = {};
-                            }
-                            props.custom_attributes[p] = props[p];
-                            delete props[p];
-                        }
-                        Intercom('update', props)
-                    }
                 }
 			}
 		}
@@ -5687,6 +5655,7 @@ var Hiro = {
 
 							// Log respective event
 							Hiro.user.track.logevent('created-note');
+							Hiro.user.track.update();
 
 							// Add deepcopy to shadow
 							store.s.push(JSON.parse(JSON.stringify(folioentry)))
@@ -8804,13 +8773,16 @@ var Hiro = {
 				// Extended user properties
 				if (user.name) settings.name = user.name;
 				if (user.email) settings.email = user.email;
+                if (user.phone) settings.phone = user.phone;
 				if (user.tier) {
 					settings.tier = user.tier;
 					settings.created_at = Math.round(user.signup_at / 1000);
 				}
 
 				// Other properties we track
-				settings.notes = Hiro.folio.owncount;
+				settings.notes = Hiro.data.get('folio', 'c').length;
+				settings.notes_created = Hiro.folio.owncount;
+				settings.notes_archived = Hiro.folio.archivecount;
 				settings.contacts = (user.contacts) ? user.contacts.length : 0;
 
 				// Update the window object
