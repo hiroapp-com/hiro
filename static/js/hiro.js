@@ -8761,7 +8761,7 @@ var Hiro = {
 
 			// Put together an intercomsettings object
 			getsettings: function() {
-				var settings = {}, user = Hiro.data.get('profile','c');
+				var settings = {}, user = Hiro.data.get('profile','c'), folio = Hiro.data.get('folio', 'c');
 
 				// Abort if we have no user yet, create session will update this as soon as we get new data
 				if (!user) return;
@@ -8780,7 +8780,9 @@ var Hiro = {
 				}
 
 				// Other properties we track
-				settings.notes = Hiro.data.get('folio', 'c').length;
+                if (folio) {
+                    settings.notes = folio.length;
+                }
 				settings.notes_created = Hiro.folio.owncount;
 				settings.notes_archived = Hiro.folio.archivecount;
 				settings.contacts = (user.contacts) ? user.contacts.length : 0;
