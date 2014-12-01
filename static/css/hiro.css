@@ -1039,6 +1039,14 @@ html.ios body #rails #canvas textarea {
     box-shadow: 0 5px 20px -12px #000;    
   }
 
+  #apps .app.app_sharing .widget .peers .peer .name {
+    max-width: 220px;
+  }  
+
+  #apps .app.app_sharing .widget form .peers .peer .name.suggested {
+    max-width: 240px;
+  }  
+
   #apps .app .widget:after, #apps .app .widget:before {
     bottom: 100%;
     right: 17px;

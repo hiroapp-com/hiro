@@ -7579,10 +7579,10 @@ var Hiro = {
 				fields[0].value = user.name || '';
 				fields[1].value = user.email || user.phone || '';
 				fields[2].value = 'Member since: ' + Hiro.util.monthddyyyy(user.signup_at) || 'Some time';
-				fields[3].value = plans[user.tier] + ((Hiro.ui.mini()) ? '' : ' plan') + ': ' + Hiro.folio.owncount + ((user.tier < 2) ? ' of 10' : '') + ' note';
+				fields[3].value = plans[user.tier] + ((Hiro.ui.mini()) ? '' : ' plan') + ': ' + Hiro.folio.owncount + ' note';
 
 				// Add proper s at the end of the string
-				if (Hiro.folio.owncount != 1 || user.tier == 1) fields[3].value += 's';
+				if (Hiro.folio.owncount != 1) fields[3].value += 's';
 
 				// Remove upgrade link if user is already aying customer
 				fields[3].nextSibling.style.display = (user.tier > 1) ? 'none' : 'block';
