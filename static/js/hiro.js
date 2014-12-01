@@ -415,12 +415,6 @@ var Hiro = {
 					_ownedit: Hiro.util.now()
 				};
 
-			// If the user itself created the note but doesn't have the necessary tier yet
-			// if (Hiro.folio.owncount > 10 && user.c.tier < 2) {
-			//	Hiro.ui.dialog.suggestupgrade('unlimitednotes');
-			//	return;
-			// }
-
 			// Add new item to beginning of array
 			if (!f.c) f.c = [];
 			f.c.unshift(folioc);
@@ -449,17 +443,8 @@ var Hiro = {
 			Hiro.data.set('note_' + id,'',note,source);
 			Hiro.data.set('folio','',f,source);
 
-			// Do UI stuff after data was set above
-			if (id.length == 4) {
-				// Show it
-				Hiro.canvas.load(id);
-				// Tease invite
-				Hiro.apps.sharing.tease('share');
-				// Show widget
-				Hiro.apps.show(Hiro.apps.sharing.el_root);
-				// Log respective event
-				Hiro.user.track.logevent('teased-sharing-widget');
-			}
+			// Showit!
+			if (id.length == 4) Hiro.canvas.load(id);			
 
 			// Update settings dialog if it's open (update note counter)
 			if (Hiro.ui.dialog.open) Hiro.ui.dialog.update();
@@ -833,8 +818,21 @@ var Hiro = {
 			// Build canvas with basic values
 			this.paint();
 
-			// And set the cursor (but don't even try if the dialog is open)
-			if (!Hiro.ui.dialog.open) this.setcursor();
+			// If we have an empty unsynced note
+			if (id.length == 4 && !this.cache.title && !this.cache.content) {
+				// Tease invite
+				Hiro.apps.sharing.tease('share');
+				// Show widget
+				Hiro.apps.show(Hiro.apps.sharing.el_root);
+				// Log respective event
+				Hiro.user.track.logevent('teased-sharing-widget');
+			// Normal note loading	
+			} else {
+				// Set the cursor (but don't even try if the dialog is open)
+				if (!Hiro.ui.dialog.open) this.setcursor();
+				// Close apps if they should be open
+				if (Hiro.apps.open.length > 0) Hiro.apps.close();				
+			}		
 
 			// Scroll to top of note
 			Hiro.canvas.totop();
@@ -844,9 +842,6 @@ var Hiro = {
 
 			// Repaint the folio to update active note CSS & visually remove
 			Hiro.folio.paint(true);
-
-			// Close apps if they should be open
-			if (Hiro.apps.open.length > 0) Hiro.apps.close();
 
 			// Update sharing stuff
 			Hiro.apps.sharing.update();
@@ -4622,10 +4617,7 @@ var Hiro = {
 			// Load the first note mentioned in the folio onto the canvas
 			if (cf.c && cf.c.length > 0) {
 				// Load doc onto canvas, try current note per default so logins / session resets don't change notes
-				// Only do this for not yet synced notes, otherwise it screws up our "tease sharing on first visit"
-				if (Hiro.canvas.currentnote && Hiro.canvas.currentnote.length == 4) Hiro.canvas.load(Hiro.canvas.currentnote,false,true);
-				// Otherwise end hprogress here
-				else Hiro.ui.hprogress.done();
+				Hiro.canvas.load(Hiro.canvas.currentnote,false,true);
 			// If the folio is still empty, we create a new note
 			} else {
 				// Log
