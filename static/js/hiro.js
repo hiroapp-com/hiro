@@ -2415,7 +2415,7 @@ var Hiro = {
 				var i, l, queue = this.eventqueue;
 
 				// Noes, no libs loaded yet
-				if (!window.Intercom && !window.ga) {
+				if (!window.Intercom || !window.ga) {
 					// Add it to the queue as array
 					queue.push([name,meta])
 					// Abort here
