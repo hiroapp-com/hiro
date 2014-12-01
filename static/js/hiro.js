@@ -2412,9 +2412,36 @@ var Hiro = {
 			// Msg, string: Simple string describing the event
 			// Meta, object: Any additional metadata
 			logevent: function(name, meta) {
+				var i, l, queue = this.eventqueue;
+
+				// Noes, no libs loaded yet
+				if (!window.Intercom && !window.ga) {
+					// Add it to the queue as array
+					queue.push([name,meta])
+					// Abort here
+					return;
+				// We have some backlog from before when our libs were loaded	
+				} else if (queue.length) {
+					// Iterate through backlog
+					while (queue[0]) {
+						// Send
+						this.submit(queue[0][0],queue[0][1])
+						// Remove first item from queue
+						queue.shift();
+					}	
+				}
+
+				// Pass through event directly if everything is ready
+				this.submit(name,meta);
+			},
+
+			// Send events to external providers
+			submit: function(name,meta) {			
+				// If we have teh Intercoms 
                 if (window.Intercom) {
                     Intercom('trackEvent', name, meta);
                 }
+                // If we have Google analytics loaded & ready
                 if (window.ga) {
                     // map intercom event names to GA events
                     var cat, action, label, value;
