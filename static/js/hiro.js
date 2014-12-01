@@ -2449,6 +2449,9 @@ var Hiro = {
                         case 'signed-up':
                             cat = 'profile'; action = 'signup'; label = meta['via'];
                             break;
+                        case 'unsubscribe':
+                            cat = 'profile'; action = 'unsubscribe'; label = meta['id'];
+                            break;                            
                         case 'changed-name':
                             cat = 'profile'; action = 'set-name';
                             break;
@@ -6163,6 +6166,12 @@ var Hiro = {
 
 					// Add token
 					Hiro.data.tokens.add(token);
+				// Handle unsubscribes	
+				} else if (hashes[i] == 'u') {
+					// Double check it's an unsubscribe of an email or phone
+					if (hashes[i + 1].indexOf('@') == -1 && isNaN(hashes[i + 1])) continue;
+					// Log unsubscribe
+					Hiro.user.track.logevent('unsubscribe',{ 'id': hashes[i + 1] });
 				}
 			}
 		},
@@ -8770,9 +8779,7 @@ var Hiro = {
 				}
 
 				// Other properties we track
-                if (folio) {
-                    settings.notes = folio.length;
-                }
+                if (folio) settings.notes = folio.length;
 				settings.notes_created = Hiro.folio.owncount;
 				settings.notes_archived = Hiro.folio.archivecount;
 				settings.contacts = (user.contacts) ? user.contacts.length : 0;
