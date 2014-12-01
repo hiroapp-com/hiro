@@ -101,7 +101,7 @@ var Hiro = {
 
 		// If the user clicked somewhere in the folio
 		folioclick: function(id,type,target) {
-			var tier = Hiro.data.get('profile','c.tier'), direction, noteid;
+			var tier = Hiro.data.get('profile','c.tier'), direction;
 
 			// Clicks on the main elements, fired immediately on touchstart/mousedown
 			if (type == 'half') {
@@ -128,6 +128,11 @@ var Hiro = {
 
 				}
 			} else if (type == 'full') {
+				// Deconstruct note id
+				if (id.indexOf('note_') == 0) {
+					var noteid = id.substring(5);
+					id = 'note';
+				}
 
 				// Do not fire if folio is not yet open on touch devices
 				if (!Hiro.folio.open && Hiro.ui.touch) return;
@@ -152,11 +157,6 @@ var Hiro = {
 						Hiro.ui.dialog.show('d_settings','s_account','',true);
 						break;
 					case 'note':
-                        // Deconstruct note id
-                        if (id.indexOf('note_') == 0) {
-                            noteid = id.substring(5);
-                            id = 'note';
-                        }
 						// If the click was on an archive icon
 						if (target.className == 'archive') {
 							// Abort if user doesn't have archive yet
