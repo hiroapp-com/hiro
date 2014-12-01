@@ -1736,7 +1736,7 @@ var Hiro = {
 					// First try to get status
 					FB.getLoginStatus(function(response) {
 						// Logged into FB & Hiro authed
-						if (response.status === 'connected') {
+						if (response.status == 'connected') {
 							// Post tokens
 							posttokens(response.authResponse);
 						// Not logged into FB or Hiro not authed
@@ -1753,7 +1753,7 @@ var Hiro = {
 							}
 
 							// Ask user to login and or auth Hiro on FB
-							FB.login(function(response) {
+							FB.login(function(response) {							
 								// Post tokens, or false if login didn't return any
 								posttokens(response.authResponse, reason);
 							// Add scope here
@@ -1768,20 +1768,18 @@ var Hiro = {
 						// Save name
 			            if (response.first_name) Hiro.user.setname(response.first_name);
 
-						// Forward to handler
-						Hiro.user.logiocomplete(data,login);
-
-						// Allow next try
-						Hiro.user.authinprogress = false;
-
 						// Logging
-                        if (!login) {
-                            // signup
-                            Hiro.user.track.logevent('signed-up', {via: 'facebook', id: response.id, 'fb-url': response.link});
-                            Hiro.user.track.update();
-                        }
-                        Hiro.user.track.logevent('logged-in', {via: 'facebook'});
+                        if (!login) Hiro.user.track.logevent('signed-up', {via: 'facebook', id: response.id, 'fb-url': response.link});                       
 			        });
+
+					// Forward to handler
+					Hiro.user.logiocomplete(data,login);
+
+					// Allow next try
+					Hiro.user.authinprogress = false;
+
+					// Track event
+                    if (login) Hiro.user.track.logevent('logged-in', {via: 'facebook'});								        
 				},
 				// If something hapenned along the way
 				error: function(reason,data) {
@@ -4531,7 +4529,7 @@ var Hiro = {
 			cp.c = JSON.parse(user);
 			cp.s = JSON.parse(user);
 
-			// Fall back to present name if none know by server
+			// Fall back to present name if none known by server
 			cp.c.name = sp.val.user.name || Hiro.data.get('profile','c.name');
 
 			// Add contacts & session
