@@ -6,11 +6,11 @@
 	</div>	
 	<div class="accountdetails">
 		<form action="javascript:void(0);">
-			<input type="text" value="" maxlength="40" placeholder="Your name (for shared editing)" data-hiro-value="name"></input><div class="ioption save"><a data-hiro-action="savename"></a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
-			<input type="text" value="" disabled></input>
-			<input type="text" value="Member since:" disabled></input><div class="ioption nomobile">Thanks!</div>
-			<input type="text" value="" disabled></input><div class="ioption upgradelink"><a data-hiro-action="upgrade">Upgrade</a></div>
-			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('savename','full');" class="pseudobutton"></input>			
+			<input type="text" value="" maxlength="40" placeholder="Your name (for shared editing)" data-hiro-value="name"><div class="ioption save"><a data-hiro-action="savename"></a></div><div class="logout" title="Logout" data-hiro-action="logout"></div>
+			<input type="text" value="" disabled>
+			<input type="text" value="Member since:" disabled><div class="ioption nomobile">Thanks!</div>
+			<input type="text" value="" disabled><div class="ioption upgradelink"><a data-hiro-action="upgrade">Upgrade</a></div>
+			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('savename','full');" class="pseudobutton">			
 		</form>		
 		<div class="divider"><span class="or">Tell friends about Hiro:</span></div>
 		<a data-hiro-action="share:fb" href="https://www.facebook.com/dialog/feed?app_id={{ config.FACEBOOK_APP_ID }}&link=https%3A%2F%2Fwww.hiroapp.com&redirect_uri=https%3A%2F%2Fwww.hiroapp.com" class="hirobutton share fb">via{{ " " }}<b>Facebook</b></a>
@@ -83,16 +83,16 @@
 	</div>
 	<div class="checkoutdetails">	
 		<form action="javascript:void(0);">
-			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"></input><div class="ioption changeplan"><a data-hiro-action="changeplan">Change</a></div>
-			<input type="text"  pattern="[0-9]*" maxlength="22" placeholder="Credit Card Number" data-stripe="number"></input><div class="ioption"></div>
-			<input type="text" pattern="[0-9]*" placeholder="Month" class="small" title="Expiration Month" data-stripe="exp-month"></input> /
-			<input type="text" pattern="[0-9]*" placeholder="Year" class="small" title="Expiration Year" data-stripe="exp-year"></input>	
-			<input type="text" pattern="[0-9]*" placeholder="CVC" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc"></input>	
+			<input type="text" value="Advanced Plan for 9" disabled id="cc_desc"><div class="ioption changeplan"><a data-hiro-action="changeplan">Change</a></div>
+			<input type="text"  pattern="[0-9]*" maxlength="22" placeholder="Credit Card Number" data-stripe="number"><div class="ioption"></div>
+			<input type="text" pattern="[0-9]*" placeholder="Month" class="small" title="Expiration Month" data-stripe="exp-month"> /
+			<input type="text" pattern="[0-9]*" placeholder="Year" class="small" title="Expiration Year" data-stripe="exp-year">	
+			<input type="text" pattern="[0-9]*" placeholder="CVC" class="small cvc" title="The 3 digits on the back of your card" data-stripe="cvc">	
 			<div class="mainerror error"></div>		
 			<a class="hirobutton green" data-hiro-action="checkout">
 			Upgrade</a>	
 			<div class="pbstripe"><span class="right">Switch or cancel plans anytime</span>Secure payments powered by{{ " " }}<b>stripe</b></div>						
-			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('checkout','full');" class="pseudobutton"></input>
+			<input type="submit" value="foo" onclick="Hiro.ui.dialog.clickhandler('checkout','full');" class="pseudobutton">
 		</form>						
 	</div>	
 </div>
