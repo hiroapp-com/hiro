@@ -2182,6 +2182,7 @@ html.ml .description {
   box-shadow: 0px 1px 8px rgba(0,0,0,0.6);  
   padding: 20px 50px 12px 50px; 
   text-align: center;
+  opacity: 0.97;
 }
 
 html.ml .description .cto {
@@ -2236,8 +2237,9 @@ html.ml .description .cto small a {
     background-position: center center;    
   }
 
-  html.ios #landing.modal iframe html.ml .graphics .device {
+  html.ml.ios .graphics .device {
     background-image: url(../img/site/blank_iphone.png);
+    background-size: auto 85%;      
   }
 
   html.ml .graphics .screen {
@@ -2250,9 +2252,12 @@ html.ml .description .cto small a {
     height: auto;      
   }  
 
-  html.ios #landing.modal iframe html.ml .graphics .screen {
-    left: 12%;
-    right: 13%;  
+  html.ml.ios .graphics .screen {
+    background-size: auto 67%;
+    bottom: 0;
+    width: auto;
+    left: 0;
+    right: 5px; 
   }    
 
   html.ml .description {

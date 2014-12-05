@@ -6900,6 +6900,9 @@ var Hiro = {
 				// Set shortcut to landingpage
 				this.page = page;
 
+				// Add ios class
+				if (Hiro.ui.ios) page.document.documentElement.className += ' ios';
+
 				// Send page object to appcache init
 				Hiro.data.appcache.init(page);
 
