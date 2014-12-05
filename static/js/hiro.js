@@ -8218,7 +8218,7 @@ var Hiro = {
 				// Open twitter window or redirect to twitter
 				if (Hiro.ui.mobileapp || Hiro.ui.touch) {
 					// Open with URL handler
-					Hiro.util.openlink(url);
+				     Hiro.util.openlink(url);
 				// Normal modal
 				} else {
 					// Crappy popup similar to https://dev.twitter.com/web/intents#tweet-intent
