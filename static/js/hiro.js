@@ -1017,7 +1017,7 @@ var Hiro = {
 				this.textlength = string.length;
 
 				// Get local peers
-				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers');
+				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers') || [];
 
 				// Remove all nodes
 				while (el.firstChild) {
@@ -1575,8 +1575,7 @@ var Hiro = {
 
 		// Internals
 		authinprogress: false,
-
-		// Token cache
+		fbauthinprogress: false,
 
 		// Grab registration form data, submit via XHR and process success / error
 		// The Login and Register screens and flows are pretty much the same,
@@ -1698,8 +1697,8 @@ var Hiro = {
 				e = branch.getElementsByClassName('mainerror')[0], reason;
 
 			// Only do one at a time
-			if (this.authinprogress) return;
-			this.authinprogress = true;
+			if (this.fbauthinprogress) return;
+			this.fbauthinprogress = true;
 
 			// Begin loading bar
 			Hiro.ui.hprogress.begin();
@@ -1776,7 +1775,7 @@ var Hiro = {
 					Hiro.user.logiocomplete(data,login);
 
 					// Allow next try
-					Hiro.user.authinprogress = false;
+					Hiro.user.fbauthinprogress = false;
 
 					// Track event
                     if (login) Hiro.user.track.logevent('logged-in', {via: 'facebook'});								        
@@ -1810,7 +1809,7 @@ var Hiro = {
 					Hiro.ui.hprogress.done(true)
 
 					// Allow next try
-					Hiro.user.authinprogress = false;
+					Hiro.user.fbauthinprogress = false;
 				}
 			});
 		},
