@@ -2,8 +2,8 @@
     "manifest_version": 2,
     "name": "Hiro",
     "short_name": "Hiro",
-    "description": "Hiro is an app for shared text snippets, so they don't get lost all over the place.",
-    "version": "0.9.13",
+    "description": "Hiro is a brand new and very fast way to get organized. Using plain text snippets, it even works for the most chaotic people.",
+    "version": "0.9.14",
     "author": "Hiro Inc.",
     "icons": {
         "16": "16.png",
