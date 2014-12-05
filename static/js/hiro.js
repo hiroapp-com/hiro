@@ -6463,7 +6463,7 @@ var Hiro = {
 					// Hide widgets
 					if (Hiro.apps.open.length > 0) Hiro.apps.close();
 					// Hide landing page
-					if (Hiro.ui.landing.visible && Hiro.ui.landing.route == 'modal') Hiro.ui.landing.stash();
+					if (Hiro.ui.landing.visible && Hiro.ui.landing.route) Hiro.ui.landing.stash();
 					break;
 				case 37:
 					// Move to next screen in landing page via fake event
@@ -6938,7 +6938,7 @@ var Hiro = {
 				var frame = document.createElement('iframe');
 
 				// Change appeareance
-				if (this.route == 'modal') this.el_root.className += 'modal';
+				if (this.route && this.route.indexOf('modal') > -1) this.el_root.className += 'modal';
 
 				// Set src
 				frame.src = this.baseurl + (version || this.route || 'default');

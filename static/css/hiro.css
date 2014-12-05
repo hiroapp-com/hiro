@@ -2049,6 +2049,17 @@ html.ml body {
   height: 100%;  
 }
 
+html.ml .graphics {
+  width: 300%;
+  display: block;
+  height: 100%; 
+}
+
+html.ml .graphics .device {
+  background-image: url(../img/icons.5.png);
+  background-size: 108px auto;
+}
+
 html.ml .pages {
   width: 300%;
   display: block;
