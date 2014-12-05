@@ -2668,7 +2668,7 @@ var Hiro = {
 
 				// When a new note is created
 				share: {
-					title: 'Add participants',
+					title: 'Initial participants',
 					secondary: 'Only me for now'
 				}
 			},
@@ -6300,7 +6300,7 @@ var Hiro = {
 		mini: function() { return (document.body.offsetWidth < 481) },
 		midi: function() { return (document.body.offsetWidth > 480 && document.body.offsetWidth < 901) },
 
-		// MEasurements
+		// Measurements
 		width: function() { return document.documentElement.clientWidth || window.innerWidth },
 		height: function() { return document.documentElement.clientHeight || window.innerHeight },
 
