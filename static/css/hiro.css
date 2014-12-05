@@ -2050,16 +2050,31 @@ html.ml body {
 }
 
 html.ml .graphics {
-  width: 300%;
+  width: 100%;
   display: block;
   height: 100%; 
 }
 
 html.ml .graphics .device {
-  background-image: url(../img/icons.5.png);
-  background-size: 108px auto;
+  background-image: url(../img/site/blank_macbook.png);
+  background-size: auto 100%;
+  height: 100%;
+  width: 100%;
+  background-repeat: no-repeat;
+  background-position: center top;
+  position: absolute;
+  z-index: 1000;
 }
 
+html.ml .graphics .screen {
+  background-image: url(../img/site/ani_desktop.gif);
+  background-size: auto 78%;
+  height: 100%;
+  width: 100%;  
+  background-repeat: no-repeat;
+  background-position: center 25%;
+}
+/* Currently not used, for more complex modal pages that feature real DOM typing instead of animated gifs
 html.ml .pages {
   width: 300%;
   display: block;
@@ -2123,11 +2138,41 @@ html.ml .page .dots {
 
 html.ml .page .dots a {
   color: #999; 
+}       
+
+@media (max-width: 480px) {  
+  html.ml .pages .page {
+    top: 35px;
+    padding: 35px 45px; 
+    margin: 0 35px; 
+  } 
+
+  html.ml .pages .page.one {
+    right: 0;
+    left: 0;
+  }  
+
+  html.ml .pages .page.two {
+    right: -100%;
+    left: 100%;
+  } 
+
+  html.ml .pages .page.three {
+    right: -200%;
+    left: 200%;
+  } 
+
+  html.ml .page .dots {
+    bottom: 116px;
+    z-index: 10000;
+  }      
 }
+
+*/
 
 html.ml .description {
   position: fixed;
-  bottom: 42px;
+  bottom: 11%;
   left: 0;
   right: 0;
   background-color: #f0f0ed;
@@ -2182,34 +2227,33 @@ html.ml .description .cto small a {
     width: 100%;
     height: 100%;
     top: 0;
-    left: 0; 
-    background-color: #2f2f2f;    
-  }
-  html.ml .pages .page {
-    top: 35px;
-    padding: 35px 45px; 
-    margin: 0 35px; 
-  } 
+    left: 0;  
+  }    
 
-  html.ml .pages .page.one {
-    right: 0;
-    left: 0;
+  html.ml .graphics .device {
+    background-image: url(../img/site/blank_htcone.png);
+    background-size: auto 90%;  
+    background-position: center center;    
+  }
+
+  html.ios #landing.modal iframe html.ml .graphics .device {
+    background-image: url(../img/site/blank_iphone.png);
+  }
+
+  html.ml .graphics .screen {
+    background-image: url(../img/site/ani_mobile.gif);
+    background-size: auto 72%;
+    background-position: center center;
+    position: absolute;
+    bottom: 9%;
+    top: 0;
+    height: auto;      
   }  
 
-  html.ml .pages .page.two {
-    right: -100%;
-    left: 100%;
-  } 
-
-  html.ml .pages .page.three {
-    right: -200%;
-    left: 200%;
-  } 
-
-  html.ml .page .dots {
-    bottom: 116px;
-    z-index: 10000;
-  }      
+  html.ios #landing.modal iframe html.ml .graphics .screen {
+    left: 12%;
+    right: 13%;  
+  }    
 
   html.ml .description {
     padding-left: 35px;
@@ -2224,7 +2268,6 @@ html.ml .description .cto small a {
   html.ml .description .cto a.hirobutton {
     width: auto;
     display: block;
-    margin: 40px 0 10px 0;
     min-width: 160px;
   }  
 }
