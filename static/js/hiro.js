@@ -1017,7 +1017,10 @@ var Hiro = {
 				this.textlength = string.length;
 
 				// Get local peers
-				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers') || [];
+				peers = Hiro.data.get('note_' + Hiro.canvas.currentnote,'c.peers');
+
+				// Some browsers fire keyboard events to all input fields, abort here if there is no data present
+				if (!peers) return;
 
 				// Remove all nodes
 				while (el.firstChild) {
