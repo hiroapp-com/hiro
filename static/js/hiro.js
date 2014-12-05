@@ -148,7 +148,7 @@ var Hiro = {
 						// Close the folio if it should be open
 						if (Hiro.folio.open) Hiro.ui.slidefolio(-1,100);
 						// And force focus on touch devices
-						if (Hiro.ui.touch) Hiro.apps.sharing.focus();
+						if (Hiro.ui.touch) Hiro.apps.sharing.zoom();
 						break;
 					case 'archivelink':
 						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('archiveswitch');
@@ -2628,7 +2628,7 @@ var Hiro = {
 				if (!el.style.display || el.style.display == 'none') el.style.display = 'block';
 
 				// Make sure proper elements are focussed etc
-				Hiro.apps[app].focus();
+				Hiro.apps[app].zoom();
 			});
 		},
 
@@ -2764,7 +2764,7 @@ var Hiro = {
 						// Switch between modes
 						case 'switch':
 							// Switch to respective subsection & select input field contents
-							this.focus(id[1]);
+							this.zoom(id[1]);
 							// All set
 							break;
 						// Clicked on sharing URL input field
@@ -2817,7 +2817,7 @@ var Hiro = {
 			},
 
 			// Prepare the respective area
-			focus: function(section) {
+			zoom: function(section) {
 				var el;
 				// Preload facebook if not yet done so
 				if (!window.FB) Hiro.lib.facebook.load();
@@ -3048,7 +3048,7 @@ var Hiro = {
 						// Render active & reset flag
 						el_url[el_url.length - 1].disabled = that.notoken = false;
 						// If update was called while widget is open & vnotoken value is still true, focus on input
-						if (focus && that.section == 'share' && Hiro.apps.open.indexOf('sharing') > -1) that.focus();
+						if (focus && that.section == 'share' && Hiro.apps.open.indexOf('sharing') > -1) that.zoom();
 					// Otherwise render placeholder
 					} else {
 						// Insert Text
