@@ -2233,31 +2233,23 @@ html.ml .description .cto small a {
 
   html.ml .graphics .device {
     background-image: url(../img/site/blank_htcone.png);
-    background-size: auto 90%;  
+    background-size: 140%;  
     background-position: center center;    
   }
 
   html.ml.ios .graphics .device {
     background-image: url(../img/site/blank_iphone.png);
-    background-size: auto 85%;      
+    background-size: 100%;      
   }
 
   html.ml .graphics .screen {
     background-image: url(../img/site/ani_mobile.gif);
-    background-size: auto 72%;
-    background-position: center center;
-    position: absolute;
-    bottom: 9%;
-    top: 0;
-    height: auto;      
+    background-size: 75%;
+    background-position: center center;   
   }  
 
   html.ml.ios .graphics .screen {
-    background-size: auto 67%;
-    bottom: 0;
-    width: auto;
-    left: 0;
-    right: 5px; 
+    background-size: 74%;
   }    
 
   html.ml .description {
