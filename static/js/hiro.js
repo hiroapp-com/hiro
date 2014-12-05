@@ -5371,6 +5371,14 @@ var Hiro = {
 			}
 		},
 
+		// Long polling stuff
+		lp: {
+			// Establish nitial connection
+			connect: function() {
+				alert('Please install a more up-to-date browser to save your notes and use Hiro with others.');
+			}
+		},
+
 		// Generic AJAX as well as longpolling settings & functions
 		ajax: {
 			// When we deem a response successfull or let us know that the server is alive
