@@ -2668,7 +2668,7 @@ var Hiro = {
 
 				// When a new note is created
 				share: {
-					title: 'Initial participants',
+					title: 'Add participants',
 					secondary: 'Only me for now'
 				}
 			},
