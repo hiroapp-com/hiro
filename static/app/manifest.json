@@ -10,11 +10,11 @@
         "48": "icons/48_padding.png",    
         "128": "icons/128_padding.png"        
     },
-    "app": {
-        "launch": {
-            "web_url": "https://www.hiroapp.com/backdoor"
-        }
-    },   
+    "background": {
+        "scripts": ["js/chrome.js"],
+        "persistent": false
+    },     
+  
     "browser_action": {
       "default_icon": {
         "19": "icons/19.png",
