@@ -27,14 +27,23 @@ var HBG  = {
 
 	// Try to find the latest Hiro tab
 	returntolast: function() {
+		var tab;
+
 		// If we can query tabs (starting Chrome 16)
 		if (chrome.tabs.query) {
 			// Finally see if any there's any tab on hiroapp.com
 			chrome.tabs.query({ url:'https://*.hiroapp.com/*' },function(tabs) {
 				// Cycle through those tabs
 				for (i = tabs.length; i > 0; i-- ) {
+					tab = tabs[i -1];
 					// If the user clicked while on active tab, abort
-					if (tabs[i -1].active) HBG.spawn();
+					if (tab.active) {
+						// See if it's the active widow
+						chrome.windows.getCurrent(function(win){			
+							// If it indeed was the current window
+							if (win.id == tab.windowId)	HBG.spawn();
+						})
+					}	
 				}
 				// Otherwise just go for the latest one
 				HBG.bringtofront(tabs.pop());								
@@ -55,6 +64,11 @@ var HBG  = {
 	// Make specific tab seen, requires full tab object
 	bringtofront: function(tab) {
 		chrome.tabs.update(tab.id,{ active: true });
+		// Also switch windows
+		chrome.windows.getCurrent(function(win){			
+			// If the current window is not the one we're looking for, focus it and also drawAttention as fallback
+			if (win.id != tab.windowId)	chrome.windows.update(tab.windowId, { focused: true, drawAttention: true });
+		})
 	},
 
 	// Create a new tab
