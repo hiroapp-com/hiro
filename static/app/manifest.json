@@ -10,7 +10,7 @@
         "16": "icons/16.png",
         "48": "icons/48_padding.png",    
         "128": "icons/128_padding.png"        
-    },
+    },  
     "background": {
         "scripts": ["js/chrome.js"],
         "persistent": false
