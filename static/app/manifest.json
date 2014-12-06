@@ -14,13 +14,14 @@
         "launch": {
             "web_url": "https://www.hiroapp.com/backdoor"
         }
-    },
+    },   
     "browser_action": {
       "default_icon": {
         "19": "icons/19.png",
         "38": "icons/38.png"
       },
       "default_title": "Hiro"
-    },    
+    },  
+    "optional_permissions": [ "notifications" ],  
     "offline_enabled": true
 }
