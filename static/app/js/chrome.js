@@ -1,8 +1,67 @@
-// If the user clicks the browser icon
-chrome.browserAction.onClicked.addListener(spawn);
+// Small Hiro Background Lib
+var HBG  = {
+	tabs: [],	
+	init: function() {
+		// If the user clicks the browser icon
+		chrome.browserAction.onClicked.addListener(HBG.click);
 
-// Or the apps icon
-chrome.app.runtime.onLaunched.addListener(spawn);
+		// Or the apps icon
+		if (chrome.app.runtime) chrome.app.runtime.onLaunched.addListener(HBG.click);	
 
-// Create a new tab
-function spawn() { chrome.tabs.create({ url: 'https://www.hiroapp.com'	}) }
+		// If a tab is closed we check if we should remove it from our list
+		if (chrome.tabs) chrome.tabs.onRemoved.addListener(function(tab){
+			if (HBG.tabs.indexOf(tab) > -1) HBG.tabs.splice(HBG.tabs.indexOf(tab));
+		})
+	},
+
+	// Display the latest tab or spawn a new one
+	click: function(event) {
+		// If the click happened while we were on a Hiro page, spawn a new session right away
+		if (event.url.indexOf('hiroapp.com') > -1) {
+			HBG.spawn();
+		// Try to find a proper tab	
+		} else {
+			HBG.returntolast();
+		}
+	},
+
+	// Try to find the latest Hiro tab
+	returntolast: function() {
+		// If we can query tabs (starting Chrome 16)
+		if (chrome.tabs.query) {
+			// Finally see if any there's any tab on hiroapp.com
+			chrome.tabs.query({ url:'https://*.hiroapp.com/*' },function(tabs) {
+				// Cycle through those tabs
+				for (i = tabs.length; i > 0; i-- ) {
+					// If the user clicked while on active tab, abort
+					if (tabs[i -1].active) HBG.spawn();
+				}
+				// Otherwise just go for the latest one
+				HBG.bringtofront(tabs.pop());								
+			});	
+		// Try our know tabs as fallback					
+		} else {
+			for (i = this.tabs.length; i > 0; i-- ) {
+				chrome.tabs.get(this.tabs[i - 1], function(tab){
+					// If the tab is active, the user most likely wants to open a new one
+					if (tab.status == 'active') HBG.spawn();
+					// Fall back to latest one
+					HBG.bringtofront(tabs.pop());
+				});
+			}
+		}
+	},
+
+	// Make specific tab seen, requires full tab object
+	bringtofront: function(tab) {
+		chrome.tabs.update(tab.id,{ active: true });
+	},
+
+	// Create a new tab
+	spawn: function() { 
+		chrome.tabs.create({ url: 'https://www.hiroapp.com/backdoor' },function(tab){
+			HBG.tabs.push(tab.id);
+		}); 
+	}	
+}
+HBG.init();
