@@ -2579,6 +2579,7 @@ var Hiro = {
 			// Chrome app id https://chrome.google.com/webstore/detail/hiro/hmjbiijapgfeeeiibjfdajhkapbnndal
 			id: 'hmjbiijapgfeeeiibjfdajhkapbnndal',
 			socket: null,
+			version: undefined,
 
 			// Initialize the app
 			boot: function() {
@@ -2586,12 +2587,32 @@ var Hiro = {
 				Hiro.sys.log('Booting Chrome extension...');
 
 				// Try building a socket
-				if (chrome.runtime) this.socket = chrome.runtime.connect(this.id);
-			}
+				if (chrome.runtime) {				
+					// Internal reference
+					this.socket = chrome.runtime.connect(this.id, { name: 'Hiro' });
+				}	
+
+				// If we weren't able to build the socket
+				if (!this.socket) {
+					// Try teasing an app install
+					this.tease();
+				} else {
+					// Attach event listener
+					this.socket.onMessage.addListener(Hiro.app.chromeext.messagehandler)						
+					// Report success
+					Hiro.sys.log('Chrome extension successfully installed.',this.socket);					
+				}
+			},
 
 			// Suggest to install the app
 			tease: function() {
 
+			},
+
+			// 
+			messagehandler: function(msg) {
+				// Store extension version
+				if (msg.version) Hiro.app.chromeext.version = msg.version;
 			}
 		} 
 

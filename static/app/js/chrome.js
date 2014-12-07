@@ -15,13 +15,27 @@ var HBG  = {
 		})
 
 		// Listen to incoming messages
-		chrome.runtime.onMessageExternal.addListener(
-			function(request, sender, sendResponse) {
-				console.log(request, sender, sendResponse);
-		});	
+		chrome.runtime.onMessageExternal.addListener( HBG.messagehandler );	
 
 		// Build a socket
-		chrome.runtime.onConnectExternal.addListener(function(port) { console.log(port); HBG.socket = port; });						
+		chrome.runtime.onConnectExternal.addListener(function(port) { 
+			// Double check it's us
+			if (port.name == 'Hiro') {
+				// Set local reference
+				HBG.socket = port;
+
+				// Add message listener
+				port.onMessage.addListener( HBG.messagehandler );	
+
+				// Ack with manifest version
+				port.postMessage({ version: chrome.runtime.getManifest().version });
+			}		
+		});						
+	},
+
+	// Handle incoming messages
+	messagehandler: function(request, sender, sendResponse) {
+		console.log(request, sender, sendResponse);
 	},
 
 	// Display the latest tab or spawn a new one
