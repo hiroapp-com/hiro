@@ -1,17 +1,27 @@
 // Small Hiro Background Lib
 var HBG  = {
-	tabs: [],	
+	tabs: [],
+	socket: null,
 	init: function() {
 		// If the user clicks the browser icon
 		chrome.browserAction.onClicked.addListener(HBG.click);
 
 		// Or the apps icon
-		if (chrome.app.runtime) chrome.app.runtime.onLaunched.addListener(HBG.click);	
+		if (chrome.app.runtime) chrome.app.runtime.onLaunched.addListener(HBG.click);
 
 		// If a tab is closed we check if we should remove it from our list
 		if (chrome.tabs) chrome.tabs.onRemoved.addListener(function(tab){
 			if (HBG.tabs.indexOf(tab) > -1) HBG.tabs.splice(HBG.tabs.indexOf(tab));
 		})
+
+		// Listen to incoming messages
+		chrome.runtime.onMessageExternal.addListener(
+			function(request, sender, sendResponse) {
+				console.log(request, sender, sendResponse);
+		});	
+
+		// Build a socket
+		chrome.runtime.onConnectExternal.addListener(function(port) { console.log(port); HBG.socket = port; });						
 	},
 
 	// Display the latest tab or spawn a new one

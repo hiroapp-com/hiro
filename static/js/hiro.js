@@ -15,6 +15,8 @@
 	Hiro.user.checkout: Stripe & Flask related checkout stuff
 	Hiro.user.track: Internal analytics & event tracking
 
+	Hiro.app: Everything app related, from Chrome extension to ios
+
 	Hiro.apps: Generic plugin setup
 	Hiro.apps.sharing: Sharing plugin
 	Hiro.apps.publish: Publish selections to various external services
@@ -2547,6 +2549,52 @@ var Hiro = {
                 }
 			}
 		}
+	},
+
+	// Native app and platform integration
+	app: {
+		// Internals
+		platform: undefined,
+
+		// Event subscribers
+		notification: [],
+
+		// Find out if we do have a platform we have an integration with
+		init: function() {
+			// iOS
+			if (Hiro.ui.ios) {
+				this.platform = 'ios';
+			// Using a Chrome browser	
+			} else if (/Chrome/g.test(navigator.userAgent),) {
+				// Default to extension as long it's our only Chrome integration
+				this.platform = 'chromeext';
+			}
+
+			// We identified a platform, now try to spin it up!
+			if (this.platform) this[this.platform].boot();
+		},
+
+		// Chrome extension https://developer.chrome.com/extensions
+		chromeext: {
+			// Chrome app id https://chrome.google.com/webstore/detail/hiro/hmjbiijapgfeeeiibjfdajhkapbnndal
+			id: 'hmjbiijapgfeeeiibjfdajhkapbnndal',
+			socket: null,
+
+			// Initialize the app
+			boot: function() {
+				// Log
+				Hiro.sys.log('Booting Chrome extension...');
+
+				// Try building a socket
+				if (chrome.runtime) this.socket = chrome.runtime.connect(this.id);
+			}
+
+			// Suggest to install the app
+			tease: function() {
+
+			}
+		} 
+
 	},
 
 	// Everybodies needs them! Less about Hiro itself than a pattern learning ground

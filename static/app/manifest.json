@@ -3,18 +3,20 @@
     "name": "Hiro",
     "short_name": "Hiro",
     "description": "Hiro is a brand new and very fast way to get organized. Using plain text snippets, it even works for the most chaotic people.",
-    "version": "0.10",
+    "version": "0.10.1",
     "author": "Hiro Inc.",
-    "homepage_url": "https://www.hiroapp.com",
     "icons": {
         "16": "icons/16.png",
         "48": "icons/48_padding.png",    
         "128": "icons/128_padding.png"        
-    },  
+    },
     "background": {
         "scripts": ["js/chrome.js"],
         "persistent": false
-    },         
+    },
+    "externally_connectable": {
+        "matches": [ "https://*.hiroapp.com/*" ] 
+    },   
     "browser_action": {
       "default_icon": {
         "19": "icons/19.png",
@@ -22,6 +24,7 @@
       },
       "default_title": "Hiro"
     },  
-    "optional_permissions": [ "notifications" ],  
+    "permissions": ["contextMenus"],
+    "optional_permissions": [ "notifications" ],
     "offline_enabled": true
 }
