@@ -34,8 +34,9 @@ var HBG  = {
 	},
 
 	// Handle incoming messages
-	messagehandler: function(request, sender, sendResponse) {
-		console.log(request, sender, sendResponse);
+	messagehandler: function(msg) {
+		// Update badge
+		if (msg.unseen && chrome.browserAction) chrome.browserAction.setBadgeText = msg.unseen;
 	},
 
 	// Display the latest tab or spawn a new one
