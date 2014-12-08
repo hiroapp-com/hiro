@@ -2495,9 +2495,15 @@ var Hiro = {
                         case 'added-contact':
                             cat = 'profile'; action = 'add-contact'; label = meta['via']; 
                             break;
+                        case 'started-app-install':
+                            cat = 'profile'; action = 'started-app-install'; label = meta['app']; 
+                            break; 
                         case 'installed-app':
                             cat = 'profile'; action = 'installed-app'; label = meta['app']; 
-                            break;                            
+                            break; 
+                        case 'aborted-app-install':
+                            cat = 'profile'; action = 'aborted-app-install'; label = meta['reason']; 
+                            break;                                                        
 
                         // dialog events
                         case 'viewed-settings':
@@ -2643,6 +2649,8 @@ var Hiro = {
 							that.socket.onMessage.addListener(Hiro.app.chromeext.messagehandler);																	
 							// Report success
 							Hiro.sys.log('Chrome extension v' + response.version + ' successfully installed.',that.socket);
+							// Save version
+							Hiro.app.chromeext.version = response.version;
 						// Otherwise tease install
 						} else {
 							// Report success
@@ -2661,7 +2669,11 @@ var Hiro = {
 
 			// When the user clicks install, called by fastbuttonhandler
 			install: function() {
-				var url = 'https://chrome.google.com/webstore/detail/' + this.id, that = this;;
+				var url = 'https://chrome.google.com/webstore/detail/' + this.id, that = this;
+
+				// Ping analytics
+				Hiro.user.track.logevent('started-app-install', { app: 'Chrome Extension' });
+
 				// https://developer.chrome.com/webstore/inline_installation
 				chrome.webstore.install(url,
 					// Success handler
@@ -2676,7 +2688,9 @@ var Hiro = {
 					// User cancelled install or something else went wrong
 					function(response) { 
 						// Log event 
-						Hiro.sys.log('Extension installation failed',response);						
+						Hiro.sys.log('Extension installation failed',response);	
+						// Ping analytics
+						Hiro.user.track.logevent('aborted-app-install', { reason: response });											
 					}
 				);
 			},
@@ -2684,7 +2698,7 @@ var Hiro = {
 			// Message coming from extension
 			messagehandler: function(msg) {
 				// Store extension version
-				if (msg.version) Hiro.app.chromeext.version = msg.version;
+				Hiro.sys.log(msg);
 			}
 		} 
 
