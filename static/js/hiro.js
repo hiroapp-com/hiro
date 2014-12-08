@@ -2618,7 +2618,14 @@ var Hiro = {
 			Hiro.ui.render(function(){		
 				Hiro.context.el_root.appendChild(el);
 			}) 
-		},		
+		},	
+
+		// IOs stuff
+		ios: {
+			boot: function() {
+
+			}
+		},	
 
 		// Chrome extension https://developer.chrome.com/extensions
 		chromeext: {
@@ -9214,12 +9221,6 @@ var Hiro = {
 		}
 	}
 };
-
-
-
-
-
-
 
 // DMP by Neil Fraser
 (function(){function diff_match_patch(){this.Diff_Timeout=1;this.Diff_EditCost=4;this.Match_Threshold=0.5;this.Match_Distance=1E3;this.Patch_DeleteThreshold=0.5;this.Patch_Margin=4;this.Match_MaxBits=32}
