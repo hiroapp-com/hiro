@@ -2559,9 +2559,6 @@ var Hiro = {
 		// Event subscribers
 		notification: [],
 
-		// DOM nodes
-		el_tease: document.getElementById('teasers').getElementsByClassName('install')[0],
-
 		// Find out if we do have a platform we have an integration with
 		init: function() {
 			// iOS
@@ -2576,6 +2573,43 @@ var Hiro = {
 			// We identified a platform, now try to spin it up!
 			if (this.platform) this[this.platform].boot();
 		},
+
+		// If install event is fired, we forward this to the respective install handler
+		install: function(id,type) {
+			if (type == 'full') Hiro.app[Hiro.app.platform].install();
+		},
+
+		// Suggest to install the app
+		tease: function(text) {
+			//  Create new 
+			var el, target;			
+
+			// Abort if user cancelled install already
+			if (Hiro.data.get('settings', this.platform + '_install_turneddown')) return;
+
+			// Spawn div
+			el = document.createElement('div')				
+
+			// Fill text
+			el.textContent = text;
+
+			// Set proper CSS
+			el.className +=  this.platform;
+
+			// Set proper CSS
+			el.style.display = 'block';	
+
+			// Set id
+			el.id = 'installteaser';
+
+			// Attach event handler		
+			Hiro.ui.fastbutton.attach(el,Hiro.app.install);			
+
+			// Append to DOM
+			Hiro.ui.render(function(){		
+				Hiro.context.el_root.appendChild(el);
+			}) 
+		},		
 
 		// Chrome extension https://developer.chrome.com/extensions
 		chromeext: {
@@ -2593,15 +2627,12 @@ var Hiro = {
 				Hiro.sys.log('Booting Chrome extension ' + this.id);				
 
 				// Try building a socket
-				if (chrome.runtime) {				
-					// Internal reference
-					this.socket = chrome.runtime.connect(this.id, { name: 'Hiro' });
-				}	
+				if (chrome.runtime) this.socket = chrome.runtime.connect(this.id, { name: 'Hiro' });
 
 				// If we weren't able to build the socket
 				if (!this.socket) {
 					// Try teasing an app install
-					this.tease();
+					Hiro.app.tease('Install Chrome extension');
 				} else {
 					// Attach event listener
 					this.socket.onMessage.addListener(Hiro.app.chromeext.messagehandler);					
@@ -2610,24 +2641,15 @@ var Hiro = {
 				}
 			},
 
-			// Suggest to install the app
-			tease: function() {
-				var el = Hiro.app.el_tease;
-
-				// Abort if user cancelled install already
-				if (Hiro.data.get('settings','chromeext_install_turneddown')) return;
-
-				// Update DOM
-				Hiro.ui.render(function(){
-					// Fill text
-					el.textContent = 'Install Chrome extension';
-					
-					// Set proper CSS
-					el.className += ' chrome';
-
-					// Set proper CSS
-					el.style.display = 'block';					
-				}) 
+			// When the user clicks install, called by fastbuttonhandler
+			install: function() {
+				var url = 'https://chrome.google.com/webstore/detail/' + this.id;
+				console.log(url);
+				// https://developer.chrome.com/webstore/inline_installation
+				chrome.webstore.install(url,
+					function(response) { console.log('Success',response) },
+					function(response) { console.log('Fail',response) }
+				);
 			},
 
 			// Message coming from extension

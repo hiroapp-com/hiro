@@ -2491,13 +2491,9 @@ body#landingPage2 .l_footer .l_box .l_header {
 
 /* -------- Teasers -----------------*/
 
-#teasers div {
+#installteaser {
   display: none;
-  position: fixed;  
-}
-
-#teasers .install {
-  z-index: 4100;
+  position: fixed;    
   color: transparent;
   background-repeat: no-repeat;
   box-sizing: border-box;
@@ -2505,33 +2501,33 @@ body#landingPage2 .l_footer .l_box .l_header {
 }
 
 @media (max-width: 480px) {
-  #teasers .install {
+  #installteaser {
     bottom: 50px;
     left: 0;
     height: 40px;
-    z-index: 1001;
     max-width: 295px;
     right: 50px;
     background-color: #2f2f2f;
     color: #999;
     padding: 15px 0 0 50px;   
   }
-  #teasers .install:hover {
+  #installteaser:hover {
     color: #fff;   
   }  
 }
 
 @media (min-width: 900px) {
-  #teasers .install {
-    position: fixed;
+  #installteaser {
     bottom: 0;
     right: 0;
     height: 100px;
     width: 300px;
+  }
+  #installteaser.chromeext {
     background-image: url(../app/img/chromestore.png);
     background-position: 25px center;  
     background-size: 70%;    
-  }
+  }  
 }
 
 /* -------- Progress Bar -----------------*/
