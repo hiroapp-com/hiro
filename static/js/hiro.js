@@ -2624,7 +2624,7 @@ var Hiro = {
 			// Initialize the app
 			boot: function() {
 				var that = this;
-				
+
 				// Local testing fallback
 				if (!Hiro.sys.production) this.id = 'mmijcaigkmghgkiogkahgojjkjfloflk';
 
@@ -2653,7 +2653,9 @@ var Hiro = {
 					});	
 				} else {					
 					// Log error
-					Hiro.sys.error('Tried to install chrome extension but runtime API not available')
+					Hiro.sys.log('Tried to install chrome extension but runtime API not available');
+					// Try teasing an app install
+					Hiro.app.tease('Install Chrome extension');					
 				}					
 			},
 
