@@ -2847,7 +2847,7 @@ var Hiro = {
 				if (teaser.title) title.firstChild.textContent = teaser.title;
 
 				// Change button, only on small devices
-				if (teaser.secondary && Hiro.ui.mini()) {
+				if (teaser.secondary) {
 					// Set content
 					secondarybutton.textContent = teaser.secondary;
 					// Display button
