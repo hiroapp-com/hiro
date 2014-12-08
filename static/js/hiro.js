@@ -2574,7 +2574,7 @@ var Hiro = {
 			if (Hiro.ui.ios) {
 				this.platform = 'ios';
 			// Using a Chrome browser	
-			} else if (/Chrome/g.test(navigator.userAgent)) {
+			} else if (/Chrome/g.test(navigator.userAgent) && chrome) {
 				// Default to extension as long it's our only Chrome integration
 				this.platform = 'chromeext';
 			}
