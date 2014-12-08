@@ -502,7 +502,7 @@ input.error:focus {
 #rails {
   position: absolute;
   margin-left: 50px;
-  z-index: 1001;
+  z-index: 1010;
   box-sizing: border-box; 
   left: 0;
   right: 0; 
@@ -1751,7 +1751,6 @@ html.ios body #rails #canvas textarea {
 }
 
 @media (max-width: 810px) {
-
   #d_close {
     right: 2px;
   }
@@ -2490,9 +2489,44 @@ body#landingPage2 .l_footer .l_box .l_header {
 
 }
 
+/* -------- Teasers -----------------*/
 
+#teasers div {
+  display: none;
+  position: fixed;  
+}
 
+#teasers .install {
+}
 
+@media (max-width: 480px) {
+  #teasers .install {
+    bottom: 50px;
+    left: 0;
+    height: 40px;
+    z-index: 1001;
+    max-width: 295px;
+    right: 50px;
+    background-color: #2f2f2f;
+    color: #999;
+    padding: 15px 0 0 50px;
+    box-sizing: border-box;
+    cursor: pointer;    
+  }
+  #teasers .install:hover {
+    color: #fff;   
+  }  
+}
+
+@media (min-width: 811px) {
+  #teasers .install {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    height: 100px;
+    width: 300px;
+  }
+}
 
 /* -------- Progress Bar -----------------*/
 

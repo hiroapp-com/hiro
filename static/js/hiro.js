@@ -2559,13 +2559,16 @@ var Hiro = {
 		// Event subscribers
 		notification: [],
 
+		// DOM nodes
+		el_tease: document.getElementById('teasers').getElementsByClassName('install')[0],
+
 		// Find out if we do have a platform we have an integration with
 		init: function() {
 			// iOS
 			if (Hiro.ui.ios) {
 				this.platform = 'ios';
 			// Using a Chrome browser	
-			} else if (/Chrome/g.test(navigator.userAgent),) {
+			} else if (/Chrome/g.test(navigator.userAgent)) {
 				// Default to extension as long it's our only Chrome integration
 				this.platform = 'chromeext';
 			}
@@ -2577,14 +2580,17 @@ var Hiro = {
 		// Chrome extension https://developer.chrome.com/extensions
 		chromeext: {
 			// Chrome app id https://chrome.google.com/webstore/detail/hiro/hmjbiijapgfeeeiibjfdajhkapbnndal
-			id: 'hmjbiijapgfeeeiibjfdajhkapbnndal',
+			id: undefined,
 			socket: null,
 			version: undefined,
 
 			// Initialize the app
 			boot: function() {
+				// Set proper id
+				this.id = (Hiro.sys.production) ? 'hmjbiijapgfeeeiibjfdajhkapbnndal' : 'mmijcaigkmghgkiogkahgojjkjfloflk';
+
 				// Log
-				Hiro.sys.log('Booting Chrome extension...');
+				Hiro.sys.log('Booting Chrome extension ' + this.id);				
 
 				// Try building a socket
 				if (chrome.runtime) {				
@@ -2598,7 +2604,7 @@ var Hiro = {
 					this.tease();
 				} else {
 					// Attach event listener
-					this.socket.onMessage.addListener(Hiro.app.chromeext.messagehandler)						
+					this.socket.onMessage.addListener(Hiro.app.chromeext.messagehandler);					
 					// Report success
 					Hiro.sys.log('Chrome extension successfully installed.',this.socket);					
 				}
@@ -2606,10 +2612,25 @@ var Hiro = {
 
 			// Suggest to install the app
 			tease: function() {
+				var el = Hiro.app.el_tease;
 
+				// Abort if user cancelled install already
+				if (Hiro.data.get('settings','chromeext_install_turneddown')) return;
+
+				// Update DOM
+				Hiro.ui.render(function(){
+					// Fill text
+					el.textContent = 'Install Chrome extension';
+					
+					// Set proper CSS
+					el.className += ' chrome';
+
+					// Set proper CSS
+					el.style.display = 'block';					
+				}) 
 			},
 
-			// 
+			// Message coming from extension
 			messagehandler: function(msg) {
 				// Store extension version
 				if (msg.version) Hiro.app.chromeext.version = msg.version;
@@ -6231,6 +6252,7 @@ var Hiro = {
 			if (window.location.hash) this.hashhandler();
 
 			// Setup other app parts (NOTE: Order is rather critical, only mess if you're sure about it)
+			Hiro.app.init();
 			Hiro.folio.init();
 			Hiro.canvas.init();
 			Hiro.ui.init();

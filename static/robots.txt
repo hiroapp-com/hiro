@@ -1,4 +1,2 @@
 User-agent: *
-Disallow: /component/settings/
-Disallow: /component/landing/*
 Disallow: /version

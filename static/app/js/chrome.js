@@ -19,6 +19,7 @@ var HBG  = {
 
 		// Build a socket
 		chrome.runtime.onConnectExternal.addListener(function(port) { 
+			console.log(port)
 			// Double check it's us
 			if (port.name == 'Hiro') {
 				// Set local reference
