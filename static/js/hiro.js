@@ -2624,21 +2624,32 @@ var Hiro = {
 				this.id = (Hiro.sys.production) ? 'hmjbiijapgfeeeiibjfdajhkapbnndal' : 'mmijcaigkmghgkiogkahgojjkjfloflk';
 
 				// Log
-				Hiro.sys.log('Booting Chrome extension ' + this.id);				
+				Hiro.sys.log('Booting Chrome extension with ID ' + this.id);	
 
-				// Try building a socket
-				if (chrome.runtime) this.socket = chrome.runtime.connect(this.id, { name: 'Hiro' });
-
-				// If we weren't able to build the socket
-				if (!this.socket) {
-					// Try teasing an app install
-					Hiro.app.tease('Install Chrome extension');
-				} else {
-					// Attach event listener
-					this.socket.onMessage.addListener(Hiro.app.chromeext.messagehandler);					
-					// Report success
-					Hiro.sys.log('Chrome extension successfully installed.',this.socket);					
-				}
+				// See if runtime is availeable at all
+				if (chrome.runtime) {
+					// Ping extension
+					chrome.runtime.sendMessage(this.id,'init',function(response){ 
+						// If init is acked with version
+						if (response && response.version) {
+							// Attach event listener
+							this.socket.onMessage.addListener(Hiro.app.chromeext.messagehandler);	
+							// Try building a socket
+							this.socket = chrome.runtime.connect(this.id, { name: 'Hiro' });											
+							// Report success
+							Hiro.sys.log('Chrome extension ' + response.version + 'successfully installed.',this.socket);
+						// Otherwise tease install
+						} else {
+							// Report success
+							Hiro.sys.log('App not installed, teasing install');							
+							// Try teasing an app install
+							Hiro.app.tease('Install Chrome extension');
+						}
+					});	
+				} else {					
+					// Log error
+					Hiro.sys.error('Tried to install chrome app but runtime API not available')
+				}					
 			},
 
 			// When the user clicks install, called by fastbuttonhandler

@@ -15,7 +15,8 @@
         "persistent": false
     },
     "externally_connectable": {
-        "matches": [ "https://*.hiroapp.com/*" ] 
+        "matches": [ "https://*.hiroapp.com/*",
+    "http://localhost/*" ] 
     },   
     "browser_action": {
       "default_icon": {

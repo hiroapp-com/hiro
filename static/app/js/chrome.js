@@ -19,7 +19,6 @@ var HBG  = {
 
 		// Build a socket
 		chrome.runtime.onConnectExternal.addListener(function(port) { 
-			console.log(port)
 			// Double check it's us
 			if (port.name == 'Hiro') {
 				// Set local reference
@@ -27,15 +26,14 @@ var HBG  = {
 
 				// Add message listener
 				port.onMessage.addListener( HBG.messagehandler );	
-
-				// Ack with manifest version
-				port.postMessage({ version: chrome.runtime.getManifest().version });
 			}		
 		});						
 	},
 
 	// Handle incoming messages
-	messagehandler: function(msg) {
+	messagehandler: function(msg,sender,sendResponse) {
+		// Init connection
+		if (msg == 'init') sendResponse({ version: chrome.runtime.getManifest().version })
 		// Update badge
 		if (msg.unseen && chrome.browserAction) chrome.browserAction.setBadgeText = msg.unseen;
 	},
