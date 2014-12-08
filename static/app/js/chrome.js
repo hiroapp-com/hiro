@@ -55,23 +55,27 @@ var HBG  = {
 
 		// If we can query tabs (starting Chrome 16)
 		if (chrome.tabs.query) {
-			// Finally see if any there's any tab on hiroapp.com
-			chrome.tabs.query({ url:'https://*.hiroapp.com/*' },function(tabs) {
-				// Cycle through those tabs
-				for (i = tabs.length; i > 0; i-- ) {
-					tab = tabs[i -1];
-					// If the user clicked while on active tab, abort
-					if (tab.active) {
-						// See if it's the active widow
-						chrome.windows.getCurrent(function(win){			
-							// If it indeed was the current window
-							if (win.id == tab.windowId)	HBG.spawn();
-						})
-					}	
-				}
-				// Otherwise just go for the latest one
-				HBG.bringtofront(tabs.pop());								
-			});	
+			// First get the active window
+			chrome.windows.getCurrent(function(win){
+				// Finally see if any there's any tab on hiroapp.com
+				chrome.tabs.query({ url:'https://*.hiroapp.com/*' },function(tabs) {
+					// If no tab matches,
+					if (!tabs.length) {
+						// Spawn a new session
+						HBG.spawn();
+						// And abort
+						return;
+					}
+					// Cycle through those tabs
+					for (i = tabs.length; i > 0; i-- ) {
+						tab = tabs[i -1];
+						// If the user clicked while on active tab in current window, abort
+						if (tab.active && win.id == tab.windowId) HBG.spawn();
+					}
+					// Otherwise just go for the latest one
+					HBG.bringtofront(tabs.pop());								
+				});							
+			})			
 		// Try our know tabs as fallback					
 		} else {
 			for (i = this.tabs.length; i > 0; i-- ) {
