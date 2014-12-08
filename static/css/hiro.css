@@ -2497,6 +2497,11 @@ body#landingPage2 .l_footer .l_box .l_header {
 }
 
 #teasers .install {
+  z-index: 4100;
+  color: transparent;
+  background-repeat: no-repeat;
+  box-sizing: border-box;
+  cursor: pointer;   
 }
 
 @media (max-width: 480px) {
@@ -2509,22 +2514,23 @@ body#landingPage2 .l_footer .l_box .l_header {
     right: 50px;
     background-color: #2f2f2f;
     color: #999;
-    padding: 15px 0 0 50px;
-    box-sizing: border-box;
-    cursor: pointer;    
+    padding: 15px 0 0 50px;   
   }
   #teasers .install:hover {
     color: #fff;   
   }  
 }
 
-@media (min-width: 811px) {
+@media (min-width: 900px) {
   #teasers .install {
     position: fixed;
     bottom: 0;
     right: 0;
     height: 100px;
     width: 300px;
+    background-image: url(../app/img/chromestore.png);
+    background-position: 25px center;  
+    background-size: 70%;    
   }
 }
 
