@@ -4685,8 +4685,8 @@ var Hiro = {
 			// Abort if we have no different input
 			if (!complete && this.value == that.raw) return;
 
-			// Expand to first know token
-			that.guess = that.toptoken(that.index.tokenStore.expand(this.value.toLowerCase()));
+			// Expand to first know token, restore casing
+			that.guess = (this.value) ? this.value + that.toptoken(that.index.tokenStore.expand(this.value.toLowerCase())).substring(this.value.length) : '';
 
 			// Set raw value
 			that.raw = (complete) ? that.guess || this.value : this.value;
@@ -4700,7 +4700,7 @@ var Hiro = {
 			})
 
 			// Find and paint any results we should have
-			that.paintresults(that.guess || that.raw)
+			that.paintresults((that.guess || that.raw).toLowerCase());
 		},
 
 		// Append results to DOM
@@ -4766,10 +4766,16 @@ var Hiro = {
 
 			// Cycle through tokens
 			for ( i = 0, l = tokenarray.length; i < l; i++ ) {
+				// Ignore single char tokens
+				if (tokenarray[i].length == 1) continue;
+				// set first token
+				if (!toptoken) toptoken = tokenarray[i];
 				// Fetch score for token
-				tokenscore = this.index.idf(tokenarray[i]);			
+				tokenscore = this.index.idf(tokenarray[i]);						
 				// Ignore token with worse score
 				if (tokenscore > topscore) continue;
+				// Ignore tokens that are longer
+				if (tokenarray[i].length > toptoken.length) continue;
 				// Set toptoken to the one with best score
 				toptoken = tokenarray[i];
 				// Reset topscore to new value
@@ -4777,7 +4783,7 @@ var Hiro = {
 			}
 
 			// Return our best choice
-			return toptoken;
+			return toptoken || '';
 		}
 	},
 
