@@ -4597,7 +4597,6 @@ var Hiro = {
 
 				// Focus events
 				Hiro.util.registerEvent(that.el_input,'focus',Hiro.search.activate);
-				Hiro.util.registerEvent(that.el_input,'blur',Hiro.search.activate);
 			},this.initdelay);
 		},
 
@@ -4652,7 +4651,7 @@ var Hiro = {
 			this.index.update({
 				nid: noteid,
 				title: note.c.title,
-				text: note.c.text,					
+				text: note.c.text					
 			});	
 
 			// Set the index in our internal format
@@ -4663,19 +4662,28 @@ var Hiro = {
 		activate: function(event) {
 			var that = Hiro.search;
 
-			// If we have a focus event
-			if (event.type == 'focus') {
-				// SHow folio
-				Hiro.ui.slidefolio(1,100);
-				// Set flag
-				that.active = true;
-			// Should always be blur	
-			} else {
-				// Reset strings
-				this.latestsearch = this.currentsearch = undefined;
+			// SHow folio
+			Hiro.ui.slidefolio(1,100);
+			// Set flag
+			that.active = true;
+		},
+
+		// Reset ui
+		deactivate: function() {
+			var that = this;
+			// Go back to default list
+			Hiro.ui.switchview((Hiro.folio.archiveopen) ? Hiro.folio.el_archivelist : Hiro.folio.el_notelist);	
+			// Disable search mode
+			this.active = false;					
+			// Reset strings
+			this.latestsearch = this.currentsearch = undefined;
+			// Wrap ui changes
+			Hiro.ui.render(function(){
 				// If it's empty return placeholder
-				if (!this.value) that.el_precog.innerText = 'Search...';		
-			}
+				that.el_precog.innerText = 'Search...';	
+				// Empty out input field
+				that.el_input.value = '';
+			})
 		},
 
 		// Keyboard events within search
@@ -4704,7 +4712,7 @@ var Hiro = {
 				// The innertext of the precog thing
 				that.el_precog.innerText = that.guess || that.raw || 'Search...';
 				// Also complete the input field if we have a guess
-				if (complete && that.guess) that.el_input.value = that.guess + ' ';
+				if (complete && that.guess) that.el_input.value = that.guess;
 			})
 
 			// Find and paint any results we should have
@@ -7133,12 +7141,7 @@ var Hiro = {
 			if (direction == 1 && Hiro.ui.mini() && Hiro.apps.open.length > 0) Hiro.apps.close();
 
 			// End search mode if we close 
-			if (Hiro.search.active && direction == -1) {
-				// Go back to defaukt list
-				Hiro.ui.switchview((Hiro.folio.archiveopen) ? Hiro.folio.el_archivelist : Hiro.folio.el_notelist);	
-				// Disable search mode
-				Hiro.search.active = false;		
-			}
+			if (Hiro.search.active && direction == -1) Hiro.search.deactivate();
 
 			// Repaint folio
 			if (direction == 1) Hiro.folio.paint(true);
