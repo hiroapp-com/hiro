@@ -827,6 +827,7 @@ html.ios body #rails #canvas textarea {
   color: #fff;
   position: absolute;
   z-index: 100;  
+  font-size: 18px;
 }
 
 #search input:focus {
@@ -840,6 +841,7 @@ html.ios body #rails #canvas textarea {
   position: absolute; 
   z-index: 80;  
   white-space: pre; 
+  font-size: 18px;  
 }
 
 @media (max-width: 480px) {
