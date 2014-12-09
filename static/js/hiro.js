@@ -4686,7 +4686,7 @@ var Hiro = {
 			if (!complete && this.value == that.raw) return;
 
 			// Expand to first know token
-			that.guess = that.toptoken(that.index.tokenStore.expand(this.value));
+			that.guess = that.toptoken(that.index.tokenStore.expand(this.value.toLowerCase()));
 
 			// Set raw value
 			that.raw = (complete) ? that.guess || this.value : this.value;
