@@ -4509,6 +4509,10 @@ var Hiro = {
 		// Flags
 		active: false,
 
+		// Search values
+		raw: undefined,
+		guess: undefined,
+
 		// DOM
 		el_root: document.getElementById('search'),
 		el_input: document.getElementById('search').getElementsByTagName('input')[0],
@@ -4593,13 +4597,32 @@ var Hiro = {
 				that.active = true;
 			// Should always be blur	
 			} else {
-				that.active = false;				
+				// Set flag
+				that.active = false;	
+				// If it'S empty return placeolder
+				console.log(this.value);
+				if (!this.value) that.el_precog.innerText = 'Search...';		
 			}
 		},
 
 		// Keyboard events within search
 		keystream: function(event) {
-			console.log(event);
+			var that = Hiro.search;
+
+			// Abort if we have no different input
+			if (this.value == that.raw) return;
+
+			// Set raw value
+			that.raw = this.value;
+
+			// Expand to first know token
+			that.guess = that.index.tokenStore.expand(this.value)[0];
+
+			// Fill precog div
+			Hiro.ui.render(function(){
+				that.el_precog.innerText = that.guess || 'Search...';
+			})
+			console.log(that.guess);
 		}
 	},
 
