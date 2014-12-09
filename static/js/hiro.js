@@ -6910,6 +6910,8 @@ var Hiro = {
 					if (Hiro.apps.open.length > 0) Hiro.apps.close();
 					// Hide landing page
 					if (Hiro.ui.landing.visible && Hiro.ui.landing.route) Hiro.ui.landing.stash();
+					// Close folio
+					if (Hiro.folio.open) Hiro.ui.slidefolio(-1);					
 					break;
 				case 37:
 					// Move to next screen in landing page via fake event
