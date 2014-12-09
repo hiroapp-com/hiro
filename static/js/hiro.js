@@ -29,6 +29,8 @@
 		source: Where the update is coming from (client/server)
 	Hiro.data.local: Localstorage abstraction
 
+	Hiro.search: Client side search engine
+
 	Hiro.sync: Data synchronization with local and remote APIs
 	Hiro.sync.ws: Websocket client
 	Hiro.sync.lp: Longpolling fallback
@@ -4495,6 +4497,67 @@ var Hiro = {
 		}
 	},
 
+	// Client side search engine based on lunr
+	// Search always access internal data structures (Hiro.data.stores) directly for performance reasons
+	search: {
+		// Mountpoint for lunr index
+		index: null,
+
+		// Timing
+		startupdelay: 300,
+
+		// Initialize on startup
+		init: function() {
+			// Delay init until after rest of stack
+			setTimeout(function(){
+				var index = Hiro.data.get('index'), that = Hiro.search;
+
+				// Check if lunr is present
+				if (!lunr) return;
+
+				// If we already have an old index
+				if (index) {
+
+				// No index found
+				} else {
+					// Rebuild
+					that.rebuild();
+				}
+			},this.startupdelay);
+		},
+
+		// Build index from scratch
+		rebuild: function() {
+			var notes = Hiro.data.stores.folio.c, note, i, l;
+
+			// Abort if lunr is not present
+			if (!lunr) return;
+
+			// Log
+			Hiro.sys.log('Rebuilding search index')		
+
+			// Spawn new lunr index, this also overrides the old			
+			this.index = lunr(function(){
+				this.field('title',{ boost: 10 });
+				this.field('text');
+				this.ref('nid');
+			})
+
+			// Fetch all notes
+			for ( i = 0, l = notes.length; i <l; i++ ) {
+				// Add to index
+				this.index.add({
+					nid: notes[i].nid,
+					title: Hiro.data.stores['note_' + notes[i].nid].c.title,
+					text: Hiro.data.stores['note_' + notes[i].nid].c.text,					
+				})
+			}
+
+			// Report success
+			Hiro.sys.log('Indexed ' + notes.length + ' notes');
+		}
+	},
+
 	// Connecting local and server state
 	sync: {
 		protocol: undefined,
@@ -6332,6 +6395,7 @@ var Hiro = {
 			Hiro.data.init();
 			Hiro.lib.init();
 			Hiro.apps.init();
+			Hiro.search.init();
 
 			// Make sure we don't fire twice
 			this.inited = true;
