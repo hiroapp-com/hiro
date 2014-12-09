@@ -257,9 +257,12 @@ var Hiro = {
 			})
 		},
 
-		renderlink: function(folioentry) {
+		renderlink: function(folioentry,search,snippet) {
 			// Abort if we do not have all data loaded yet
 			if (!Hiro.data.stores.folio) return;
+
+			// Fetch full folio object in case we only have a search ref
+			if (search) folioentry = this.lookup[folioentry];
 
 			// Render active and archived document link
 			var fragment = document.createDocumentFragment(),
@@ -283,7 +286,6 @@ var Hiro = {
 
 			// Find prooper link
 			title = note.c.title || note.c.text.trim().replace(/[\t\n]/g,' ').substring(0,50) || 'Untitled';
-
 
 			// Set note root node properties
 			d.className = 'note';
@@ -496,13 +498,11 @@ var Hiro = {
 
 			// Set CSS properties and Text string
 			if (this.archiveopen) {
-				this.el_notelist.style.display = 'block';
-				this.el_archivelist.style.display = 'none';
+				Hiro.ui.switchview(this.el_notelist);
 				this.el_archivelink.textContent = 'Archive  ' + c;
 				this.archiveopen = false;
 			} else {
-				this.el_notelist.style.display = 'none';
-				this.el_archivelist.style.display = 'block';
+				Hiro.ui.switchview(this.el_archivelist);
 				this.el_archivelink.textContent = 'Close Archive'
 				this.archiveopen = true;
 			}
@@ -4512,11 +4512,14 @@ var Hiro = {
 		// Search values
 		raw: undefined,
 		guess: undefined,
+		latestsearch: undefined,
+		currentsearch: undefined,
 
 		// DOM
 		el_root: document.getElementById('search'),
 		el_input: document.getElementById('search').getElementsByTagName('input')[0],
 		el_precog: document.getElementById('search').getElementsByClassName('precog')[0],
+		el_results: document.getElementById('searchlist'),
 
 		// Initialize on startup
 		init: function() {
@@ -4599,8 +4602,11 @@ var Hiro = {
 			} else {
 				// Set flag
 				that.active = false;	
-				// If it'S empty return placeolder
-				console.log(this.value);
+				// Reset strings
+				this.latestsearch = this.currentsearch = undefined;
+				// Switch back to default view
+				Hiro.ui.switchview((Hiro.folio.archiveopen) ? Hiro.folio.el_archivelist : Hiro.folio.el_notelist);
+				// If it's empty return placeholder
 				if (!this.value) that.el_precog.innerText = 'Search...';		
 			}
 		},
@@ -4634,17 +4640,65 @@ var Hiro = {
 				if (complete && that.guess) that.el_input.value = that.guess + ' ';
 			})
 
-			// Forward to search handler
-			that.results(that.guess || that.raw)
+			// Find and paint any results we should have
+			that.paintresults(that.guess || that.raw)
 		},
 
-		// Get results from index
-		results: function(searchstring) {
-			var results;
-			
-			// Only do concern lunr if we have a string
-			if (!searchstring) return;
-			console.log(searchstring);
+		// Append results to DOM
+		paintresults: function(searchstring) {
+			var results, that = this, i, l;
+
+			// Do not do the same search twice
+			if (this.latestsearch == searchstring) return;
+
+			// Save lates searchstring
+			this.latestsearch = searchstring;
+
+			// Abort if we are currently searching
+			if (this.searching) return;
+
+			// Also abort if we have no searchstring
+			if (!searchstring) {
+				// Switch back to default view
+				Hiro.ui.switchview((Hiro.folio.archiveopen) ? Hiro.folio.el_archivelist : Hiro.folio.el_notelist);
+				// And abort
+				return;
+			}
+
+			// Set flag
+			this.searching = true;
+
+			// Store value
+			this.currentsearch = searchstring;
+
+			// Fetch results
+			results = this.index.search(searchstring);
+
+			// Wrap in rAF
+			Hiro.ui.render(function(){
+				// If we have results
+				if (results.length) {
+					// Empty our list
+					while (that.el_results.firstChild) {
+					    that.el_results.removeChild(that.el_results.firstChild);
+					}				
+									
+					// If we have results
+					for ( i = 0, l = results.length; i < l; i++ ) {
+						that.el_results.appendChild(Hiro.folio.renderlink(results[i].ref,true));
+					}
+
+					// Make sure the result list is visible
+					if (!that.el_results.style.display != 'block') Hiro.ui.switchview(that.el_results);					
+				// No results found
+				} else {
+					// Set innertext as fallback		
+					that.el_results.innerText = 'No results found.';
+				}	
+
+				// Reenable search
+				that.searching = false;
+			})
 		}
 	},
 
