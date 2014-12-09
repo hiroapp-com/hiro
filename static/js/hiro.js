@@ -4607,22 +4607,44 @@ var Hiro = {
 
 		// Keyboard events within search
 		keystream: function(event) {
-			var that = Hiro.search;
+			var that = Hiro.search, completekeys = [9,39], complete;
+
+			// See if it's a tab or cursor key
+			if (completekeys.indexOf(event.keyCode) > -1) {
+				// Kill the default behavour
+				Hiro.util.stopEvent(event);
+				// Set complete flag
+				complete = true;
+			}
 
 			// Abort if we have no different input
-			if (this.value == that.raw) return;
-
-			// Set raw value
-			that.raw = this.value;
+			if (!complete && this.value == that.raw) return;
 
 			// Expand to first know token
-			that.guess = that.index.tokenStore.expand(this.value)[0];
+			that.guess = that.index.tokenStore.expand(this.value)[0]			
+
+			// Set raw value
+			that.raw = (complete) ? that.guess || this.value : this.value;
 
 			// Fill precog div
 			Hiro.ui.render(function(){
-				that.el_precog.innerText = that.guess || 'Search...';
+				// The innertext of the precog thing
+				that.el_precog.innerText = that.guess || that.raw || 'Search...';
+				// Also complete the input field if we have a guess
+				if (complete && that.guess) that.el_input.value = that.guess + ' ';
 			})
-			console.log(that.guess);
+
+			// Forward to search handler
+			that.results(that.guess || that.raw)
+		},
+
+		// Get results from index
+		results: function(searchstring) {
+			var results;
+			
+			// Only do concern lunr if we have a string
+			if (!searchstring) return;
+			console.log(searchstring);
 		}
 	},
 
