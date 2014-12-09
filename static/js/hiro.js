@@ -4667,7 +4667,7 @@ var Hiro = {
 			if (!complete && this.value == that.raw) return;
 
 			// Expand to first know token
-			that.guess = that.index.tokenStore.expand(this.value)[0]			
+			that.guess = that.toptoken(that.index.tokenStore.expand(this.value));
 
 			// Set raw value
 			that.raw = (complete) ? that.guess || this.value : this.value;
@@ -4738,7 +4738,27 @@ var Hiro = {
 
 				// Reenable search
 				that.searching = false;
-			})
+			});
+		},
+
+		// Get the most interesting token by idf
+		toptoken: function(tokenarray) {
+			var i, l, topscore = 10, tokenscore, toptoken;
+
+			// Cycle through tokens
+			for ( i = 0, l = tokenarray.length; i < l; i++ ) {
+				// Fetch score for token
+				tokenscore = this.index.idf(tokenarray[i]);			
+				// Ignore token with worse score
+				if (tokenscore > topscore) continue;
+				// Set toptoken to the one with best score
+				toptoken = tokenarray[i];
+				// Reset topscore to new value
+				topscore = tokenscore;
+			}
+
+			// Return our best choice
+			return toptoken;
 		}
 	},
 
