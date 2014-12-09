@@ -4025,6 +4025,8 @@ var Hiro = {
 						Hiro.canvas.cache.content = n.c.text;
 						// Always rebuild the canvas in this case
 						Hiro.canvas.paint();
+						// And also the overlay
+						Hiro.canvas.overlay.update();
 					}
 					// Always repaint folio
 					Hiro.folio.paint();
