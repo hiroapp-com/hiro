@@ -4574,8 +4574,8 @@ var Hiro = {
 				// Check if lunr is present
 				if (!lunr) return;
 
-				// If we already have an old index
-				if (index) {
+				// If we already have an old index built by the same lunr version
+				if (index && index.version == lunr.version) {
 					// Restore it 
 					that.index = lunr.Index.load(Hiro.data.get('search'));
 					// Log
@@ -4765,22 +4765,25 @@ var Hiro = {
 
 		// Get the most interesting token by idf
 		toptoken: function(tokenarray) {
-			var i, l, topscore = 10, tokenscore, toptoken;
+			var i, l, topscore = 10, tokenscore, tokens, toptoken;
+
+			// Run tokenarray through pipeline
+			tokens = this.index.pipeline.run(tokenarray);
 
 			// Cycle through tokens
-			for ( i = 0, l = tokenarray.length; i < l; i++ ) {
+			for ( i = 0, l = tokens.length; i < l; i++ ) {
 				// Ignore single char tokens
-				if (tokenarray[i].length == 1) continue;
+				if (tokens[i].length == 1) continue;
 				// set first token
-				if (!toptoken) toptoken = tokenarray[i];
-				// Fetch score for token
-				tokenscore = this.index.idf(tokenarray[i]);						
+				if (!toptoken) toptoken = tokens[i];
+				// Fetch score for stemmed token
+				tokenscore = this.index.idf(tokens[i]);						
 				// Ignore token with worse score
 				if (tokenscore > topscore) continue;
 				// Ignore tokens that are longer
-				if (tokenarray[i].length > toptoken.length) continue;
+				if (tokens[i].length > toptoken.length) continue;
 				// Set toptoken to the one with best score
-				toptoken = tokenarray[i];
+				toptoken = tokens[i];
 				// Reset topscore to new value
 				topscore = tokenscore;
 			}
@@ -9581,8 +9584,8 @@ var lunr = function (config) {
 
   idx.pipeline.add(
     lunr.trimmer,
-    lunr.stopWordFilter,
-    lunr.stemmer
+    lunr.stopWordFilter
+    // lunr.stemmer
   )
 
   if (config) config.call(idx, idx)
@@ -9590,7 +9593,7 @@ var lunr = function (config) {
   return idx
 }
 
-lunr.version = "0.5.6"
+lunr.version = "0.5.7"
 /*!
  * lunr.utils
  * Copyright (C) 2014 Oliver Nightingale
@@ -10730,7 +10733,7 @@ lunr.Store.prototype.toJSON = function () {
  * @param {String} str The string to stem
  * @returns {String}
  * @see lunr.Pipeline
- */
+ *
 lunr.stemmer = (function(){
   var step2list = {
       "ational" : "ate",
@@ -10905,7 +10908,7 @@ lunr.stemmer = (function(){
   }
 })();
 
-lunr.Pipeline.registerFunction(lunr.stemmer, 'stemmer')
+// lunr.Pipeline.registerFunction(lunr.stemmer, 'stemmer')
 /*!
  * lunr.stopWordFilter
  * Copyright (C) 2014 Oliver Nightingale
