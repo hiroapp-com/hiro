@@ -534,6 +534,7 @@ var Hiro = {
 		// Cache of current values and writelock (storing the cache, not writing in it)
 		cache: {},
 		writelock: null,
+		typetimer: null,		
 		delay: 250,
 
 		// Init canvas
@@ -557,13 +558,13 @@ var Hiro = {
 
 		// Poor man FRP stream
 		keystream: function(event) {
-			var source = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = source.id;
+			var source = event.target || event.srcElement, cache = Hiro.canvas.cache, lock = Hiro.canvas.writelock, id = source.id, that = Hiro.canvas;
 
 			// Only listen to title & content
 			if (id != 'title' && id != 'content') return;
 
 			// Route specific keyhandlers
-			if (Hiro.canvas[id + event.type]) Hiro.canvas[id + event.type](event,source);
+			if (that[id + event.type]) that[id + event.type](event,source);
 
 			// Check cache if values changed
 			if (cache[id] != source.value) {
@@ -574,7 +575,7 @@ var Hiro = {
 				cache._id = Hiro.canvas.currentnote;
 
 				// Update the overlay without repainting it but realign the cursor
-				if (id == 'content') Hiro.canvas.overlay.update(false,true);
+				if (id == 'content') that.overlay.update(false,true);
 
 				// Reset document title
 				document.title = cache.title || ( (cache.content) ? cache.content.trim().substring(0,30) || 'New Note' : 'New Note' );
@@ -582,16 +583,25 @@ var Hiro = {
 				// Kick off write if it't isn't locked
 				if (!lock) {
 					// Set lock
-					Hiro.canvas.writelock = window.setTimeout(function(){
+					that.writelock = window.setTimeout(function(){
 						// Release lock
 						Hiro.canvas.writelock = null;
 
 						// Save cache
-						if (cache._changed) Hiro.canvas.save();
-					},Hiro.canvas.delay);
+						if (cache._changed) that.save();
+					},that.delay);
 
 					// Save cache data
-					Hiro.canvas.save();
+					that.save();
+
+					// If we already have typetimer, cancel this one
+					if (that.typetimer) window.clearTimeout(that.typetimer);					
+
+					// Create new timer for tidyup
+					that.typetimer = window.setTimeout(function(){
+						// Call tidyup
+						that.tidyup();
+					},1000)
 				}
 			}
 		},
@@ -616,16 +626,25 @@ var Hiro = {
 					me.cursor_pos = note._cursor;
 				}
 
+				// Note is unloading, update index quickly
+				if (force) Hiro.search.update(that.cache._id);
+
 				// Update sharing dialog if it's open
 				if (note.c.peers.length > 0 && Hiro.apps.open.indexOf('sharing') > -1) Hiro.apps.sharing.update();
 
 				// Set text & title
-				if (that.cache.content != note.c.text) Hiro.data.set(id,'c.text', ( that.cache.content || '') );
+				if (that.cache.content != note.c.text) Hiro.data.set(id,'c.text',( that.cache.content || ''));
 				if (that.cache.title != note.c.title) Hiro.data.set(id,'c.title',( that.cache.title || ''));
 
 				// Reset changed flag
 				that.cache._changed = false;
 			}
+		},
+
+		// Function thats being called n msec after the last type
+		tidyup: function() {
+			// Reindex note
+			Hiro.search.update(this.currentnote);
 		},
 
 		// When a user presses a key, handle important low latency stuff like keyboard shortcuts here
@@ -4595,6 +4614,21 @@ var Hiro = {
 
 			// Report success
 			Hiro.sys.log('Indexed ' + notes.length + ' notes');
+		},
+
+		// Update a note
+		update: function(noteid) {
+			var note = Hiro.data.stores['note_' + noteid];
+
+			// Abort if note doesn't exist
+			if (!note || !note.c) return;
+
+			// Add to index
+			this.index.update({
+				nid: noteid,
+				title: note.c.title,
+				text: note.c.text,					
+			});		
 		},
 
 		// Switch UI to search mode
