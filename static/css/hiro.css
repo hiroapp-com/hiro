@@ -307,8 +307,11 @@ input.error:focus {
   padding-top: 10px;
 }
 
-#folio .notes .loading {
+#folio .notes .info {
+  color: #666;
   margin-left: 50px; 
+  margin-top: -5px;
+  display: block;
 }
 
 #folio .notes .note {

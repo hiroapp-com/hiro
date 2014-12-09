@@ -4504,7 +4504,7 @@ var Hiro = {
 		index: null,
 
 		// Timing
-		startupdelay: 300,
+		startupdelay: 1000,
 
 		// Flags
 		active: false,
@@ -4525,14 +4525,17 @@ var Hiro = {
 		init: function() {
 			// Delay init until after rest of stack
 			setTimeout(function(){
-				var index = Hiro.data.get('index'), that = Hiro.search;
+				var index = Hiro.data.get('search'), that = Hiro.search;
 
 				// Check if lunr is present
 				if (!lunr) return;
 
 				// If we already have an old index
-				if (index) {
-
+				if (search) {
+					// Restore it 
+					that.index = lunr.Index.load(Hiro.data.get('search'));
+					// Log
+					Hiro.sys.log('Index loaded from disk',that.index);
 				// No index found
 				} else {
 					// Rebuild
@@ -4583,6 +4586,9 @@ var Hiro = {
 					text: Hiro.data.stores['note_' + notes[i].nid].c.text,					
 				})
 			}
+
+			// Set the index in our internal format
+			Hiro.data.set('search','',this.index.toJSON());
 
 			// Report success
 			Hiro.sys.log('Indexed ' + notes.length + ' notes');
@@ -4693,7 +4699,7 @@ var Hiro = {
 				// No results found
 				} else {
 					// Set innertext as fallback		
-					that.el_results.innerText = 'No results found.';
+					that.el_results.innerHTML = '<span class="info">No results found.</span>';
 				}	
 
 				// Reenable search
