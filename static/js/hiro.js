@@ -3071,6 +3071,19 @@ var Hiro = {
 					}
 				}
 
+				// Check if phone number is properly formed
+				if (type == 'phone' && string.charAt(0) != '+') {
+					// Maybe we're lucky and just have to rewrite it
+					if (string.substring(0,2) == '00') {
+						// Just replace it with +
+						string = string.replace('00','+');
+					// We do have a problem	
+					} else {
+						// reset type
+						type = 'malformed';
+					}
+				}
+
 				// User presses enter, evaleval!
 				if (event.keyCode == 13 || submit) {
 					// If user presses enter while a typeahead suggestion is loaded, avoid sending it back for validation with enter key
@@ -3084,6 +3097,10 @@ var Hiro = {
 					} else if (type == 'dupe') {
 						// Add error message
 						error = (peers.role ='invited') ? 'Already invited' : 'Already has access';
+					// or a bad phone nr
+					} else if (type == 'malformed') {
+						// Add error message
+						error = 'Please use an international prefix ( + or 00 )';
 					// Do some invite
 					} else if (type) {
 						// Set peerchange flag, shortcut (will be saved below)
@@ -3191,7 +3208,7 @@ var Hiro = {
 						Hiro.ui.statsy.add('invite',3,'Invited.');
 
 					// We have a dupe
-					} else if (type == 'dupe') {
+					} else if (type == 'dupe' || type == 'malformed') {
 						// Change button
 						el_button.className = 'hirobutton grey';
 						el_button.innerHTML = 'Invite <b>' + string + '</b>';
