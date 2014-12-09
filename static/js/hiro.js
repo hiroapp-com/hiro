@@ -4609,7 +4609,7 @@ var Hiro = {
 			setTimeout(function(){			
 
 				// Abort if lunr is not present
-				if (!lunr || !folio) return;
+				if (!lunr) return;
 
 				// Log
 				Hiro.sys.log('Rebuilding search index')		
@@ -4621,21 +4621,23 @@ var Hiro = {
 					this.ref('nid');
 				})
 
-				// Fetch all notes
-				for ( i = 0, l = folio.c.length; i <l; i++ ) {
-					// Add to index
-					that.index.add({
-						nid: folio.c[i].nid,
-						title: Hiro.data.stores['note_' + folio.c[i].nid].c.title,
-						text: Hiro.data.stores['note_' + folio.c[i].nid].c.text,					
-					})
+				// Check if we already have notes
+				if (folio && folio.c) {
+					// Fetch all notes
+					for ( i = 0, l = folio.c.length; i <l; i++ ) {
+						// Add to index
+						that.index.add({
+							nid: folio.c[i].nid,
+							title: Hiro.data.stores['note_' + folio.c[i].nid].c.title,
+							text: Hiro.data.stores['note_' + folio.c[i].nid].c.text,					
+						})
+					}
+					// Report success
+					Hiro.sys.log('Indexed ' + folio.c.length + ' notes');					
 				}
 
 				// Set the index in our internal format
 				Hiro.data.set('search','',that.index.toJSON());
-
-				// Report success
-				Hiro.sys.log('Indexed ' + folio.c.length + ' notes');
 			},delay || 0);	
 		},
 
