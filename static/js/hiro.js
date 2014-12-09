@@ -4554,10 +4554,10 @@ var Hiro = {
 				// Focus events
 				Hiro.util.registerEvent(that.el_input,'focus',Hiro.search.activate);
 				Hiro.util.registerEvent(that.el_input,'blur',Hiro.search.activate);
-
-				// Make search visible on dev 
-				if (!Hiro.sys.production) Hiro.ui.render(function(){ that.el_root.style.display = 'block'; });
 			},this.startupdelay);
+
+			// Make search visible on dev 
+			if (!Hiro.sys.production) Hiro.ui.render(function(){ Hiro.search.el_root.style.display = 'block'; });
 		},
 
 		// Build index from scratch

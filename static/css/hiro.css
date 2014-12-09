@@ -291,7 +291,7 @@ input.error:focus {
   width: 290px;
 }
 
-#archivelist {
+#archivelist, #searchlist {
   display: none;
 }
 
@@ -348,6 +348,10 @@ input.error:focus {
 
 #archivelist .note .archive {
   background-position: -36px -80px;
+}
+
+#searchlist .note .archive {
+  display: none;
 }
 
 #folio .notes .note a {
