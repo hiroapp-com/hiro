@@ -4768,11 +4768,11 @@ var Hiro = {
 				// No documents indexed yet
 				} else if (!that.index.documentStore.length) {
 					// Set innertext as fallback		
-					that.el_results.innerHTML = '<span class="info">Once you have your first notes,<br />search will filter this list instantly.</span>';
+					that.el_results.innerHTML = '<span class="info">Once you have your first notes, search will filter this list instantly.</span>';
 				// No results found
 				} else {
 					// Set innertext as fallback		
-					that.el_results.innerHTML = '<span class="info">No note contains ' + that.raw.trim().split(/\s+/).join(' AND ') + '.</span>';
+					that.el_results.innerHTML = '<span class="info">No note contains ' + that.raw.trim().split(/\s+/).join(' AND ') + '.</span><span class="info">Change your search or press ESC to cancel.</span>';
 				}		
 
 				// Make sure the result list is visible
