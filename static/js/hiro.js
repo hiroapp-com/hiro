@@ -4653,7 +4653,10 @@ var Hiro = {
 				nid: noteid,
 				title: note.c.title,
 				text: note.c.text,					
-			});		
+			});	
+
+			// Set the index in our internal format
+			Hiro.data.set('search','',this.index.toJSON());				
 		},
 
 		// Switch UI to search mode
