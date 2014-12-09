@@ -342,16 +342,12 @@ input.error:focus {
   opacity: 1;
 }
 
-#notelist .note .archive {
+#folio .notes .note .archive {
   background-position: -36px -122px;
 }
 
-#archivelist .note .archive {
+#folio .notes .note .archive.unarchive {
   background-position: -36px -80px;
-}
-
-#searchlist .note .archive {
-  display: none;
 }
 
 #folio .notes .note a {

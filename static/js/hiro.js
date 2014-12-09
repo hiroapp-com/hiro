@@ -307,13 +307,16 @@ var Hiro = {
  			if (Hiro.data.get('profile','c.tier') > 0) {
 				// Build archive link
 				a = document.createElement('div');
-				a.className = 'archive';
 
 				// Prepare archive link and iterate counter
 				if (folioentry.status == 'active') {
 					// Add tooltip
 					a.setAttribute('title','Move to archive...')
+					// Set proper classname
+					a.className = 'archive';					
 				} else if (folioentry.status == 'archived') {
+					// Set proper classname
+					a.className = 'archive unarchive';					
 					// Add tooltip
 					a.setAttribute('title','Move back to current notes...')
 					// Iterate counter
