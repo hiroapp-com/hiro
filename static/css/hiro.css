@@ -838,7 +838,7 @@ html.ios body #rails #canvas textarea {
   left: 10px;
   position: absolute; 
   z-index: 80;  
-  white-space: nowrap; 
+  white-space: pre; 
 }
 
 @media (max-width: 480px) {

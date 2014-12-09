@@ -3934,6 +3934,9 @@ var Hiro = {
 					}
 				}
 
+				// Delete note from index
+				Hiro.search.index.remove(oldid.substring(5));
+
 				// Set new currentnote id
 				if (Hiro.canvas.currentnote = oldid.substring(5)) Hiro.canvas.currentnote = newid.substring(5);
 
@@ -9612,87 +9615,7 @@ lunr.utils.warn = (function (global) {
   }
 })(this)
 
-/*!
- * lunr.EventEmitter
- * Copyright (C) 2014 Oliver Nightingale
- */
 
-/**
- * lunr.EventEmitter is an event emitter for lunr. It manages adding and removing event handlers and triggering events and their handlers.
- *
- * @constructor
- */
-lunr.EventEmitter = function () {
-  this.events = {}
-}
-
-/**
- * Binds a handler function to a specific event(s).
- *
- * Can bind a single function to many different events in one call.
- *
- * @param {String} [eventName] The name(s) of events to bind this function to.
- * @param {Function} handler The function to call when an event is fired.
- * @memberOf EventEmitter
- */
-lunr.EventEmitter.prototype.addListener = function () {
-  var args = Array.prototype.slice.call(arguments),
-      fn = args.pop(),
-      names = args
-
-  if (typeof fn !== "function") throw new TypeError ("last argument must be a function")
-
-  names.forEach(function (name) {
-    if (!this.hasHandler(name)) this.events[name] = []
-    this.events[name].push(fn)
-  }, this)
-}
-
-/**
- * Removes a handler function from a specific event.
- *
- * @param {String} eventName The name of the event to remove this function from.
- * @param {Function} handler The function to remove from an event.
- * @memberOf EventEmitter
- */
-lunr.EventEmitter.prototype.removeListener = function (name, fn) {
-  if (!this.hasHandler(name)) return
-
-  var fnIndex = this.events[name].indexOf(fn)
-  this.events[name].splice(fnIndex, 1)
-
-  if (!this.events[name].length) delete this.events[name]
-}
-
-/**
- * Calls all functions bound to the given event.
- *
- * Additional data can be passed to the event handler as arguments to `emit`
- * after the event name.
- *
- * @param {String} eventName The name of the event to emit.
- * @memberOf EventEmitter
- */
-lunr.EventEmitter.prototype.emit = function (name) {
-  if (!this.hasHandler(name)) return
-
-  var args = Array.prototype.slice.call(arguments, 1)
-
-  this.events[name].forEach(function (fn) {
-    fn.apply(undefined, args)
-  })
-}
-
-/**
- * Checks whether a handler has ever been stored against an event.
- *
- * @param {String} eventName The name of the event to check.
- * @private
- * @memberOf EventEmitter
- */
-lunr.EventEmitter.prototype.hasHandler = function (name) {
-  return name in this.events
-}
 
 /*!
  * lunr.tokenizer
@@ -10328,39 +10251,10 @@ lunr.Index = function () {
   this.documentStore = new lunr.Store
   this.tokenStore = new lunr.TokenStore
   this.corpusTokens = new lunr.SortedSet
-  this.eventEmitter =  new lunr.EventEmitter
 
   this._idfCache = {}
-
-  this.on('add', 'remove', 'update', (function () {
-    this._idfCache = {}
-  }).bind(this))
 }
 
-/**
- * Bind a handler to events being emitted by the index.
- *
- * The handler can be bound to many events at the same time.
- *
- * @param {String} [eventName] The name(s) of events to bind the function to.
- * @param {Function} handler The serialised set to load.
- * @memberOf Index
- */
-lunr.Index.prototype.on = function () {
-  var args = Array.prototype.slice.call(arguments)
-  return this.eventEmitter.addListener.apply(this.eventEmitter, args)
-}
-
-/**
- * Removes a handler from an event being emitted by the index.
- *
- * @param {String} eventName The name of events to remove the function from.
- * @param {Function} handler The serialised set to load.
- * @memberOf Index
- */
-lunr.Index.prototype.off = function (name, fn) {
-  return this.eventEmitter.removeListener(name, fn)
-}
 
 /**
  * Loads a previously serialised index.
@@ -10449,11 +10343,12 @@ lunr.Index.prototype.ref = function (refName) {
  * @param {Boolean} emitEvent Whether or not to emit events, default true.
  * @memberOf Index
  */
-lunr.Index.prototype.add = function (doc, emitEvent) {
+lunr.Index.prototype.add = function (doc) {
   var docTokens = {},
       allDocumentTokens = new lunr.SortedSet,
-      docRef = doc[this._ref],
-      emitEvent = emitEvent === undefined ? true : emitEvent
+      docRef = doc[this._ref]
+
+  this._idfCache = {}
 
   this._fields.forEach(function (field) {
     var fieldTokens = this.pipeline.run(lunr.tokenizer(doc[field.name]))
@@ -10479,8 +10374,6 @@ lunr.Index.prototype.add = function (doc, emitEvent) {
 
     this.tokenStore.add(token, { ref: docRef, tf: tf })
   };
-
-  if (emitEvent) this.eventEmitter.emit('add', doc, this)
 }
 
 /**
@@ -10501,9 +10394,10 @@ lunr.Index.prototype.add = function (doc, emitEvent) {
  * @param {Boolean} emitEvent Whether to emit remove events, defaults to true
  * @memberOf Index
  */
-lunr.Index.prototype.remove = function (doc, emitEvent) {
-  var docRef = doc[this._ref],
-      emitEvent = emitEvent === undefined ? true : emitEvent
+lunr.Index.prototype.remove = function (doc) {
+  var docRef = doc[this._ref]
+
+  this._idfCache = {}
 
   if (!this.documentStore.has(docRef)) return
 
@@ -10514,8 +10408,6 @@ lunr.Index.prototype.remove = function (doc, emitEvent) {
   docTokens.forEach(function (token) {
     this.tokenStore.remove(token, docRef)
   }, this)
-
-  if (emitEvent) this.eventEmitter.emit('remove', doc, this)
 }
 
 /**
@@ -10538,13 +10430,11 @@ lunr.Index.prototype.remove = function (doc, emitEvent) {
  * @see Index.prototype.add
  * @memberOf Index
  */
-lunr.Index.prototype.update = function (doc, emitEvent) {
-  var emitEvent = emitEvent === undefined ? true : emitEvent
+lunr.Index.prototype.update = function (doc) {
+  this._idfCache = {}
 
   this.remove(doc, false)
   this.add(doc, false)
-
-  if (emitEvent) this.eventEmitter.emit('update', doc, this)
 }
 
 /**
