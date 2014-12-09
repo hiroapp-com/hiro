@@ -4750,26 +4750,33 @@ var Hiro = {
 			results = this.index.search(searchstring);
 
 			// Wrap in rAF
-			Hiro.ui.render(function(){
+			Hiro.ui.render(function(){		
 				// If we have results
 				if (results.length) {
 					// Empty our list
 					while (that.el_results.firstChild) {
 					    that.el_results.removeChild(that.el_results.firstChild);
-					}				
-									
+					}
+
+					// Short header	
+					if (!Hiro.ui.mini()) that.el_results.innerHTML = '<span class="info">' + results.length + ' note' + (results.length > 1 && 's' || '') + ' found:</span>';
+						
 					// If we have results
 					for ( i = 0, l = results.length; i < l; i++ ) {
 						that.el_results.appendChild(Hiro.folio.renderlink(results[i].ref,true));
-					}
-
-					// Make sure the result list is visible
-					if (!that.el_results.style.display != 'block') Hiro.ui.switchview(that.el_results);					
+					}				
+				// No documents indexed yet
+				} else if (!that.index.documentStore.length) {
+					// Set innertext as fallback		
+					that.el_results.innerHTML = '<span class="info">Once you have your first notes,<br />search will filter this list instantly.</span>';
 				// No results found
 				} else {
 					// Set innertext as fallback		
-					that.el_results.innerHTML = '<span class="info">No results found.</span>';
-				}	
+					that.el_results.innerHTML = '<span class="info">No note contains ' + that.raw.trim().split(/\s+/).join(' AND ') + '.</span>';
+				}		
+
+				// Make sure the result list is visible
+				if (!that.el_results.style.display != 'block') Hiro.ui.switchview(that.el_results);					
 
 				// Reenable search
 				that.searching = false;

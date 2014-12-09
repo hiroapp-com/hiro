@@ -309,9 +309,9 @@ input.error:focus {
 
 #folio .notes .info {
   color: #666;
-  margin-left: 50px; 
-  margin-top: -5px;
+  margin: -5px 20px 17px 50px; 
   display: block;
+  line-height: 24px;
 }
 
 #folio .notes .note {
@@ -828,6 +828,9 @@ html.ios body #rails #canvas textarea {
   position: absolute;
   z-index: 100;  
   font-size: 18px;
+  left: 0;
+  overflow: hidden;
+  right: 0;
 }
 
 #search input:focus {
@@ -841,7 +844,10 @@ html.ios body #rails #canvas textarea {
   position: absolute; 
   z-index: 80;  
   white-space: pre; 
-  font-size: 18px;  
+  font-size: 18px; 
+  width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;   
 }
 
 @media (max-width: 480px) {
@@ -849,6 +855,8 @@ html.ios body #rails #canvas textarea {
     top: 35px;
     left: 40px;  
     right: 50px;
+    max-width: 245px;
+    overflow: hidden;    
   }
   #search .precog {
     color: rgba(255, 255, 255, 0.8);
