@@ -725,7 +725,7 @@ var Hiro = {
 		// If the user hovers over the canvas
 		canvastouch: function(event) {
 			// Close the folio if it should be open
-			if (Hiro.folio.open) Hiro.ui.slidefolio(-1);
+			if (Hiro.folio.open && !Hiro.search.active) Hiro.ui.slidefolio(-1);
 		},
 
 		// Emits a current seen event to the server
@@ -4506,8 +4506,13 @@ var Hiro = {
 		// Timing
 		startupdelay: 300,
 
+		// Flags
+		active: false,
+
 		// DOM
 		el_root: document.getElementById('search'),
+		el_input: document.getElementById('search').getElementsByTagName('input')[0],
+		el_precog: document.getElementById('search').getElementsByClassName('precog')[0],
 
 		// Initialize on startup
 		init: function() {
@@ -4526,6 +4531,19 @@ var Hiro = {
 					// Rebuild
 					that.rebuild();
 				}
+
+				// Attach all keyboard events
+				Hiro.util.registerEvent(that.el_input,'keyup',Hiro.search.keystream);
+				Hiro.util.registerEvent(that.el_input,'keydown',Hiro.search.keystream);
+				Hiro.util.registerEvent(that.el_input,'keypress',Hiro.search.keystream);
+				Hiro.util.registerEvent(that.el_input,'change',Hiro.search.keystream);
+				Hiro.util.registerEvent(that.el_input,'input',Hiro.search.keystream);
+				Hiro.util.registerEvent(that.el_input,'cut',Hiro.search.keystream);
+				Hiro.util.registerEvent(that.el_input,'paste',Hiro.search.keystream);
+
+				// Focus events
+				Hiro.util.registerEvent(that.el_input,'focus',Hiro.search.activate);
+				Hiro.util.registerEvent(that.el_input,'blur',Hiro.search.activate);
 
 				// Make search visible on dev 
 				if (!Hiro.sys.production) Hiro.ui.render(function(){ that.el_root.style.display = 'block'; });
@@ -4561,6 +4579,27 @@ var Hiro = {
 
 			// Report success
 			Hiro.sys.log('Indexed ' + notes.length + ' notes');
+		},
+
+		// Switch UI to search mode
+		activate: function(event) {
+			var that = Hiro.search;
+
+			// If we have a focus event
+			if (event.type == 'focus') {
+				// SHow folio
+				Hiro.ui.slidefolio(1,100);
+				// Set flag
+				that.active = true;
+			// Should always be blur	
+			} else {
+				that.active = false;				
+			}
+		},
+
+		// Keyboard events within search
+		keystream: function(event) {
+			console.log(event);
 		}
 	},
 

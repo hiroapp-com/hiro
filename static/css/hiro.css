@@ -809,7 +809,7 @@ html.ios body #rails #canvas textarea {
 
 #search {
   display: none;
-  position: absolute;
+  position: fixed;
   top: 0;
   z-index: 1005;
   box-sizing: border-box;
