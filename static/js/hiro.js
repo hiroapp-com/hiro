@@ -4526,7 +4526,7 @@ var Hiro = {
 		index: null,
 
 		// Timing
-		startupdelay: 1000,
+		initdelay: 1000,
 
 		// Flags
 		active: false,
@@ -4553,7 +4553,7 @@ var Hiro = {
 				if (!lunr) return;
 
 				// If we already have an old index
-				if (search) {
+				if (index) {
 					// Restore it 
 					that.index = lunr.Index.load(Hiro.data.get('search'));
 					// Log
@@ -4561,7 +4561,7 @@ var Hiro = {
 				// No index found
 				} else {
 					// Rebuild
-					that.rebuild();
+					that.rebuild(0);
 				}
 
 				// Attach all keyboard events
@@ -4576,44 +4576,45 @@ var Hiro = {
 				// Focus events
 				Hiro.util.registerEvent(that.el_input,'focus',Hiro.search.activate);
 				Hiro.util.registerEvent(that.el_input,'blur',Hiro.search.activate);
-			},this.startupdelay);
-
-			// Make search visible on dev 
-			if (!Hiro.sys.production) Hiro.ui.render(function(){ Hiro.search.el_root.style.display = 'block'; });
+			},this.initdelay);
 		},
 
 		// Build index from scratch
-		rebuild: function() {
-			var notes = Hiro.data.stores.folio.c, note, i, l;
+		rebuild: function(delay) {
+			var folio = Hiro.data.stores.folio, note, i, l, that = this;
 
-			// Abort if lunr is not present
-			if (!lunr) return;
+			// Delay init until after rest of stack
+			setTimeout(function(){			
 
-			// Log
-			Hiro.sys.log('Rebuilding search index')		
+				// Abort if lunr is not present
+				if (!lunr || !folio) return;
 
-			// Spawn new lunr index, this also overrides the old			
-			this.index = lunr(function(){
-				this.field('title',{ boost: 10 });
-				this.field('text');
-				this.ref('nid');
-			})
+				// Log
+				Hiro.sys.log('Rebuilding search index')		
 
-			// Fetch all notes
-			for ( i = 0, l = notes.length; i <l; i++ ) {
-				// Add to index
-				this.index.add({
-					nid: notes[i].nid,
-					title: Hiro.data.stores['note_' + notes[i].nid].c.title,
-					text: Hiro.data.stores['note_' + notes[i].nid].c.text,					
+				// Spawn new lunr index, this also overrides the old			
+				that.index = lunr(function(){
+					this.field('title',{ boost: 10 });
+					this.field('text');
+					this.ref('nid');
 				})
-			}
 
-			// Set the index in our internal format
-			Hiro.data.set('search','',this.index.toJSON());
+				// Fetch all notes
+				for ( i = 0, l = folio.c.length; i <l; i++ ) {
+					// Add to index
+					that.index.add({
+						nid: folio.c[i].nid,
+						title: Hiro.data.stores['note_' + folio.c[i].nid].c.title,
+						text: Hiro.data.stores['note_' + folio.c[i].nid].c.text,					
+					})
+				}
 
-			// Report success
-			Hiro.sys.log('Indexed ' + notes.length + ' notes');
+				// Set the index in our internal format
+				Hiro.data.set('search','',that.index.toJSON());
+
+				// Report success
+				Hiro.sys.log('Indexed ' + folio.c.length + ' notes');
+			},delay || 0);	
 		},
 
 		// Update a note
@@ -4643,12 +4644,8 @@ var Hiro = {
 				that.active = true;
 			// Should always be blur	
 			} else {
-				// Set flag
-				that.active = false;	
 				// Reset strings
 				this.latestsearch = this.currentsearch = undefined;
-				// Switch back to default view
-				Hiro.ui.switchview((Hiro.folio.archiveopen) ? Hiro.folio.el_archivelist : Hiro.folio.el_notelist);
 				// If it's empty return placeholder
 				if (!this.value) that.el_precog.innerText = 'Search...';		
 			}
@@ -4656,14 +4653,14 @@ var Hiro = {
 
 		// Keyboard events within search
 		keystream: function(event) {
-			var that = Hiro.search, completekeys = [9,39], complete;
+			var that = Hiro.search, specialkeys = [9,39], complete;
 
 			// See if it's a tab or cursor key
-			if (completekeys.indexOf(event.keyCode) > -1) {
+			if (specialkeys.indexOf(event.keyCode) > -1) {
 				// Kill the default behavour
 				Hiro.util.stopEvent(event);
-				// Set complete flag
-				complete = true;
+				// Set complete flag ifr we pressed tab or cursor right
+				if ([9,39].indexOf(event.keyCode) > -1) complete = true;
 			}
 
 			// Abort if we have no different input
@@ -5077,6 +5074,9 @@ var Hiro = {
 
 			// Update trackers
 			Hiro.user.track.update();
+
+			// Update search index
+			Hiro.search.rebuild(500);
 
 			// Log
 			Hiro.sys.log('New session created',data);
@@ -7071,6 +7071,14 @@ var Hiro = {
 
 			// Make room on mobiles
 			if (direction == 1 && Hiro.ui.mini() && Hiro.apps.open.length > 0) Hiro.apps.close();
+
+			// End search mode if we close 
+			if (Hiro.search.active && direction == -1) {
+				// Go back to defaukt list
+				Hiro.ui.switchview((Hiro.folio.archiveopen) ? Hiro.folio.el_archivelist : Hiro.folio.el_notelist);	
+				// Disable search mode
+				Hiro.search.active = false;		
+			}
 
 			// Repaint folio
 			if (direction == 1) Hiro.folio.paint(true);
