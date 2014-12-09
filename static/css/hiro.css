@@ -474,6 +474,7 @@ input.error:focus {
     max-width: 295px;
     right: 57px;
     width: auto;
+    top: 80px;
   }
 
   html.touch body #folio .notes .note .archive {
@@ -810,7 +811,7 @@ html.ios body #rails #canvas textarea {
   display: none;
   position: absolute;
   top: 0;
-  z-index: 1020;
+  z-index: 1005;
   box-sizing: border-box;
   padding-top: 8px;
   left: 350px;
@@ -821,6 +822,8 @@ html.ios body #rails #canvas textarea {
   border: 0;
   background-color: transparent;  
   color: #fff;
+  position: absolute;
+  z-index: 100;  
 }
 
 #search input:focus {
@@ -832,9 +835,19 @@ html.ios body #rails #canvas textarea {
   top: 16px;
   left: 10px;
   position: absolute; 
+  z-index: 80;   
 }
 
-
+@media (max-width: 480px) {
+  #search {
+    top: 35px;
+    left: 40px;  
+    right: 50px;
+  }
+  #search .precog {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
 /* ------- Äppppps --------- */
 
 #apps {
