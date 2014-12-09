@@ -4506,6 +4506,9 @@ var Hiro = {
 		// Timing
 		startupdelay: 300,
 
+		// DOM
+		el_root: document.getElementById('search'),
+
 		// Initialize on startup
 		init: function() {
 			// Delay init until after rest of stack
@@ -4523,6 +4526,9 @@ var Hiro = {
 					// Rebuild
 					that.rebuild();
 				}
+
+				// Make search visible on dev 
+				if (!Hiro.sys.production) Hiro.ui.render(function(){ that.el_root.style.display = 'block'; });
 			},this.startupdelay);
 		},
 

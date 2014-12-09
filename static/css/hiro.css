@@ -509,16 +509,6 @@ input.error:focus {
   top: 50px; 
 }
 
-
-
-#rails .shade {
-  position: absolute;
-  height: 50px;
-  top: -50px;
-  left: 290px;
-  right: 0;
-}
-
 #canvas {
   position: relative;
   z-index: 2000;
@@ -750,10 +740,6 @@ html.ios body #rails #canvas textarea {
     border-bottom: none;   
   }  
 
-   #rails .shade {
-    display: none;
-  }
-
   #canvas {
     background-color: none;
     border: none;       
@@ -816,6 +802,36 @@ html.ios body #rails #canvas textarea {
     bottom: 50px;
     padding: 0 70px 0 70px;    
   }  
+}
+
+/* ---------- Search related stuff -------------*/
+
+#search {
+  display: none;
+  position: absolute;
+  top: 0;
+  z-index: 1020;
+  box-sizing: border-box;
+  padding-top: 8px;
+  left: 350px;
+  right: 10px;  
+}
+
+#search input {
+  border: 0;
+  background-color: transparent;  
+  color: #fff;
+}
+
+#search input:focus {
+  outline: none;
+}
+
+#search .precog {
+  color: rgba(255, 255, 255, 0.6);
+  top: 16px;
+  left: 10px;
+  position: absolute; 
 }
 
 
