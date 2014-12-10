@@ -6,7 +6,7 @@
 
  	- lunr.js client search index htpp://www.lunrjs.com (C) 2014 Oliver Nightingale
  	- dmp string operation library code.google.com/p/google-diff-match-patch/ by Neil Fraser (C) 2006 Google Inc.
- 	
+
  */
 
 /*
@@ -2971,7 +2971,7 @@ var Hiro = {
 							// Fetch a fresh token if we're online and have a note
 							if (note && !note._token) {
 								// Notify users
-								el.value = (Hiro.sync.synconline) ? 'Requesting fresh link from server...' : 'Offline, waiting for connection.';
+								el.value = (Hiro.sync.synconline) ? 'Requesting fresh link from server...' : 'Requested, waiting for connection.';
 								// Set _token to 0 so foliodiff typeof returns number while false otherwise
 								Hiro.data.set('note_' + note.id,'_token',0);
 								// Set folio to itself to trigger folio diff
