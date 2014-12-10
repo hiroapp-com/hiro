@@ -1,3 +1,14 @@
+/*!
+
+	Hiro client lib (C) Hiro Inc., please contact hello@hiroapp.com for a not yet cleanly packaged version of our Go/js sync framework
+
+ 	Thanks to the shoulders of giants:
+
+ 	- lunr.js client search index htpp://www.lunrjs.com (C) 2014 Oliver Nightingale
+ 	- dmp string operation library code.google.com/p/google-diff-match-patch/ by Neil Fraser (C) 2006 Google Inc.
+ 	
+ */
+
 /*
 
 	Hiro client lib
@@ -9611,10 +9622,6 @@ var lunr = function (config) {
 }
 
 lunr.version = "0.5.7"
-/*!
- * lunr.utils
- * Copyright (C) 2014 Oliver Nightingale
- */
 
 /**
  * A namespace containing utils for the rest of the lunr library
@@ -9635,12 +9642,6 @@ lunr.utils.warn = (function (global) {
   }
 })(this)
 
-
-
-/*!
- * lunr.tokenizer
- * Copyright (C) 2014 Oliver Nightingale
- */
 
 /**
  * A function for splitting a string into tokens ready to be inserted into
@@ -9672,11 +9673,6 @@ lunr.tokenizer = function (obj) {
       return token.toLowerCase()
     })
 }
-/*!
- * lunr.Pipeline
- * Copyright (C) 2014 Oliver Nightingale
- */
-
 /**
  * lunr.Pipelines maintain an ordered list of functions to be applied to all
  * tokens in documents entering the search index and queries being ran against
@@ -9889,10 +9885,6 @@ lunr.Pipeline.prototype.toJSON = function () {
     return fn.label
   })
 }
-/*!
- * lunr.Vector
- * Copyright (C) 2014 Oliver Nightingale
- */
 
 /**
  * lunr.Vectors implement vector related operations for
@@ -10014,10 +10006,7 @@ lunr.Vector.prototype.dot = function (otherVector) {
 lunr.Vector.prototype.similarity = function (otherVector) {
   return this.dot(otherVector) / (this.magnitude() * otherVector.magnitude())
 }
-/*!
- * lunr.SortedSet
- * Copyright (C) 2014 Oliver Nightingale
- */
+
 
 /**
  * lunr.SortedSets are used to maintain an array of uniq values in a sorted
@@ -10252,10 +10241,7 @@ lunr.SortedSet.prototype.union = function (otherSet) {
 lunr.SortedSet.prototype.toJSON = function () {
   return this.toArray()
 }
-/*!
- * lunr.Index
- * Copyright (C) 2014 Oliver Nightingale
- */
+
 
 /**
  * lunr.Index is object that manages a search index.  It contains the indexes
@@ -10640,10 +10626,7 @@ lunr.Index.prototype.use = function (plugin) {
   args.unshift(this)
   plugin.apply(this, args)
 }
-/*!
- * lunr.Store
- * Copyright (C) 2014 Oliver Nightingale
- */
+
 
 /**
  * lunr.Store is a simple key-value store used for storing sets of tokens for
@@ -10736,11 +10719,6 @@ lunr.Store.prototype.toJSON = function () {
   }
 }
 
-/*!
- * lunr.stemmer
- * Copyright (C) 2014 Oliver Nightingale
- * Includes code from - http://tartarus.org/~martin/PorterStemmer/js.txt
- */
 
 /**
  * lunr.stemmer is an english language stemmer, this is a JavaScript
@@ -10926,10 +10904,7 @@ lunr.stemmer = (function(){
 })();
 
 // lunr.Pipeline.registerFunction(lunr.stemmer, 'stemmer')
-/*!
- * lunr.stopWordFilter
- * Copyright (C) 2014 Oliver Nightingale
- */
+
 
 /**
  * lunr.stopWordFilter is an English language stop word list filter, any words
@@ -11073,10 +11048,7 @@ lunr.stopWordFilter.stopWords.elements = [
 ]
 
 lunr.Pipeline.registerFunction(lunr.stopWordFilter, 'stopWordFilter')
-/*!
- * lunr.trimmer
- * Copyright (C) 2014 Oliver Nightingale
- */
+
 
 /**
  * lunr.trimmer is a pipeline function for trimming non word
@@ -11099,11 +11071,6 @@ lunr.trimmer = function (token) {
 }
 
 lunr.Pipeline.registerFunction(lunr.trimmer, 'trimmer')
-/*!
- * lunr.stemmer
- * Copyright (C) 2014 Oliver Nightingale
- * Includes code from - http://tartarus.org/~martin/PorterStemmer/js.txt
- */
 
 /**
  * lunr.TokenStore is used for efficient storing and lookup of the reverse
