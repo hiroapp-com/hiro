@@ -4766,9 +4766,9 @@ var Hiro = {
 						that.el_results.appendChild(Hiro.folio.renderlink(results[i].ref,true));
 					}				
 				// No documents indexed yet
-				} else if (!that.index.documentStore.length) {
+				} else if (!that.index.documentStore.length || !that.index.corpusTokens.length) {
 					// Set innertext as fallback		
-					that.el_results.innerHTML = '<span class="info">Once you have your first notes, search will filter this list instantly.</span>';
+					that.el_results.innerHTML = '<span class="info">Once your notes have some content, search will filter this list instantly.</span>';
 				// No results found
 				} else {
 					// Set innertext as fallback		
