@@ -7,8 +7,8 @@ DB_PATH = 'postgres://hiro:hiro@localhost:5432/hiro?sslmode=require'
 CSRF_ENABLED = True
 
 # CSRF- and Session keys
-SECRET_KEY = 'UtwIjmTbJ0htShkAg1ztDdpK'
-CSRF_SESSION_KEY = 'a5Im08B8arB39XNxsdehOxgV'
+CSRF_SECRET_KEY = 'I4Se3ZDTp2uT3mvhhWsQQH5r'
+SESSION_KEY = 'krsVbhJKXzMnBqoVSuZAUMyL'
 
 # Local test keys
 
