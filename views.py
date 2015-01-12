@@ -49,7 +49,7 @@ def backdoors(page):
     return render_template('hync_home.html', version=version(), page=page)   
 
 def about():
-    return render_template('is_about.html')     
+    return render_template('about.html')     
 
 def crash():
     raise Exception("intended crash")

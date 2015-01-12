@@ -2609,7 +2609,7 @@ var Hiro = {
 			if (Hiro.ui.ios) {
 				this.platform = 'ios';
 			// Using a Chrome browser	
-			} else if (/Chrome/g.test(navigator.userAgent) && chrome) {
+			} else if (/Chrome/g.test(navigator.userAgent) && window.chrome) {
 				// Default to extension as long it's our only Chrome integration
 				this.platform = 'chromeext';
 			}
@@ -7271,7 +7271,7 @@ var Hiro = {
 				da = a1 - a0,
 				duration = duration || 1000,
 				start = Hiro.util.now(),
-				_this = this, cssd, css, i = 0;
+				_this = this, cssd, csst, css, i = 0;
 
 			// If we can read the transition property, use CSS animations instead
 			// TODO Bruno: Investigate a proper way to do this

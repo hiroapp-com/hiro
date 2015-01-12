@@ -73,7 +73,7 @@ app.add_url_rule('/note/<note_id>', 'note', view_func=views.note)
 app.add_url_rule('/backdoor', 'backdoor', view_func=views.backdoors, methods=['GET'], defaults={'page': 'imgmodal'})
 app.add_url_rule('/beta', 'beta', view_func=views.backdoors, methods=['GET'], defaults={'page': 'beta'})
 # About bpages
-app.add_url_rule('/is', 'is', view_func=views.about, methods=['GET'])
+app.add_url_rule('/why', 'why', view_func=views.about, methods=['GET'])
 # token handlers
 app.add_url_rule('/tokens/anon', 'anontoken', view_func=views.anon, methods=['GET'])
 app.add_url_rule('/tokens/login', 'login', view_func=views.login, methods=['POST'])
