@@ -8820,7 +8820,7 @@ var Hiro = {
 			        done = true;
 
 			        // Execute success
-			        if (obj.success) obj.success();
+			        if (obj.success) setTimeout(obj.success(),10);
 			    }
 			};
 
