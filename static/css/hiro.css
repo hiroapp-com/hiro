@@ -309,7 +309,7 @@ input.error:focus {
 
 #folio .notes .info {
   color: #999;
-  margin: -5px 20px 17px 50px; 
+  margin: -9px 20px 17px 50px; 
   display: block;
   line-height: 24px;
 }
@@ -486,6 +486,7 @@ input.error:focus {
 
   #folio .notes .info {
     margin: -5px 20px 15px 50px;
+    line-height: 20px;
   }  
 
   #searchlist.notes .note {
