@@ -4727,7 +4727,7 @@ var Hiro = {
 			})
 
 			// Find and paint any results we should have
-			that.paintresults((that.guess || that.raw).toLowerCase());
+			that.paintresults((that.raw).toLowerCase());
 		},
 
 		// Append results to DOM
@@ -4770,7 +4770,7 @@ var Hiro = {
 					}
 
 					// Short header	
-					if (!Hiro.ui.mini()) that.el_results.innerHTML = '<span class="info">' + results.length + ' note' + (results.length > 1 && 's' || '') + ' found:</span>';
+					if (!Hiro.ui.mini()) that.el_results.innerHTML = '<span class="info"><em>' + results.length + '</em> note' + (results.length > 1 && 's' || '') + ' found:</span>';
 						
 					// If we have results
 					for ( i = 0, l = results.length; i < l; i++ ) {

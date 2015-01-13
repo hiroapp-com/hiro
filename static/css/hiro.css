@@ -308,10 +308,14 @@ input.error:focus {
 }
 
 #folio .notes .info {
-  color: #666;
+  color: #999;
   margin: -5px 20px 17px 50px; 
   display: block;
   line-height: 24px;
+}
+
+#folio .notes .info em {
+  color: #aaa;
 }
 
 #folio .notes .note {
@@ -477,7 +481,7 @@ input.error:focus {
     max-width: 295px;
     right: 57px;
     width: auto;
-    top: 80px;
+    top: 75px;
   }
 
   html.touch body #folio .notes .note .archive {
