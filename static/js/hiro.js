@@ -7994,7 +7994,7 @@ var Hiro = {
 						// Get browser specific property
 						var filter = (Hiro.ui.browser) ? Hiro.ui.browser + 'Filter' : 'filter';
 						// Filter last layer 3px
-						Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(3px)';
+						Hiro.folio.el_showmenu.style[filter] = Hiro.search.el_root.style[filter] = Hiro.folio.el_root.style[filter] = 'blur(3px)';
 						// Filter canvas 2 px
 						Hiro.canvas.el_root.style[filter] = Hiro.apps.el_root.style[filter]	= 'blur(2px)';
 						// Filter sidebar 1 px
@@ -8126,7 +8126,7 @@ var Hiro = {
 
 				Hiro.ui.render(function(){
 					// Reset filter CSS
-					if (Hiro.canvas.el_root.style[filter]) Hiro.canvas.el_root.style[filter] = Hiro.apps.el_root.style[filter] = Hiro.context.el_root.style[filter] =Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
+					if (Hiro.canvas.el_root.style[filter]) Hiro.canvas.el_root.style[filter] = Hiro.apps.el_root.style[filter] = Hiro.context.el_root.style[filter] = Hiro.search.el_root.style[filter] = Hiro.folio.el_showmenu.style[filter] = Hiro.folio.el_root.style[filter] = 'none';
 				})
 
 				// Change visibility etc
@@ -8967,7 +8967,7 @@ var Hiro = {
 					return;
 				// Or not inited
 				} else if (!this.inited) {
-					that.init(function() { that.pipe(obj) },obj.error);
+					that.init(function() { that.pipe(obj) });
 					return;
 				}
 
