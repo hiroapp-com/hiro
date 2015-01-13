@@ -166,7 +166,7 @@ var Hiro = {
 						if (Hiro.ui.touch) Hiro.apps.sharing.zoom();
 						break;
 					case 'archivelink':
-						if (!tier || tier < 2) Hiro.ui.dialog.suggestupgrade('archiveswitch');
+						if ((!tier || tier < 2) && Hiro.folio.archivecount > 12) Hiro.ui.dialog.suggestupgrade('archiveswitch');
 						break;
 					case 'settings':
 						Hiro.ui.dialog.show('d_settings','s_account','',true);
@@ -175,7 +175,7 @@ var Hiro = {
 						// If the click was on an archive icon
 						if (target.className == 'archive') {
 							// Abort if user doesn't have archive yet
-							if (tier < 2) {
+							if (tier < 2 && Hiro.folio.archivecount > 12) {
 								Hiro.ui.dialog.suggestupgrade('archivenote');
 								return;
 							}
@@ -7966,8 +7966,8 @@ var Hiro = {
 			},
 
 			upgradereasons: {
-				archiveswitch: '<em>Upgrade now to </em><b>unlock the archive</b><em> &amp; more</em>',
-				archivenote: '<em>Upgrade now to </em><b>archive notes</b><em> &amp; more</em>',
+				archiveswitch: '<em>Upgrade now to unlock the</em><b>unlimited archive</b><em> &amp; more</em>',
+				archivenote: '<em>Upgrade now to </em><b>archive unlimited notes</b><em> &amp; more</em>',
 				unlimitednotes: '<em>Upgrade now for </em><b>unlimited notes</b><em> &amp; more</em>'
 			},
 
