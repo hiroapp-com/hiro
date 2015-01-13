@@ -481,7 +481,15 @@ input.error:focus {
     max-width: 295px;
     right: 57px;
     width: auto;
-    top: 75px;
+    top: 74px;
+  }
+
+  #folio .notes .info {
+    margin: -5px 20px 15px 50px;
+  }  
+
+  #searchlist.notes .note {
+    padding-bottom: 10px;
   }
 
   html.touch body #folio .notes .note .archive {
@@ -500,7 +508,7 @@ input.error:focus {
     cursor: pointer;
     height: 50px;
     width: 50px;
-  }   
+  }  
 
 }
 
@@ -856,7 +864,7 @@ html.ios body #rails #canvas textarea {
 
 @media (max-width: 480px) {
   #search {
-    top: 35px;
+    top: 32px;
     left: 40px;  
     right: 50px;
     max-width: 245px;
