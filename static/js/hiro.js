@@ -173,7 +173,7 @@ var Hiro = {
 						break;
 					case 'note':
 						// If the click was on an archive icon
-						if (target.className == 'archive') {
+						if (target.className.indexOf("archive") > -1) {
 							// Abort if user doesn't have archive yet
 							if (tier < 2 && Hiro.folio.archivecount > 12) {
 								Hiro.ui.dialog.suggestupgrade('archivenote');
