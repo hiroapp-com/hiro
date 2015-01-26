@@ -10489,7 +10489,7 @@ lunr.Index.prototype.idf = function (term) {
  * @memberOf Index
  */
 lunr.Index.prototype.search = function (query) {
-  var queryTokens = this.pipeline.run(lunr.tokenizer(query)),
+  var queryTokens = lunr.tokenizer(query),
       queryVector = new lunr.Vector,
       documentSets = [],
       fieldBoosts = this._fields.reduce(function (memo, f) { return memo + f.boost }, 0)
