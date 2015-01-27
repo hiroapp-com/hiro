@@ -1783,14 +1783,6 @@ var Hiro = {
 							// Set reason for prompting login
 							reason = (response.status === 'not_authorized') ? 'auth' : 'login';
 
-							// If user is not authed yet and landing page is waitlist
-							if (!Hiro.ui.landing.route && reason == 'auth') {
-								// Fire error
-								if (obj && obj.error) obj.error('waitlist');
-								// Abort
-								return;
-							}
-
 							// Ask user to login and or auth Hiro on FB
 							FB.login(function(response) {							
 								// Post tokens, or false if login didn't return any
@@ -7451,7 +7443,7 @@ var Hiro = {
 			load: function(version) {
 				// Create a new frame object
 				var frame = document.createElement('iframe');
-				
+
 				// Set src
 				frame.src = this.baseurl + (version || this.route || 'default');
 
