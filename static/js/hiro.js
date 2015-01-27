@@ -7451,10 +7451,7 @@ var Hiro = {
 			load: function(version) {
 				// Create a new frame object
 				var frame = document.createElement('iframe');
-
-				// Change appeareance
-				if (this.route && this.route.indexOf('modal') > -1) this.el_root.className += 'modal';
-
+				
 				// Set src
 				frame.src = this.baseurl + (version || this.route || 'default');
 
@@ -7503,24 +7500,6 @@ var Hiro = {
 							// Show dialog
 							Hiro.ui.dialog.show('d_logio','s_signin',Hiro.user.el_login.getElementsByTagName('input')[0]);
                             Hiro.user.track.logevent('opened-logio',{ via: 'landingpage' });
-							break;
-					}
-				}
-
-				// If it's something reagrding the new modal signup
-				if (Hiro.ui.landing.route == 'modal' && type == 'half') {
-					// Get pages div
-					modal = Hiro.ui.landing.page.document.body;
-					// Prevent text selection
-					Hiro.util.stopEvent(event);
-					// Switch based on action
-					switch (action) {
-						case 'next':
-							modal.scrollLeft += Hiro.ui.width();
-							break;
-						case 'previous':
-							// Show dialog
-							modal.scrollLeft -=  Hiro.ui.width();
 							break;
 					}
 				}

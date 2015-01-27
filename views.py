@@ -196,9 +196,6 @@ def landing(landing_id):
 def settings():
     return render_template('hync_settings.html')       
 
-def note(note_id):
-    return render_template('hync_home.html', version=version()) 
-
 def offline():
     return render_template('hync_home.html', version=version())         
 
