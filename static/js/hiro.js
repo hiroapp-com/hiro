@@ -1746,6 +1746,14 @@ var Hiro = {
 			// Set UI
 			button.textContent = 'Connecting...';
 
+			// Mobile devices redirect to fullscreen facebook signin instead of JS SDK
+			if (Hiro.ui.touch) {
+				// Redirect
+				window.location.href = 'https://www.hiroapp.com/connect/facebook'
+				// Abort
+				return;
+			}
+
 			// Send action to FB
 			Hiro.lib.facebook.pipe({
 				todo: function(obj) {
@@ -8914,7 +8922,7 @@ var Hiro = {
 				this.initing = true;
 
 				// Init, which unfortunately offers no callback (anymore)
-			    FB.init({ appId : that.key, version: 'v2.0', status : false, xfbml : false });
+			    FB.init({ appId : that.key, version: 'v2.0', status : true, xfbml : false });
 
 			    // Set flags
 		    	that.inited = true;
