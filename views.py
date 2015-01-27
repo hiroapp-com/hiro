@@ -245,7 +245,7 @@ def fb_callback():
     elif not user.fb_uid:
         user.update(fb_uid=me.data['id'])
     token = user.token('verify-email') if user.email_status =='unverified' else user.token('login')
-    return {'GET': redirect(request.args.get('next', '/')),
+    return {'GET': redirect(current_app.config['BASE_URL'] + '#' + token),
             'POST': jsonify(token=token)
             }[request.method]
 

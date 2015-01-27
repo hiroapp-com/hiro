@@ -1,5 +1,6 @@
 DEBUG = True
 
+BASE_URL = 'http://localhost:5000/'
 WS_URL = 'ws://localhost:8888/0/ws'
 DB_PATH = 'postgres://hiro:hiro@localhost:5432/hiro?sslmode=require'
 
