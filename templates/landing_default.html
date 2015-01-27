@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html manifest="/static/hiro.appcache" class="ml">
+	<head>
+        {{ get_asset('new_css') }}		
+        <link rel="canonical" href="http://www.hiroapp.com/">	
+	</head>
+	<body>
+		<div class="graphics"  data-hiro-action="screenshot">
+			<div class="device"></div>	
+			<div class="screen"></div>								
+		</div>	
+		<div class="description">
+			<div class="cto">
+				<div class="text">
+					<span>Instant collaboration, as simple as messaging.</span>
+				</div>			
+				<a class="hirobutton blue" data-hiro-action="cto">Start a Note<small>No signup needed</small></a>
+				<small>or{{ " " }}<a data-hiro-action="signin">sign-in</a></small>
+			</div>
+		</div>
+		<script type="text/javascript">window.parent.Hiro.ui.landing.init(this);</script>
+	</body>
+</html>
