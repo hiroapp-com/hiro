@@ -4,8 +4,6 @@ CACHE:{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
 {{ get_asset_url('new_js') }}{{ "\n" }}
 /static/img/icons.5.png{{ "\n" }}
-/static/img/site/landing.mobile.3.png{{ "\n" }}
-/static/img/site/landing.3.png{{ "\n" }}
 /static/img/site/yeah.png{{ "\n" }}
 /static/img/favicon.png{{ "\n" }}
 /static/img/faviconred.png{{ "\n" }}
