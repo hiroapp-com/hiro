@@ -101,7 +101,7 @@ var HBG  = {
 
 	// Create a new tab
 	spawn: function() { 
-		chrome.tabs.create({ url: 'https://www.hiroapp.com/backdoor' },function(tab){
+		chrome.tabs.create({ url: 'https://www.hiroapp.com' },function(tab){
 			HBG.tabs.push(tab.id);
 		}); 
 	}	

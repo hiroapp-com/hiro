@@ -3746,7 +3746,7 @@ var Hiro = {
 				// Abort further actions on beta.
 				if (window.location.hostname.indexOf('beta') > -1) {
 					// Redirect to www startpage
-					Hiro.sys.reload(false,'https://www.hiroapp.com/backdoor')
+					Hiro.sys.reload(false,'https://www.hiroapp.com')
 				// Continue normal flow
 				} else {
 					// Show landing page contents
@@ -6613,7 +6613,7 @@ var Hiro = {
 		production: (window.location.href.indexOf('hiroapp') != -1),
 
 		// Default URL
-		defaulturl: '/backdoor',
+		defaulturl: '/',
 
 		// System setup, this is called once on startup and then calls inits for the various app parts
 		init: function(vars) {

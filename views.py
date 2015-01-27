@@ -41,11 +41,7 @@ def version():
             _version = "0.0-default"
     return _version
 
-
-def home():
-    return render_template('hync_home.html', version=version())
-
-def backdoors(page):
+def home(page):
     return render_template('hync_home.html', version=version(), page=page)   
 
 def about():
