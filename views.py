@@ -41,7 +41,7 @@ def version():
             _version = "0.0-default"
     return _version
 
-def home(page):
+def home(page='default', noteid=None):
     return render_template('hync_home.html', version=version(), page=page)   
 
 def about():

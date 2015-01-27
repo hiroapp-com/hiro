@@ -66,8 +66,8 @@ def version_dev():
 
 ## App Routes
 # main handlers
-app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'], defaults={'page': 'default'})
-app.add_url_rule('/note/', 'note', view_func=views.home)
+app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'])
+app.add_url_rule('/note/<noteid>', 'note', view_func=views.home, methods=['GET'])
 app.add_url_rule('/crash', 'crash', view_func=views.crash, methods=['GET'])
 # Custom modal pages (eg for PH, HN etclaunches)
 app.add_url_rule('/backdoor', 'backdoor', view_func=lambda: redirect('/', code=301), methods=['GET'])
