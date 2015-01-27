@@ -1747,7 +1747,6 @@ var Hiro = {
 			button.textContent = 'Connecting...';
 
 			// Send action to FB
-			// TODO Bruno: See if new all.js supports mobiles better or if we still have to redirect to window.location = '/connect/facebook?next=/';
 			Hiro.lib.facebook.pipe({
 				todo: function(obj) {
 					// Processing for the various async calls above
@@ -1770,8 +1769,7 @@ var Hiro = {
 							// FB login or hiro auth process aborted by user
 							if (obj && obj.error) obj.error('abort' + reason)
 						}
-					}
-
+					};								
 					// First try to get status
 					FB.getLoginStatus(function(response) {
 						// Logged into FB & Hiro authed
@@ -1784,7 +1782,7 @@ var Hiro = {
 							reason = (response.status === 'not_authorized') ? 'auth' : 'login';
 
 							// Ask user to login and or auth Hiro on FB
-							FB.login(function(response) {							
+							FB.login(function(response) {													
 								// Post tokens, or false if login didn't return any
 								posttokens(response.authResponse, reason);
 							// Add scope here
@@ -1793,7 +1791,7 @@ var Hiro = {
 					});
 				},
 				// If the TODO was successfully completed
-				success: function(data) {
+				success: function(data) {				
 					// Fetch first name
 					FB.api('/me', function(response) {
 						// Save name
@@ -1813,7 +1811,7 @@ var Hiro = {
                     if (login) Hiro.user.track.logevent('logged-in', {via: 'facebook'});								        
 				},
 				// If something hapenned along the way
-				error: function(reason,data) {
+				error: function(reason,data) {						
 					var tryagain;
 					// We screwed up
 					if (reason == 'backend') {
@@ -1822,20 +1820,19 @@ var Hiro = {
 					// FB not available (the script fetching of Hiro.lig failed) or user offline
 					} else if (reason == 'sourceoffline') {
 						e.textContent = 'Facebook not available, please try later.';
-					// User tried to sign up while in front of waitlist landing page
-					} else if (reason == 'waitlist') {
-						e.textContent = 'Nice try, but please apply for early access.';
-						// Reset button
-						button.innerHTML = 'Log-In with <b>Facebook</b>';
-						// Do not show Try again
-						tryagain = false;
+					// User did not log in to facebook despite being prompted
+					} else if (reason == 'abortlogin') {
+						e.textContent = 'Please log in to Facebook first.';	
+					// User did not give us perms
+					} else if (reason == 'abortauth') {
+						e.textContent = 'Please confirm your signup.';																	
 					// User aborted
 					} else {
 						e.textContent = 'Something went wrong, please try later.';
 					}
 
 					// Reset button
-					if (tryagain != false) button.textContent = 'Try again';
+					button.textContent = 'Try again';
 
 					// End loading bar in error
 					Hiro.ui.hprogress.done(true)
@@ -3008,6 +3005,7 @@ var Hiro = {
 			// Prepare the respective area
 			zoom: function(section) {
 				var el;
+
 				// Preload facebook if not yet done so
 				if (!window.FB) Hiro.lib.facebook.load();
 
@@ -6768,7 +6766,7 @@ var Hiro = {
 			Hiro.data.local.tabtx('window.location.href = "' + url + '"',true);
 
 			// Start fading out body, reload our own window after that
-			if (fade) Hiro.ui.fade(document.body,-1,400,function(){ window.location.href = url });
+			if (fade) Hiro.ui.fade(Hiro.ui.landing.el_root,1,400,function(){ window.location.href = url });
 			else window.location.href = url;
 		},
 
@@ -7972,15 +7970,15 @@ var Hiro = {
 					});
 				});
 
-				// Load facebook on first open, but do not init yet as this would blur on mobiles
+				// Load facebook on first open
 				if (!window.FB) Hiro.lib.facebook.load();
 
 				// Set wanted areas to display block
 				if (container) Hiro.ui.switchview(container);
 				if (section) Hiro.ui.switchview(section);
 
-				// Set focus
-				if (focus) focus.focus();
+				// Set focus on non-touch devices (on touch we do init FB, which would blur again right away)
+				if (focus && !Hiro.ui.touch) focus.focus();
 
 				// Change visibility etc
 				Hiro.ui.render(function(){
@@ -8883,7 +8881,6 @@ var Hiro = {
 
 				// Set flag
 				this.loading = true;
-
 				// Do it!
 				Hiro.lib.loadscript({
 					url: this.js,
@@ -8892,10 +8889,10 @@ var Hiro = {
 						// Set flag
 						Hiro.lib.facebook.loaded = true;
 						Hiro.lib.facebook.loading = false;
-						// Fire callback if we have one
-						if (success) success();
-						// Init right away on non-touch devices to avoid popup blockers (init below creates new stack)
-						else if (!Hiro.ui.touch) Hiro.lib.facebook.init();
+						// Init right away
+						Hiro.lib.facebook.init();						
+						// Fire load callback if we have one
+						if (success) success();				
 					},
 					error: function() {
 						// Set flag
@@ -8919,17 +8916,17 @@ var Hiro = {
 				// Init, which unfortunately offers no callback (anymore)
 			    FB.init({ appId : that.key, version: 'v2.0', status : false, xfbml : false });
 
-			    // Call
-			    FB.getLoginStatus(function(response){
-			    	that.inited = true;
-			    	that.initing = false;
-			    	if (success) success();
-			    });
+			    // Set flags
+		    	that.inited = true;
+		    	that.initing = false;
+
+		    	// Call success
+			   	if (success) success();			   	
 			},
 
 			// Abstract connectivity & lib specific foo
 			pipe: function(obj) {
-				var that = this;
+				var that = this;		
 
 				// If script wasn't loaded yet
 				if (!this.loaded) {

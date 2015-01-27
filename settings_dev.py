@@ -8,6 +8,8 @@ CSRF_ENABLED = True
 
 # CSRF- and Session keys
 CSRF_SECRET_KEY = 'I4Se3ZDTp2uT3mvhhWsQQH5r'
+SECRET_KEY = 'Kjhsihds88uasdoJLKJLKuansd798a7sdlkLKjlaksjd7a9sd712j34jhKHAUSdasdpsg'
+
 SESSION_KEY = 'krsVbhJKXzMnBqoVSuZAUMyL'
 
 # Local test keys

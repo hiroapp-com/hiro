@@ -1,5 +1,4 @@
 CACHE MANIFEST{{ "\n" }}
-
 CACHE:{{ "\n" }}
 {{ get_asset_url('new_css') }}{{ "\n" }}
 {{ get_asset_url('new_js') }}{{ "\n" }}
