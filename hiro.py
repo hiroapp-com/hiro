@@ -5,7 +5,7 @@ import click
 import rollbar
 import rollbar.contrib.flask
 
-from flask import g, request, Flask, Markup, render_template, send_from_directory, got_request_exception
+from flask import g, request, Flask, Markup, render_template, send_from_directory, got_request_exception, redirect
 from assets import assets_env, get_html_output
 
 app = Flask('application')
@@ -69,10 +69,9 @@ def version_dev():
 app.add_url_rule('/', 'home', view_func=views.home, methods=['GET'], defaults={'page': 'modal'})
 app.add_url_rule('/note/', 'note', view_func=views.home)
 app.add_url_rule('/crash', 'crash', view_func=views.crash, methods=['GET'])
-
 # Custom modal pages (eg for PH, HN etclaunches)
-# app.add_url_rule('/backdoor', 'backdoor', view_func=views.backdoors, methods=['GET'], defaults={'page': 'imgmodal'})
-# app.add_url_rule('/beta', 'beta', view_func=views.backdoors, methods=['GET'], defaults={'page': 'beta'})
+app.add_url_rule('/backdoor', 'backdoor', view_func=lambda: redirect('/', code=301), methods=['GET'])
+app.add_url_rule('/beta', 'beta', view_func=lambda: redirect('/', code=301), methods=['GET'])
 # About bpages
 app.add_url_rule('/about', 'about', view_func=views.about, methods=['GET'])
 # token handlers
