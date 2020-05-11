@@ -10,7 +10,7 @@ httplib2.ca-certs-locater==0.2.0
 itsdangerous==0.24
 oauth2==1.5.211
 passlib==1.6.2
-requests==2.3.0
+requests==2.20.0
 stripe==1.18.0
 wsgiref==0.1.2
 yuicompressor==2.4.8
