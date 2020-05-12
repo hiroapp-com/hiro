@@ -18,10 +18,10 @@ if os.name == 'nt':
 env.user = 'hiro'
 env.use_ssh_config = True
 env.roledefs = {
-        'frontend': ['beta.hiroapp.com', ],
+        'frontend': ['www.hiroapp.com', ],
         }
 
-REPO_URL = 'git@bitbucket.org:sushimako/hiro.git'
+REPO_URL = 'https://github.com/hiroapp-com/hiro.git'
 
 ROOT         = '/home/hiro/frontend'
 RELOAD_FILE  = '/home/hiro/frontend/run/reload'
