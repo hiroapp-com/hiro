@@ -15,8 +15,9 @@ ssh.util.log_to_file('fuuuuu.log', 10)
 if os.name == 'nt':
     env.key_filename = 'C:\Users\\bruno.haid\.ssh\hirobeta_rsa'
 
-env.user = 'hiro'
-env.use_ssh_config = True
+# Configure how you log into your remote system, both password and SSH works
+env.user = ''
+env.use_ssh_config = False
 env.roledefs = {
         'frontend': ['www.hiroapp.com', ],
         }
