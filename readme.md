@@ -2,16 +2,16 @@
 
 Grab or set up a fresh Debian instance, install (on Debian 'apt get') 'git', 'python-pip', and 'libpg-dev' (Postgres database) if not already installed. With Python installed also add virtualenv via 'pip install virtualenv'.
 
-Checkout 'https://github.com/hiroapp-com/hiro.git' to your local machine, and make sure that you also got Python and 'fabric' running locally ('pip install fabric') .
+Create a '/home/hiro/frontend/refs', cd to '/home/hiro/frontend', and create a virtualenv by running 'virtualenv venv'. If you want this server to run as a production system (use production keys etc) set 'HIRO_ENV' to 'live' ('export HIRO_ENV="live') and you'll also need Java installed for the YUI compresoor which automatically hashes new js/css versions.
 
-With the server ready, check that the beginning of 'fabfile.py' is in line with how you want to connect to it, and then run 'fab deploy' on your local machine.
+Switch to your local machine and check out 'https://github.com/hiroapp-com/hiro.git', and make sure that you also got Python and 'fabric' running locally ('pip install fabric' or 'sudo apt install fabric'), as well as Phyton's requests framework ('pip install requests').
 
-From here on out Fabric should run the following steps automatically:
+If everything went well, running 'fab deploy' in your local hiro directory should execute the following steps automatically:
 
 - Dial into your server.
-- Check out the latest version on the server in a '/refs' directory
-- Link everything to the latest checked out version
-- Restart server with latest revision
+- Check out the latest version on the server in a '/refs' directory.
+- Link everything to the latest checked out version.
+- Restart server with latest revision.
 
 
 Old Manual approach:
@@ -29,3 +29,4 @@ run
   - $ HIRO_DEBUG=1 python hiro.py
 
  Once you are ready to deploy it as production system, make sure to set the HIRO_ENV environment variable to "live".
+virtualbox
