@@ -2,7 +2,7 @@
 
 Grab or set up a fresh Debian instance, install (on Debian 'apt get') 'git', 'python-pip', and 'libpg-dev' (Postgres database) if not already installed. With Python installed also add virtualenv via 'pip install virtualenv'.
 
-Create a '/home/hiro/frontend/refs', cd to '/home/hiro/frontend', and create a virtualenv by running 'virtualenv venv'. If you want this server to run as a production system (use production keys etc) set 'HIRO_ENV' to 'live' ('export HIRO_ENV="live') and you'll also need Java installed for the YUI compressor which automatically hashes new js/css versions.
+Create a '/home/hiro/frontend/refs', cd to '/home/hiro/frontend', and create a virtualenv by running 'virtualenv venv'. If you want this server to run as a production system (use production keys etc) set 'HIRO_ENV' to 'live' ('export HIRO_ENV="live"') and you'll also need Java installed for the YUI compressor which automatically hashes new js/css versions.
 
 Switch to your local machine and check out 'https://github.com/hiroapp-com/hiro.git', and make sure that you also got Python and 'fabric' running locally ('pip install fabric' or 'sudo apt install fabric'), as well as Phyton's requests framework ('pip install requests').
 
