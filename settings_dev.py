@@ -13,7 +13,8 @@ SECRET_KEY = 'Kjhsihds88uasdoJLKJLKuansd798a7sdlkLKjlaksjd7a9sd712j34jhKHAUSdasd
 
 SESSION_KEY = 'krsVbhJKXzMnBqoVSuZAUMyL'
 
-# Local test keys
+# Other keys you need to add manually to your secret_keys.py file, 
+# in production symlinked from /home/hiro/frontend/src/secret_keys.py
 
 FACEBOOK_APP_ID = '<YOUR FACEBOOK APP ID>'
 FACEBOOK_APP_SECRET = '<YOUR FACEBOOK APP SECRET>'
