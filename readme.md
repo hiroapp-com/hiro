@@ -19,6 +19,6 @@ If everything went smoothly, go to your server's Hiro current directory at '/hom
 
 'uwsgi --http :80 --wsgi-file hiro.py --callable app --touch-reload /home/hiro/frontend/run/reload --virtualenv /home/hiro/frontend/venv/'
 
-The second to last parameter tells uWSGI to automatically reload when the deploy script touches the empty 'run/reload' file, and 'venv' is optional depending on yopur local setup.
+The second to last parameter tells uWSGI to automatically reload when the deploy script touches the empty 'run/reload' file, and 'venv' is optional depending on yopur local setup. You can also use the provided hiro.ini and systemd sample files to automate that going forward.
 
 TODO: Add nginx docu and settings
