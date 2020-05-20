@@ -5,7 +5,7 @@ MarkupSafe==0.23
 Werkzeug==0.9.6
 argparse==1.2.1
 click==2.4
-httplib2==0.9
+httplib2==0.18.0
 httplib2.ca-certs-locater==0.2.0
 itsdangerous==0.24
 oauth2==1.5.211
