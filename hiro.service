@@ -1,0 +1,15 @@
+# See https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uswgi-and-nginx-on-ubuntu-18-04 for more information
+
+[Unit]
+Description=uWSGI instance to serve Hiro
+After=network.target
+
+[Service]
+User=YOURUSER
+Group=www-data
+WorkingDirectory=/home/hiro/frontend/current
+Environment="PATH=/home/hiro/frontend/venv/bin"
+ExecStart=/home/hiro/frontend/venv/bin/uwsgi --ini hiro.ini
+
+[Install]
+WantedBy=multi-user.target
